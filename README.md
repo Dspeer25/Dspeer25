@@ -1,5 +1,5 @@
 - 👋 Hi, I’m @Dspeer25
-- 👀 I’m interested in Bitcoin, ETH, and discussing potential ETH applications to facilitate the adoption of DApps, DAOs. I believe Oracles are some of the most exciting things in Crypto. Thanks Chainlink.
+- 👀 I’m interested in Bitcoin, ETH, and discussing potential ETH applications to facilitate the adoption of DApps, DAOs. 
 - 🌱 I’m currently learning how to get better at BTC mining
 - 💞️ I’m looking to collaborate on mining!
 - 📫 How to reach me email: dysp1389@colorado.edu , phone: 303-847-2852
