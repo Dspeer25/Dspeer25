@@ -11,9 +11,14 @@ type Entry = {
   id: string;
   date: string;
   ticker: string;
+  time: string;
   event: string;
   location: string;
   state: string;
+  initialRisk: string;
+  result: "W" | "L" | "";
+  amount: string;
+  rrRatio: string;
   notes: string;
 };
 
@@ -55,78 +60,160 @@ function PillGroup<T extends string>({
 }
 
 // ─── Log Entry Tab ────────────────────────────────────────────────────────────
-function LogTab({
-  onSave,
-}: {
-  onSave: (e: Entry) => void;
-}) {
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [ticker, setTicker] = useState("");
-  const [event, setEvent] = useState<(typeof EVENTS)[number] | "">("");
-  const [location, setLocation] = useState<(typeof LOCATIONS)[number] | "">("");
-  const [state, setState] = useState<(typeof STATES)[number] | "">("");
-  const [notes, setNotes] = useState("");
+const BLANK: Omit<Entry, "id"> = {
+  date: new Date().toISOString().split("T")[0],
+  ticker: "",
+  time: "",
+  event: "",
+  location: "",
+  state: "",
+  initialRisk: "",
+  result: "",
+  amount: "",
+  rrRatio: "",
+  notes: "",
+};
+
+function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
+  const [form, setForm] = useState({ ...BLANK });
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
 
+  const set = (k: keyof typeof BLANK, v: string) =>
+    setForm((prev) => ({ ...prev, [k]: v }));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!event || !location || !state) {
-      setError("Select Event, Location, and State.");
+    if (!form.event || !form.location || !form.state || !form.result) {
+      setError("Select Event, Location, State, and W/L.");
       return;
     }
     setError("");
-    onSave({
-      id: crypto.randomUUID(),
-      date,
-      ticker,
-      event,
-      location,
-      state,
-      notes,
-    });
-    setTicker("");
-    setEvent("");
-    setLocation("");
-    setState("");
-    setNotes("");
+    onSave({ ...form, id: crypto.randomUUID() });
+    setForm({ ...BLANK });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 max-w-lg">
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-5 max-w-xl">
+      {/* Row 1: date / ticker / time */}
+      <div className="grid grid-cols-3 gap-3">
+        {(
+          [
+            ["Date", "date", "date"],
+            ["Ticker", "ticker", "text"],
+            ["Time", "time", "time"],
+          ] as [string, keyof typeof BLANK, string][]
+        ).map(([label, key, type]) => (
+          <div key={key}>
+            <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
+              {label}
+            </label>
+            <input
+              type={type}
+              value={form[key] as string}
+              onChange={(e) =>
+                set(key, key === "ticker" ? e.target.value.toUpperCase() : e.target.value)
+              }
+              className="w-full bg-[#222536] border border-[#2e3147] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+        ))}
+      </div>
+
+      <PillGroup
+        label="Event"
+        options={EVENTS}
+        value={form.event as any}
+        onChange={(v) => set("event", v)}
+      />
+      <PillGroup
+        label="Location"
+        options={LOCATIONS}
+        value={form.location as any}
+        onChange={(v) => set("location", v)}
+      />
+      <PillGroup
+        label="State (20/200 MA)"
+        options={STATES}
+        value={form.state as any}
+        onChange={(v) => set("state", v)}
+      />
+
+      {/* Row 2: initial risk / result / amount / R:R */}
+      <div className="grid grid-cols-4 gap-3">
         <div>
-          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Date</label>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
+            Init. Risk $
+          </label>
           <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full bg-[#222536] border border-[#2e3147] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            type="number"
+            value={form.initialRisk}
+            onChange={(e) => set("initialRisk", e.target.value)}
+            placeholder="100"
+            className="w-full bg-[#222536] border border-[#2e3147] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
           />
         </div>
+
         <div>
-          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Ticker</label>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
+            W / L
+          </label>
+          <div className="flex gap-2">
+            {(["W", "L"] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => set("result", r)}
+                className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all ${
+                  form.result === r
+                    ? r === "W"
+                      ? "bg-emerald-600 border-emerald-500 text-white"
+                      : "bg-red-600 border-red-500 text-white"
+                    : "bg-[#222536] border-[#2e3147] text-slate-400 hover:border-slate-500"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
+            $ Amount
+          </label>
+          <input
+            type="number"
+            value={form.amount}
+            onChange={(e) => set("amount", e.target.value)}
+            placeholder="250"
+            className="w-full bg-[#222536] border border-[#2e3147] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
+            R:R
+          </label>
           <input
             type="text"
-            value={ticker}
-            onChange={(e) => setTicker(e.target.value.toUpperCase())}
-            placeholder="e.g. AAPL"
+            value={form.rrRatio}
+            onChange={(e) => set("rrRatio", e.target.value)}
+            placeholder="1.5"
             className="w-full bg-[#222536] border border-[#2e3147] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
           />
         </div>
       </div>
 
-      <PillGroup label="Event" options={EVENTS} value={event} onChange={setEvent} />
-      <PillGroup label="Location" options={LOCATIONS} value={location} onChange={setLocation} />
-      <PillGroup label="State (20/200 MA)" options={STATES} value={state} onChange={setState} />
-
       <div>
-        <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Notes</label>
+        <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
+          Notes
+        </label>
         <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          value={form.notes}
+          onChange={(e) => set("notes", e.target.value)}
           rows={3}
           placeholder="Optional notes..."
           className="w-full bg-[#222536] border border-[#2e3147] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
@@ -146,35 +233,95 @@ function LogTab({
 }
 
 // ─── Entries Table ────────────────────────────────────────────────────────────
+const COLS: { key: keyof Entry; label: string }[] = [
+  { key: "date", label: "Date" },
+  { key: "ticker", label: "Ticker" },
+  { key: "time", label: "Time" },
+  { key: "event", label: "Event" },
+  { key: "location", label: "Loc." },
+  { key: "state", label: "State" },
+  { key: "initialRisk", label: "Risk $" },
+  { key: "result", label: "W/L" },
+  { key: "amount", label: "$ P&L" },
+  { key: "rrRatio", label: "R:R" },
+  { key: "notes", label: "Notes" },
+];
+
 function EntriesTable({ entries }: { entries: Entry[] }) {
+  const totalPnl = entries.reduce((sum, e) => {
+    const amt = parseFloat(e.amount) || 0;
+    return sum + (e.result === "L" ? -amt : amt);
+  }, 0);
+
   if (entries.length === 0) {
-    return <p className="text-slate-500 text-sm">No entries yet. Log one on the Log tab.</p>;
+    return <p className="text-slate-500 text-sm">No entries yet — log one on the Log tab.</p>;
   }
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-[#2e3147]">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-[#222536]">
-            {["Date", "Ticker", "Event", "Location", "State", "Notes"].map((h) => (
-              <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#2e3147] whitespace-nowrap">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((row) => (
-            <tr key={row.id} className="border-b border-[#2e3147] hover:bg-[#1a1d27] transition-colors">
-              <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{row.date}</td>
-              <td className="px-4 py-2 font-mono text-slate-200 whitespace-nowrap">{row.ticker}</td>
-              <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{row.event}</td>
-              <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{row.location}</td>
-              <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{row.state}</td>
-              <td className="px-4 py-2 text-slate-400 max-w-xs truncate">{row.notes}</td>
+    <div className="space-y-3">
+      <div className="flex gap-4 text-sm">
+        <span className="text-slate-400">
+          {entries.length} trade{entries.length !== 1 ? "s" : ""}
+        </span>
+        <span className={totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}>
+          Total: {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)}
+        </span>
+        <span className="text-slate-400">
+          Win rate:{" "}
+          {Math.round(
+            (entries.filter((e) => e.result === "W").length / entries.length) * 100
+          )}
+          %
+        </span>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-[#2e3147]">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-[#222536]">
+              {COLS.map((c) => (
+                <th
+                  key={c.key}
+                  className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#2e3147] whitespace-nowrap"
+                >
+                  {c.label}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {entries.map((row) => (
+              <tr
+                key={row.id}
+                className="border-b border-[#2e3147] hover:bg-[#1a1d27] transition-colors"
+              >
+                {COLS.map((c) => (
+                  <td
+                    key={c.key}
+                    className={`px-3 py-2 whitespace-nowrap ${
+                      c.key === "result"
+                        ? row.result === "W"
+                          ? "text-emerald-400 font-bold"
+                          : "text-red-400 font-bold"
+                        : c.key === "amount"
+                        ? row.result === "W"
+                          ? "text-emerald-400"
+                          : "text-red-400"
+                        : c.key === "notes"
+                        ? "text-slate-400 max-w-xs truncate"
+                        : "text-slate-300"
+                    }`}
+                  >
+                    {c.key === "amount" && row.amount
+                      ? `${row.result === "L" ? "-" : "+"}$${row.amount}`
+                      : (row[c.key] as string)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -187,9 +334,9 @@ function CsvTab() {
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const parseCSV = (text: string): { headers: string[]; rows: CsvRow[] } => {
+  const parseCSV = (text: string) => {
     const lines = text.trim().split(/\r?\n/);
-    if (lines.length < 1) return { headers: [], rows: [] };
+    if (lines.length < 1) return { headers: [] as string[], rows: [] as CsvRow[] };
     const hdrs = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
     const dataRows = lines.slice(1).map((line) => {
       const vals = line.split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
@@ -203,16 +350,12 @@ function CsvTab() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".csv")) {
-      setError("Please upload a .csv file.");
-      return;
-    }
+    if (!file.name.endsWith(".csv")) { setError("Please upload a .csv file."); return; }
     setError("");
     setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      const { headers: hdrs, rows: dataRows } = parseCSV(text);
+      const { headers: hdrs, rows: dataRows } = parseCSV(ev.target?.result as string);
       setHeaders(hdrs);
       setRows(dataRows);
     };
@@ -228,7 +371,7 @@ function CsvTab() {
         <p className="text-slate-400 text-sm">
           {fileName ? `Loaded: ${fileName}` : "Click to upload a CSV file"}
         </p>
-        <p className="text-slate-600 text-xs mt-1">Exported from TradeStation, Google Sheets, etc.</p>
+        <p className="text-slate-600 text-xs mt-1">Export from TradeStation, Excel, Google Sheets, etc.</p>
         <input ref={inputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
       </div>
 
@@ -240,7 +383,7 @@ function CsvTab() {
             <thead>
               <tr className="bg-[#222536]">
                 {headers.map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#2e3147] whitespace-nowrap">
+                  <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#2e3147] whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -250,13 +393,13 @@ function CsvTab() {
               {rows.map((row, i) => (
                 <tr key={i} className="border-b border-[#2e3147] hover:bg-[#1a1d27] transition-colors">
                   {headers.map((h) => (
-                    <td key={h} className="px-4 py-2 text-slate-300 whitespace-nowrap">{row[h]}</td>
+                    <td key={h} className="px-3 py-2 text-slate-300 whitespace-nowrap">{row[h]}</td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="text-slate-500 text-xs px-4 py-2">{rows.length} rows loaded</p>
+          <p className="text-slate-500 text-xs px-4 py-2">{rows.length} rows</p>
         </div>
       )}
     </div>
@@ -276,7 +419,13 @@ export default function Home() {
       </header>
 
       <nav className="flex gap-1 bg-[#1a1d27] p-1 rounded-lg w-fit">
-        {([["log", "Log Entry"], ["entries", "Entries"], ["csv", "Import CSV"]] as const).map(([t, label]) => (
+        {(
+          [
+            ["log", "Log Entry"],
+            ["entries", "Entries"],
+            ["csv", "Import CSV"],
+          ] as const
+        ).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
