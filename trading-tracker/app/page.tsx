@@ -110,7 +110,7 @@ function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
   // Auto-calculate R:R whenever initialRisk or amount changes
   useEffect(() => {
     const risk = parseFloat(form.initialRisk);
-    const amt = parseFloat(form.amount);
+    const amt = Math.abs(parseFloat(form.amount));
     if (risk > 0 && amt > 0) {
       setForm((prev) => ({ ...prev, rrRatio: (amt / risk).toFixed(2) }));
     }
@@ -123,7 +123,8 @@ function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
       return;
     }
     setError("");
-    onSave({ ...form, id: crypto.randomUUID() });
+    const absAmount = Math.abs(parseFloat(form.amount) || 0).toString();
+    onSave({ ...form, amount: absAmount, id: crypto.randomUUID() });
     setForm({ ...BLANK });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -275,9 +276,10 @@ function getDateRange(filter: "day" | "week" | "month" | "ytd"): [Date, Date] {
   if (filter === "day") return [today, end];
 
   if (filter === "week") {
-    const day = today.getDay(); // 0=Sun
+    const day = today.getDay(); // 0=Sun, 1=Mon, ...
+    const daysToMon = day === 0 ? 6 : day - 1; // Mon-based trading week
     const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - day);
+    startOfWeek.setDate(today.getDate() - daysToMon);
     return [startOfWeek, end];
   }
 
@@ -314,7 +316,7 @@ function EntriesTable({ entries }: { entries: Entry[] }) {
   }
 
   const totalPnl = entries.reduce((sum, e) => {
-    const amt = parseFloat(e.amount) || 0;
+    const amt = Math.abs(parseFloat(e.amount) || 0);
     return sum + (e.result === "L" ? -amt : amt);
   }, 0);
 
@@ -332,12 +334,12 @@ function EntriesTable({ entries }: { entries: Entry[] }) {
 
   const avgWin =
     wins.length > 0
-      ? (wins.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0) / wins.length).toFixed(0)
+      ? (wins.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / wins.length).toFixed(0)
       : "—";
 
   const avgLoss =
     losses.length > 0
-      ? (losses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0) / losses.length).toFixed(0)
+      ? (losses.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / losses.length).toFixed(0)
       : "—";
 
   // Filtered entries for the range summary row
@@ -350,7 +352,7 @@ function EntriesTable({ entries }: { entries: Entry[] }) {
   const rangeWins = rangeEntries.filter((e) => e.result === "W").length;
   const rangeLosses = rangeEntries.filter((e) => e.result === "L").length;
   const rangePnl = rangeEntries.reduce((sum, e) => {
-    const amt = parseFloat(e.amount) || 0;
+    const amt = Math.abs(parseFloat(e.amount) || 0);
     return sum + (e.result === "L" ? -amt : amt);
   }, 0);
 
@@ -408,7 +410,7 @@ function EntriesTable({ entries }: { entries: Entry[] }) {
                     }`}
                   >
                     {c.key === "amount" && row.amount
-                      ? `${row.result === "L" ? "-" : "+"}$${row.amount}`
+                      ? `${row.result === "L" ? "-" : "+"}$${Math.abs(parseFloat(row.amount) || 0).toFixed(0)}`
                       : (row[c.key] as string)}
                   </td>
                 ))}
