@@ -38,6 +38,14 @@ type Journal = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function localDateStr(): string {
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, "0");
+  const d = String(n.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function fmtDate(iso: string): string {
   if (!iso) return "";
   const [y, m, d] = iso.split("-");
@@ -98,7 +106,7 @@ function PillGroup<T extends string>({
 
 // ─── Log Entry Tab ────────────────────────────────────────────────────────────
 const BLANK: Omit<Entry, "id"> = {
-  date: new Date().toISOString().split("T")[0],
+  date: localDateStr(),
   ticker: "",
   time: "",
   tradeType: "Day",
@@ -418,10 +426,11 @@ const COLS: { key: keyof Entry; label: string }[] = [
   { key: "notes",       label: "Notes"  },
 ];
 
-function EntriesTable({ entries, onDelete, onUpdate }: {
+function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
   entries: Entry[];
   onDelete: (id: string) => void;
   onUpdate: (e: Entry) => void;
+  onAddToLeaderboard?: (id: string) => void;
 }) {
   const [rangeFilter, setRangeFilter] = useState<"day" | "week" | "month" | "ytd">("month");
   const [filterTicker,   setFilterTicker]   = useState("");
@@ -431,15 +440,16 @@ function EntriesTable({ entries, onDelete, onUpdate }: {
   const [filterResult,   setFilterResult]   = useState("");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
+  const [lockedDismissed, setLockedDismissed] = useState(false);
 
   // Daily risk lock
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDateStr();
   const todayPnl = entries.reduce((sum, e) => {
     if (e.date !== todayStr) return sum;
     const amt = Math.abs(parseFloat(e.amount) || 0);
     return sum + (e.result === "L" ? -amt : e.result === "BE" ? 0 : amt);
   }, 0);
-  const isLocked = todayPnl <= -700;
+  const isLocked = todayPnl <= -700 && !lockedDismissed;
 
   if (entries.length === 0) {
     return <p className="text-slate-500 text-sm">No entries yet — log one on the Log tab.</p>;
@@ -487,6 +497,8 @@ function EntriesTable({ entries, onDelete, onUpdate }: {
       {/* ── Daily risk lock overlay ── */}
       {isLocked && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90">
+          <button onClick={() => setLockedDismissed(true)}
+            className="absolute top-6 right-8 text-slate-400 hover:text-white text-3xl leading-none transition-colors">✕</button>
           <p className="text-[10rem] font-black text-red-500 tracking-widest leading-none animate-pulse select-none">LOCKED</p>
           <p className="text-red-400 text-2xl font-bold mt-4">Daily loss limit of $700 reached</p>
           <p className="text-slate-400 text-base mt-2">Today&apos;s P&amp;L: <span className="text-red-400 font-semibold">${todayPnl.toFixed(0)}</span></p>
@@ -629,6 +641,14 @@ function EntriesTable({ entries, onDelete, onUpdate }: {
                         >
                           Edit
                         </button>
+                        {onAddToLeaderboard && (
+                          <button
+                            onClick={() => { onAddToLeaderboard(row.id); setMenuOpen(null); }}
+                            className="w-full text-left px-4 py-2 text-sm text-indigo-300 hover:bg-indigo-600 hover:text-white transition-colors"
+                          >
+                            Add to Leaderboard
+                          </button>
+                        )}
                         <button
                           onClick={() => { onDelete(row.id); setMenuOpen(null); }}
                           className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-600 hover:text-white transition-colors"
@@ -692,6 +712,9 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   const [operator, setOperator] = useState<string | null>(null);
   const [waitNext, setWaitNext] = useState(false);
   const calcInputRef = useRef<HTMLInputElement>(null);
+  // R-target: auto-captured from subtraction
+  const [tradeEntry, setTradeEntry] = useState<number | null>(null);
+  const [tradeStop,  setTradeStop]  = useState<number | null>(null);
 
   const calcNum = (n: string) => {
     if (waitNext) { setCalcDisplay(n); setWaitNext(false); }
@@ -709,17 +732,23 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
     const cur = parseFloat(calcDisplay);
     if (prevVal !== null && operator && !waitNext) {
       const res = doCalcResult(prevVal, cur, operator);
+      if (operator === "−") { setTradeEntry(prevVal); setTradeStop(cur); }
       setCalcDisplay(String(res)); setPrevVal(res);
     } else { setPrevVal(cur); }
     setOperator(op); setWaitNext(true);
   };
   const calcEquals = () => {
     if (prevVal === null || !operator) return;
-    const res = doCalcResult(prevVal, parseFloat(calcDisplay), operator);
+    const b = parseFloat(calcDisplay);
+    const res = doCalcResult(prevVal, b, operator);
+    if (operator === "−") { setTradeEntry(prevVal); setTradeStop(b); }
     setCalcDisplay(String(parseFloat(res.toFixed(10))));
     setPrevVal(null); setOperator(null); setWaitNext(true);
   };
-  const calcClear = () => { setCalcDisplay("0"); setPrevVal(null); setOperator(null); setWaitNext(false); };
+  const calcClear = () => {
+    setCalcDisplay("0"); setPrevVal(null); setOperator(null); setWaitNext(false);
+    setTradeEntry(null); setTradeStop(null);
+  };
   const calcBack = () => setCalcDisplay(calcDisplay.length > 1 ? calcDisplay.slice(0, -1) : "0");
   const calcMultiply = (factor: number) => {
     const val = parseFloat(calcDisplay) || 0;
@@ -787,8 +816,8 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         </span>
       </div>
 
-      {/* Calculator — centered, larger */}
-      <div className="flex justify-center">
+      {/* Calculator + R-target panel */}
+      <div className="flex justify-center gap-3 items-start">
         <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-4 w-72">
           <input
             ref={calcInputRef}
@@ -830,6 +859,28 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <button key={i} onClick={btn.action} className={`${btnCls} ${btn.cls}`}>{btn.label}</button>
             ))}
           </div>
+        </div>
+
+        {/* R-target panel */}
+        <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-4 w-44 flex-shrink-0 space-y-3">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Exit Targets</p>
+          {tradeEntry !== null && tradeStop !== null ? (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600 text-center font-mono">{tradeEntry} − {tradeStop}</p>
+              {([["2R", 2], ["2.5R", 2.5], ["3R", 3]] as const).map(([label, m]) => (
+                <div key={label} className="bg-[#252740] rounded-lg px-3 py-2.5 flex items-center justify-between">
+                  <span className="text-xs font-bold text-violet-300">{label}</span>
+                  <span className="text-sm font-mono font-bold text-slate-100">
+                    ${(tradeEntry + (tradeEntry - tradeStop) * m).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-600 text-xs text-center py-4 leading-relaxed">
+              Subtract entry&nbsp;−&nbsp;stop<br/>to see exit prices
+            </p>
+          )}
         </div>
       </div>
 
@@ -880,6 +931,13 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
             className="px-2 py-1 rounded text-xs italic text-slate-200 hover:bg-[#3d3f5e] transition-colors">I</button>
           <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
             className="px-2 py-1 rounded text-xs underline text-slate-200 hover:bg-[#3d3f5e] transition-colors">U</button>
+          <div className="w-px bg-[#3d3f5e] mx-1" />
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }}
+            className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align left">≡←</button>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }}
+            className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Center">≡</button>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }}
+            className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align right">→≡</button>
           <div className="w-px bg-[#3d3f5e] mx-1" />
           {["#f87171","#34d399","#60a5fa","#fbbf24","#e879f9","#ffffff"].map((color) => (
             <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("foreColor", color); }}
@@ -1233,16 +1291,244 @@ function CsvTab() {
   );
 }
 
+// ─── Leaderboard ──────────────────────────────────────────────────────────────
+type LeaderboardEntry = { id: string; entry: Entry; screenshot?: string; addedAt: string };
+
+function LeaderboardTab({ entries, pendingId, onPendingClear }: { entries: Entry[]; pendingId?: string | null; onPendingClear?: () => void }) {
+  const [board, setBoard] = useState<LeaderboardEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [screenshot, setScreenshot] = useState<string | undefined>(undefined);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try { const s = localStorage.getItem("trading-leaderboard"); if (s) setBoard(JSON.parse(s)); } catch {}
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (pendingId) { setAddingId(pendingId); onPendingClear?.(); }
+  }, [pendingId]);
+  useEffect(() => {
+    if (!loaded) return;
+    try { localStorage.setItem("trading-leaderboard", JSON.stringify(board)); } catch {}
+  }, [board, loaded]);
+
+  const pendingEntry = entries.find((e) => e.id === addingId);
+
+  const confirmAdd = () => {
+    if (!pendingEntry) return;
+    setBoard((prev) => [{ id: crypto.randomUUID(), entry: pendingEntry, screenshot, addedAt: new Date().toISOString() }, ...prev]);
+    setAddingId(null); setScreenshot(undefined);
+  };
+
+  const wins   = board.filter((b) => b.entry.result === "W");
+  const losses = board.filter((b) => b.entry.result === "L");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-xl font-bold text-white">Trade Leaderboard</h2>
+        <div className="flex gap-4 text-sm">
+          <span className="text-emerald-400 font-semibold">W: {wins.length}</span>
+          <span className="text-red-400 font-semibold">L: {losses.length}</span>
+        </div>
+      </div>
+
+      {addingId && pendingEntry && (
+        <div className="bg-[#1e2035] border border-indigo-500 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-slate-200">
+            Add <span className="text-indigo-400">{pendingEntry.ticker || "trade"}</span> ({fmtDate(pendingEntry.date)}) to leaderboard?
+          </p>
+          <div>
+            <p className="text-xs text-slate-400 mb-1">Screenshot (optional)</p>
+            <button onClick={() => fileRef.current?.click()}
+              className="px-3 py-1.5 rounded-lg bg-[#2d2f45] border border-[#3d3f5e] text-xs text-slate-300 hover:border-indigo-400 transition-colors">
+              {screenshot ? "Change image" : "Upload image"}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+              const f = e.target.files?.[0]; if (!f) return;
+              const r = new FileReader();
+              r.onload = (ev) => setScreenshot(ev.target?.result as string);
+              r.readAsDataURL(f);
+            }} />
+            {screenshot && <img src={screenshot} alt="preview" className="mt-2 rounded-lg max-h-32 border border-[#3d3f5e]" />}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={confirmAdd} className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">Add</button>
+            <button onClick={() => { setAddingId(null); setScreenshot(undefined); }}
+              className="px-4 py-1.5 rounded-lg bg-[#2d2f45] border border-[#3d3f5e] text-slate-300 text-sm transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {board.length === 0 ? (
+        <p className="text-slate-500 text-sm py-6 text-center">
+          No leaderboard entries yet — use ··· on any trade in Entries tab to add one.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-[#3d3f5e]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#2d2f45]">
+                {["Date","Ticker","Type","Event","W/L","$ P&L","R:R","Screenshot",""].map((h,i) => (
+                  <th key={i} className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#3d3f5e] whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {board.map((b) => {
+                const e = b.entry;
+                const abs = Math.abs(parseFloat(e.amount)||0).toFixed(0);
+                const pnl = e.result==="L" ? `-$${abs}` : `+$${abs}`;
+                return (
+                  <tr key={b.id} className="border-b border-[#3d3f5e] hover:bg-[#252740] transition-colors">
+                    <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{fmtDate(e.date)}</td>
+                    <td className="px-3 py-2 text-slate-300 whitespace-nowrap font-semibold">{e.ticker}</td>
+                    <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{e.tradeType}</td>
+                    <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{e.event}</td>
+                    <td className={`px-3 py-2 font-bold whitespace-nowrap ${e.result==="W"?"text-emerald-400":e.result==="L"?"text-red-400":"text-amber-400"}`}>{e.result}</td>
+                    <td className={`px-3 py-2 whitespace-nowrap ${e.result==="W"?"text-emerald-400":e.result==="L"?"text-red-400":"text-amber-400"}`}>{pnl}</td>
+                    <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{e.rrRatio||"—"}</td>
+                    <td className="px-3 py-2">
+                      {b.screenshot
+                        ? <img src={b.screenshot} alt="screenshot" className="h-8 rounded border border-[#3d3f5e] cursor-pointer" onClick={() => window.open(b.screenshot,"_blank")} />
+                        : <span className="text-slate-600 text-xs">—</span>}
+                    </td>
+                    <td className="px-2 py-2">
+                      <button onClick={() => setBoard((prev) => prev.filter((x) => x.id !== b.id))}
+                        className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Focus Tracks ─────────────────────────────────────────────────────────────
+type FocusTrack = { id: string; videoId: string; title: string; addedAt: string };
+
+function extractYouTubeId(input: string): string | null {
+  const m = input.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function FocusTracksTab() {
+  const [tracks, setTracks] = useState<FocusTrack[]>([]);
+  const [loaded, setLoaded]  = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    try { const s = localStorage.getItem("trading-focus-tracks"); if (s) { const t = JSON.parse(s); setTracks(t); if (t.length > 0) setCurrentId(t[0].videoId); } } catch {}
+    setLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!loaded) return;
+    try { localStorage.setItem("trading-focus-tracks", JSON.stringify(tracks)); } catch {}
+  }, [tracks, loaded]);
+
+  const addTrack = async () => {
+    const vid = extractYouTubeId(urlInput.trim());
+    if (!vid) { setError("Invalid YouTube URL"); return; }
+    if (tracks.some((t) => t.videoId === vid)) { setError("Already in playlist"); return; }
+    setError("");
+    let title = "Untitled";
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vid}`, { signal: ctrl.signal });
+      clearTimeout(timer);
+      const data = await res.json();
+      if (data.title) title = data.title;
+    } catch {}
+    const track: FocusTrack = { id: crypto.randomUUID(), videoId: vid, title, addedAt: new Date().toISOString() };
+    setTracks((prev) => [...prev, track]);
+    if (!currentId) setCurrentId(vid);
+    setUrlInput("");
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold text-white">Focus Tracks</h2>
+      <div className="flex gap-2">
+        <input type="text" value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addTrack()}
+          placeholder="Paste YouTube URL..."
+          className="flex-1 bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+        <button onClick={addTrack} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">Add</button>
+      </div>
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+
+      <div className="flex gap-4 flex-col lg:flex-row">
+        {currentId && (
+          <div className="flex-1 min-w-0">
+            <iframe
+              key={currentId}
+              src={`https://www.youtube-nocookie.com/embed/${currentId}?autoplay=1`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full rounded-xl border border-[#3d3f5e]"
+              style={{ aspectRatio: "16/9" }}
+            />
+          </div>
+        )}
+        {tracks.length > 0 && (
+          <div className="w-full lg:w-72 flex-shrink-0 space-y-2">
+            <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Playlist</p>
+            {tracks.map((t) => (
+              <div key={t.id}
+                onClick={() => setCurrentId(t.videoId)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${t.videoId === currentId ? "bg-indigo-600/30 border border-indigo-500" : "bg-[#1e2035] border border-[#3d3f5e] hover:border-indigo-400"}`}>
+                <div className="w-8 h-8 flex-shrink-0 rounded overflow-hidden bg-[#2d2f45]">
+                  <img src={`https://img.youtube.com/vi/${t.videoId}/default.jpg`} alt="" className="w-full h-full object-cover" />
+                </div>
+                <p className="text-xs text-slate-200 flex-1 min-w-0 truncate">{t.title}</p>
+                <button onClick={(e) => { e.stopPropagation(); setTracks((prev) => prev.filter((x) => x.id !== t.id)); if (currentId === t.videoId) setCurrentId(tracks.find((x)=>x.id!==t.id)?.videoId??null); }}
+                  className="text-slate-600 hover:text-red-400 text-xs transition-colors flex-shrink-0">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        {tracks.length === 0 && (
+          <p className="text-slate-500 text-sm">Add a YouTube URL above to build your focus playlist.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
+  const [focusMounted, setFocusMounted] = useState(false);
+
+  useEffect(() => {
+    try { const s = localStorage.getItem("trading-entries"); if (s) setEntries(JSON.parse(s)); } catch {}
+    setEntriesLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!entriesLoaded) return;
+    try { localStorage.setItem("trading-entries", JSON.stringify(entries)); } catch {}
+  }, [entries, entriesLoaded]);
+
+  useEffect(() => { if (tab === "focus") setFocusMounted(true); }, [tab]);
+
+  // Expose addToLeaderboard via ref so EntriesTable can call it
+  const [leaderboardPending, setLeaderboardPending] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col flex-1 w-full px-6 py-6 gap-6">
       <header className="flex items-center gap-3">
-        {/* Candlestick logo */}
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
           <line x1="6"  y1="3"  x2="6"  y2="7"  stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/>
           <rect x="3.5" y="7"  width="5" height="10" rx="1" fill="#34d399"/>
@@ -1262,12 +1548,14 @@ export default function Home() {
         </div>
       </header>
 
-      <nav className="flex gap-1 bg-[#252740] p-1 rounded-lg w-fit">
+      <nav className="flex flex-wrap gap-1 bg-[#252740] p-1 rounded-lg w-fit">
         {([
-          ["log",     "Log Entry"    ],
-          ["entries", "Entries"      ],
-          ["csv",     "Import CSV"   ],
-          ["journal", "Daily Journal"],
+          ["log",         "Log Entry"       ],
+          ["entries",     "Entries"         ],
+          ["csv",         "Import CSV"      ],
+          ["journal",     "Daily Journal"   ],
+          ["leaderboard", "Leaderboard"     ],
+          ["focus",       "Focus Tracks"    ],
         ] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -1285,10 +1573,17 @@ export default function Home() {
             entries={entries}
             onDelete={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
             onUpdate={(updated) => setEntries((prev) => prev.map((e) => e.id === updated.id ? updated : e))}
+            onAddToLeaderboard={(id) => { setLeaderboardPending(id); setTab("leaderboard"); }}
           />
         )}
         {tab === "csv"     && <CsvTab />}
         {tab === "journal" && <DailyJournalTab onMarketChange={setJournalMarketOn} />}
+        {tab === "leaderboard" && <LeaderboardTab entries={entries} pendingId={leaderboardPending} onPendingClear={() => setLeaderboardPending(null)} />}
+        {focusMounted && (
+          <div style={{ display: tab === "focus" ? "block" : "none" }}>
+            <FocusTracksTab />
+          </div>
+        )}
       </main>
     </div>
   );
