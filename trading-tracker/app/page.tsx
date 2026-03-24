@@ -3,28 +3,53 @@
 import { useState, useRef, useEffect } from "react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const EVENTS = ["Color Change/Halt", "Bear 180", "Bull 180", "Clearing bar"] as const;
-const LOCATIONS = ["Near", "Far"] as const;
+const EVENTS = ["Color Change/Halt", "Bear 180", "Bull 180", "Clearing bar", "No event"] as const;
+const LOCATIONS = ["Near", "Far", "At"] as const;
 const STATES = ["Wide", "Narrow", "Neutral"] as const;
 
 type Entry = {
   id: string;
-  date: string;
+  date: string;        // stored YYYY-MM-DD
   ticker: string;
-  time: string;
+  time: string;        // stored H:MM or HH:MM, no AM/PM
+  tradeType: string;   // "Day" | "Swing"
   event: string;
   location: string;
   state: string;
   initialRisk: string;
-  result: "W" | "L" | "";
-  amount: string;
+  result: "W" | "L" | "BE" | "";
+  amount: string;      // always stored as positive
   rrRatio: string;
   notes: string;
+  flagged?: boolean;
 };
 
 type CsvRow = Record<string, string>;
 
-// ─── CSV Parser (handles quoted fields) ──────────────────────────────────────
+type Goal = { text: string; checked: boolean };
+type Journal = {
+  id: string;
+  date: string;
+  goals: [Goal, Goal, Goal];
+  marketOn: boolean;
+  observations: string;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmtDate(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+}
+
+// Auto-insert colon before last 2 digits: "930" → "9:30", "1430" → "14:30"
+function autoColon(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 4);
+  if (d.length < 3) return d;
+  return d.slice(0, d.length - 2) + ":" + d.slice(-2);
+}
+
+// ─── CSV Parser ───────────────────────────────────────────────────────────────
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let current = "";
@@ -32,15 +57,10 @@ function parseCSVLine(line: string): string[] {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else inQuotes = !inQuotes;
     } else if (ch === "," && !inQuotes) {
-      result.push(current.trim());
-      current = "";
+      result.push(current.trim()); current = "";
     } else {
       current += ch;
     }
@@ -51,31 +71,21 @@ function parseCSVLine(line: string): string[] {
 
 // ─── Pill selector ────────────────────────────────────────────────────────────
 function PillGroup<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
+  label, options, value, onChange,
 }: {
-  label: string;
-  options: readonly T[];
-  value: T | "";
-  onChange: (v: T) => void;
+  label: string; options: readonly T[]; value: T | ""; onChange: (v: T) => void;
 }) {
   return (
     <div>
       <p className="text-xs text-slate-400 mb-1.5 uppercase tracking-widest">{label}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
+          <button key={opt} type="button" onClick={() => onChange(opt)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
               value === opt
                 ? "bg-indigo-600 border-indigo-500 text-white"
                 : "bg-[#2d2f45] border-[#3d3f5e] text-slate-300 hover:border-indigo-500"
-            }`}
-          >
+            }`}>
             {opt}
           </button>
         ))}
@@ -89,6 +99,7 @@ const BLANK: Omit<Entry, "id"> = {
   date: new Date().toISOString().split("T")[0],
   ticker: "",
   time: "",
+  tradeType: "Day",
   event: "",
   location: "",
   state: "",
@@ -107,7 +118,6 @@ function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
   const set = (k: keyof typeof BLANK, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
-  // Auto-calculate R:R whenever initialRisk or amount changes
   useEffect(() => {
     const risk = parseFloat(form.initialRisk);
     const amt = Math.abs(parseFloat(form.amount));
@@ -119,7 +129,7 @@ function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.event || !form.location || !form.state || !form.result) {
-      setError("Select Event, Location, State, and W/L.");
+      setError("Select Event, Location, State, and W/L/BE.");
       return;
     }
     setError("");
@@ -132,83 +142,72 @@ function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
-      {/* Row 1: date / ticker / time */}
+      {/* Row 1: Date / Ticker / Time */}
       <div className="grid grid-cols-3 gap-3">
-        {(
-          [
-            ["Date", "date", "date"],
-            ["Ticker", "ticker", "text"],
-            ["Time", "time", "time"],
-          ] as [string, keyof typeof BLANK, string][]
-        ).map(([label, key, type]) => (
-          <div key={key}>
-            <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
-              {label}
-            </label>
-            <input
-              type={type}
-              value={form[key] as string}
-              onChange={(e) =>
-                set(key, key === "ticker" ? e.target.value.toUpperCase() : e.target.value)
-              }
-              className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-        ))}
+        <div>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Date</label>
+          <input type="date" value={form.date}
+            onChange={(e) => set("date", e.target.value)}
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Ticker</label>
+          <input type="text" value={form.ticker} placeholder="AAPL"
+            onChange={(e) => set("ticker", e.target.value.toUpperCase())}
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div>
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Time</label>
+          <input type="text" value={form.time} placeholder="9:30"
+            onChange={(e) => set("time", autoColon(e.target.value))}
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+        </div>
       </div>
 
-      <PillGroup
-        label="Event"
-        options={EVENTS}
-        value={form.event as any}
-        onChange={(v) => set("event", v)}
-      />
-      <PillGroup
-        label="Location"
-        options={LOCATIONS}
-        value={form.location as any}
-        onChange={(v) => set("location", v)}
-      />
-      <PillGroup
-        label="State (20/200 MA)"
-        options={STATES}
-        value={form.state as any}
-        onChange={(v) => set("state", v)}
-      />
+      {/* Day / Swing toggle */}
+      <div>
+        <p className="text-xs text-slate-400 mb-1.5 uppercase tracking-widest">Trade Type</p>
+        <div className="flex gap-2">
+          {(["Day", "Swing"] as const).map((t) => (
+            <button key={t} type="button" onClick={() => set("tradeType", t)}
+              className={`px-5 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                form.tradeType === t
+                  ? "bg-indigo-600 border-indigo-500 text-white"
+                  : "bg-[#2d2f45] border-[#3d3f5e] text-slate-300 hover:border-indigo-500"
+              }`}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Row 2: initial risk / result / amount / R:R */}
+      <PillGroup label="Event" options={EVENTS} value={form.event as any} onChange={(v) => set("event", v)} />
+      <PillGroup label="Location" options={LOCATIONS} value={form.location as any} onChange={(v) => set("location", v)} />
+      <PillGroup label="State (20/200 MA)" options={STATES} value={form.state as any} onChange={(v) => set("state", v)} />
+
+      {/* Init Risk / W-L-BE / Amount / R:R */}
       <div className="grid grid-cols-4 gap-3">
         <div>
-          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
-            Init. Risk $
-          </label>
-          <input
-            type="number"
-            value={form.initialRisk}
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Init. Risk $</label>
+          <input type="number" value={form.initialRisk} placeholder="100"
             onChange={(e) => set("initialRisk", e.target.value)}
-            placeholder="100"
-            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
-          />
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
-            W / L
-          </label>
-          <div className="flex gap-2">
-            {(["W", "L"] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => set("result", r)}
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Result</label>
+          <div className="flex gap-1">
+            {(["W", "L", "BE"] as const).map((r) => (
+              <button key={r} type="button" onClick={() => set("result", r)}
                 className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all ${
                   form.result === r
                     ? r === "W"
                       ? "bg-emerald-600 border-emerald-500 text-white"
-                      : "bg-red-600 border-red-500 text-white"
+                      : r === "L"
+                      ? "bg-red-600 border-red-500 text-white"
+                      : "bg-amber-500 border-amber-400 text-white"
                     : "bg-[#2d2f45] border-[#3d3f5e] text-slate-400 hover:border-slate-500"
-                }`}
-              >
+                }`}>
                 {r}
               </button>
             ))}
@@ -216,58 +215,165 @@ function LogTab({ onSave }: { onSave: (e: Entry) => void }) {
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
-            $ Amount
-          </label>
-          <input
-            type="number"
-            value={form.amount}
+          <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">$ Amount</label>
+          <input type="number" value={form.amount} placeholder="250"
             onChange={(e) => set("amount", e.target.value)}
-            placeholder="250"
-            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
-          />
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
         </div>
 
         <div>
           <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
             R:R <span className="text-indigo-400 normal-case">(auto)</span>
           </label>
-          <input
-            type="text"
-            value={form.rrRatio}
+          <input type="text" value={form.rrRatio} placeholder="auto"
             onChange={(e) => set("rrRatio", e.target.value)}
-            placeholder="auto"
-            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
-          />
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
         </div>
       </div>
 
       <div>
-        <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">
-          Notes
-        </label>
-        <textarea
-          value={form.notes}
-          onChange={(e) => set("notes", e.target.value)}
-          rows={3}
-          placeholder="Optional notes..."
-          className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
-        />
+        <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Notes</label>
+        <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)}
+          rows={3} placeholder="Optional notes..."
+          className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none" />
       </div>
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
-      <button
-        type="submit"
-        className="px-6 py-2.5 rounded-lg font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 transition-colors"
-      >
+      <button type="submit"
+        className="px-6 py-2.5 rounded-lg font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 transition-colors">
         {saved ? "Saved!" : "Log Entry"}
       </button>
     </form>
   );
 }
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+function EditModal({ entry, onSave, onClose }: { entry: Entry; onSave: (e: Entry) => void; onClose: () => void }) {
+  const [form, setForm] = useState({ ...entry });
+  const [error, setError] = useState("");
+
+  const set = (k: keyof Entry, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
+
+  useEffect(() => {
+    const risk = parseFloat(form.initialRisk);
+    const amt = Math.abs(parseFloat(form.amount));
+    if (risk > 0 && amt > 0) {
+      setForm((prev) => ({ ...prev, rrRatio: (amt / risk).toFixed(2) }));
+    }
+  }, [form.initialRisk, form.amount]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.event || !form.location || !form.state || !form.result) {
+      setError("Select Event, Location, State, and W/L/BE.");
+      return;
+    }
+    const absAmount = Math.abs(parseFloat(form.amount) || 0).toString();
+    onSave({ ...form, amount: absAmount });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
+      <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-slate-100">Edit Entry</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-200 text-xl leading-none">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Date</label>
+              <input type="date" value={form.date} onChange={(e) => set("date", e.target.value)}
+                className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Ticker</label>
+              <input type="text" value={form.ticker} onChange={(e) => set("ticker", e.target.value.toUpperCase())}
+                className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Time</label>
+              <input type="text" value={form.time} onChange={(e) => set("time", autoColon(e.target.value))}
+                className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-400 mb-1.5 uppercase tracking-widest">Trade Type</p>
+            <div className="flex gap-2">
+              {(["Day", "Swing"] as const).map((t) => (
+                <button key={t} type="button" onClick={() => set("tradeType", t)}
+                  className={`px-5 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                    form.tradeType === t ? "bg-indigo-600 border-indigo-500 text-white" : "bg-[#2d2f45] border-[#3d3f5e] text-slate-300 hover:border-indigo-500"
+                  }`}>{t}</button>
+              ))}
+            </div>
+          </div>
+
+          <PillGroup label="Event" options={EVENTS} value={form.event as any} onChange={(v) => set("event", v)} />
+          <PillGroup label="Location" options={LOCATIONS} value={form.location as any} onChange={(v) => set("location", v)} />
+          <PillGroup label="State (20/200 MA)" options={STATES} value={form.state as any} onChange={(v) => set("state", v)} />
+
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Init. Risk $</label>
+              <input type="number" value={form.initialRisk} onChange={(e) => set("initialRisk", e.target.value)}
+                className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Result</label>
+              <div className="flex gap-1">
+                {(["W", "L", "BE"] as const).map((r) => (
+                  <button key={r} type="button" onClick={() => set("result", r)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-bold border transition-all ${
+                      form.result === r
+                        ? r === "W" ? "bg-emerald-600 border-emerald-500 text-white"
+                          : r === "L" ? "bg-red-600 border-red-500 text-white"
+                          : "bg-amber-500 border-amber-400 text-white"
+                        : "bg-[#2d2f45] border-[#3d3f5e] text-slate-400 hover:border-slate-500"
+                    }`}>{r}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">$ Amount</label>
+              <input type="number" value={form.amount} onChange={(e) => set("amount", e.target.value)}
+                className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">R:R (auto)</label>
+              <input type="text" value={form.rrRatio} onChange={(e) => set("rrRatio", e.target.value)}
+                className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1.5">Notes</label>
+            <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3}
+              className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 resize-none" />
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <div className="flex gap-3 pt-1">
+            <button type="submit" className="px-6 py-2.5 rounded-lg font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 transition-colors">
+              Save Changes
+            </button>
+            <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-lg font-semibold text-sm bg-[#2d2f45] border border-[#3d3f5e] text-slate-300 hover:text-white transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Date Range ───────────────────────────────────────────────────────────────
 function getDateRange(filter: "day" | "week" | "month" | "ytd"): [Date, Date] {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -276,95 +382,170 @@ function getDateRange(filter: "day" | "week" | "month" | "ytd"): [Date, Date] {
   if (filter === "day") return [today, end];
 
   if (filter === "week") {
-    const day = today.getDay(); // 0=Sun, 1=Mon, ...
-    const daysToMon = day === 0 ? 6 : day - 1; // Mon-based trading week
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - daysToMon);
-    return [startOfWeek, end];
+    const day = today.getDay();
+    const daysToMon = day === 0 ? 6 : day - 1;
+    const start = new Date(today);
+    start.setDate(today.getDate() - daysToMon);
+    return [start, end];
   }
 
   if (filter === "month") {
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    return [startOfMonth, end];
+    return [new Date(today.getFullYear(), today.getMonth(), 1), end];
   }
 
-  // ytd
-  const startOfYear = new Date(today.getFullYear(), 0, 1);
-  return [startOfYear, end];
+  return [new Date(today.getFullYear(), 0, 1), end];
 }
+
+// ─── Select style helper ──────────────────────────────────────────────────────
+const selectCls =
+  "bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer";
 
 // ─── Entries Table ────────────────────────────────────────────────────────────
 const COLS: { key: keyof Entry; label: string }[] = [
-  { key: "date", label: "Date" },
-  { key: "ticker", label: "Ticker" },
-  { key: "time", label: "Time" },
-  { key: "event", label: "Event" },
-  { key: "location", label: "Loc." },
-  { key: "state", label: "State" },
+  { key: "date",        label: "Date"   },
+  { key: "ticker",      label: "Ticker" },
+  { key: "time",        label: "Time"   },
+  { key: "tradeType",   label: "Type"   },
+  { key: "event",       label: "Event"  },
+  { key: "location",    label: "Loc."   },
+  { key: "state",       label: "State"  },
   { key: "initialRisk", label: "Risk $" },
-  { key: "result", label: "W/L" },
-  { key: "amount", label: "$ P&L" },
-  { key: "rrRatio", label: "R:R" },
-  { key: "notes", label: "Notes" },
+  { key: "result",      label: "W/L"    },
+  { key: "amount",      label: "$ P&L"  },
+  { key: "rrRatio",     label: "R:R"    },
+  { key: "notes",       label: "Notes"  },
 ];
 
-function EntriesTable({ entries }: { entries: Entry[] }) {
+function EntriesTable({ entries, onDelete, onUpdate }: {
+  entries: Entry[];
+  onDelete: (id: string) => void;
+  onUpdate: (e: Entry) => void;
+}) {
   const [rangeFilter, setRangeFilter] = useState<"day" | "week" | "month" | "ytd">("month");
+  const [filterTicker,   setFilterTicker]   = useState("");
+  const [filterEvent,    setFilterEvent]    = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
+  const [filterState,    setFilterState]    = useState("");
+  const [filterResult,   setFilterResult]   = useState("");
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [editEntry, setEditEntry] = useState<Entry | null>(null);
+
+  // Daily risk lock
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayPnl = entries.reduce((sum, e) => {
+    if (e.date !== todayStr) return sum;
+    const amt = Math.abs(parseFloat(e.amount) || 0);
+    return sum + (e.result === "L" ? -amt : e.result === "BE" ? 0 : amt);
+  }, 0);
+  const isLocked = todayPnl <= -700;
 
   if (entries.length === 0) {
     return <p className="text-slate-500 text-sm">No entries yet — log one on the Log tab.</p>;
   }
 
-  const totalPnl = entries.reduce((sum, e) => {
-    const amt = Math.abs(parseFloat(e.amount) || 0);
-    return sum + (e.result === "L" ? -amt : amt);
-  }, 0);
-
-  const wins = entries.filter((e) => e.result === "W");
-  const losses = entries.filter((e) => e.result === "L");
-  const winRate = Math.round((wins.length / entries.length) * 100);
-
-  const avgRR =
-    entries.filter((e) => parseFloat(e.rrRatio) > 0).length > 0
-      ? (
-          entries.reduce((s, e) => s + (parseFloat(e.rrRatio) || 0), 0) /
-          entries.filter((e) => parseFloat(e.rrRatio) > 0).length
-        ).toFixed(2)
-      : "—";
-
-  const avgWin =
-    wins.length > 0
-      ? (wins.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / wins.length).toFixed(0)
-      : "—";
-
-  const avgLoss =
-    losses.length > 0
-      ? (losses.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / losses.length).toFixed(0)
-      : "—";
-
-  // Filtered entries for the range summary row
   const [rangeStart, rangeEnd] = getDateRange(rangeFilter);
-  const rangeEntries = entries.filter((e) => {
+
+  const displayed = entries.filter((e) => {
     const d = new Date(e.date + "T00:00:00");
-    return d >= rangeStart && d < rangeEnd;
+    if (d < rangeStart || d >= rangeEnd) return false;
+    if (filterTicker && !e.ticker.toLowerCase().includes(filterTicker.toLowerCase())) return false;
+    if (filterEvent && e.event !== filterEvent) return false;
+    if (filterLocation && e.location !== filterLocation) return false;
+    if (filterState && e.state !== filterState) return false;
+    if (filterResult && e.result !== filterResult) return false;
+    return true;
   });
 
-  const rangeWins = rangeEntries.filter((e) => e.result === "W").length;
-  const rangeLosses = rangeEntries.filter((e) => e.result === "L").length;
-  const rangePnl = rangeEntries.reduce((sum, e) => {
+  const totalPnl = displayed.reduce((sum, e) => {
     const amt = Math.abs(parseFloat(e.amount) || 0);
-    return sum + (e.result === "L" ? -amt : amt);
+    return sum + (e.result === "L" ? -amt : e.result === "BE" ? 0 : amt);
   }, 0);
+
+  const wins   = displayed.filter((e) => e.result === "W");
+  const losses = displayed.filter((e) => e.result === "L");
+  const decided = wins.length + losses.length;
+  const winRate = decided > 0 ? Math.round((wins.length / decided) * 100) : 0;
+
+  const avgRR = (() => {
+    const valid = displayed.filter((e) => parseFloat(e.rrRatio) > 0);
+    if (valid.length === 0) return "—";
+    return (valid.reduce((s, e) => s + (parseFloat(e.rrRatio) || 0), 0) / valid.length).toFixed(2);
+  })();
+
+  const avgWin = wins.length > 0
+    ? (wins.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / wins.length).toFixed(0)
+    : "—";
+
+  const avgLoss = losses.length > 0
+    ? (losses.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / losses.length).toFixed(0)
+    : "—";
 
   return (
     <div className="space-y-4">
-      {/* Stats row */}
-      <div className="flex flex-wrap gap-4 text-sm">
-        <span className="text-slate-400">
-          {entries.length} trade{entries.length !== 1 ? "s" : ""}
+      {/* ── Daily risk lock overlay ── */}
+      {isLocked && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90">
+          <p className="text-[10rem] font-black text-red-500 tracking-widest leading-none animate-pulse select-none">LOCKED</p>
+          <p className="text-red-400 text-2xl font-bold mt-4">Daily loss limit of $700 reached</p>
+          <p className="text-slate-400 text-base mt-2">Today&apos;s P&amp;L: <span className="text-red-400 font-semibold">${todayPnl.toFixed(0)}</span></p>
+        </div>
+      )}
+      {/* ── Range filter buttons at TOP ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {(["day", "week", "month", "ytd"] as const).map((r) => (
+          <button key={r} onClick={() => setRangeFilter(r)}
+            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+              rangeFilter === r
+                ? "bg-indigo-600 text-white"
+                : "bg-[#2d2f45] border border-[#3d3f5e] text-slate-400 hover:text-slate-200"
+            }`}>
+            {r.toUpperCase()}
+          </button>
+        ))}
+        <span className="text-slate-500 text-xs ml-1">
+          {displayed.length} trade{displayed.length !== 1 ? "s" : ""}
         </span>
-        <span className={totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}>
-          Total: {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)}
+      </div>
+
+      {/* ── Filter dropdowns ── */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <input
+          type="text"
+          placeholder="Filter ticker..."
+          value={filterTicker}
+          onChange={(e) => setFilterTicker(e.target.value)}
+          className="bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-32"
+        />
+        <select value={filterEvent} onChange={(e) => setFilterEvent(e.target.value)} className={selectCls}>
+          <option value="">All Events</option>
+          {EVENTS.map((ev) => <option key={ev} value={ev}>{ev}</option>)}
+        </select>
+        <select value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} className={selectCls}>
+          <option value="">All Loc.</option>
+          {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+        </select>
+        <select value={filterState} onChange={(e) => setFilterState(e.target.value)} className={selectCls}>
+          <option value="">All States</option>
+          {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={filterResult} onChange={(e) => setFilterResult(e.target.value)} className={selectCls}>
+          <option value="">All Results</option>
+          <option value="W">W</option>
+          <option value="L">L</option>
+          <option value="BE">BE</option>
+        </select>
+        {(filterTicker || filterEvent || filterLocation || filterState || filterResult) && (
+          <button onClick={() => { setFilterTicker(""); setFilterEvent(""); setFilterLocation(""); setFilterState(""); setFilterResult(""); }}
+            className="text-xs text-slate-500 hover:text-slate-300 underline">
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* ── Stats row ── */}
+      <div className="flex flex-wrap gap-4 text-sm">
+        <span className={totalPnl >= 0 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>
+          Total P&L: {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)}
         </span>
         <span className="text-slate-400">Win rate: {winRate}%</span>
         <span className="text-slate-400">Avg R:R: {avgRR}</span>
@@ -372,85 +553,455 @@ function EntriesTable({ entries }: { entries: Entry[] }) {
         <span className="text-red-400">Avg Loss: {avgLoss !== "—" ? `-$${avgLoss}` : "—"}</span>
       </div>
 
+      {/* ── Table ── */}
       <div className="overflow-x-auto rounded-lg border border-[#3d3f5e]">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-[#2d2f45]">
               {COLS.map((c) => (
-                <th
-                  key={c.key}
-                  className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#3d3f5e] whitespace-nowrap"
-                >
+                <th key={c.key}
+                  className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#3d3f5e] whitespace-nowrap">
                   {c.label}
                 </th>
               ))}
+              <th className="px-3 py-2.5 border-b border-[#3d3f5e] w-8" />
             </tr>
           </thead>
           <tbody>
-            {entries.map((row) => (
-              <tr
-                key={row.id}
-                className="border-b border-[#3d3f5e] hover:bg-[#252740] transition-colors"
-              >
-                {COLS.map((c) => (
-                  <td
-                    key={c.key}
-                    className={`px-3 py-2 whitespace-nowrap ${
-                      c.key === "result"
-                        ? row.result === "W"
-                          ? "text-emerald-400 font-bold"
-                          : "text-red-400 font-bold"
-                        : c.key === "amount"
-                        ? row.result === "W"
-                          ? "text-emerald-400"
-                          : "text-red-400"
-                        : c.key === "notes"
-                        ? "text-slate-400 max-w-xs truncate"
-                        : "text-slate-300"
-                    }`}
+            {displayed.map((row) => (
+              <tr key={row.id} className={`border-b border-[#3d3f5e] transition-colors ${row.flagged ? "bg-amber-950/30 hover:bg-amber-950/50" : "hover:bg-[#252740]"}`}>
+                {COLS.map((c) => {
+                  let display: string = row[c.key] as string;
+                  if (c.key === "date") display = fmtDate(row.date);
+                  if (c.key === "amount" && row.amount) {
+                    const abs = Math.abs(parseFloat(row.amount) || 0).toFixed(0);
+                    display = row.result === "L" ? `-$${abs}` : row.result === "BE" ? `$${abs}` : `+$${abs}`;
+                  }
+                  const cls =
+                    c.key === "result"
+                      ? row.result === "W"
+                        ? "text-emerald-400 font-bold"
+                        : row.result === "BE"
+                        ? "text-amber-400 font-bold"
+                        : "text-red-400 font-bold"
+                      : c.key === "amount"
+                      ? row.result === "W"
+                        ? "text-emerald-400"
+                        : row.result === "BE"
+                        ? "text-amber-400"
+                        : "text-red-400"
+                      : c.key === "notes"
+                      ? "text-slate-400 max-w-xs truncate"
+                      : "text-slate-300";
+
+                  return (
+                    <td key={c.key} className={`px-3 py-2 whitespace-nowrap ${cls}`}>
+                      {display}
+                    </td>
+                  );
+                })}
+                {/* Flag/star cell */}
+                <td className="px-1 py-2">
+                  <button
+                    onClick={() => onUpdate({ ...row, flagged: !row.flagged })}
+                    className={`text-lg leading-none transition-colors ${row.flagged ? "text-amber-400" : "text-slate-700 hover:text-amber-400"}`}
+                    title={row.flagged ? "Unflag" : "Flag"}
+                  >★</button>
+                </td>
+                {/* Three-dot menu cell */}
+                <td className="px-2 py-2 relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === row.id ? null : row.id); }}
+                    className="text-slate-500 hover:text-slate-200 px-1 py-0.5 rounded transition-colors text-base leading-none font-bold"
                   >
-                    {c.key === "amount" && row.amount
-                      ? `${row.result === "L" ? "-" : "+"}$${Math.abs(parseFloat(row.amount) || 0).toFixed(0)}`
-                      : (row[c.key] as string)}
-                  </td>
-                ))}
+                    ···
+                  </button>
+                  {menuOpen === row.id && (
+                    <>
+                      {/* backdrop to close on outside click */}
+                      <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
+                      <div className="absolute right-0 top-7 z-20 bg-[#1e2035] border border-[#3d3f5e] rounded-lg shadow-xl overflow-hidden w-28">
+                        <button
+                          onClick={() => { setEditEntry(row); setMenuOpen(null); }}
+                          className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-indigo-600 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => { onDelete(row.id); setMenuOpen(null); }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-600 hover:text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
-          {/* Range summary footer */}
-          <tfoot>
-            <tr className="bg-[#252740] border-t-2 border-indigo-600/40">
-              <td colSpan={COLS.length} className="px-3 py-2">
-                <div className="flex items-center gap-4 flex-wrap">
-                  <div className="flex gap-1">
-                    {(["day", "week", "month", "ytd"] as const).map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setRangeFilter(r)}
-                        className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${
-                          rangeFilter === r
-                            ? "bg-indigo-600 text-white"
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {r.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="text-slate-400 text-xs">
-                    {rangeEntries.length} trades
-                  </span>
-                  <span className="text-emerald-400 text-xs">{rangeWins}W</span>
-                  <span className="text-red-400 text-xs">{rangeLosses}L</span>
-                  <span className={`text-xs font-semibold ${rangePnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    P&L: {rangePnl >= 0 ? "+" : ""}${rangePnl.toFixed(0)}
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tfoot>
         </table>
+        {displayed.length === 0 && (
+          <p className="text-slate-500 text-sm text-center py-6">No trades match the current filters.</p>
+        )}
       </div>
+
+      {/* Edit modal */}
+      {editEntry && (
+        <EditModal
+          entry={editEntry}
+          onSave={onUpdate}
+          onClose={() => setEditEntry(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Journal Sheet ────────────────────────────────────────────────────────────
+function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
+  journal: Journal;
+  onChange: (j: Journal) => void;
+  onBack: () => void;
+  onMarketChange?: (on: boolean) => void;
+}) {
+  const set = <K extends keyof Journal>(k: K, v: Journal[K]) => {
+    onChange({ ...journal, [k]: v });
+    if (k === "marketOn") onMarketChange?.(v as boolean);
+  };
+
+  const toggleGoal = (i: number) => {
+    const goals = journal.goals.map((g, idx) =>
+      idx === i ? { ...g, checked: !g.checked } : g
+    ) as [Goal, Goal, Goal];
+    set("goals", goals);
+  };
+
+  const setGoalText = (i: number, text: string) => {
+    const goals = journal.goals.map((g, idx) =>
+      idx === i ? { ...g, text } : g
+    ) as [Goal, Goal, Goal];
+    set("goals", goals);
+  };
+
+  // ── Calculator state ──
+  const [calcDisplay, setCalcDisplay] = useState("0");
+  const [prevVal, setPrevVal] = useState<number | null>(null);
+  const [operator, setOperator] = useState<string | null>(null);
+  const [waitNext, setWaitNext] = useState(false);
+  const calcInputRef = useRef<HTMLInputElement>(null);
+
+  const calcNum = (n: string) => {
+    if (waitNext) { setCalcDisplay(n); setWaitNext(false); }
+    else setCalcDisplay(calcDisplay === "0" ? n : calcDisplay + n);
+  };
+  const calcDot = () => { if (!calcDisplay.includes(".")) setCalcDisplay(calcDisplay + "."); };
+  const doCalcResult = (a: number, b: number, op: string) => {
+    if (op === "+") return a + b;
+    if (op === "−") return a - b;
+    if (op === "×") return a * b;
+    if (op === "÷") return b !== 0 ? a / b : 0;
+    return b;
+  };
+  const calcOp = (op: string) => {
+    const cur = parseFloat(calcDisplay);
+    if (prevVal !== null && operator && !waitNext) {
+      const res = doCalcResult(prevVal, cur, operator);
+      setCalcDisplay(String(res)); setPrevVal(res);
+    } else { setPrevVal(cur); }
+    setOperator(op); setWaitNext(true);
+  };
+  const calcEquals = () => {
+    if (prevVal === null || !operator) return;
+    const res = doCalcResult(prevVal, parseFloat(calcDisplay), operator);
+    setCalcDisplay(String(parseFloat(res.toFixed(10))));
+    setPrevVal(null); setOperator(null); setWaitNext(true);
+  };
+  const calcClear = () => { setCalcDisplay("0"); setPrevVal(null); setOperator(null); setWaitNext(false); };
+  const calcBack = () => setCalcDisplay(calcDisplay.length > 1 ? calcDisplay.slice(0, -1) : "0");
+  const calcMultiply = (factor: number) => {
+    const val = parseFloat(calcDisplay) || 0;
+    setCalcDisplay(String(parseFloat((val * factor).toFixed(10))));
+    setWaitNext(true);
+  };
+
+  // Keyboard support — skip if user is typing in any input/textarea/contenteditable
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t !== calcInputRef.current && (["INPUT","TEXTAREA"].includes(t.tagName) || t.contentEditable === "true")) return;
+      if (e.key >= "0" && e.key <= "9") { e.preventDefault(); calcNum(e.key); }
+      else if (e.key === ".") { e.preventDefault(); calcDot(); }
+      else if (e.key === "+") { e.preventDefault(); calcOp("+"); }
+      else if (e.key === "-") { e.preventDefault(); calcOp("−"); }
+      else if (e.key === "*") { e.preventDefault(); calcOp("×"); }
+      else if (e.key === "/") { e.preventDefault(); calcOp("÷"); }
+      else if (e.key === "Enter") { e.preventDefault(); calcEquals(); }
+      else if (e.key === "Backspace") { e.preventDefault(); calcBack(); }
+      else if (e.key === "Escape") { e.preventDefault(); calcClear(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [calcDisplay, prevVal, operator, waitNext]);
+
+  // ── Rich text editor ──
+  const editorRef = useRef<HTMLDivElement>(null);
+  const editorInitId = useRef<string | null>(null);
+  useEffect(() => {
+    if (editorRef.current && editorInitId.current !== journal.id) {
+      editorRef.current.innerHTML = journal.observations || "";
+      editorInitId.current = journal.id;
+    }
+  }, [journal.id]);
+  const execCmd = (cmd: string, val?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false, val);
+  };
+
+  const btnCls = "flex items-center justify-center rounded-lg text-sm font-semibold h-10 transition-all cursor-pointer select-none";
+  const rBtnCls = "flex items-center justify-center rounded-lg text-xs font-bold h-10 bg-violet-900/60 hover:bg-violet-700 text-violet-200 transition-all cursor-pointer select-none";
+
+  return (
+    <div className="space-y-4">
+      {/* Back */}
+      <button onClick={onBack} className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1">
+        ← All Journals
+      </button>
+
+      {/* Play to Win header */}
+      <h2 className="text-2xl font-extrabold tracking-tight text-white">
+        Play to <span className="text-indigo-400">Win</span>
+      </h2>
+
+      {/* Market toggle */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-semibold text-slate-300">Market</span>
+        <button type="button" onClick={() => set("marketOn", !journal.marketOn)}
+          className={`relative inline-flex items-center w-14 h-7 rounded-full transition-colors duration-200 ${journal.marketOn ? "bg-emerald-500" : "bg-slate-600"}`}>
+          <span className={`absolute w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${journal.marketOn ? "translate-x-8" : "translate-x-1"}`} />
+        </button>
+        <span className={`text-sm font-semibold ${journal.marketOn ? "text-emerald-400" : "text-slate-500"}`}>
+          {journal.marketOn ? "ON — Make the next right decision" : "OFF"}
+        </span>
+      </div>
+
+      {/* Calculator — centered, larger */}
+      <div className="flex justify-center">
+        <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-4 w-72">
+          <input
+            ref={calcInputRef}
+            type="text"
+            value={calcDisplay}
+            onChange={(e) => { const c = e.target.value.replace(/[^0-9.]/g, ""); setCalcDisplay(c || "0"); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); calcEquals(); }
+            }}
+            className="w-full bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-3 py-2 text-right text-xl font-mono text-slate-100 mb-3 focus:outline-none focus:border-indigo-500"
+          />
+          {/* R multiplier buttons */}
+          <div className="grid grid-cols-3 gap-1 mb-2">
+            {([["2R", 2], ["2.5R", 2.5], ["3R", 3]] as const).map(([label, factor]) => (
+              <button key={label} onClick={() => calcMultiply(factor)} className={rBtnCls}>{label}</button>
+            ))}
+          </div>
+          <div className="grid grid-cols-4 gap-1">
+            {[
+              { label: "C",  action: calcClear,         cls: "bg-red-900/60 hover:bg-red-700 text-red-300 col-span-2" },
+              { label: "⌫",  action: calcBack,          cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-300" },
+              { label: "÷",  action: () => calcOp("÷"), cls: "bg-indigo-900/60 hover:bg-indigo-700 text-indigo-300" },
+              { label: "7",  action: () => calcNum("7"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "8",  action: () => calcNum("8"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "9",  action: () => calcNum("9"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "×",  action: () => calcOp("×"), cls: "bg-indigo-900/60 hover:bg-indigo-700 text-indigo-300" },
+              { label: "4",  action: () => calcNum("4"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "5",  action: () => calcNum("5"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "6",  action: () => calcNum("6"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "−",  action: () => calcOp("−"), cls: "bg-indigo-900/60 hover:bg-indigo-700 text-indigo-300" },
+              { label: "1",  action: () => calcNum("1"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "2",  action: () => calcNum("2"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "3",  action: () => calcNum("3"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "+",  action: () => calcOp("+"), cls: "bg-indigo-900/60 hover:bg-indigo-700 text-indigo-300" },
+              { label: "0",  action: () => calcNum("0"), cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200 col-span-2" },
+              { label: ".",  action: calcDot,            cls: "bg-[#2d2f45] hover:bg-[#3d3f5e] text-slate-200" },
+              { label: "=",  action: calcEquals,         cls: "bg-indigo-600 hover:bg-indigo-500 text-white" },
+            ].map((btn, i) => (
+              <button key={i} onClick={btn.action} className={`${btnCls} ${btn.cls}`}>{btn.label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Date */}
+      <div>
+        <label className="text-xs text-slate-400 uppercase tracking-widest block mb-1">Date</label>
+        <input
+          type="text"
+          value={journal.date}
+          onChange={(e) => set("date", e.target.value)}
+          placeholder="e.g. March 24, 2026"
+          className="text-2xl font-bold bg-transparent border-b border-[#3d3f5e] text-slate-100 focus:outline-none focus:border-indigo-500 pb-1 w-full placeholder-slate-700"
+        />
+      </div>
+
+      {/* Weekly Goals */}
+      <div className="space-y-2">
+        <h3 className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Weekly Goals</h3>
+        {journal.goals.map((goal, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <button type="button" onClick={() => toggleGoal(i)}
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                goal.checked ? "bg-emerald-500 border-emerald-500" : "bg-transparent border-[#3d3f5e] hover:border-indigo-400"
+              }`}>
+              {goal.checked && <span className="text-white text-xs leading-none">✓</span>}
+            </button>
+            <input
+              type="text"
+              value={goal.text}
+              onChange={(e) => setGoalText(i, e.target.value)}
+              placeholder={`Goal ${i + 1}...`}
+              className={`flex-1 bg-transparent border-b border-[#3d3f5e] text-sm focus:outline-none focus:border-indigo-500 pb-1 placeholder-slate-600 transition-all ${
+                goal.checked ? "line-through text-slate-500" : "text-slate-200"
+              }`}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Observations and Actions — rich text */}
+      <div className="space-y-0">
+        <h3 className="text-sm font-semibold text-slate-200 mb-1">Observations and Actions</h3>
+        {/* Toolbar */}
+        <div className="flex flex-wrap gap-1 p-2 bg-[#2d2f45] border border-b-0 border-[#3d3f5e] rounded-t-xl">
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }}
+            className="px-2 py-1 rounded text-xs font-bold text-slate-200 hover:bg-[#3d3f5e] transition-colors">B</button>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }}
+            className="px-2 py-1 rounded text-xs italic text-slate-200 hover:bg-[#3d3f5e] transition-colors">I</button>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
+            className="px-2 py-1 rounded text-xs underline text-slate-200 hover:bg-[#3d3f5e] transition-colors">U</button>
+          <div className="w-px bg-[#3d3f5e] mx-1" />
+          {["#f87171","#34d399","#60a5fa","#fbbf24","#e879f9","#ffffff"].map((color) => (
+            <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("foreColor", color); }}
+              className="w-5 h-5 rounded-full border border-[#3d3f5e] flex-shrink-0"
+              style={{ backgroundColor: color }} />
+          ))}
+          <div className="w-px bg-[#3d3f5e] mx-1" />
+          <select defaultValue="" onMouseDown={(e) => e.stopPropagation()}
+            onChange={(e) => { execCmd("fontSize", e.target.value); e.target.value = ""; }}
+            className="bg-[#1e2035] border border-[#3d3f5e] rounded text-xs text-slate-300 px-1 focus:outline-none cursor-pointer">
+            <option value="" disabled>Size</option>
+            <option value="1">XS</option>
+            <option value="2">S</option>
+            <option value="3">M</option>
+            <option value="4">L</option>
+            <option value="5">XL</option>
+            <option value="6">2XL</option>
+          </select>
+        </div>
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={() => { if (editorRef.current) set("observations", editorRef.current.innerHTML); }}
+          data-placeholder="Type your observations, thoughts, and planned actions here..."
+          className="w-full bg-[#1e2035] border border-[#3d3f5e] rounded-b-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-64 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-600"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Daily Journal Tab ────────────────────────────────────────────────────────
+function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) => void }) {
+  const [journals, setJournals] = useState<Journal[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { const s = localStorage.getItem("trading-journals"); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem("trading-journals", JSON.stringify(journals)); } catch {}
+  }, [journals]);
+
+  useEffect(() => {
+    if (!openId) onMarketChange?.(false);
+  }, [openId]);
+
+  const createNew = () => {
+    const j: Journal = {
+      id: crypto.randomUUID(),
+      date: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+      goals: [{ text: "", checked: false }, { text: "", checked: false }, { text: "", checked: false }],
+      marketOn: false,
+      observations: "",
+    };
+    setJournals((prev) => [j, ...prev]);
+    setOpenId(j.id);
+  };
+
+  const updateJournal = (updated: Journal) =>
+    setJournals((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
+
+  const deleteJournal = (id: string) => {
+    setJournals((prev) => prev.filter((j) => j.id !== id));
+    if (openId === id) setOpenId(null);
+  };
+
+  const open = journals.find((j) => j.id === openId);
+
+  if (open) {
+    return (
+      <JournalSheet
+        journal={open}
+        onChange={updateJournal}
+        onBack={() => setOpenId(null)}
+        onMarketChange={onMarketChange}
+      />
+    );
+  }
+
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "");
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-extrabold tracking-tight text-white">
+          Play to <span className="text-indigo-400">Win</span>
+        </h2>
+        <button onClick={createNew}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
+          <span className="text-lg leading-none">+</span> New Journal
+        </button>
+      </div>
+
+      {journals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="text-5xl text-slate-700">📓</div>
+          <p className="text-slate-500 text-sm">No journals yet. Hit <strong className="text-slate-400">+ New Journal</strong> to create your first one.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {journals.map((j) => (
+            <div key={j.id}
+              className="flex items-center justify-between bg-[#1e2035] border border-[#3d3f5e] rounded-xl px-5 py-4 cursor-pointer hover:border-indigo-500 transition-all group"
+              onClick={() => setOpenId(j.id)}>
+              <div>
+                <p className="text-slate-100 font-semibold text-sm">{j.date || "Untitled"}</p>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  {j.goals.filter((g) => g.checked).length}/3 goals ·{" "}
+                  {j.observations ? `${stripHtml(j.observations).slice(0, 60)}${stripHtml(j.observations).length > 60 ? "…" : ""}` : "No notes yet"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-slate-500 text-xs group-hover:text-indigo-400 transition-colors">Open →</span>
+                <button onClick={(e) => { e.stopPropagation(); deleteJournal(j.id); }}
+                  className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -470,21 +1021,13 @@ function CsvTab() {
     const dataRows = lines.slice(1).map((line) => {
       const vals = parseCSVLine(line);
       const obj: CsvRow = {};
-      hdrs.forEach((h, i) => {
-        // Use index-suffixed key internally if header is blank
-        const key = h || `col_${i}`;
-        obj[key] = vals[i] ?? "";
-      });
+      hdrs.forEach((h, i) => { obj[h || `col_${i}`] = vals[i] ?? ""; });
       return obj;
     });
-    // Deduplicate headers for display (add suffix if duplicate)
     const seen: Record<string, number> = {};
     const deduped = hdrs.map((h) => {
       const base = h || "col";
-      if (seen[base] === undefined) {
-        seen[base] = 0;
-        return base;
-      }
+      if (seen[base] === undefined) { seen[base] = 0; return base; }
       seen[base]++;
       return `${base}_${seen[base]}`;
     });
@@ -494,10 +1037,7 @@ function CsvTab() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".csv")) {
-      setError("Please upload a .csv file.");
-      return;
-    }
+    if (!file.name.endsWith(".csv")) { setError("Please upload a .csv file."); return; }
     setError("");
     setFileName(file.name);
     const reader = new FileReader();
@@ -507,22 +1047,17 @@ function CsvTab() {
       setRows(dataRows);
     };
     reader.readAsText(file);
-    // Reset input so same file can be re-uploaded
     e.target.value = "";
   };
 
   return (
     <div className="space-y-4">
-      <div
-        onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-[#3d3f5e] rounded-xl p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors"
-      >
+      <div onClick={() => inputRef.current?.click()}
+        className="border-2 border-dashed border-[#3d3f5e] rounded-xl p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors">
         <p className="text-slate-400 text-sm">
           {fileName ? `Loaded: ${fileName}` : "Click to upload a CSV file"}
         </p>
-        <p className="text-slate-600 text-xs mt-1">
-          Export from TradeStation, Excel, Google Sheets, etc.
-        </p>
+        <p className="text-slate-600 text-xs mt-1">Export from TradeStation, Excel, Google Sheets, etc.</p>
         <input ref={inputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
       </div>
 
@@ -534,23 +1069,18 @@ function CsvTab() {
             <thead>
               <tr className="bg-[#2d2f45]">
                 {headers.map((h, i) => (
-                  <th
-                    key={`th-${i}`}
-                    className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#3d3f5e] whitespace-nowrap"
-                  >
+                  <th key={`th-${i}`}
+                    className="px-3 py-2.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-[#3d3f5e] whitespace-nowrap">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, rowIdx) => (
-                <tr
-                  key={`row-${rowIdx}`}
-                  className="border-b border-[#3d3f5e] hover:bg-[#252740] transition-colors"
-                >
-                  {headers.map((h, colIdx) => (
-                    <td key={`td-${rowIdx}-${colIdx}`} className="px-3 py-2 text-slate-300 whitespace-nowrap">
+              {rows.map((row, ri) => (
+                <tr key={`row-${ri}`} className="border-b border-[#3d3f5e] hover:bg-[#252740] transition-colors">
+                  {headers.map((h, ci) => (
+                    <td key={`td-${ri}-${ci}`} className="px-3 py-2 text-slate-300 whitespace-nowrap">
                       {row[h] ?? ""}
                     </td>
                   ))}
@@ -567,40 +1097,60 @@ function CsvTab() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [journalMarketOn, setJournalMarketOn] = useState(false);
 
   return (
     <div className="flex flex-col flex-1 w-full px-6 py-6 gap-6">
-      <header>
-        <h1 className="text-xl font-bold text-slate-100">Trading Tracker</h1>
-        <p className="text-slate-500 text-sm">Log entries · View trades · Import CSV</p>
+      <header className="flex items-center gap-3">
+        {/* Candlestick logo */}
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="6"  y1="3"  x2="6"  y2="7"  stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/>
+          <rect x="3.5" y="7"  width="5" height="10" rx="1" fill="#34d399"/>
+          <line x1="6"  y1="17" x2="6"  y2="22" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="16" y1="2"  x2="16" y2="8"  stroke="#f87171" strokeWidth="1.5" strokeLinecap="round"/>
+          <rect x="13.5" y="8" width="5" height="13" rx="1" fill="#f87171"/>
+          <line x1="16" y1="21" x2="16" y2="27" stroke="#f87171" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="26" y1="5"  x2="26" y2="10" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/>
+          <rect x="23.5" y="10" width="5" height="9"  rx="1" fill="#34d399"/>
+          <line x1="26" y1="19" x2="26" y2="25" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+            Trading <span className="text-indigo-400">Tracker</span>
+          </h1>
+          <p className="text-slate-500 text-sm mt-0.5">Log entries · View trades · Import CSV</p>
+        </div>
       </header>
 
       <nav className="flex gap-1 bg-[#252740] p-1 rounded-lg w-fit">
-        {(
-          [
-            ["log", "Log Entry"],
-            ["entries", "Entries"],
-            ["csv", "Import CSV"],
-          ] as const
-        ).map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
+        {([
+          ["log",     "Log Entry"    ],
+          ["entries", "Entries"      ],
+          ["csv",     "Import CSV"   ],
+          ["journal", "Daily Journal"],
+        ] as const).map(([t, label]) => (
+          <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               tab === t ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
+            }`}>
             {label}
           </button>
         ))}
       </nav>
 
-      <main className="bg-[#252740] rounded-xl border border-[#3d3f5e] p-6 flex-1">
-        {tab === "log" && <LogTab onSave={(e) => setEntries((prev) => [e, ...prev])} />}
-        {tab === "entries" && <EntriesTable entries={entries} />}
-        {tab === "csv" && <CsvTab />}
+      <main className={`bg-[#252740] rounded-xl border p-6 flex-1 transition-all duration-300 ${tab === "journal" && journalMarketOn ? "border-[#00ff88] shadow-[0_0_24px_rgba(0,255,136,0.35)]" : "border-[#3d3f5e]"}`}>
+        {tab === "log"     && <LogTab onSave={(e) => setEntries((prev) => [e, ...prev])} />}
+        {tab === "entries" && (
+          <EntriesTable
+            entries={entries}
+            onDelete={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
+            onUpdate={(updated) => setEntries((prev) => prev.map((e) => e.id === updated.id ? updated : e))}
+          />
+        )}
+        {tab === "csv"     && <CsvTab />}
+        {tab === "journal" && <DailyJournalTab onMarketChange={setJournalMarketOn} />}
       </main>
     </div>
   );
