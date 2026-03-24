@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { getData, setData } from "../lib/supabase";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const EVENTS = ["Color Change/Halt", "Bear 180", "Bull 180", "Clearing bar", "No event"] as const;
@@ -712,9 +713,30 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   const [operator, setOperator] = useState<string | null>(null);
   const [waitNext, setWaitNext] = useState(false);
   const calcInputRef = useRef<HTMLInputElement>(null);
-  // R-target: auto-captured from subtraction
-  const [tradeEntry, setTradeEntry] = useState<number | null>(null);
-  const [tradeStop,  setTradeStop]  = useState<number | null>(null);
+
+  // Options exit-price panel state
+  // entry is captured (normalized to $) when "−" is first pressed
+  // contracts + riskTotal are captured when "×" resolves
+  const [tradeEntry,          setTradeEntry]          = useState<number | null>(null);
+  const [tradeEntryIsDecimal, setTradeEntryIsDecimal] = useState(true);
+  const [tradeContracts,      setTradeContracts]      = useState<number | null>(null);
+  const [tradeRiskTotal,      setTradeRiskTotal]      = useState<number | null>(null);
+
+  // Normalize an option price: whole numbers ≥10 are treated as cents (279 → 2.79)
+  const normOptPrice = (str: string): number => {
+    const v = parseFloat(str);
+    return (!str.includes(".") && v >= 10) ? v / 100 : v;
+  };
+
+  // Exit price for a given R multiple:
+  //   profit_dollars  = riskTotal × r × (isDecimal ? 100 : 1)
+  //   exit            = entry + profit_dollars / contracts / 100
+  const exitForR = (r: number): string | null => {
+    if (tradeEntry === null || tradeContracts === null || tradeRiskTotal === null || tradeContracts === 0) return null;
+    const profitDollars    = tradeRiskTotal * r * (tradeEntryIsDecimal ? 100 : 1);
+    const profitPerContract = profitDollars / tradeContracts;
+    return (tradeEntry + profitPerContract / 100).toFixed(2);
+  };
 
   const calcNum = (n: string) => {
     if (waitNext) { setCalcDisplay(n); setWaitNext(false); }
@@ -730,9 +752,19 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   };
   const calcOp = (op: string) => {
     const cur = parseFloat(calcDisplay);
+    // Capture entry when the user first presses "−" (no pending value yet)
+    if (op === "−" && prevVal === null) {
+      setTradeEntry(normOptPrice(calcDisplay));
+      setTradeEntryIsDecimal(calcDisplay.includes("."));
+    }
+    // Dividing = backing out a contract size; reset so next × re-triggers the panel
+    if (op === "÷") {
+      setTradeContracts(null);
+      setTradeRiskTotal(null);
+    }
     if (prevVal !== null && operator && !waitNext) {
       const res = doCalcResult(prevVal, cur, operator);
-      if (operator === "−") { setTradeEntry(prevVal); setTradeStop(cur); }
+      if (operator === "×") { setTradeContracts(cur); setTradeRiskTotal(res); }
       setCalcDisplay(String(res)); setPrevVal(res);
     } else { setPrevVal(cur); }
     setOperator(op); setWaitNext(true);
@@ -741,13 +773,14 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
     if (prevVal === null || !operator) return;
     const b = parseFloat(calcDisplay);
     const res = doCalcResult(prevVal, b, operator);
-    if (operator === "−") { setTradeEntry(prevVal); setTradeStop(b); }
+    if (operator === "×") { setTradeContracts(b); setTradeRiskTotal(res); }
     setCalcDisplay(String(parseFloat(res.toFixed(10))));
     setPrevVal(null); setOperator(null); setWaitNext(true);
   };
   const calcClear = () => {
     setCalcDisplay("0"); setPrevVal(null); setOperator(null); setWaitNext(false);
-    setTradeEntry(null); setTradeStop(null);
+    setTradeEntry(null); setTradeEntryIsDecimal(true);
+    setTradeContracts(null); setTradeRiskTotal(null);
   };
   const calcBack = () => setCalcDisplay(calcDisplay.length > 1 ? calcDisplay.slice(0, -1) : "0");
   const calcMultiply = (factor: number) => {
@@ -862,23 +895,28 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         </div>
 
         {/* R-target panel */}
-        <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-4 w-44 flex-shrink-0 space-y-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Exit Targets</p>
-          {tradeEntry !== null && tradeStop !== null ? (
+        <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-4 w-48 flex-shrink-0 space-y-3">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Target Exit Price</p>
+          {tradeEntry !== null && tradeContracts !== null && tradeRiskTotal !== null ? (
             <div className="space-y-2">
-              <p className="text-xs text-slate-600 text-center font-mono">{tradeEntry} − {tradeStop}</p>
-              {([["2R", 2], ["2.5R", 2.5], ["3R", 3]] as const).map(([label, m]) => (
-                <div key={label} className="bg-[#252740] rounded-lg px-3 py-2.5 flex items-center justify-between">
-                  <span className="text-xs font-bold text-violet-300">{label}</span>
-                  <span className="text-sm font-mono font-bold text-slate-100">
-                    ${(tradeEntry + (tradeEntry - tradeStop) * m).toFixed(2)}
-                  </span>
-                </div>
-              ))}
+              <p className="text-xs text-slate-600 text-center font-mono leading-relaxed">
+                entry {tradeEntry.toFixed(2)}<br/>{tradeContracts} contracts
+              </p>
+              {([["2R", 2], ["2.5R", 2.5], ["3R", 3]] as const).map(([label, r]) => {
+                const exit = exitForR(r);
+                return (
+                  <div key={label} className="bg-[#252740] rounded-lg px-3 py-2.5 flex items-center justify-between">
+                    <span className="text-xs font-bold text-violet-300">{label}</span>
+                    <span className="text-sm font-mono font-bold text-emerald-300">
+                      {exit ?? "—"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-slate-600 text-xs text-center py-4 leading-relaxed">
-              Subtract entry&nbsp;−&nbsp;stop<br/>to see exit prices
+              entry − stop<br/>× contracts<br/>to see exit prices
             </p>
           )}
         </div>
@@ -993,31 +1031,30 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
   const [newFolderName, setNewFolderName] = useState("");
   const newFolderInputRef = useRef<HTMLInputElement>(null);
 
-  // Load from localStorage once on mount
+  // Load from Supabase once on mount
   useEffect(() => {
-    try {
-      const js = localStorage.getItem("trading-journals");
-      const fs = localStorage.getItem("trading-journal-folders");
-      if (js) setJournals(JSON.parse(js));
-      if (fs) setFolders(JSON.parse(fs));
-    } catch {}
-    setLoaded(true);
+    Promise.all([
+      getData<Journal[]>("trading-journals"),
+      getData<Folder[]>("trading-journal-folders"),
+    ]).then(([js, fs]) => {
+      if (js) setJournals(js);
+      if (fs) setFolders(fs);
+      setLoaded(true);
+    });
   }, []);
 
   // Save — only after initial load to prevent wiping stored data on mount
   useEffect(() => {
     if (!loaded) return;
-    try { localStorage.setItem("trading-journals", JSON.stringify(journals)); } catch {}
+    setData("trading-journals", journals);
   }, [journals, loaded]);
 
   useEffect(() => {
     if (!loaded) return;
-    try { localStorage.setItem("trading-journal-folders", JSON.stringify(folders)); } catch {}
+    setData("trading-journal-folders", folders);
   }, [folders, loaded]);
 
-  useEffect(() => {
-    if (!openId) onMarketChange?.(false);
-  }, [openId]);
+  // Market glow is only reset by the toggle itself, not by navigation
 
   useEffect(() => {
     if (creatingFolder) newFolderInputRef.current?.focus();
@@ -1302,8 +1339,10 @@ function LeaderboardTab({ entries, pendingId, onPendingClear }: { entries: Entry
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    try { const s = localStorage.getItem("trading-leaderboard"); if (s) setBoard(JSON.parse(s)); } catch {}
-    setLoaded(true);
+    getData<LeaderboardEntry[]>("trading-leaderboard").then((v) => {
+      if (v) setBoard(v);
+      setLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -1311,7 +1350,7 @@ function LeaderboardTab({ entries, pendingId, onPendingClear }: { entries: Entry
   }, [pendingId]);
   useEffect(() => {
     if (!loaded) return;
-    try { localStorage.setItem("trading-leaderboard", JSON.stringify(board)); } catch {}
+    setData("trading-leaderboard", board);
   }, [board, loaded]);
 
   const pendingEntry = entries.find((e) => e.id === addingId);
@@ -1426,12 +1465,14 @@ function FocusTracksTab() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    try { const s = localStorage.getItem("trading-focus-tracks"); if (s) { const t = JSON.parse(s); setTracks(t); if (t.length > 0) setCurrentId(t[0].videoId); } } catch {}
-    setLoaded(true);
+    getData<FocusTrack[]>("trading-focus-tracks").then((v) => {
+      if (v) { setTracks(v); if (v.length > 0) setCurrentId(v[0].videoId); }
+      setLoaded(true);
+    });
   }, []);
   useEffect(() => {
     if (!loaded) return;
-    try { localStorage.setItem("trading-focus-tracks", JSON.stringify(tracks)); } catch {}
+    setData("trading-focus-tracks", tracks);
   }, [tracks, loaded]);
 
   const addTrack = async () => {
@@ -1513,12 +1554,14 @@ export default function Home() {
   const [focusMounted, setFocusMounted] = useState(false);
 
   useEffect(() => {
-    try { const s = localStorage.getItem("trading-entries"); if (s) setEntries(JSON.parse(s)); } catch {}
-    setEntriesLoaded(true);
+    getData<Entry[]>("trading-entries").then((v) => {
+      if (v) setEntries(v);
+      setEntriesLoaded(true);
+    });
   }, []);
   useEffect(() => {
     if (!entriesLoaded) return;
-    try { localStorage.setItem("trading-entries", JSON.stringify(entries)); } catch {}
+    setData("trading-entries", entries);
   }, [entries, entriesLoaded]);
 
   useEffect(() => { if (tab === "focus") setFocusMounted(true); }, [tab]);
@@ -1566,7 +1609,7 @@ export default function Home() {
         ))}
       </nav>
 
-      <main className={`bg-[#252740] rounded-xl border p-6 flex-1 transition-all duration-300 ${tab === "journal" && journalMarketOn ? "border-[#00ff88] shadow-[0_0_24px_rgba(0,255,136,0.35)]" : "border-[#3d3f5e]"}`}>
+      <main className={`bg-[#252740] rounded-xl border p-6 flex-1 transition-all duration-300 ${journalMarketOn ? "border-[#00ff88] shadow-[0_0_24px_rgba(0,255,136,0.35)]" : "border-[#3d3f5e]"}`}>
         {tab === "log"     && <LogTab onSave={(e) => setEntries((prev) => [e, ...prev])} />}
         {tab === "entries" && (
           <EntriesTable
