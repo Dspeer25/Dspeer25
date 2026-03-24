@@ -27,8 +27,10 @@ type Entry = {
 type CsvRow = Record<string, string>;
 
 type Goal = { text: string; checked: boolean };
+type Folder = { id: string; name: string; collapsed: boolean };
 type Journal = {
   id: string;
+  folderId?: string;
   date: string;
   goals: [Goal, Goal, Goal];
   marketOn: boolean;
@@ -910,32 +912,87 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   );
 }
 
+// ─── Folder Icon ──────────────────────────────────────────────────────────────
+function FolderIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="text-sky-400 flex-shrink-0">
+      <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+    </svg>
+  );
+}
+
 // ─── Daily Journal Tab ────────────────────────────────────────────────────────
 function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) => void }) {
-  const [journals, setJournals] = useState<Journal[]>(() => {
-    if (typeof window === "undefined") return [];
-    try { const s = localStorage.getItem("trading-journals"); return s ? JSON.parse(s) : []; } catch { return []; }
-  });
+  // Start empty — loaded via useEffect to avoid SSR/hydration wiping localStorage
+  const [journals, setJournals] = useState<Journal[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  // Guard: don't let save effects run until the initial load has completed.
+  // Without this, the save effects fire on mount with [] and wipe localStorage
+  // before the load effect can restore data (fatal in React 18 StrictMode).
+  const [loaded, setLoaded] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
+
+  // Load from localStorage once on mount
+  useEffect(() => {
+    try {
+      const js = localStorage.getItem("trading-journals");
+      const fs = localStorage.getItem("trading-journal-folders");
+      if (js) setJournals(JSON.parse(js));
+      if (fs) setFolders(JSON.parse(fs));
+    } catch {}
+    setLoaded(true);
+  }, []);
+
+  // Save — only after initial load to prevent wiping stored data on mount
+  useEffect(() => {
+    if (!loaded) return;
+    try { localStorage.setItem("trading-journals", JSON.stringify(journals)); } catch {}
+  }, [journals, loaded]);
 
   useEffect(() => {
-    try { localStorage.setItem("trading-journals", JSON.stringify(journals)); } catch {}
-  }, [journals]);
+    if (!loaded) return;
+    try { localStorage.setItem("trading-journal-folders", JSON.stringify(folders)); } catch {}
+  }, [folders, loaded]);
 
   useEffect(() => {
     if (!openId) onMarketChange?.(false);
   }, [openId]);
 
-  const createNew = () => {
-    const j: Journal = {
-      id: crypto.randomUUID(),
-      date: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
-      goals: [{ text: "", checked: false }, { text: "", checked: false }, { text: "", checked: false }],
-      marketOn: false,
-      observations: "",
-    };
+  useEffect(() => {
+    if (creatingFolder) newFolderInputRef.current?.focus();
+  }, [creatingFolder]);
+
+  const makeJournal = (folderId?: string): Journal => ({
+    id: crypto.randomUUID(),
+    folderId,
+    date: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    goals: [{ text: "", checked: false }, { text: "", checked: false }, { text: "", checked: false }],
+    marketOn: false,
+    observations: "",
+  });
+
+  const createJournal = (folderId?: string) => {
+    const j = makeJournal(folderId);
     setJournals((prev) => [j, ...prev]);
     setOpenId(j.id);
+  };
+
+  const confirmFolder = () => {
+    const name = newFolderName.trim();
+    if (!name) { setCreatingFolder(false); setNewFolderName(""); return; }
+    setFolders((prev) => [{ id: crypto.randomUUID(), name, collapsed: false }, ...prev]);
+    setCreatingFolder(false); setNewFolderName("");
+  };
+
+  const toggleFolder = (id: string) =>
+    setFolders((prev) => prev.map((f) => f.id === id ? { ...f, collapsed: !f.collapsed } : f));
+
+  const deleteFolder = (id: string) => {
+    setFolders((prev) => prev.filter((f) => f.id !== id));
+    setJournals((prev) => prev.map((j) => j.folderId === id ? { ...j, folderId: undefined } : j));
   };
 
   const updateJournal = (updated: Journal) =>
@@ -947,7 +1004,6 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
   };
 
   const open = journals.find((j) => j.id === openId);
-
   if (open) {
     return (
       <JournalSheet
@@ -960,27 +1016,57 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
   }
 
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "");
+  const unfiled = journals.filter((j) => !j.folderId);
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-2xl font-extrabold tracking-tight text-white">
           Play to <span className="text-indigo-400">Win</span>
         </h2>
-        <button onClick={createNew}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
-          <span className="text-lg leading-none">+</span> New Journal
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setCreatingFolder(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2d2f45] border border-[#3d3f5e] hover:border-sky-400 text-slate-300 text-sm font-semibold transition-colors">
+            <FolderIcon /> New Folder
+          </button>
+          <button onClick={() => createJournal()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
+            <span className="text-lg leading-none">+</span> New Journal
+          </button>
+        </div>
       </div>
 
-      {journals.length === 0 ? (
+      {creatingFolder && (
+        <div className="flex items-center gap-2 bg-[#1e2035] border border-sky-500 rounded-xl px-4 py-3">
+          <FolderIcon />
+          <input ref={newFolderInputRef} type="text" value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") confirmFolder();
+              if (e.key === "Escape") { setCreatingFolder(false); setNewFolderName(""); }
+            }}
+            placeholder="Folder name (e.g. Week of March 17)..."
+            className="flex-1 bg-transparent text-slate-100 text-sm focus:outline-none placeholder-slate-600" />
+          <button onClick={confirmFolder}
+            className="px-3 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors">Create</button>
+          <button onClick={() => { setCreatingFolder(false); setNewFolderName(""); }}
+            className="text-slate-500 hover:text-slate-300 text-xs transition-colors">Cancel</button>
+        </div>
+      )}
+
+      {folders.length === 0 && journals.length === 0 && !creatingFolder && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <div className="text-5xl text-slate-700">📓</div>
-          <p className="text-slate-500 text-sm">No journals yet. Hit <strong className="text-slate-400">+ New Journal</strong> to create your first one.</p>
+          <p className="text-slate-500 text-sm text-center">
+            No journals yet.<br />Hit <strong className="text-slate-400">+ New Journal</strong> to start, or <strong className="text-slate-400">New Folder</strong> to organize by week.
+          </p>
         </div>
-      ) : (
+      )}
+
+      {unfiled.length > 0 && (
         <div className="space-y-2">
-          {journals.map((j) => (
+          <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Unfiled</p>
+          {unfiled.map((j) => (
             <div key={j.id}
               className="flex items-center justify-between bg-[#1e2035] border border-[#3d3f5e] rounded-xl px-5 py-4 cursor-pointer hover:border-indigo-500 transition-all group"
               onClick={() => setOpenId(j.id)}>
@@ -994,14 +1080,66 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
               <div className="flex items-center gap-3">
                 <span className="text-slate-500 text-xs group-hover:text-indigo-400 transition-colors">Open →</span>
                 <button onClick={(e) => { e.stopPropagation(); deleteJournal(j.id); }}
-                  className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">
-                  ✕
-                </button>
+                  className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {folders.map((folder) => {
+        const folderJournals = journals.filter((j) => j.folderId === folder.id);
+        return (
+          <div key={folder.id} className="border border-[#3d3f5e] rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#2d2f45] cursor-pointer select-none"
+              onClick={() => toggleFolder(folder.id)}>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 text-xs transition-transform duration-150"
+                  style={{ display: "inline-block", transform: folder.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>▾</span>
+                <FolderIcon />
+                <span className="text-sm font-semibold text-slate-200">{folder.name}</span>
+                <span className="text-xs text-slate-500">{folderJournals.length} journal{folderJournals.length !== 1 ? "s" : ""}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={(e) => { e.stopPropagation(); createJournal(folder.id); }}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition-colors">
+                  + Add Journal
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}
+                  className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
+              </div>
+            </div>
+            {!folder.collapsed && (
+              <div className="p-3 space-y-2 bg-[#1a1c30]">
+                {folderJournals.length === 0 ? (
+                  <p className="text-slate-600 text-xs text-center py-3">
+                    No journals yet — hit <strong className="text-slate-500">+ Add Journal</strong> above.
+                  </p>
+                ) : (
+                  folderJournals.map((j) => (
+                    <div key={j.id}
+                      className="flex items-center justify-between bg-[#1e2035] border border-[#3d3f5e] rounded-xl px-5 py-4 cursor-pointer hover:border-indigo-500 transition-all group"
+                      onClick={() => setOpenId(j.id)}>
+                      <div>
+                        <p className="text-slate-100 font-semibold text-sm">{j.date || "Untitled"}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">
+                          {j.goals.filter((g) => g.checked).length}/3 goals ·{" "}
+                          {j.observations ? `${stripHtml(j.observations).slice(0, 60)}${stripHtml(j.observations).length > 60 ? "…" : ""}` : "No notes yet"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-slate-500 text-xs group-hover:text-indigo-400 transition-colors">Open →</span>
+                        <button onClick={(e) => { e.stopPropagation(); deleteJournal(j.id); }}
+                          className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
