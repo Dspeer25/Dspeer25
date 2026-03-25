@@ -38,6 +38,7 @@ type Journal = {
   marketOn: boolean;
   observations: string;
   grade?: string;
+  review?: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -819,6 +820,15 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
       editorInitId.current = journal.id;
     }
   }, [journal.id]);
+
+  const reviewRef = useRef<HTMLDivElement>(null);
+  const reviewInitId = useRef<string | null>(null);
+  useEffect(() => {
+    if (reviewRef.current && reviewInitId.current !== journal.id) {
+      reviewRef.current.innerHTML = journal.review || "";
+      reviewInitId.current = journal.id;
+    }
+  }, [journal.id]);
   const execCmd = (cmd: string, val?: string) => {
     editorRef.current?.focus();
     document.execCommand(cmd, false, val);
@@ -1041,6 +1051,50 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
             <div><span className="text-orange-400 font-semibold">D</span> — Poor execution, needs review</div>
             <div><span className="text-red-400 font-semibold">F</span> — Poor execution on trades outside of strategy</div>
           </div>
+        </div>
+        <div className="space-y-0">
+          <h3 className="text-sm font-semibold text-slate-200 mb-1">Review Notes</h3>
+          <div className="flex flex-wrap gap-1 p-2 bg-[#2d2f45] border border-b-0 border-[#3d3f5e] rounded-t-xl">
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }}
+              className="px-2 py-1 rounded text-xs font-bold text-slate-200 hover:bg-[#3d3f5e] transition-colors">B</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }}
+              className="px-2 py-1 rounded text-xs italic text-slate-200 hover:bg-[#3d3f5e] transition-colors">I</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
+              className="px-2 py-1 rounded text-xs underline text-slate-200 hover:bg-[#3d3f5e] transition-colors">U</button>
+            <div className="w-px bg-[#3d3f5e] mx-1" />
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }}
+              className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align left">≡←</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }}
+              className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Center">≡</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }}
+              className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align right">→≡</button>
+            <div className="w-px bg-[#3d3f5e] mx-1" />
+            {["#f87171","#34d399","#60a5fa","#fbbf24","#e879f9","#ffffff"].map((color) => (
+              <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("foreColor", color); }}
+                className="w-5 h-5 rounded-full border border-[#3d3f5e] flex-shrink-0"
+                style={{ backgroundColor: color }} />
+            ))}
+            <div className="w-px bg-[#3d3f5e] mx-1" />
+            <select defaultValue="" onMouseDown={(e) => e.stopPropagation()}
+              onChange={(e) => { execCmd("fontSize", e.target.value); e.target.value = ""; }}
+              className="bg-[#1e2035] border border-[#3d3f5e] rounded text-xs text-slate-300 px-1 focus:outline-none cursor-pointer">
+              <option value="" disabled>Size</option>
+              <option value="1">XS</option>
+              <option value="2">S</option>
+              <option value="3">M</option>
+              <option value="4">L</option>
+              <option value="5">XL</option>
+              <option value="6">2XL</option>
+            </select>
+          </div>
+          <div
+            ref={reviewRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={() => { if (reviewRef.current) set("review", reviewRef.current.innerHTML); }}
+            data-placeholder="Notes on your grade, what went well, what to improve..."
+            className="w-full bg-[#1e2035] border border-[#3d3f5e] rounded-b-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-32 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-600"
+          />
         </div>
       </div>
     </div>
@@ -1505,7 +1559,7 @@ function FocusTracksTab() {
 
   useEffect(() => {
     getData<FocusTrack[]>("trading-focus-tracks").then((v) => {
-      if (v) { setTracks(v); if (v.length > 0) setCurrentId(v[0].videoId); }
+      if (v) setTracks(v);
       setLoaded(true);
     });
   }, []);
