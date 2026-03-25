@@ -9,7 +9,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setSettings(getSettings());
+    getSettings().then(setSettings);
   }, []);
 
   const save = (updates: Partial<UserSettings>) => {
@@ -23,20 +23,13 @@ export default function Settings() {
 
   const addField = () => {
     if (!settings) return;
-    const newField: CustomField = {
-      id: generateId(),
-      label: 'New Field',
-      type: 'select',
-      options: ['Option 1', 'Option 2'],
-      description: '',
-    };
+    const newField: CustomField = { id: generateId(), label: 'New Field', type: 'select', options: ['Option 1', 'Option 2'], description: '' };
     save({ customFields: [...settings.customFields, newField] });
   };
 
   const updateField = (id: string, updates: Partial<CustomField>) => {
     if (!settings) return;
-    const fields = settings.customFields.map((f) => (f.id === id ? { ...f, ...updates } : f));
-    save({ customFields: fields });
+    save({ customFields: settings.customFields.map((f) => (f.id === id ? { ...f, ...updates } : f)) });
   };
 
   const removeField = (id: string) => {
@@ -64,11 +57,10 @@ export default function Settings() {
     if (!settings) return;
     const field = settings.customFields.find((f) => f.id === fieldId);
     if (!field?.options) return;
-    const options = field.options.filter((_, i) => i !== index);
-    updateField(fieldId, { options });
+    updateField(fieldId, { options: field.options.filter((_, i) => i !== index) });
   };
 
-  if (!settings) return null;
+  if (!settings) return <div className="text-text-muted py-8 text-center">Loading...</div>;
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -77,22 +69,15 @@ export default function Settings() {
         {saved && <span className="text-xs text-accent-green">Saved!</span>}
       </div>
 
-      {/* Risk Management */}
       <section className="bg-bg-secondary border border-border-primary rounded-lg p-4">
         <h3 className="text-sm font-medium mb-3">Risk Management</h3>
         <div>
           <label className="block text-xs text-text-muted mb-1">Max Daily Loss ($)</label>
-          <input
-            type="number"
-            value={settings.maxDailyLoss}
-            onChange={(e) => save({ maxDailyLoss: parseFloat(e.target.value) || 0 })}
-            className="w-40 text-sm"
-          />
+          <input type="number" value={settings.maxDailyLoss} onChange={(e) => save({ maxDailyLoss: parseFloat(e.target.value) || 0 })} className="w-40 text-sm" />
           <p className="text-xs text-text-muted mt-1">Trading locks when daily loss exceeds this amount.</p>
         </div>
       </section>
 
-      {/* Grade Definitions */}
       <section className="bg-bg-secondary border border-border-primary rounded-lg p-4">
         <h3 className="text-sm font-medium mb-3">Grade Definitions</h3>
         <div className="space-y-3">
@@ -109,10 +94,7 @@ export default function Settings() {
                 type="text"
                 value={def.description}
                 onChange={(e) => {
-                  const defs = settings.gradeDefinitions.map((d) =>
-                    d.grade === def.grade ? { ...d, description: e.target.value } : d
-                  );
-                  save({ gradeDefinitions: defs });
+                  save({ gradeDefinitions: settings.gradeDefinitions.map((d) => d.grade === def.grade ? { ...d, description: e.target.value } : d) });
                 }}
                 className="flex-1 text-sm"
               />
@@ -121,53 +103,29 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* Custom Fields */}
       <section className="bg-bg-secondary border border-border-primary rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium">Custom Fields</h3>
-          <button onClick={addField} className="text-xs px-3 py-1 bg-accent-blue rounded text-white hover:bg-blue-600">
-            + Add Field
-          </button>
+          <button onClick={addField} className="text-xs px-3 py-1 bg-accent-blue rounded text-white hover:bg-blue-600">+ Add Field</button>
         </div>
         <div className="space-y-4">
           {settings.customFields.map((field) => (
             <div key={field.id} className="border border-border-primary rounded-lg p-3 bg-bg-primary">
               <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={field.label}
-                  onChange={(e) => updateField(field.id, { label: e.target.value })}
-                  className="flex-1 text-sm font-medium"
-                  placeholder="Field name"
-                />
-                <select
-                  value={field.type}
-                  onChange={(e) => updateField(field.id, { type: e.target.value as 'select' | 'text' })}
-                  className="text-xs py-1.5"
-                >
+                <input type="text" value={field.label} onChange={(e) => updateField(field.id, { label: e.target.value })} className="flex-1 text-sm font-medium" placeholder="Field name" />
+                <select value={field.type} onChange={(e) => updateField(field.id, { type: e.target.value as 'select' | 'text' })} className="text-xs py-1.5">
                   <option value="select">Dropdown</option>
                   <option value="text">Text</option>
                 </select>
-                <button onClick={() => removeField(field.id)} className="text-text-muted hover:text-accent-red text-sm px-1">✕</button>
+                <button onClick={() => removeField(field.id)} className="text-text-muted hover:text-accent-red text-sm px-1">{'\u2715'}</button>
               </div>
-              <input
-                type="text"
-                value={field.description || ''}
-                onChange={(e) => updateField(field.id, { description: e.target.value })}
-                className="w-full text-xs mb-2"
-                placeholder="Description (shows on hover)"
-              />
+              <input type="text" value={field.description || ''} onChange={(e) => updateField(field.id, { description: e.target.value })} className="w-full text-xs mb-2" placeholder="Description (shows on hover)" />
               {field.type === 'select' && (
                 <div className="space-y-1">
                   {field.options?.map((opt, i) => (
                     <div key={i} className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        value={opt}
-                        onChange={(e) => updateOption(field.id, i, e.target.value)}
-                        className="flex-1 text-xs py-1"
-                      />
-                      <button onClick={() => removeOption(field.id, i)} className="text-text-muted hover:text-accent-red text-xs px-1">✕</button>
+                      <input type="text" value={opt} onChange={(e) => updateOption(field.id, i, e.target.value)} className="flex-1 text-xs py-1" />
+                      <button onClick={() => removeOption(field.id, i)} className="text-text-muted hover:text-accent-red text-xs px-1">{'\u2715'}</button>
                     </div>
                   ))}
                   <button onClick={() => addOption(field.id)} className="text-xs text-accent-blue hover:text-blue-400">+ Add Option</button>
@@ -181,16 +139,9 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* Focus Video */}
       <section className="bg-bg-secondary border border-border-primary rounded-lg p-4">
         <h3 className="text-sm font-medium mb-3">Focus Video URL</h3>
-        <input
-          type="text"
-          value={settings.focusVideoUrl}
-          onChange={(e) => save({ focusVideoUrl: e.target.value })}
-          placeholder="https://www.youtube.com/embed/..."
-          className="w-full text-sm"
-        />
+        <input type="text" value={settings.focusVideoUrl} onChange={(e) => save({ focusVideoUrl: e.target.value })} placeholder="https://www.youtube.com/embed/..." className="w-full text-sm" />
         <p className="text-xs text-text-muted mt-1">YouTube embed URL for the Focus tab.</p>
       </section>
     </div>

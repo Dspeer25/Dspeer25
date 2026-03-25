@@ -7,14 +7,13 @@ export default function RiskOverlay() {
   const [locked, setLocked] = useState(false);
 
   useEffect(() => {
-    const check = () => {
+    const check = async () => {
       const today = new Date().toISOString().split('T')[0];
-      const pnl = getDailyPnl(today);
-      const settings = getSettings();
+      const [pnl, settings] = await Promise.all([getDailyPnl(today), getSettings()]);
       setLocked(pnl <= -settings.maxDailyLoss && settings.maxDailyLoss > 0);
     };
     check();
-    const interval = setInterval(check, 5000);
+    const interval = setInterval(check, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -26,10 +25,7 @@ export default function RiskOverlay() {
         <div className="text-6xl font-black text-accent-red mb-4">LOCKED</div>
         <p className="text-text-secondary text-lg mb-2">Max daily loss reached.</p>
         <p className="text-text-muted text-sm">Step away. Review your trades tomorrow.</p>
-        <button
-          onClick={() => setLocked(false)}
-          className="mt-8 text-xs text-text-muted hover:text-text-secondary underline"
-        >
+        <button onClick={() => setLocked(false)} className="mt-8 text-xs text-text-muted hover:text-text-secondary underline">
           Override (not recommended)
         </button>
       </div>

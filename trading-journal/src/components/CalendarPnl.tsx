@@ -6,22 +6,22 @@ import { getTrades } from '@/lib/store';
 
 export default function CalendarPnl({ refreshKey }: { refreshKey: number }) {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
   useEffect(() => {
-    setTrades(getTrades());
+    setLoading(true);
+    getTrades().then((t) => { setTrades(t); setLoading(false); });
   }, [refreshKey]);
 
   const [year, monthNum] = month.split('-').map(Number);
   const firstDay = new Date(year, monthNum - 1, 1).getDay();
   const daysInMonth = new Date(year, monthNum, 0).getDate();
 
-  const monthTrades = useMemo(() => {
-    return trades.filter((t) => t.date.startsWith(month));
-  }, [trades, month]);
+  const monthTrades = useMemo(() => trades.filter((t) => t.date.startsWith(month)), [trades, month]);
 
   const dailyData = useMemo(() => {
     const data: Record<number, { pnl: number; count: number }> = {};
@@ -53,11 +53,12 @@ export default function CalendarPnl({ refreshKey }: { refreshKey: number }) {
 
   const monthName = new Date(year, monthNum - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
+  if (loading) return <div className="text-text-muted py-8 text-center">Loading...</div>;
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-6">Calendar</h2>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
           <div className="text-xs text-text-muted mb-1">Monthly PnL</div>
@@ -75,14 +76,12 @@ export default function CalendarPnl({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
 
-      {/* Month Navigation */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="text-text-secondary hover:text-text-primary px-3 py-1 rounded bg-bg-secondary">←</button>
+        <button onClick={prevMonth} className="text-text-secondary hover:text-text-primary px-3 py-1 rounded bg-bg-secondary">&larr;</button>
         <span className="font-medium">{monthName}</span>
-        <button onClick={nextMonth} className="text-text-secondary hover:text-text-primary px-3 py-1 rounded bg-bg-secondary">→</button>
+        <button onClick={nextMonth} className="text-text-secondary hover:text-text-primary px-3 py-1 rounded bg-bg-secondary">&rarr;</button>
       </div>
 
-      {/* Calendar Grid */}
       <div className="grid grid-cols-7 gap-1.5">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
           <div key={d} className="text-center text-xs text-text-muted py-2 font-medium">{d}</div>

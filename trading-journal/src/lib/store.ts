@@ -1,10 +1,104 @@
 import { Trade, UserSettings, DailyJournalEntry } from './types';
 
-const KEYS = {
-  trades: 'tj_trades',
-  settings: 'tj_settings',
-  journal: 'tj_journal',
-};
+// ─── Trades ───
+
+export async function getTrades(): Promise<Trade[]> {
+  const res = await fetch('/api/trades');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map((row: Record<string, unknown>) => ({
+    id: row.id,
+    date: (row.date as string)?.split('T')[0] || row.date,
+    ticker: row.ticker,
+    time: row.time,
+    tradeType: row.trade_type,
+    initialRisk: Number(row.initial_risk),
+    result: row.result,
+    dollarPnl: Number(row.dollar_pnl),
+    rr: Number(row.rr),
+    notes: row.notes || '',
+    starred: row.starred || false,
+    grade: row.grade || '',
+    customFields: (row.custom_fields as Record<string, string>) || {},
+  })) as Trade[];
+}
+
+export async function addTrade(trade: Omit<Trade, 'id'>): Promise<Trade | null> {
+  const res = await fetch('/api/trades', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(trade),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function updateTrade(trade: Trade): Promise<void> {
+  await fetch('/api/trades', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(trade),
+  });
+}
+
+export async function deleteTrade(id: string): Promise<void> {
+  await fetch('/api/trades', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+}
+
+// ─── Settings ───
+
+export async function getSettings(): Promise<UserSettings> {
+  const res = await fetch('/api/settings');
+  if (!res.ok) return defaultSettings;
+  return res.json();
+}
+
+export async function saveSettings(settings: UserSettings): Promise<void> {
+  await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+}
+
+// ─── Journal ───
+
+export async function getJournalEntry(date: string): Promise<DailyJournalEntry> {
+  const res = await fetch(`/api/journal?date=${date}`);
+  if (!res.ok) return { date, observations: '', endOfDayReview: '', weeklyGoals: [] };
+  const data = await res.json();
+  return {
+    date: data.date?.split('T')[0] || date,
+    observations: data.observations || '',
+    endOfDayReview: data.end_of_day_review || '',
+    weeklyGoals: data.weekly_goals || [],
+  };
+}
+
+export async function saveJournalEntry(entry: DailyJournalEntry): Promise<void> {
+  await fetch('/api/journal', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry),
+  });
+}
+
+// ─── Helpers ───
+
+export async function getDailyPnl(date: string): Promise<number> {
+  const trades = await getTrades();
+  return trades
+    .filter((t) => t.date === date)
+    .reduce((sum, t) => sum + t.dollarPnl, 0);
+}
+
+export function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
 
 const defaultSettings: UserSettings = {
   customFields: [
@@ -22,70 +116,3 @@ const defaultSettings: UserSettings = {
   maxDailyLoss: 500,
   focusVideoUrl: '',
 };
-
-function get<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function set<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-export function getTrades(): Trade[] {
-  return get<Trade[]>(KEYS.trades, []);
-}
-
-export function saveTrades(trades: Trade[]): void {
-  set(KEYS.trades, trades);
-}
-
-export function addTrade(trade: Trade): void {
-  const trades = getTrades();
-  trades.unshift(trade);
-  saveTrades(trades);
-}
-
-export function updateTrade(updated: Trade): void {
-  const trades = getTrades().map((t) => (t.id === updated.id ? updated : t));
-  saveTrades(trades);
-}
-
-export function deleteTrade(id: string): void {
-  saveTrades(getTrades().filter((t) => t.id !== id));
-}
-
-export function getSettings(): UserSettings {
-  return get<UserSettings>(KEYS.settings, defaultSettings);
-}
-
-export function saveSettings(settings: UserSettings): void {
-  set(KEYS.settings, settings);
-}
-
-export function getJournalEntry(date: string): DailyJournalEntry {
-  const all = get<Record<string, DailyJournalEntry>>(KEYS.journal, {});
-  return all[date] || { date, observations: '', endOfDayReview: '', weeklyGoals: [] };
-}
-
-export function saveJournalEntry(entry: DailyJournalEntry): void {
-  const all = get<Record<string, DailyJournalEntry>>(KEYS.journal, {});
-  all[entry.date] = entry;
-  set(KEYS.journal, all);
-}
-
-export function getDailyPnl(date: string): number {
-  return getTrades()
-    .filter((t) => t.date === date)
-    .reduce((sum, t) => sum + t.dollarPnl, 0);
-}
-
-export function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}

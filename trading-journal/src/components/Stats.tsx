@@ -17,14 +17,16 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [groupBy, setGroupBy] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTrades(getTrades());
-    const s = getSettings();
-    setSettings(s);
-    if (s.customFields.length > 0 && !groupBy) {
-      setGroupBy(s.customFields[0].id);
-    }
+    setLoading(true);
+    Promise.all([getTrades(), getSettings()]).then(([t, s]) => {
+      setTrades(t);
+      setSettings(s);
+      if (s.customFields.length > 0 && !groupBy) setGroupBy(s.customFields[0].id);
+      setLoading(false);
+    });
   }, [refreshKey]);
 
   const basicStats = useMemo(() => {
@@ -38,17 +40,12 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
     const avgLoss = losses.length > 0 ? losses.reduce((s, t) => s + t.dollarPnl, 0) / losses.length : 0;
     const profitFactor = Math.abs(avgLoss) > 0 ? avgWin / Math.abs(avgLoss) : 0;
     const largestWin = wins.length > 0 ? Math.max(...wins.map((t) => t.dollarPnl)) : 0;
-    const largestLoss = losses.length > 0 ? Math.min(...losses.map((t) => t.dollarPnl)) : 0;
 
-    return { totalPnl, winRate, avgR, avgWin, avgLoss, profitFactor, largestWin, largestLoss, totalTrades: trades.length };
+    return { totalPnl, winRate, avgR, avgWin, avgLoss, profitFactor, largestWin, totalTrades: trades.length };
   }, [trades]);
 
-  // Grouped stats
   const groupedStats = useMemo(() => {
     if (!groupBy || !settings) return [];
-    const field = settings.customFields.find((f) => f.id === groupBy);
-    if (!field) return [];
-
     const groups: Record<string, Trade[]> = {};
     trades.forEach((t) => {
       const val = t.customFields[groupBy] || 'Unset';
@@ -64,12 +61,11 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
     }).sort((a, b) => b.totalPnl - a.totalPnl);
   }, [trades, groupBy, settings]);
 
-  if (!settings) return null;
+  if (loading || !settings) return <div className="text-text-muted py-8 text-center">Loading...</div>;
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-6">Stats</h2>
-
       {basicStats ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
@@ -83,7 +79,6 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
             <StatCard label="Largest Win" value={`$${basicStats.largestWin.toFixed(2)}`} color="text-accent-green" />
           </div>
 
-          {/* Grouped Stats */}
           {settings.customFields.length > 0 && (
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -94,7 +89,6 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
                   ))}
                 </select>
               </div>
-
               <div className="space-y-2">
                 {groupedStats.map((group) => (
                   <div key={group.name} className="bg-bg-secondary border border-border-primary rounded-lg p-4 flex items-center justify-between">
@@ -105,9 +99,7 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
                     <div className="flex gap-6 text-sm">
                       <div className="text-center">
                         <div className="text-xs text-text-muted">Win Rate</div>
-                        <div className={`font-bold ${group.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'}`}>
-                          {group.winRate.toFixed(1)}%
-                        </div>
+                        <div className={`font-bold ${group.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'}`}>{group.winRate.toFixed(1)}%</div>
                       </div>
                       <div className="text-center">
                         <div className="text-xs text-text-muted">Avg R</div>
@@ -122,9 +114,7 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
                     </div>
                   </div>
                 ))}
-                {groupedStats.length === 0 && (
-                  <div className="text-center py-8 text-text-muted">No data yet</div>
-                )}
+                {groupedStats.length === 0 && <div className="text-center py-8 text-text-muted">No data yet</div>}
               </div>
             </div>
           )}

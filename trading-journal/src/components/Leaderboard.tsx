@@ -6,12 +6,13 @@ import { getTrades } from '@/lib/store';
 
 export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTrades(getTrades());
+    setLoading(true);
+    getTrades().then((t) => { setTrades(t); setLoading(false); });
   }, [refreshKey]);
 
-  // Weekly performance
   const weeklyData = useMemo(() => {
     const weeks: Record<string, { pnl: number; trades: number; wins: number }> = {};
     trades.forEach((t) => {
@@ -29,7 +30,6 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
       .sort((a, b) => b.week.localeCompare(a.week));
   }, [trades]);
 
-  // Monthly performance
   const monthlyData = useMemo(() => {
     const months: Record<string, { pnl: number; trades: number; wins: number }> = {};
     trades.forEach((t) => {
@@ -44,12 +44,9 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
       .sort((a, b) => b.month.localeCompare(a.month));
   }, [trades]);
 
-  // Best/worst days
   const dailyData = useMemo(() => {
     const days: Record<string, number> = {};
-    trades.forEach((t) => {
-      days[t.date] = (days[t.date] || 0) + t.dollarPnl;
-    });
+    trades.forEach((t) => { days[t.date] = (days[t.date] || 0) + t.dollarPnl; });
     const sorted = Object.entries(days).map(([date, pnl]) => ({ date, pnl }));
     return {
       best: [...sorted].sort((a, b) => b.pnl - a.pnl).slice(0, 5),
@@ -57,7 +54,6 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
     };
   }, [trades]);
 
-  // Streak
   const streak = useMemo(() => {
     const days = Array.from(new Set(trades.map((t) => t.date))).sort().reverse();
     let current = 0;
@@ -68,6 +64,8 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
     }
     return current;
   }, [trades]);
+
+  if (loading) return <div className="text-text-muted py-8 text-center">Loading...</div>;
 
   if (trades.length === 0) {
     return (
@@ -82,7 +80,6 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Performance</h2>
 
-      {/* Streak & quick stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
           <div className="text-xs text-text-muted">Green Day Streak</div>
@@ -90,15 +87,11 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
         </div>
         <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
           <div className="text-xs text-text-muted">Best Day</div>
-          <div className="text-2xl font-bold text-accent-green">
-            +${dailyData.best[0]?.pnl.toFixed(0) || '0'}
-          </div>
+          <div className="text-2xl font-bold text-accent-green">+${dailyData.best[0]?.pnl.toFixed(0) || '0'}</div>
         </div>
         <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
           <div className="text-xs text-text-muted">Worst Day</div>
-          <div className="text-2xl font-bold text-accent-red">
-            ${dailyData.worst[0]?.pnl.toFixed(0) || '0'}
-          </div>
+          <div className="text-2xl font-bold text-accent-red">${dailyData.worst[0]?.pnl.toFixed(0) || '0'}</div>
         </div>
         <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
           <div className="text-xs text-text-muted">Trading Days</div>
@@ -106,7 +99,6 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
 
-      {/* Monthly Performance */}
       <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
         <h3 className="text-sm font-medium mb-3">Monthly Performance</h3>
         <div className="space-y-2">
@@ -124,7 +116,6 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
 
-      {/* Weekly Performance */}
       <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
         <h3 className="text-sm font-medium mb-3">Weekly Performance</h3>
         <div className="space-y-2">
@@ -135,10 +126,7 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
               <div key={w.week} className="flex items-center gap-3">
                 <div className="w-24 text-xs text-text-muted shrink-0">{w.week}</div>
                 <div className="flex-1 h-6 bg-bg-primary rounded overflow-hidden relative">
-                  <div
-                    className={`h-full rounded ${w.pnl >= 0 ? 'bg-accent-green/30' : 'bg-accent-red/30'}`}
-                    style={{ width: `${barWidth}%` }}
-                  />
+                  <div className={`h-full rounded ${w.pnl >= 0 ? 'bg-accent-green/30' : 'bg-accent-red/30'}`} style={{ width: `${barWidth}%` }} />
                   <span className={`absolute inset-0 flex items-center px-2 text-xs font-medium ${w.pnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
                     {w.pnl >= 0 ? '+' : ''}${w.pnl.toFixed(0)}
                   </span>
@@ -150,7 +138,6 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
 
-      {/* Top Days */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
           <h3 className="text-sm font-medium mb-3 text-accent-green">Best Days</h3>

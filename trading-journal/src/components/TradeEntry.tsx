@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trade, UserSettings } from '@/lib/types';
-import { addTrade, getSettings, generateId } from '@/lib/store';
+import { addTrade, getSettings } from '@/lib/store';
 
 function InfoIcon({ text }: { text: string }) {
   return (
@@ -15,6 +15,7 @@ function InfoIcon({ text }: { text: string }) {
 
 export default function TradeEntry({ onSaved }: { onSaved: () => void }) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     ticker: '',
@@ -30,7 +31,7 @@ export default function TradeEntry({ onSaved }: { onSaved: () => void }) {
   });
 
   useEffect(() => {
-    setSettings(getSettings());
+    getSettings().then(setSettings);
   }, []);
 
   const update = (key: string, value: string | number) => {
@@ -44,12 +45,12 @@ export default function TradeEntry({ onSaved }: { onSaved: () => void }) {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.ticker || !form.result) return;
+    if (!form.ticker || !form.result || saving) return;
 
-    const trade: Trade = {
-      id: generateId(),
+    setSaving(true);
+    await addTrade({
       date: form.date,
       ticker: form.ticker.toUpperCase(),
       time: form.time,
@@ -62,9 +63,8 @@ export default function TradeEntry({ onSaved }: { onSaved: () => void }) {
       starred: false,
       grade: form.grade,
       customFields: form.customFields,
-    };
+    });
 
-    addTrade(trade);
     setForm({
       date: form.date,
       ticker: '',
@@ -78,6 +78,7 @@ export default function TradeEntry({ onSaved }: { onSaved: () => void }) {
       grade: '',
       customFields: {},
     });
+    setSaving(false);
     onSaved();
   };
 
@@ -269,9 +270,10 @@ export default function TradeEntry({ onSaved }: { onSaved: () => void }) {
 
         <button
           type="submit"
-          className="w-full bg-accent-blue hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium transition-colors"
+          disabled={saving}
+          className="w-full bg-accent-blue hover:bg-blue-600 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium transition-colors"
         >
-          Log Trade
+          {saving ? 'Saving...' : 'Log Trade'}
         </button>
       </form>
     </div>

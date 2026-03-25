@@ -9,10 +9,15 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [filter, setFilter] = useState({ ticker: '', result: '', tradeType: '', customField: '', customValue: '' });
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTrades(getTrades());
-    setSettings(getSettings());
+    setLoading(true);
+    Promise.all([getTrades(), getSettings()]).then(([t, s]) => {
+      setTrades(t);
+      setSettings(s);
+      setLoading(false);
+    });
   }, [refreshKey]);
 
   const filtered = useMemo(() => {
@@ -27,18 +32,17 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
     });
   }, [trades, filter]);
 
-  const toggleStar = (trade: Trade) => {
+  const toggleStar = async (trade: Trade) => {
     const updated = { ...trade, starred: !trade.starred };
-    updateTrade(updated);
-    setTrades(getTrades());
+    await updateTrade(updated);
+    setTrades(await getTrades());
   };
 
-  const handleDelete = (id: string) => {
-    deleteTrade(id);
-    setTrades(getTrades());
+  const handleDelete = async (id: string) => {
+    await deleteTrade(id);
+    setTrades(await getTrades());
   };
 
-  // Calendar grouping
   const calendarData = useMemo(() => {
     const grouped: Record<string, Trade[]> = {};
     filtered.forEach((t) => {
@@ -54,7 +58,7 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
     return dates[dates.length - 1].slice(0, 7);
   }, [calendarData]);
 
-  if (!settings) return null;
+  if (loading || !settings) return <div className="text-text-muted py-8 text-center">Loading...</div>;
 
   return (
     <div>
@@ -75,7 +79,6 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="text"
@@ -135,7 +138,7 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
                 <tr key={trade.id} className="border-b border-border-primary/50 hover:bg-bg-secondary/50 transition-colors">
                   <td className="py-2 px-2">
                     <button onClick={() => toggleStar(trade)} className={`text-sm ${trade.starred ? 'text-accent-yellow' : 'text-text-muted hover:text-text-secondary'}`}>
-                      {trade.starred ? '★' : '☆'}
+                      {trade.starred ? '\u2605' : '\u2606'}
                     </button>
                   </td>
                   <td className="py-2 px-2 text-text-secondary">{trade.date}</td>
@@ -146,7 +149,7 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
                     </span>
                   </td>
                   {settings.customFields.map((f) => (
-                    <td key={f.id} className="py-2 px-2 text-text-secondary hidden lg:table-cell">{trade.customFields[f.id] || '—'}</td>
+                    <td key={f.id} className="py-2 px-2 text-text-secondary hidden lg:table-cell">{trade.customFields[f.id] || '\u2014'}</td>
                   ))}
                   <td className="py-2 px-2 text-text-secondary">${trade.initialRisk}</td>
                   <td className="py-2 px-2">
@@ -160,9 +163,9 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
                     {trade.dollarPnl >= 0 ? '+' : ''}{trade.dollarPnl.toFixed(2)}
                   </td>
                   <td className="py-2 px-2 text-right text-text-secondary">{trade.rr.toFixed(1)}R</td>
-                  <td className="py-2 px-2 text-center text-xs font-bold">{trade.grade || '—'}</td>
+                  <td className="py-2 px-2 text-center text-xs font-bold">{trade.grade || '\u2014'}</td>
                   <td className="py-2 px-2">
-                    <button onClick={() => handleDelete(trade.id)} className="text-text-muted hover:text-accent-red text-xs">✕</button>
+                    <button onClick={() => handleDelete(trade.id)} className="text-text-muted hover:text-accent-red text-xs">\u2715</button>
                   </td>
                 </tr>
               ))}
@@ -173,10 +176,7 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
           )}
         </div>
       ) : (
-        /* Calendar view of entries */
-        <div>
-          <EntriesCalendar calendarData={calendarData} month={calendarMonth} />
-        </div>
+        <EntriesCalendar calendarData={calendarData} month={calendarMonth} />
       )}
     </div>
   );
@@ -186,7 +186,7 @@ function EntriesCalendar({ calendarData, month }: { calendarData: Record<string,
   const [year, monthNum] = month.split('-').map(Number);
   const firstDay = new Date(year, monthNum - 1, 1).getDay();
   const daysInMonth = new Date(year, monthNum, 0).getDate();
-  const days = [];
+  const days: (number | null)[] = [];
 
   for (let i = 0; i < firstDay; i++) days.push(null);
   for (let d = 1; d <= daysInMonth; d++) days.push(d);

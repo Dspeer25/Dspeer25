@@ -7,8 +7,7 @@ export default function FocusTracks() {
   const [url, setUrl] = useState('');
 
   useEffect(() => {
-    const settings = getSettings();
-    setUrl(settings.focusVideoUrl);
+    getSettings().then((s) => setUrl(s.focusVideoUrl));
   }, []);
 
   return (
@@ -16,12 +15,7 @@ export default function FocusTracks() {
       <h2 className="text-xl font-semibold mb-6">Focus</h2>
       {url ? (
         <div className="aspect-video bg-bg-secondary rounded-lg overflow-hidden border border-border-primary">
-          <iframe
-            src={url}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          <iframe src={url} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
         </div>
       ) : (
         <div className="aspect-video bg-bg-secondary rounded-lg border border-border-primary flex items-center justify-center">
