@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { getData, setData } from "../lib/supabase";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend } from "recharts";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const EVENTS = ["Color Change/Halt", "Bear 180", "Bull 180", "Clearing bar", "No event"] as const;
@@ -36,6 +37,7 @@ type Journal = {
   goals: [Goal, Goal, Goal];
   marketOn: boolean;
   observations: string;
+  grade?: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1004,6 +1006,43 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
           className="w-full bg-[#1e2035] border border-[#3d3f5e] rounded-b-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-64 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-600"
         />
       </div>
+
+      {/* End of Day Review */}
+      <div className="space-y-4 border-t border-[#3d3f5e] pt-6">
+        <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-widest">End of Day Review</h3>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs text-slate-400 uppercase tracking-widest">Grade</span>
+            <div className="flex gap-2">
+              {(["A","B","C","D","F"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => set("grade", journal.grade === g ? "" : g)}
+                  className={`w-10 h-10 rounded-lg font-bold text-sm transition-all ${
+                    journal.grade === g
+                      ? g === "A" ? "bg-emerald-500 text-white"
+                      : g === "B" ? "bg-sky-500 text-white"
+                      : g === "C" ? "bg-yellow-500 text-black"
+                      : g === "D" ? "bg-orange-500 text-white"
+                      : "bg-red-600 text-white"
+                      : "bg-[#2d2f45] text-slate-400 hover:text-slate-200 border border-[#3d3f5e]"
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-3 text-xs text-slate-400 space-y-1">
+            <div><span className="text-emerald-400 font-semibold">A</span> — Perfect execution, Management, Size</div>
+            <div><span className="text-sky-400 font-semibold">B</span> — Great execution, management, size, some small fixes</div>
+            <div><span className="text-yellow-400 font-semibold">C</span> — Acceptable execution, needs review</div>
+            <div><span className="text-orange-400 font-semibold">D</span> — Poor execution, needs review</div>
+            <div><span className="text-red-400 font-semibold">F</span> — Poor execution on trades outside of strategy</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1545,9 +1584,161 @@ function FocusTracksTab() {
   );
 }
 
+// ─── Visual Analysis Tab ──────────────────────────────────────────────────────
+function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
+  const pnlData = (() => {
+    const byDate: Record<string, number> = {};
+    entries.forEach((e) => {
+      if (!e.date || !e.result) return;
+      const amt = parseFloat(e.amount) || 0;
+      const signed = e.result === "W" ? amt : e.result === "L" ? -amt : 0;
+      byDate[e.date] = (byDate[e.date] || 0) + signed;
+    });
+    let cum = 0;
+    return Object.keys(byDate).sort().map((date) => {
+      cum += byDate[date];
+      return { date: fmtDate(date), pnl: parseFloat(cum.toFixed(2)) };
+    });
+  })();
+
+  const resultCounts = [
+    { name: "Win", value: entries.filter((e) => e.result === "W").length, fill: "#34d399" },
+    { name: "Loss", value: entries.filter((e) => e.result === "L").length, fill: "#f87171" },
+    { name: "BE", value: entries.filter((e) => e.result === "BE").length, fill: "#94a3b8" },
+  ].filter((r) => r.value > 0);
+
+  const byEvent: Record<string, number[]> = {};
+  entries.forEach((e) => {
+    if (!e.event || !e.result) return;
+    const amt = parseFloat(e.amount) || 0;
+    const signed = e.result === "W" ? amt : e.result === "L" ? -amt : 0;
+    if (!byEvent[e.event]) byEvent[e.event] = [];
+    byEvent[e.event].push(signed);
+  });
+  const eventData = Object.entries(byEvent).map(([event, vals]) => ({
+    event: event.length > 14 ? event.slice(0, 14) + "…" : event,
+    avg: parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)),
+  }));
+
+  const byLocation: Record<string, number[]> = {};
+  entries.forEach((e) => {
+    if (!e.location || !e.result) return;
+    const amt = parseFloat(e.amount) || 0;
+    const signed = e.result === "W" ? amt : e.result === "L" ? -amt : 0;
+    if (!byLocation[e.location]) byLocation[e.location] = [];
+    byLocation[e.location].push(signed);
+  });
+  const locationData = Object.entries(byLocation).map(([location, vals]) => ({
+    location,
+    avg: parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)),
+  }));
+
+  const totalPnl = entries.reduce((sum, e) => {
+    const amt = parseFloat(e.amount) || 0;
+    return sum + (e.result === "W" ? amt : e.result === "L" ? -amt : 0);
+  }, 0);
+  const traded = entries.filter((e) => e.result === "W" || e.result === "L" || e.result === "BE").length;
+  const winRate = traded > 0 ? (entries.filter((e) => e.result === "W").length / traded) * 100 : 0;
+  const rrs = entries.map((e) => parseFloat(e.rrRatio)).filter(Boolean);
+  const avgRR = rrs.length ? (rrs.reduce((a, b) => a + b, 0) / rrs.length).toFixed(2) : "—";
+
+  if (entries.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+        <p className="text-lg font-medium">No trade data yet</p>
+        <p className="text-sm mt-1">Log entries to see your visual analysis</p>
+      </div>
+    );
+  }
+
+  const tooltipStyle = { background: "#1e2035", border: "1px solid #3d3f5e", borderRadius: 8 };
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl font-bold text-white mb-1">Visual Analysis</h2>
+        <p className="text-slate-400 text-sm">Performance overview from your logged entries</p>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "Total Trades", value: entries.length.toString(), color: "text-white" },
+          { label: "Win Rate", value: `${winRate.toFixed(1)}%`, color: winRate >= 50 ? "text-emerald-400" : "text-red-400" },
+          { label: "Total P&L", value: `${totalPnl >= 0 ? "+$" : "-$"}${Math.abs(totalPnl).toFixed(2)}`, color: totalPnl >= 0 ? "text-emerald-400" : "text-red-400" },
+          { label: "Avg R:R", value: avgRR, color: "text-sky-400" },
+        ].map((s) => (
+          <div key={s.label} className="bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-4">
+            <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {pnlData.length > 1 && (
+        <div className="bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-4">
+          <h3 className="text-sm font-semibold text-slate-200 mb-4">Cumulative P&L</h3>
+          <div className="w-full overflow-x-auto">
+            <LineChart width={620} height={220} data={pnlData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2d2f45" />
+              <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
+              <Tooltip formatter={(v: number) => [`$${v}`, "P&L"]} contentStyle={tooltipStyle} />
+              <ReferenceLine y={0} stroke="#3d3f5e" />
+              <Line type="monotone" dataKey="pnl" stroke="#6366f1" strokeWidth={2} dot={false} />
+            </LineChart>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-4">
+          <h3 className="text-sm font-semibold text-slate-200 mb-4">Result Breakdown</h3>
+          <PieChart width={260} height={200}>
+            <Pie data={resultCounts} cx={130} cy={90} innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={3}>
+              {resultCounts.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+            </Pie>
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend />
+          </PieChart>
+        </div>
+
+        {eventData.length > 0 && (
+          <div className="bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-4">
+            <h3 className="text-sm font-semibold text-slate-200 mb-4">Avg P&L by Event</h3>
+            <BarChart width={260} height={200} data={eventData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2d2f45" />
+              <XAxis dataKey="event" tick={{ fill: "#64748b", fontSize: 10 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
+              <Tooltip formatter={(v: number) => [`$${v}`, "Avg P&L"]} contentStyle={tooltipStyle} />
+              <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
+                {eventData.map((entry, i) => <Cell key={i} fill={entry.avg >= 0 ? "#34d399" : "#f87171"} />)}
+              </Bar>
+            </BarChart>
+          </div>
+        )}
+      </div>
+
+      {locationData.length > 0 && (
+        <div className="bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-4">
+          <h3 className="text-sm font-semibold text-slate-200 mb-4">Avg P&L by Entry Location</h3>
+          <BarChart width={400} height={200} data={locationData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#2d2f45" />
+            <XAxis dataKey="location" tick={{ fill: "#64748b", fontSize: 12 }} />
+            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
+            <Tooltip formatter={(v: number) => [`$${v}`, "Avg P&L"]} contentStyle={tooltipStyle} />
+            <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
+              {locationData.map((entry, i) => <Cell key={i} fill={entry.avg >= 0 ? "#34d399" : "#f87171"} />)}
+            </Bar>
+          </BarChart>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
@@ -1599,6 +1790,7 @@ export default function Home() {
           ["journal",     "Daily Journal"   ],
           ["leaderboard", "Leaderboard"     ],
           ["focus",       "Focus Tracks"    ],
+          ["visual",      "Visual Analysis" ],
         ] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -1627,6 +1819,7 @@ export default function Home() {
             <FocusTracksTab />
           </div>
         )}
+        {tab === "visual" && <VisualAnalysisTab entries={entries} />}
       </main>
     </div>
   );
