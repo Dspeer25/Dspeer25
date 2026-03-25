@@ -1287,6 +1287,15 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                 <FolderIcon />
                 <span className="text-sm font-semibold text-slate-200">{folder.name}</span>
                 <span className="text-xs text-slate-500">{folderJournals.length} journal{folderJournals.length !== 1 ? "s" : ""}</span>
+                {folderJournals.filter((j) => j.grade).map((j) => (
+                  <span key={j.id} className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
+                    j.grade === "A" ? "bg-emerald-500/20 text-emerald-400" :
+                    j.grade === "B" ? "bg-sky-500/20 text-sky-400" :
+                    j.grade === "C" ? "bg-yellow-500/20 text-yellow-400" :
+                    j.grade === "D" ? "bg-orange-500/20 text-orange-400" :
+                    "bg-red-600/20 text-red-400"
+                  }`}>{j.grade}</span>
+                ))}
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={(e) => { e.stopPropagation(); createJournal(folder.id); }}
@@ -1316,6 +1325,15 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
+                        {j.grade && (
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                            j.grade === "A" ? "bg-emerald-500/20 text-emerald-400" :
+                            j.grade === "B" ? "bg-sky-500/20 text-sky-400" :
+                            j.grade === "C" ? "bg-yellow-500/20 text-yellow-400" :
+                            j.grade === "D" ? "bg-orange-500/20 text-orange-400" :
+                            "bg-red-600/20 text-red-400"
+                          }`}>{j.grade}</span>
+                        )}
                         <span className="text-slate-500 text-xs group-hover:text-indigo-400 transition-colors">Open →</span>
                         <button onClick={(e) => { e.stopPropagation(); deleteJournal(j.id); }}
                           className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
