@@ -833,6 +833,10 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
     editorRef.current?.focus();
     document.execCommand(cmd, false, val);
   };
+  const execReviewCmd = (cmd: string, val?: string) => {
+    reviewRef.current?.focus();
+    document.execCommand(cmd, false, val);
+  };
 
   const btnCls = "flex items-center justify-center rounded-lg text-sm font-semibold h-10 transition-all cursor-pointer select-none";
   const rBtnCls = "flex items-center justify-center rounded-lg text-xs font-bold h-10 bg-violet-900/60 hover:bg-violet-700 text-violet-200 transition-all cursor-pointer select-none";
@@ -1055,28 +1059,28 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         <div className="space-y-0">
           <h3 className="text-sm font-semibold text-slate-200 mb-1">Review Notes</h3>
           <div className="flex flex-wrap gap-1 p-2 bg-[#2d2f45] border border-b-0 border-[#3d3f5e] rounded-t-xl">
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }}
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("bold"); }}
               className="px-2 py-1 rounded text-xs font-bold text-slate-200 hover:bg-[#3d3f5e] transition-colors">B</button>
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }}
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("italic"); }}
               className="px-2 py-1 rounded text-xs italic text-slate-200 hover:bg-[#3d3f5e] transition-colors">I</button>
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("underline"); }}
               className="px-2 py-1 rounded text-xs underline text-slate-200 hover:bg-[#3d3f5e] transition-colors">U</button>
             <div className="w-px bg-[#3d3f5e] mx-1" />
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }}
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("justifyLeft"); }}
               className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align left">≡←</button>
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }}
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("justifyCenter"); }}
               className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Center">≡</button>
-            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }}
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("justifyRight"); }}
               className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align right">→≡</button>
             <div className="w-px bg-[#3d3f5e] mx-1" />
             {["#f87171","#34d399","#60a5fa","#fbbf24","#e879f9","#ffffff"].map((color) => (
-              <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("foreColor", color); }}
+              <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execReviewCmd("foreColor", color); }}
                 className="w-5 h-5 rounded-full border border-[#3d3f5e] flex-shrink-0"
                 style={{ backgroundColor: color }} />
             ))}
             <div className="w-px bg-[#3d3f5e] mx-1" />
             <select defaultValue="" onMouseDown={(e) => e.stopPropagation()}
-              onChange={(e) => { execCmd("fontSize", e.target.value); e.target.value = ""; }}
+              onChange={(e) => { execReviewCmd("fontSize", e.target.value); e.target.value = ""; }}
               className="bg-[#1e2035] border border-[#3d3f5e] rounded text-xs text-slate-300 px-1 focus:outline-none cursor-pointer">
               <option value="" disabled>Size</option>
               <option value="1">XS</option>
