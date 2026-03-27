@@ -32,12 +32,41 @@ export default function HomeScreen({ onSettingsOpen }) {
     if (fileRef.current) fileRef.current.value = ''
   }
 
+  function doLog(items, description) {
+    const impact = calculateImpactFromItems(items)
+    const totalAnimals = Object.values(impact.byAnimal).reduce((s, a) => s + a.count, 0)
+
+    saveMeal({
+      timestamp: Date.now(),
+      animals: totalAnimals,
+      co2: impact.co2,
+      water: impact.water,
+      meal: description || meal.trim() || 'Meal',
+      items,
+    })
+
+    setResult({
+      items,
+      description,
+      impact,
+      totalAnimals,
+      header: randomFrom(HEADERS),
+      flavor: randomFrom(FLAVOR_LINES),
+    })
+
+    setMeal('')
+    setPhoto(null)
+    setPreview(null)
+    if (fileRef.current) fileRef.current.value = ''
+    if (navigator.vibrate) navigator.vibrate(10)
+  }
+
   async function handleLog() {
     if (!photo && !meal.trim()) return
     setError(null)
     setResult(null)
 
-    const apiKey = getApiKey() || undefined // falls back to DEFAULT_API_KEY in claude.js
+    const apiKey = getApiKey() || undefined
 
     setAnalyzing(true)
     try {
@@ -48,82 +77,20 @@ export default function HomeScreen({ onSettingsOpen }) {
         aiResult = await analyzeMealText(meal.trim(), apiKey)
       }
 
-        const items = aiResult.items || []
-        if (items.length === 0) throw new Error('No food items identified')
+      const items = aiResult.items || []
+      if (items.length === 0) throw new Error('No food items identified')
 
-        const impact = calculateImpactFromItems(items)
-        const totalAnimals = Object.values(impact.byAnimal).reduce((s, a) => s + a.count, 0)
-
-        saveMeal({
-          timestamp: Date.now(),
-          animals: totalAnimals,
-          co2: impact.co2,
-          water: impact.water,
-          meal: aiResult.description || meal.trim(),
-          items,
-        })
-
-        setResult({
-          items,
-          description: aiResult.description,
-          impact,
-          totalAnimals,
-          header: randomFrom(HEADERS),
-          flavor: randomFrom(FLAVOR_LINES),
-        })
-
-        setMeal('')
-        setPhoto(null)
-        setPreview(null)
-        if (fileRef.current) fileRef.current.value = ''
-        if (navigator.vibrate) navigator.vibrate(10)
-      } catch (err) {
-        console.error('AI analysis failed:', err)
-        // If CORS or API error, fall back to keyword matching
-        if (meal.trim()) {
-          fallbackLog()
-        } else {
-          setError(
-            err.message.includes('API error')
-              ? 'API error. Check your API key in settings.'
-              : 'Could not analyze the image. Try typing your meal instead.'
-          )
-        }
-      } finally {
-        setAnalyzing(false)
-      }
-  }
-
-  function fallbackLog() {
-    const type = inferMeatType(meal)
-    const info = IMPACT[type]
-
-    const items = [{ name: meal.trim(), meatEquivalent: type, portionGrams: 200 }]
-    const impact = calculateImpactFromItems(items)
-    const totalAnimals = Object.values(impact.byAnimal).reduce((s, a) => s + a.count, 0)
-
-    saveMeal({
-      timestamp: Date.now(),
-      animals: totalAnimals,
-      co2: impact.co2,
-      water: impact.water,
-      meal: meal.trim(),
-      items,
-    })
-
-    setResult({
-      items,
-      description: null,
-      impact,
-      totalAnimals,
-      header: randomFrom(HEADERS),
-      flavor: randomFrom(FLAVOR_LINES),
-    })
-
-    setMeal('')
-    setPhoto(null)
-    setPreview(null)
-    if (navigator.vibrate) navigator.vibrate(10)
+      doLog(items, aiResult.description)
+    } catch (err) {
+      console.error('AI analysis failed, using fallback:', err)
+      // Always fall back to keyword matching — never block the user
+      const text = meal.trim() || 'plant-based meal'
+      const type = inferMeatType(text)
+      const items = [{ name: text, meatEquivalent: type, portionGrams: 200 }]
+      doLog(items, null)
+    } finally {
+      setAnalyzing(false)
+    }
   }
 
   function handleKeyDown(e) {
@@ -207,20 +174,6 @@ export default function HomeScreen({ onSettingsOpen }) {
             <div className="analyzing-spinner" />
             <p className="analyzing-text">AI is analyzing your meal...</p>
             <p className="analyzing-subtext">Identifying items and calculating impact</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Error */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            className="error-card glass"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <p className="error-text">{error}</p>
           </motion.div>
         )}
       </AnimatePresence>
