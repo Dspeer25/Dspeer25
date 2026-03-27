@@ -145,13 +145,14 @@ export function getTotals() {
       acc.co2 += (m.co2 || 0);
       acc.water += (m.water || 0);
       acc.count += 1;
-      // Aggregate by animal type
+      // Aggregate by animal label (cow/chicken/pig) so beef+dairy merge into one "cow" entry
       if (m.byAnimal) {
-        for (const [type, data] of Object.entries(m.byAnimal)) {
-          if (!acc.byAnimal[type]) {
-            acc.byAnimal[type] = { count: 0, label: data.label, emoji: data.emoji };
+        for (const [, data] of Object.entries(m.byAnimal)) {
+          const key = data.label || 'chicken';
+          if (!acc.byAnimal[key]) {
+            acc.byAnimal[key] = { count: 0, label: data.label, emoji: data.emoji };
           }
-          acc.byAnimal[type].count += data.count || 0;
+          acc.byAnimal[key].count += data.count || 0;
         }
       }
       return acc;

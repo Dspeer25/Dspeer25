@@ -340,48 +340,10 @@ export default function HomeScreen() {
                   <div className="earth-pollution-glow" />
                 </div>
 
-                {/* 3 large dark smoke blobs streaming from earth to the right */}
-                {[0, 1, 2].map(i => (
-                  <motion.div
-                    key={`smoke-a-${i}`}
-                    className="co2-smoke-blob"
-                    style={{ top: `${15 + i * 30}%` }}
-                    initial={{ left: '12%', opacity: 0, scale: 0.3 }}
-                    animate={{
-                      left: ['12%', '35%', '60%', '90%', '105%'],
-                      opacity: [0, 0.95, 0.85, 0.4, 0],
-                      scale: [0.3, 1.2, 1.5, 1.1, 0.6],
-                    }}
-                    transition={{
-                      delay: i * 1.0,
-                      duration: 4,
-                      ease: 'easeOut',
-                      repeat: Infinity,
-                      repeatDelay: 0.3,
-                    }}
-                  />
-                ))}
-                {/* Second wave of smoke for continuous feel */}
-                {[0, 1, 2].map(i => (
-                  <motion.div
-                    key={`smoke-b-${i}`}
-                    className="co2-smoke-blob co2-smoke-blob-alt"
-                    style={{ top: `${25 + i * 25}%` }}
-                    initial={{ left: '12%', opacity: 0, scale: 0.3 }}
-                    animate={{
-                      left: ['12%', '30%', '55%', '85%', '105%'],
-                      opacity: [0, 0.8, 0.7, 0.3, 0],
-                      scale: [0.3, 1.0, 1.3, 0.9, 0.5],
-                    }}
-                    transition={{
-                      delay: i * 1.0 + 2.0,
-                      duration: 4,
-                      ease: 'easeOut',
-                      repeat: Infinity,
-                      repeatDelay: 0.3,
-                    }}
-                  />
-                ))}
+                {/* Continuous black smoke stream from earth to the right */}
+                <div className="smoke-stream" />
+                <div className="smoke-stream smoke-stream-2" />
+                <div className="smoke-stream smoke-stream-3" />
 
                 {/* Pulsing label */}
                 <motion.span
@@ -412,30 +374,63 @@ export default function HomeScreen() {
                 <p className="nalgene-stack-subtitle">
                   Stacked up, that's <strong>{fmt(Math.round(stackFt))}</strong> feet tall
                 </p>
-                <div className="height-bars">
-                  {/* Nalgene stack bar */}
-                  <div className="height-bar-col">
-                    <motion.div
-                      className="height-bar nalgene-bar"
-                      initial={{ height: 0 }}
-                      animate={{ height: `${Math.min((stackFt / 2717) * 100, 100)}%` }}
-                      transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
-                    />
-                    <span className="height-bar-label">Your bottles</span>
-                    <span className="height-bar-ft">{fmt(Math.round(stackFt))} ft</span>
+                <div className="skyline-compare">
+                  {/* Y-axis scale */}
+                  <div className="skyline-axis">
+                    {[0, 500, 1000, 1500, 2000, 2500].map(ft => (
+                      <span key={ft} className="skyline-tick" style={{ bottom: `${(ft / 2717) * 100}%` }}>
+                        {fmt(ft)}ft
+                      </span>
+                    ))}
                   </div>
-                  {landmarks.map((lm, i) => (
-                    <div className="height-bar-col" key={lm.name}>
+                  <div className="skyline-bars">
+                    {/* Nalgene stack — blue, with stacked bottle lines */}
+                    <div className="skyline-col">
                       <motion.div
-                        className="height-bar landmark-bar"
+                        className="skyline-building nalgene-tower"
                         initial={{ height: 0 }}
-                        animate={{ height: `${(lm.ft / 2717) * 100}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: 0.5 + i * 0.15 }}
-                      />
-                      <span className="height-bar-label">{lm.emoji} {lm.name}</span>
-                      <span className="height-bar-ft">{fmt(lm.ft)} ft</span>
+                        animate={{ height: `${Math.min((stackFt / 2717) * 100, 100)}%` }}
+                        transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
+                      >
+                        <div className="bottle-lines" />
+                      </motion.div>
+                      <span className="skyline-name">Your Nalgenes</span>
+                      <span className="skyline-ft">{fmt(Math.round(stackFt))} ft</span>
                     </div>
-                  ))}
+                    {/* Eiffel Tower silhouette */}
+                    <div className="skyline-col">
+                      <motion.div
+                        className="skyline-building eiffel-silhouette"
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(1063 / 2717) * 100}%` }}
+                        transition={{ duration: 1, ease: 'easeOut', delay: 0.5 }}
+                      />
+                      <span className="skyline-name">Eiffel Tower</span>
+                      <span className="skyline-ft">1,063 ft</span>
+                    </div>
+                    {/* Empire State silhouette */}
+                    <div className="skyline-col">
+                      <motion.div
+                        className="skyline-building empire-silhouette"
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(1454 / 2717) * 100}%` }}
+                        transition={{ duration: 1, ease: 'easeOut', delay: 0.65 }}
+                      />
+                      <span className="skyline-name">Empire State</span>
+                      <span className="skyline-ft">1,454 ft</span>
+                    </div>
+                    {/* Burj Khalifa silhouette */}
+                    <div className="skyline-col">
+                      <motion.div
+                        className="skyline-building burj-silhouette"
+                        initial={{ height: 0 }}
+                        animate={{ height: '100%' }}
+                        transition={{ duration: 1, ease: 'easeOut', delay: 0.8 }}
+                      />
+                      <span className="skyline-name">Burj Khalifa</span>
+                      <span className="skyline-ft">2,717 ft</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -792,22 +792,48 @@
   overflow: hidden;
 }
 
-/* Large dark smoke blobs */
-.co2-smoke-blob {
+/* Continuous smoke stream */
+.smoke-stream {
   position: absolute;
-  width: 44px;
-  height: 36px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(70, 55, 40, 0.95) 0%, rgba(50, 40, 30, 0.8) 50%, rgba(40, 32, 25, 0.4) 80%, transparent 100%);
-  filter: blur(4px);
+  top: 35%;
+  left: 70px;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(to right,
+    rgba(20, 20, 20, 0.95) 0%,
+    rgba(30, 28, 25, 0.9) 15%,
+    rgba(40, 35, 30, 0.8) 30%,
+    rgba(50, 45, 38, 0.65) 50%,
+    rgba(60, 55, 48, 0.4) 70%,
+    rgba(70, 65, 58, 0.15) 88%,
+    transparent 100%
+  );
+  filter: blur(6px);
   z-index: 1;
+  animation: smoke-drift 3s ease-in-out infinite alternate;
 }
 
-.co2-smoke-blob-alt {
-  width: 38px;
-  height: 30px;
-  background: radial-gradient(circle, rgba(80, 60, 40, 0.9) 0%, rgba(55, 42, 30, 0.7) 50%, rgba(45, 35, 25, 0.3) 80%, transparent 100%);
-  filter: blur(5px);
+.smoke-stream-2 {
+  top: 48%;
+  height: 22px;
+  filter: blur(8px);
+  animation-delay: -1s;
+  animation-duration: 3.5s;
+}
+
+.smoke-stream-3 {
+  top: 28%;
+  height: 18px;
+  filter: blur(10px);
+  opacity: 0.7;
+  animation-delay: -2s;
+  animation-duration: 4s;
+}
+
+@keyframes smoke-drift {
+  0% { transform: translateY(-3px) scaleY(1); }
+  50% { transform: translateY(4px) scaleY(1.15); }
+  100% { transform: translateY(-2px) scaleY(0.9); }
 }
 
 .co2-space-label {
@@ -870,44 +896,168 @@
   font-weight: 800;
 }
 
-.height-bars {
+/* Skyline diagram */
+.skyline-compare {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 12px;
-  height: 160px;
-  padding: 0 8px;
+  height: 200px;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 8px;
 }
 
-.height-bar-col {
+.skyline-axis {
+  position: relative;
+  width: 32px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skyline-tick {
+  position: absolute;
+  right: 6px;
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.3);
+  transform: translateY(50%);
+  white-space: nowrap;
+}
+
+.skyline-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 0 4px;
+  gap: 6px;
+}
+
+.skyline-col {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 100%;
   justify-content: flex-end;
-  max-width: 70px;
+  max-width: 80px;
 }
 
-.height-bar {
+.skyline-building {
   width: 100%;
-  min-height: 4px;
-  border-radius: 6px 6px 4px 4px;
+  min-height: 2px;
   position: relative;
 }
 
-.nalgene-bar {
-  background: linear-gradient(to top, #1e78dc, #4aa8ff, #6ec6ff);
-  box-shadow: 0 0 16px rgba(50, 150, 255, 0.35);
+/* Nalgene tower — bright blue with bottle line texture */
+.nalgene-tower {
+  background: linear-gradient(to top, #1565c0, #1e88e5, #42a5f5);
+  box-shadow: 0 0 20px rgba(30, 136, 229, 0.4);
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
 }
 
-.landmark-bar {
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.25));
-  border: 1px solid rgba(255, 255, 255, 0.15);
+.bottle-lines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to top,
+    transparent 0px,
+    transparent 6px,
+    rgba(255, 255, 255, 0.15) 6px,
+    rgba(255, 255, 255, 0.15) 7px
+  );
 }
 
-.height-bar-label {
-  font-size: 10px;
+/* Eiffel Tower silhouette — tapered shape */
+.eiffel-silhouette {
+  background: rgba(255, 255, 255, 0.85);
+  width: 6px !important;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 1px 1px 0 0;
+}
+
+.eiffel-silhouette::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 22px solid transparent;
+  border-right: 22px solid transparent;
+  border-top: 0;
+  border-bottom: 50px solid rgba(255, 255, 255, 0.25);
+}
+
+.eiffel-silhouette::after {
+  content: '';
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Empire State silhouette — stepped tower */
+.empire-silhouette {
+  background: rgba(255, 255, 255, 0.7);
+  width: 28px !important;
+  margin: 0 auto;
+  border-radius: 1px 1px 0 0;
+  position: relative;
+}
+
+.empire-silhouette::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  top: -18px;
+  border-radius: 2px 2px 0 0;
+}
+
+.empire-silhouette::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 35%;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Burj Khalifa silhouette — very narrow taper */
+.burj-silhouette {
+  background: rgba(255, 255, 255, 0.7);
+  width: 14px !important;
+  margin: 0 auto;
+  border-radius: 2px 2px 0 0;
+  position: relative;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%);
+}
+
+.burj-silhouette::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.skyline-name {
+  font-size: 9px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.5);
   margin-top: 8px;
@@ -915,8 +1065,8 @@
   line-height: 1.2;
 }
 
-.height-bar-ft {
-  font-size: 10px;
+.skyline-ft {
+  font-size: 9px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 2px;
