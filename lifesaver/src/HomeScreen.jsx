@@ -76,6 +76,7 @@ export default function HomeScreen() {
   const [preview, setPreview] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState(null)
+  const [debugError, setDebugError] = useState(null)
   const fileRef = useRef(null)
 
   async function handlePhotoSelect(e) {
@@ -130,17 +131,23 @@ export default function HomeScreen() {
     const apiKey = getApiKey() || undefined
 
     try {
+      console.log('[Lifesaver] API key loaded:', apiKey ? `${apiKey.slice(0, 12)}...` : 'NONE')
+      console.log('[Lifesaver] Using photo:', !!photo, 'preview length:', preview?.length || 0)
+
       let aiResult
       if (photo && preview) {
         aiResult = await analyzeMealImage(preview, apiKey)
       } else {
         aiResult = await analyzeMealText(meal.trim(), apiKey)
       }
+      console.log('[Lifesaver] AI response:', aiResult)
       const items = aiResult.items || []
       if (items.length === 0) throw new Error('empty')
+      setDebugError(null)
       doLog(items, aiResult.description)
     } catch (err) {
-      console.error('AI fallback:', err)
+      console.error('[Lifesaver] AI FAILED:', err.message, err)
+      setDebugError(`AI error: ${err.message}`)
       const text = meal.trim() || 'plant-based meal'
       const type = inferMeatType(text)
       doLog([{ name: text, meatEquivalent: type, portionGrams: 200 }], null)
@@ -215,6 +222,22 @@ export default function HomeScreen() {
       <button className="log-btn" onClick={handleLog} disabled={!hasInput || analyzing}>
         {analyzing ? 'Analyzing...' : photo ? 'Analyze meal' : 'Log it'}
       </button>
+
+      {debugError && (
+        <div style={{
+          background: 'rgba(255,50,50,0.2)',
+          border: '1px solid rgba(255,100,100,0.4)',
+          borderRadius: 12,
+          padding: '10px 14px',
+          marginTop: 12,
+          width: '100%',
+          fontSize: 12,
+          color: '#ff9999',
+          wordBreak: 'break-all',
+        }}>
+          <strong>DEBUG:</strong> {debugError}
+        </div>
+      )}
 
       <AnimatePresence>
         {analyzing && (
