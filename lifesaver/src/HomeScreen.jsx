@@ -225,8 +225,8 @@ export default function HomeScreen() {
 
       {debugError && (
         <div style={{
-          background: 'rgba(255,50,50,0.2)',
-          border: '1px solid rgba(255,100,100,0.4)',
+          background: 'rgba(255,50,50,0.15)',
+          border: '1px solid rgba(255,100,100,0.3)',
           borderRadius: 12,
           padding: '10px 14px',
           marginTop: 12,
@@ -235,7 +235,7 @@ export default function HomeScreen() {
           color: '#ff9999',
           wordBreak: 'break-all',
         }}>
-          <strong>DEBUG:</strong> {debugError}
+          {debugError}
         </div>
       )}
 

@@ -1,5 +1,15 @@
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY || '';
+
+// Try env var first (baked in at build time), then localStorage
+function getEffectiveApiKey() {
+  const envKey = import.meta.env.VITE_ANTHROPIC_KEY || '';
+  const storedKey = localStorage.getItem('lifesaver_api_key') || '';
+  // If env key exists and localStorage is empty, auto-save it
+  if (envKey && !storedKey) {
+    localStorage.setItem('lifesaver_api_key', envKey);
+  }
+  return envKey || storedKey;
+}
 
 const SYSTEM_PROMPT = `You are an expert food analyst for Lifesaver, a vegan impact tracking app.
 
@@ -30,7 +40,9 @@ You MUST respond with ONLY valid JSON:
 
 Portion reference: burger patty ~170g, chicken breast ~170g, glass of milk ~240g, cheese slice ~28g, steak ~225g, bowl of food ~300-400g total protein portion.`;
 
-export async function analyzeMealImage(base64DataUrl, apiKey = DEFAULT_API_KEY) {
+export async function analyzeMealImage(base64DataUrl, apiKey) {
+  apiKey = apiKey || getEffectiveApiKey();
+  if (!apiKey) throw new Error('No API key found. Add one in Settings (gear icon).');
   // Extract just the base64 data and media type
   const match = base64DataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!match) throw new Error('Invalid image data');
@@ -87,7 +99,9 @@ export async function analyzeMealImage(base64DataUrl, apiKey = DEFAULT_API_KEY) 
   return JSON.parse(jsonMatch[0]);
 }
 
-export async function analyzeMealText(mealText, apiKey = DEFAULT_API_KEY) {
+export async function analyzeMealText(mealText, apiKey) {
+  apiKey = apiKey || getEffectiveApiKey();
+  if (!apiKey) throw new Error('No API key found. Add one in Settings (gear icon).');
   const response = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
