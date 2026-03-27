@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 
-/* ── Logo (duplicated minimal version for standalone page) ── */
+/* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
   const c = light ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)';
   const cl = light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.65)';
@@ -34,15 +34,46 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
   );
 }
 
+/* ── Mark Douglas icon (small bust for the coach section) ── */
+function CoachIcon({ light = false }: { light?: boolean }) {
+  const color = light ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.6)';
+  return (
+    <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="12" r="6" stroke={color} strokeWidth="1.5" fill="none" />
+      <path d="M8 36 C8 26 14 22 20 22 C26 22 32 26 32 36" stroke={color} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <circle cx="20" cy="12" r="10" stroke="#30C48B" strokeWidth="0.5" opacity="0.3" fill="none" />
+    </svg>
+  );
+}
+
 /* ── Nav links ── */
 const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals'] as const;
 const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals'] as const;
+
+/* ── Fake AI coach responses for demo ── */
+const coachResponses: Record<string, string> = {
+  default: "Tell me about this trade. What was your setup, and what rules from your trading plan did this trade follow?",
+  breakout: "A breakout trade — solid. Did you wait for confirmation before entering, or did you anticipate? Remember: the market doesn't know your position. Every trade is simply a unique edge being expressed. What made you confident in this particular breakout?",
+  revenge: "I hear some frustration in that. Let me ask you something important: were you trading the market, or were you trading your P&L? If this trade was about making back what you lost, that's your ego trading, not your edge. The market doesn't owe you anything from the last trade.",
+  fomo: "FOMO is your mind telling you that THIS opportunity is unique and special. But is it? If your edge plays out over hundreds of trades, missing one is statistically irrelevant. The damage from forcing a trade outside your plan is far greater than the regret of missing one winner.",
+  impulse: "An impulse trade. No judgment — but let's examine it. Mark Douglas would say: 'The best traders have learned to accept the risk.' You accepted the risk of this trade, but did you define it before entry? If not, you weren't trading — you were gambling. There's a difference.",
+  good: "That sounds like a well-executed trade. You followed your process, and that's what matters. Remember — a losing trade executed perfectly is still a good trade. An A+ setup with A+ execution. The outcome is just probability expressing itself. Keep doing this.",
+};
+
+function getCoachResponse(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('revenge') || lower.includes('mad') || lower.includes('angry') || lower.includes('frustrated') || lower.includes('make it back')) return coachResponses.revenge;
+  if (lower.includes('fomo') || lower.includes('chase') || lower.includes('missed') || lower.includes('jumped in')) return coachResponses.fomo;
+  if (lower.includes('impulse') || lower.includes('didn\'t plan') || lower.includes('no plan') || lower.includes('just took it')) return coachResponses.impulse;
+  if (lower.includes('breakout') || lower.includes('break out') || lower.includes('broke out')) return coachResponses.breakout;
+  if (lower.includes('followed') || lower.includes('plan') || lower.includes('setup') || lower.includes('patient') || lower.includes('waited')) return coachResponses.good;
+  return coachResponses.default;
+}
 
 export default function LogTradePage() {
   const { isSignedIn } = useAuth();
   const [light, setLight] = useState(false);
 
-  // Persist theme from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('jx-theme');
     if (saved === 'light') setLight(true);
@@ -64,18 +95,24 @@ export default function LogTradePage() {
     result: '' as '' | 'W' | 'L' | 'BE',
     dollarPnl: '',
     rr: '',
-    notes: '',
-    grade: '' as '' | 'A' | 'B' | 'C' | 'D' | 'F',
     strategy: '',
     confidence: '',
   });
+
+  // AI Coach state
+  const [coachMessages, setCoachMessages] = useState<{ role: 'coach' | 'user'; text: string }[]>([
+    { role: 'coach', text: coachResponses.default },
+  ]);
+  const [coachInput, setCoachInput] = useState('');
+  const [coachTyping, setCoachTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const update = (key: string, val: string) => setForm(p => ({ ...p, [key]: val }));
 
-  // Auto-calculate P&L and R:R when prices change
+  // Auto-calculate P&L and R:R
   useEffect(() => {
     const entry = parseFloat(form.entryPrice);
     const exit = parseFloat(form.exitPrice);
@@ -86,8 +123,6 @@ export default function LogTradePage() {
       const raw = form.direction === 'Long' ? (exit - entry) * size : (entry - exit) * size;
       const pnl = Math.round(raw * 100) / 100;
       setForm(p => ({ ...p, dollarPnl: pnl.toString() }));
-
-      // Auto-detect result
       if (pnl > 0) setForm(p => ({ ...p, result: 'W' }));
       else if (pnl < 0) setForm(p => ({ ...p, result: 'L' }));
       else setForm(p => ({ ...p, result: 'BE' }));
@@ -99,6 +134,26 @@ export default function LogTradePage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.entryPrice, form.exitPrice, form.positionSize, form.direction, form.initialRisk]);
+
+  // Scroll coach chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [coachMessages]);
+
+  const sendCoachMessage = () => {
+    if (!coachInput.trim()) return;
+    const userMsg = coachInput.trim();
+    setCoachMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setCoachInput('');
+    setCoachTyping(true);
+
+    // Simulate AI thinking delay
+    setTimeout(() => {
+      const response = getCoachResponse(userMsg);
+      setCoachMessages(prev => [...prev, { role: 'coach', text: response }]);
+      setCoachTyping(false);
+    }, 1200 + Math.random() * 800);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,9 +178,9 @@ export default function LogTradePage() {
           result: form.result,
           dollarPnl: parseFloat(form.dollarPnl) || 0,
           rr: parseFloat(form.rr) || 0,
-          notes: form.notes,
+          notes: coachMessages.filter(m => m.role === 'user').map(m => m.text).join('\n'),
           starred: false,
-          grade: form.grade,
+          grade: '',
           customFields: {
             ...(form.strategy ? { strategy: form.strategy } : {}),
             ...(form.confidence ? { confidence: form.confidence } : {}),
@@ -138,32 +193,23 @@ export default function LogTradePage() {
         ...p,
         ticker: '', entryPrice: '', exitPrice: '', positionSize: '',
         initialRisk: '', result: '', dollarPnl: '', rr: '',
-        notes: '', grade: '', strategy: '', confidence: '',
+        strategy: '', confidence: '',
       }));
+      setCoachMessages([{ role: 'coach', text: coachResponses.default }]);
     } catch { /* TODO */ }
     setSaving(false);
   };
 
-  // Style helpers
-  const labelCls = `block text-[11px] font-bold tracking-[0.2em] uppercase mb-2 ${light ? 'text-[#999]' : 'text-[#666]'}`;
+  // ── Style helpers ──
+  const labelCls = `block text-[11px] font-bold tracking-[0.2em] uppercase mb-2 ${light ? 'text-[#777]' : 'text-[#999]'}`;
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 ${
     light
-      ? 'bg-white/70 border border-[rgba(0,0,0,0.08)] text-[#1a1a1a] placeholder-[#ccc] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
-      : 'bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-white placeholder-[#555] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
+      ? 'bg-white/80 border border-[rgba(0,0,0,0.10)] text-[#1a1a1a] placeholder-[#bbb] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
+      : 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#eee] placeholder-[#666] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
   }`;
   const glassPanelCls = light
     ? 'bg-white/60 border border-[rgba(0,0,0,0.06)] shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
     : 'glass';
-
-  const toggleBtn = (active: boolean, color?: string) => {
-    if (active) {
-      if (color === 'green') return light ? 'bg-[#30C48B] text-white' : 'bg-[#30C48B] text-black';
-      if (color === 'red') return 'bg-[#f87171] text-white';
-      if (color === 'yellow') return 'bg-[#fbbf24] text-black';
-      return light ? 'bg-[#30C48B] text-white' : 'bg-[#30C48B] text-black';
-    }
-    return light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white';
-  };
 
   return (
     <div
@@ -204,7 +250,7 @@ export default function LogTradePage() {
             className={`text-[11px] font-bold tracking-[0.35em] uppercase transition-colors ${
               i === 0
                 ? 'text-[#30C48B]'
-                : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-[#ccc]'
+                : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-[#ccc]'
             }`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
           >
@@ -217,10 +263,9 @@ export default function LogTradePage() {
       <main className="relative z-10 max-w-4xl mx-auto px-8 pt-8 pb-24">
         <div className="mb-10">
           <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Log a Trade</h1>
-          <p className={`text-sm ${light ? 'text-[#999]' : 'text-[#666]'}`}>Record the bones of every trade. The stats calculate themselves.</p>
+          <p className={`text-sm ${light ? 'text-[#888]' : 'text-[#999]'}`}>Record the bones of every trade. The stats calculate themselves.</p>
         </div>
 
-        {/* Success banner */}
         {saved && (
           <div className="mb-6 px-5 py-3 rounded-xl bg-[#30C48B]/10 border border-[#30C48B]/20 text-[#30C48B] text-sm animate-fade-in">
             Trade logged successfully.
@@ -228,9 +273,9 @@ export default function LogTradePage() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* ─── Section: The Basics ─── */}
+          {/* ─── THE BASICS ─── */}
           <div className={`${glassPanelCls} rounded-2xl p-8 mb-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <h2 className={`text-xs font-bold tracking-[0.3em] uppercase mb-6 ${light ? 'text-[#30C48B]' : 'text-[#30C48B]'}`}>The Basics</h2>
+            <h2 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">The Basics</h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
               <div>
@@ -252,20 +297,21 @@ export default function LogTradePage() {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              {/* Trade Type */}
               <div>
                 <label className={labelCls}>Type</label>
                 <div className={`flex gap-1 rounded-xl p-1 ${glassPanelCls}`}>
                   {(['Day', 'Swing'] as const).map(t => (
                     <button key={t} type="button" onClick={() => update('tradeType', t)}
-                      className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${toggleBtn(form.tradeType === t)}`}>
+                      className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        form.tradeType === t
+                          ? 'bg-[#30C48B] text-black'
+                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
+                      }`}>
                       {t}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Direction */}
               <div>
                 <label className={labelCls}>Direction</label>
                 <div className={`flex gap-1 rounded-xl p-1 ${glassPanelCls}`}>
@@ -274,15 +320,13 @@ export default function LogTradePage() {
                       className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         form.direction === d
                           ? d === 'Long' ? 'bg-[#30C48B] text-black' : 'bg-[#f87171] text-white'
-                          : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'
+                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
                       }`}>
                       {d}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Confidence */}
               <div>
                 <label className={labelCls}>Confidence</label>
                 <div className={`flex gap-1 rounded-xl p-1 ${glassPanelCls}`}>
@@ -291,7 +335,7 @@ export default function LogTradePage() {
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         form.confidence === c
                           ? c === 'High' ? 'bg-[#30C48B] text-black' : c === 'Med' ? 'bg-[#fbbf24] text-black' : 'bg-[#f87171] text-white'
-                          : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'
+                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
                       }`}>
                       {c}
                     </button>
@@ -301,7 +345,7 @@ export default function LogTradePage() {
             </div>
           </div>
 
-          {/* ─── Section: Numbers ─── */}
+          {/* ─── NUMBERS ─── */}
           <div className={`${glassPanelCls} rounded-2xl p-8 mb-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <h2 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">Numbers</h2>
 
@@ -324,14 +368,17 @@ export default function LogTradePage() {
               </div>
             </div>
 
-            {/* Calculated row */}
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className={labelCls}>Result</label>
                 <div className={`flex gap-1 rounded-xl p-1 ${glassPanelCls}`}>
                   {(['W', 'L', 'BE'] as const).map(r => (
                     <button key={r} type="button" onClick={() => update('result', r)}
-                      className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${toggleBtn(form.result === r, r === 'W' ? 'green' : r === 'L' ? 'red' : 'yellow')}`}>
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                        form.result === r
+                          ? r === 'W' ? 'bg-[#30C48B] text-black' : r === 'L' ? 'bg-[#f87171] text-white' : 'bg-[#fbbf24] text-black'
+                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
+                      }`}>
                       {r === 'W' ? 'Win' : r === 'L' ? 'Loss' : 'B/E'}
                     </button>
                   ))}
@@ -356,45 +403,81 @@ export default function LogTradePage() {
             </div>
           </div>
 
-          {/* ─── Section: Review ─── */}
+          {/* ─── AI TRADING COACH ─── */}
           <div className={`${glassPanelCls} rounded-2xl p-8 mb-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <h2 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">Review</h2>
-
-            {/* Grade */}
-            <div className="mb-5">
-              <label className={labelCls}>Execution Grade</label>
-              <div className={`flex gap-1 rounded-xl p-1 w-fit ${glassPanelCls}`}>
-                {(['A', 'B', 'C', 'D', 'F'] as const).map(g => (
-                  <button key={g} type="button" onClick={() => update('grade', form.grade === g ? '' : g)}
-                    className={`w-11 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
-                      form.grade === g
-                        ? g === 'A' ? 'bg-[#30C48B] text-black'
-                        : g === 'B' ? 'bg-[#60a5fa] text-white'
-                        : g === 'C' ? 'bg-[#fbbf24] text-black'
-                        : g === 'D' ? 'bg-orange-500 text-white'
-                        : 'bg-[#f87171] text-white'
-                        : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'
-                    }`}>
-                    {g}
-                  </button>
-                ))}
+            <div className="flex items-center gap-3 mb-6">
+              <CoachIcon light={light} />
+              <div>
+                <h2 className="text-xs font-bold tracking-[0.3em] uppercase text-[#30C48B]">Trading Coach</h2>
+                <p className={`text-[10px] mt-0.5 ${light ? 'text-[#999]' : 'text-[#777]'}`}>
+                  Modeled after Mark Douglas &middot; Trading in the Zone
+                </p>
               </div>
-              <p className={`text-[10px] mt-2 ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>
-                Grade how well you executed your plan — not the outcome.
-              </p>
             </div>
 
-            {/* Notes */}
-            <div>
-              <label className={labelCls}>Notes</label>
-              <textarea
-                value={form.notes}
-                onChange={e => update('notes', e.target.value)}
-                rows={4}
-                placeholder="What was the setup? Why did you enter? What would you do differently?"
-                className={`${inputCls} resize-none`}
-              />
+            {/* Chat area */}
+            <div className={`rounded-xl p-4 mb-4 max-h-[320px] overflow-y-auto ${
+              light
+                ? 'bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)]'
+                : 'bg-[rgba(0,0,0,0.25)] border border-[rgba(255,255,255,0.04)]'
+            }`}>
+              <div className="space-y-4">
+                {coachMessages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-[#30C48B]/15 text-[#30C48B] rounded-br-md'
+                        : light
+                          ? 'bg-white/80 text-[#444] border border-[rgba(0,0,0,0.06)] rounded-bl-md'
+                          : 'bg-[rgba(255,255,255,0.06)] text-[#ccc] border border-[rgba(255,255,255,0.06)] rounded-bl-md'
+                    }`}>
+                      {msg.role === 'coach' && (
+                        <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
+                      )}
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {coachTyping && (
+                  <div className="flex justify-start">
+                    <div className={`rounded-2xl rounded-bl-md px-4 py-3 ${
+                      light ? 'bg-white/80 border border-[rgba(0,0,0,0.06)]' : 'bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)]'
+                    }`}>
+                      <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
+                      <div className="flex gap-1">
+                        <span className="w-2 h-2 rounded-full bg-[#30C48B]/40 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-[#30C48B]/40 animate-pulse" style={{ animationDelay: '0.2s' }} />
+                        <span className="w-2 h-2 rounded-full bg-[#30C48B]/40 animate-pulse" style={{ animationDelay: '0.4s' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
             </div>
+
+            {/* Chat input */}
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={coachInput}
+                onChange={e => setCoachInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); sendCoachMessage(); } }}
+                placeholder="Tell the coach about this trade..."
+                className={`flex-1 ${inputCls}`}
+              />
+              <button
+                type="button"
+                onClick={sendCoachMessage}
+                disabled={!coachInput.trim() || coachTyping}
+                className="px-5 py-3 rounded-xl font-medium text-sm bg-[#30C48B] hover:bg-[#28A876] text-black transition-all disabled:opacity-40"
+              >
+                Send
+              </button>
+            </div>
+            <p className={`text-[10px] mt-3 ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>
+              The coach analyzes your trade rationale against Mark Douglas&apos; principles. Your conversation is saved with the trade.
+            </p>
           </div>
 
           {/* Submit */}
@@ -409,7 +492,7 @@ export default function LogTradePage() {
             </button>
           ) : (
             <div className={`${glassPanelCls} rounded-2xl p-8 text-center`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-              <p className={`text-sm mb-4 ${light ? 'text-[#777]' : 'text-[#888]'}`}>Sign up to start logging trades and tracking your performance.</p>
+              <p className={`text-sm mb-4 ${light ? 'text-[#777]' : 'text-[#bbb]'}`}>Sign up to start logging trades and tracking your performance.</p>
               <Link
                 href="/"
                 className="inline-block px-8 py-3 rounded-full font-medium text-sm bg-[#30C48B] hover:bg-[#28A876] text-black transition-all"
@@ -421,30 +504,30 @@ export default function LogTradePage() {
           )}
         </form>
 
-        {/* Quick stats preview (shows what the form calculates) */}
+        {/* Quick stats preview */}
         {(form.entryPrice && form.exitPrice && form.positionSize) ? (
           <div className={`mt-6 ${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#666]'}`}>P&L</div>
+                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>P&L</div>
                 <div className={`text-xl font-light ${parseFloat(form.dollarPnl) >= 0 ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {parseFloat(form.dollarPnl) >= 0 ? '+' : ''}${form.dollarPnl || '0'}
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#666]'}`}>R Multiple</div>
+                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>R Multiple</div>
                 <div className={`text-xl font-light ${parseFloat(form.rr) >= 0 ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {parseFloat(form.rr) >= 0 ? '+' : ''}{form.rr || '0'}R
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Direction</div>
+                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Direction</div>
                 <div className={`text-xl font-light ${form.direction === 'Long' ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {form.direction}
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Position</div>
+                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Position</div>
                 <div className={`text-xl font-light ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>
                   {form.positionSize} sh
                 </div>
@@ -455,7 +538,7 @@ export default function LogTradePage() {
       </main>
 
       {/* Footer */}
-      <footer className={`relative z-10 border-t py-10 text-center text-xs ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#555]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-xs ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
     </div>
