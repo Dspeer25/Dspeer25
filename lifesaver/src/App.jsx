@@ -1,16 +1,31 @@
 import { useState } from 'react'
 import HomeScreen from './HomeScreen.jsx'
 import TotalsScreen from './TotalsScreen.jsx'
+import Settings from './Settings.jsx'
 import './App.css'
 
 function App() {
   const [tab, setTab] = useState('log')
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div className="app">
+      <button
+        className="settings-trigger"
+        onClick={() => setSettingsOpen(true)}
+        aria-label="Settings"
+      >
+        ⚙
+      </button>
+
       <div className="screen">
-        {tab === 'log' ? <HomeScreen /> : <TotalsScreen />}
+        {tab === 'log' ? (
+          <HomeScreen onSettingsOpen={() => setSettingsOpen(true)} />
+        ) : (
+          <TotalsScreen />
+        )}
       </div>
+
       <nav className="bottom-nav">
         <button
           className={`nav-btn ${tab === 'log' ? 'active' : ''}`}
@@ -27,6 +42,8 @@ function App() {
           <span className="nav-label">Totals</span>
         </button>
       </nav>
+
+      <Settings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }

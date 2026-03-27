@@ -1,13 +1,11 @@
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { getTotals, loadMeals } from './data'
 
 function getStreak() {
   const meals = loadMeals()
   if (meals.length === 0) return 0
-
-  const days = new Set(
-    meals.map((m) => new Date(m.timestamp).toDateString())
-  )
-
+  const days = new Set(meals.map((m) => new Date(m.timestamp).toDateString()))
   let streak = 0
   const now = new Date()
   for (let i = 0; i < 365; i++) {
@@ -22,6 +20,22 @@ function getStreak() {
   return streak
 }
 
+function CountUp({ value, decimals = 2 }) {
+  const [display, setDisplay] = useState(0)
+  useState(() => {
+    const duration = 800
+    const startTime = Date.now()
+    function tick() {
+      const progress = Math.min((Date.now() - startTime) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(value * eased)
+      if (progress < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [])
+  return <>{display.toFixed(decimals)}</>
+}
+
 export default function TotalsScreen() {
   const totals = getTotals()
   const streak = getStreak()
@@ -29,44 +43,50 @@ export default function TotalsScreen() {
   if (totals.count === 0) {
     return (
       <div className="totals">
-        <h1>Your Impact</h1>
+        <h1 className="totals-title">Your Impact</h1>
+        <p className="home-subtitle">Every meal counts.</p>
         <p className="empty-state">No meals logged yet. Go log one.</p>
       </div>
     )
   }
 
+  const cards = [
+    { emoji: '🍽️', value: totals.count, decimals: 0, label: 'Meals Logged' },
+    { emoji: '🐾', value: totals.animals, decimals: 2, label: 'Animals Saved' },
+    { emoji: '☁️', value: totals.co2, decimals: 1, label: 'kg CO₂ Avoided' },
+    { emoji: '💧', value: totals.water, decimals: 0, label: 'Gallons Water Saved' },
+  ]
+
   return (
     <div className="totals">
-      <h1>Your Impact</h1>
+      <h1 className="totals-title">Your Impact</h1>
+      <p className="home-subtitle">Every meal counts.</p>
 
-      <div className="total-card">
-        <div className="total-emoji">🍽️</div>
-        <div className="total-number">{totals.count}</div>
-        <div className="total-label">meals logged</div>
-      </div>
-
-      <div className="total-card">
-        <div className="total-emoji">🐾</div>
-        <div className="total-number">{totals.animals.toFixed(2)}</div>
-        <div className="total-label">animals saved</div>
-      </div>
-
-      <div className="total-card">
-        <div className="total-emoji">☁️</div>
-        <div className="total-number">{totals.co2.toFixed(1)}</div>
-        <div className="total-label">kg CO₂ avoided</div>
-      </div>
-
-      <div className="total-card">
-        <div className="total-emoji">💧</div>
-        <div className="total-number">{totals.water.toFixed(0)}</div>
-        <div className="total-label">gallons water saved</div>
-      </div>
+      {cards.map((card, i) => (
+        <motion.div
+          key={card.label}
+          className="total-card glass"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.1, duration: 0.4 }}
+        >
+          <div className="total-emoji">{card.emoji}</div>
+          <div className="total-number">
+            <CountUp value={card.value} decimals={card.decimals} />
+          </div>
+          <div className="total-label">{card.label}</div>
+        </motion.div>
+      ))}
 
       {streak > 0 && (
-        <div className="streak-badge">
+        <motion.div
+          className="streak-badge"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
           🔥 <span className="streak-number">{streak}</span> day streak
-        </div>
+        </motion.div>
       )}
     </div>
   )
