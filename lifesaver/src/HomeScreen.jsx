@@ -113,10 +113,11 @@ export default function HomeScreen() {
   const nalgeneCount = result ? Math.round(result.impact.water / 0.25) : 0
   // Nalgene is ~10.5 inches tall = 0.267m. Stack height in feet:
   const stackFt = nalgeneCount * 0.875
+  const MAX_FT = 3200
   const landmarks = [
-    { name: 'Eiffel Tower', ft: 1063, emoji: '🗼' },
-    { name: 'Empire State', ft: 1454, emoji: '🏙️' },
-    { name: 'Burj Khalifa', ft: 2717, emoji: '🏗️' },
+    { name: 'Eiffel Tower', ft: 1063 },
+    { name: 'Empire State', ft: 1454 },
+    { name: 'Burj Khalifa', ft: 2717 },
   ]
 
   const currentCrops = result ? CROP_SETS[cropSetIndex % CROP_SETS.length].map(c => ({
@@ -377,8 +378,8 @@ export default function HomeScreen() {
                 <div className="skyline-compare">
                   {/* Y-axis scale */}
                   <div className="skyline-axis">
-                    {[0, 500, 1000, 1500, 2000, 2500].map(ft => (
-                      <span key={ft} className="skyline-tick" style={{ bottom: `${(ft / 2717) * 100}%` }}>
+                    {[0, 500, 1000, 1500, 2000, 2500, 3000].map(ft => (
+                      <span key={ft} className="skyline-tick" style={{ bottom: `${(ft / MAX_FT) * 100}%` }}>
                         {fmt(ft)}ft
                       </span>
                     ))}
@@ -389,7 +390,7 @@ export default function HomeScreen() {
                       <motion.div
                         className="skyline-building nalgene-tower"
                         initial={{ height: 0 }}
-                        animate={{ height: `${Math.min((stackFt / 2717) * 100, 100)}%` }}
+                        animate={{ height: `${Math.min((stackFt / MAX_FT) * 100, 100)}%` }}
                         transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
                       >
                         <div className="bottle-lines" />
@@ -402,7 +403,7 @@ export default function HomeScreen() {
                       <motion.div
                         className="skyline-building eiffel-silhouette"
                         initial={{ height: 0 }}
-                        animate={{ height: `${(1063 / 2717) * 100}%` }}
+                        animate={{ height: `${(1063 / MAX_FT) * 100}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: 0.5 }}
                       />
                       <span className="skyline-name">Eiffel Tower</span>
@@ -413,7 +414,7 @@ export default function HomeScreen() {
                       <motion.div
                         className="skyline-building empire-silhouette"
                         initial={{ height: 0 }}
-                        animate={{ height: `${(1454 / 2717) * 100}%` }}
+                        animate={{ height: `${(1454 / MAX_FT) * 100}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: 0.65 }}
                       />
                       <span className="skyline-name">Empire State</span>
@@ -424,11 +425,22 @@ export default function HomeScreen() {
                       <motion.div
                         className="skyline-building burj-silhouette"
                         initial={{ height: 0 }}
-                        animate={{ height: '100%' }}
+                        animate={{ height: `${(2717 / MAX_FT) * 100}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: 0.8 }}
                       />
                       <span className="skyline-name">Burj Khalifa</span>
                       <span className="skyline-ft">2,717 ft</span>
+                    </div>
+                    {/* Copper Mountain */}
+                    <div className="skyline-col">
+                      <motion.div
+                        className="skyline-building mountain-silhouette"
+                        initial={{ height: 0 }}
+                        animate={{ height: '100%' }}
+                        transition={{ duration: 1, ease: 'easeOut', delay: 0.95 }}
+                      />
+                      <span className="skyline-name">Copper Mtn</span>
+                      <span className="skyline-ft">3,200 ft</span>
                     </div>
                   </div>
                 </div>

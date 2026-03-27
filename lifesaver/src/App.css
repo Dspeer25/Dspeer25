@@ -1056,6 +1056,42 @@
   background: rgba(255, 255, 255, 0.8);
 }
 
+/* Copper Mountain silhouette — mountain peak shape */
+.mountain-silhouette {
+  width: 100% !important;
+  background: linear-gradient(to top, #2e7d32, #4caf50, #66bb6a);
+  clip-path: polygon(50% 0%, 85% 40%, 100% 100%, 0% 100%, 15% 40%);
+  position: relative;
+  border-radius: 0;
+}
+
+/* Snow cap */
+.mountain-silhouette::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-bottom: 20px solid rgba(255, 255, 255, 0.85);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* Tree texture on mountain */
+.mountain-silhouette::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to top, #1b5e20, #2e7d32);
+  opacity: 0.5;
+}
+
 .skyline-name {
   font-size: 9px;
   font-weight: 600;
