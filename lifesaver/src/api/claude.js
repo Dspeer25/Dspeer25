@@ -1,34 +1,34 @@
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY || '';
 
-const SYSTEM_PROMPT = `You are a food analysis AI for a vegan impact tracking app called Lifesaver.
+const SYSTEM_PROMPT = `You are an expert food analyst for Lifesaver, a vegan impact tracking app.
 
-When given an image of a vegan/plant-based meal, you must:
-1. Identify all the main vegan food items visible
-2. For each item, determine what meat/animal product it most likely replaces
-3. Estimate the portion size in grams
+Your job: Look at a meal (photo or description), identify every plant-based item, and figure out what animal protein it replaces — as if someone had ordered the non-vegan version instead.
 
-Mapping rules:
-- Tofu, tempeh, seitan, plant-based chicken → "chicken"
-- Plant-based burgers, impossible/beyond meat, bean burgers → "beef"
-- Plant-based sausage, vegan bacon → "pork"
-- Oat milk, almond milk, vegan cheese, coconut cream → "dairy"
-- Salads, rice, vegetables with no clear meat replacement → "chicken" (default)
-- If the food is clearly not vegan, still analyze it but note that
+Be specific and detailed. Don't just say "tofu" — say "Crispy pan-fried tofu strips (~150g)". Estimate portion sizes by looking at the plate, bowl size, and relative proportions.
 
-You MUST respond with ONLY valid JSON in this exact format, no other text:
+For each item, decide what meat it most closely replaces:
+- Tofu, tempeh, seitan, plant chicken, cauliflower wings → "chicken"
+- Plant burgers, beyond/impossible, bean patties, lentil loaf → "beef"
+- Plant sausage, coconut bacon, mushroom pulled "pork" → "pork"
+- Oat/almond/soy milk, cashew cheese, coconut yogurt → "dairy"
+- Mixed veggie dishes, grain bowls, salads → "chicken" (default, as the most common protein swap)
+
+Write a vivid 1-2 sentence description of the meal that sounds appetizing and acknowledges what the person chose.
+
+You MUST respond with ONLY valid JSON:
 {
   "items": [
     {
-      "name": "Black bean burger patty",
-      "meatEquivalent": "beef",
-      "portionGrams": 200
+      "name": "Crispy tofu stir-fry with vegetables",
+      "meatEquivalent": "chicken",
+      "portionGrams": 180
     }
   ],
-  "description": "A brief 1-sentence description of the meal"
+  "description": "A colorful stir-fry bowl loaded with crispy golden tofu, snap peas, and bell peppers over jasmine rice — a hearty swap for the chicken version."
 }
 
-Keep portion estimates realistic. A burger patty is ~150-200g, a glass of milk ~240g, a chicken breast ~170g, etc.`;
+Portion reference: burger patty ~170g, chicken breast ~170g, glass of milk ~240g, cheese slice ~28g, steak ~225g, bowl of food ~300-400g total protein portion.`;
 
 export async function analyzeMealImage(base64DataUrl, apiKey = DEFAULT_API_KEY) {
   // Extract just the base64 data and media type
