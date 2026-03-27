@@ -4,31 +4,36 @@ import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
 import Link from 'next/link';
 
-/* ── Logo ─────────────────────────────────────────── */
+/* ── Logo — stick man holding a candlestick ───────── */
 function JournalXLogo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="24" cy="20" r="18" fill="url(#logoGlow)" opacity="0.25" />
-        <g transform="translate(14, 8) rotate(-15, 10, 16)">
-          <circle cx="10" cy="4" r="3.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" fill="none" />
-          <line x1="10" y1="7.5" x2="10" y2="18" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="10" y1="11" x2="4" y2="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.3" strokeLinecap="round" />
-          <line x1="10" y1="11" x2="16" y2="7" stroke="rgba(255,255,255,0.6)" strokeWidth="1.3" strokeLinecap="round" />
-          <line x1="10" y1="18" x2="6" y2="24" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round" />
-          <line x1="10" y1="18" x2="14" y2="24" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round" />
-        </g>
-        <line x1="24" y1="4" x2="24" y2="0" stroke="rgba(48,196,139,0.5)" strokeWidth="1" strokeLinecap="round" />
-        <line x1="19" y1="6" x2="17" y2="2" stroke="rgba(48,196,139,0.3)" strokeWidth="0.8" strokeLinecap="round" />
-        <line x1="29" y1="6" x2="31" y2="2" stroke="rgba(48,196,139,0.3)" strokeWidth="0.8" strokeLinecap="round" />
-        <defs>
-          <radialGradient id="logoGlow" cx="0.5" cy="0.3" r="0.7">
-            <stop offset="0%" stopColor="#30C48B" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#30C48B" stopOpacity="0" />
-          </radialGradient>
-        </defs>
+    <div className="flex items-center gap-3">
+      <svg width="44" height="44" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Stick man */}
+        {/* Head */}
+        <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" fill="none" />
+        {/* Body */}
+        <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" />
+        {/* Left arm (down) */}
+        <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Right arm (extended out holding candle) */}
+        <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Left leg */}
+        <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Right leg */}
+        <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round" />
+
+        {/* Candlestick in hand */}
+        {/* Upper wick */}
+        <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+        {/* Candle body */}
+        <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
+        {/* Lower wick */}
+        <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+        {/* Connection from hand to candle */}
+        <line x1="32" y1="17" x2="32" y2="17" stroke="rgba(255,255,255,0.4)" strokeWidth="1" strokeLinecap="round" />
       </svg>
-      <span className="text-sm font-medium tracking-wide text-[#999]">Journal X</span>
+      <span className="text-base font-medium tracking-wide text-[#bbb]">Journal X</span>
     </div>
   );
 }
@@ -61,10 +66,10 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
             <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.14), transparent)' }} />
           </div>
 
-          <div className="relative z-10">
+          <div className="relative z-10 px-2">
             <div className="text-[#888] text-[10px] tracking-[0.2em] mb-5">[start here]</div>
-            <div className="text-3xl sm:text-4xl font-normal mb-1 leading-tight tracking-tight">Start Your</div>
-            <div className="text-3xl sm:text-4xl font-normal text-[#30C48B] leading-tight tracking-tight">Journal</div>
+            <div className="text-4xl sm:text-5xl font-medium mb-1 leading-none tracking-tight whitespace-nowrap">Start Your</div>
+            <div className="text-4xl sm:text-5xl font-medium text-[#30C48B] leading-none tracking-tight">Journal</div>
           </div>
 
           {/* Hover glow intensifies */}
@@ -307,8 +312,8 @@ export default function LandingPage() {
         </div>
 
         <h1 className="relative z-10 text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
-          Your trades. <span className="text-[#30C48B]">Your rules.</span><br />
-          <span className="text-[#666] underline decoration-[#30C48B] decoration-2 underline-offset-8">Real accountability.</span>
+          <span className="text-[#666]">Your trades. Your rules.</span><br />
+          <span className="text-white underline decoration-[#30C48B] decoration-2 underline-offset-8">Real accountability.</span>
         </h1>
 
         <p className="relative z-10 text-base text-[#888] max-w-lg mx-auto leading-relaxed text-center">
