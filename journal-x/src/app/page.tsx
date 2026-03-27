@@ -37,21 +37,21 @@ function JournalXLogo() {
 function CandlestickCTA({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} className="group relative bg-transparent mb-16">
-      {/* The candlestick itself — larger, radiating green */}
-      <div className="relative flex flex-col items-center">
-        {/* Upper wick */}
+      {/* The candlestick — short top wick, big body, long bottom wick (bullish) */}
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Upper wick — short (bullish = small upper shadow) */}
         <div
-          className="w-[4px] h-24 rounded-full"
+          className="w-[4px] h-10 rounded-full"
           style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.15), rgba(48,196,139,0.7))' }}
         />
 
         {/* Candle body */}
         <div
-          className="relative w-52 sm:w-64 rounded-2xl flex flex-col items-center justify-center text-center py-20 sm:py-28 transition-all duration-500 group-hover:scale-[1.03] cursor-pointer"
+          className="relative w-56 sm:w-68 rounded-2xl flex flex-col items-center justify-center text-center py-20 sm:py-28 transition-all duration-500 group-hover:scale-[1.03] cursor-pointer"
           style={{
-            background: 'linear-gradient(180deg, rgba(48,196,139,0.20) 0%, rgba(48,196,139,0.10) 100%)',
+            background: 'linear-gradient(180deg, rgba(48,196,139,0.22) 0%, rgba(48,196,139,0.10) 100%)',
             border: '1px solid rgba(48,196,139,0.30)',
-            boxShadow: '0 0 80px rgba(48,196,139,0.15), 0 0 160px rgba(48,196,139,0.06), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.04)',
+            boxShadow: '0 0 80px rgba(48,196,139,0.18), 0 0 160px rgba(48,196,139,0.08), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.04)',
             backdropFilter: 'blur(40px)',
             WebkitBackdropFilter: 'blur(40px)',
           }}
@@ -62,22 +62,22 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           </div>
 
           <div className="relative z-10">
-            <div className="text-[#888] text-[9px] uppercase tracking-[0.3em] mb-5">Begin</div>
-            <div className="text-2xl sm:text-3xl font-light mb-1 leading-tight">Start Your</div>
-            <div className="text-2xl sm:text-3xl font-light text-[#30C48B] leading-tight">Journal</div>
+            <div className="text-[#888] text-[10px] tracking-[0.2em] mb-5">[start here]</div>
+            <div className="text-3xl sm:text-4xl font-normal mb-1 leading-tight tracking-tight">Start Your</div>
+            <div className="text-3xl sm:text-4xl font-normal text-[#30C48B] leading-tight tracking-tight">Journal</div>
           </div>
 
           {/* Hover glow intensifies */}
           <div
             className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-            style={{ boxShadow: '0 0 100px rgba(48,196,139,0.3), 0 0 200px rgba(48,196,139,0.1)' }}
+            style={{ boxShadow: '0 0 100px rgba(48,196,139,0.35), 0 0 200px rgba(48,196,139,0.12)' }}
           />
         </div>
 
-        {/* Lower wick */}
+        {/* Lower wick — long (bullish = long lower shadow, buyers pushed price up) */}
         <div
-          className="w-[4px] h-14 rounded-full"
-          style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.15), rgba(48,196,139,0.7))' }}
+          className="w-[4px] h-32 rounded-full"
+          style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.1), rgba(48,196,139,0.7))' }}
         />
       </div>
     </button>
@@ -281,21 +281,41 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <p className="text-sm text-[#888] tracking-wide mb-16">The first AI-powered accountability trading journal</p>
+        <h2 className="text-lg sm:text-xl text-[#888] tracking-wide mb-20 font-light text-center">AI-Powered Trading Journal That Holds You Accountable</h2>
 
         {/* THE CANDLESTICK CTA */}
         <CandlestickCTA onClick={() => setShowHowItWorks(true)} />
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
+        {/* Rising moving average line — behind candle, above headline */}
+        <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
+          <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none">
+            <path
+              d="M-50 800 Q200 720 360 660 Q520 600 600 540 Q700 470 800 420 Q900 370 1000 310 Q1100 250 1200 200 Q1300 150 1500 80"
+              stroke="rgba(100,180,255,0.12)"
+              strokeWidth="3"
+              strokeLinecap="round"
+              fill="none"
+            />
+            <path
+              d="M-50 820 Q200 745 360 690 Q520 635 600 580 Q700 510 800 460 Q900 410 1000 355 Q1100 295 1200 245 Q1300 200 1500 130"
+              stroke="rgba(100,180,255,0.06)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              fill="none"
+            />
+          </svg>
+        </div>
+
+        <h1 className="relative z-10 text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
           Your trades. <span className="text-[#30C48B]">Your rules.</span><br />
           <span className="text-[#666] underline decoration-[#30C48B] decoration-2 underline-offset-8">Real accountability.</span>
         </h1>
 
-        <p className="text-base text-[#888] max-w-lg mx-auto leading-relaxed text-center">
+        <p className="relative z-10 text-base text-[#888] max-w-lg mx-auto leading-relaxed text-center">
           Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
-        <p className="text-xs text-[#555] mt-16">One-time payment &middot; Full access forever &middot; No subscriptions</p>
+        <p className="relative z-10 text-xs text-[#555] mt-16">One-time payment &middot; Full access forever &middot; No subscriptions</p>
       </section>
 
       {/* Features */}
