@@ -37,18 +37,16 @@ export default function HomeScreen({ onSettingsOpen }) {
     setError(null)
     setResult(null)
 
-    const apiKey = getApiKey()
+    const apiKey = getApiKey() || undefined // falls back to DEFAULT_API_KEY in claude.js
 
-    // If we have a photo and an API key, use AI analysis
-    if ((photo || meal.trim()) && apiKey) {
-      setAnalyzing(true)
-      try {
-        let aiResult
-        if (photo && preview) {
-          aiResult = await analyzeMealImage(preview, apiKey)
-        } else {
-          aiResult = await analyzeMealText(meal.trim(), apiKey)
-        }
+    setAnalyzing(true)
+    try {
+      let aiResult
+      if (photo && preview) {
+        aiResult = await analyzeMealImage(preview, apiKey)
+      } else {
+        aiResult = await analyzeMealText(meal.trim(), apiKey)
+      }
 
         const items = aiResult.items || []
         if (items.length === 0) throw new Error('No food items identified')
@@ -94,13 +92,6 @@ export default function HomeScreen({ onSettingsOpen }) {
       } finally {
         setAnalyzing(false)
       }
-    } else if (meal.trim()) {
-      // No API key — use keyword fallback
-      fallbackLog()
-    } else {
-      // Photo but no API key
-      setError('Add your Anthropic API key in settings to analyze photos.')
-    }
   }
 
   function fallbackLog() {

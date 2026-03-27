@@ -1,4 +1,5 @@
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const DEFAULT_API_KEY = import.meta.env.VITE_ANTHROPIC_KEY || '';
 
 const SYSTEM_PROMPT = `You are a food analysis AI for a vegan impact tracking app called Lifesaver.
 
@@ -29,7 +30,7 @@ You MUST respond with ONLY valid JSON in this exact format, no other text:
 
 Keep portion estimates realistic. A burger patty is ~150-200g, a glass of milk ~240g, a chicken breast ~170g, etc.`;
 
-export async function analyzeMealImage(base64DataUrl, apiKey) {
+export async function analyzeMealImage(base64DataUrl, apiKey = DEFAULT_API_KEY) {
   // Extract just the base64 data and media type
   const match = base64DataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
   if (!match) throw new Error('Invalid image data');
@@ -86,7 +87,7 @@ export async function analyzeMealImage(base64DataUrl, apiKey) {
   return JSON.parse(jsonMatch[0]);
 }
 
-export async function analyzeMealText(mealText, apiKey) {
+export async function analyzeMealText(mealText, apiKey = DEFAULT_API_KEY) {
   const response = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
