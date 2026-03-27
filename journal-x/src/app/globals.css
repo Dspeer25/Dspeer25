@@ -141,3 +141,14 @@ button {
   z-index: 50;
   pointer-events: none;
 }
+
+/* Hide Clerk dev mode banner */
+div[data-clerk-component] + div[style*="position: fixed"],
+div[class*="cl-internal"],
+.cl-internal-b3fm6y {
+  display: none !important;
+}
+/* Target the "Configure your application" popup */
+div[style*="position: fixed"][style*="bottom"] > div[style*="background"] {
+  display: none !important;
+}
