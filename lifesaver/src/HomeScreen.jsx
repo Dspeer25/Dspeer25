@@ -8,7 +8,6 @@ import {
 import { analyzeMealImage, analyzeMealText } from './api/claude'
 import AnimalReveal from './AnimalReveal'
 
-// Format numbers with commas
 function fmt(n, decimals = 0) {
   return Number(n).toLocaleString('en-US', {
     minimumFractionDigits: decimals,
@@ -16,15 +15,14 @@ function fmt(n, decimals = 0) {
   })
 }
 
-function NalgeneBottle({ size = 'small' }) {
-  const w = size === 'small' ? 6 : 18
-  const h = size === 'small' ? 14 : 36
+function NalgeneBottle() {
   return (
-    <svg width={w} height={h} viewBox="0 0 18 36" fill="none" style={{ flexShrink: 0 }}>
-      <rect x="5" y="0" width="8" height="4" rx="1" fill="rgba(255,255,255,0.25)" />
-      <rect x="3" y="4" width="12" height="30" rx="3" fill="rgba(80,170,255,0.35)" stroke="rgba(80,170,255,0.3)" strokeWidth="0.5" />
-      <rect x="4" y="8" width="10" height="26" rx="2" fill="rgba(80,170,255,0.45)" />
-    </svg>
+    <img
+      src="https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=60&h=120&fit=crop"
+      alt=""
+      className="nalgene-bottle-img"
+      loading="lazy"
+    />
   )
 }
 
@@ -123,11 +121,8 @@ export default function HomeScreen() {
   const hasInput = photo || meal.trim()
   const co2Lbs = result ? (result.impact.co2 * 2.205) : 0
   const co2Fact = result ? CO2_FACTS(co2Lbs) : ''
-
-  // Water: Nalgene bottles (1 Nalgene = 32oz = 0.25 gal)
   const nalgeneCount = result ? Math.round(result.impact.water / 0.25) : 0
 
-  // Crop rotation
   const currentCrops = result ? CROP_SETS[cropSetIndex % CROP_SETS.length].map(c => ({
     ...c,
     amount: c.calc(result.impact.water),
@@ -193,11 +188,8 @@ export default function HomeScreen() {
         {analyzing ? 'Analyzing...' : photo ? 'Analyze meal' : 'Log it'}
       </button>
 
-      {/* Fun easter egg button */}
-      <button
-        className="funny-btn"
-        onClick={() => setShowFunny(prev => !prev)}
-      >
+      {/* Fun easter egg */}
+      <button className="funny-btn" onClick={() => setShowFunny(prev => !prev)}>
         press for something funny
       </button>
 
@@ -210,25 +202,32 @@ export default function HomeScreen() {
             exit={{ opacity: 0, scale: 0.8 }}
           >
             <div className="funny-container">
+              {/* Trump head */}
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Donald_Trump_official_portrait.jpg/440px-Donald_Trump_official_portrait.jpg"
+                alt=""
+                className="funny-trump-img"
+              />
+              {/* Poop liquid dripping down */}
               <motion.div
-                className="funny-poop"
-                initial={{ y: -60, opacity: 0 }}
+                className="funny-poop-liquid"
+                initial={{ y: -80, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5, type: 'spring', bounce: 0.5 }}
+                transition={{ delay: 0.3, duration: 0.6, type: 'spring', bounce: 0.3 }}
               >
-                💩
-              </motion.div>
-              <div className="funny-trump">🍊</div>
-              <motion.div
-                className="funny-splat"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.6, duration: 0.3 }}
-              >
-                💩💩💩
+                <div className="poop-drip poop-drip-1" />
+                <div className="poop-drip poop-drip-2" />
+                <div className="poop-drip poop-drip-3" />
+                <div className="poop-drip poop-drip-4" />
+                <div className="poop-drip poop-drip-5" />
+                <div className="poop-blob" />
               </motion.div>
             </div>
-            <p className="funny-caption">Oops.</p>
+            <motion.p className="funny-caption"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+            >
+              Oops... someone had a rough day.
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -236,11 +235,9 @@ export default function HomeScreen() {
       {debugError && (
         <div style={{
           background: debugError.includes("doesn't look right")
-            ? 'rgba(255,180,50,0.15)'
-            : 'rgba(255,50,50,0.15)',
+            ? 'rgba(255,180,50,0.15)' : 'rgba(255,50,50,0.15)',
           border: `1px solid ${debugError.includes("doesn't look right")
-            ? 'rgba(255,180,50,0.3)'
-            : 'rgba(255,100,100,0.3)'}`,
+            ? 'rgba(255,180,50,0.3)' : 'rgba(255,100,100,0.3)'}`,
           borderRadius: 12,
           padding: '10px 14px',
           marginTop: 12,
@@ -304,7 +301,7 @@ export default function HomeScreen() {
               <AnimalReveal key={key} animalType={data.image} count={data.count} label={data.label} />
             ))}
 
-            {/* CO2 — real earth image + animated smoke scene */}
+            {/* CO2 — sci-fi space scene with real earth photo */}
             <motion.div className="visual-stat glass co2-section"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
@@ -314,71 +311,80 @@ export default function HomeScreen() {
               </div>
               <p className="visual-stat-desc">{co2Fact}</p>
 
-              <div className="co2-animation-scene">
-                {/* Real earth image */}
-                <div className="co2-earth-icon">
-                  <div className="earth-sphere">
-                    <motion.div
-                      className="earth-texture"
-                      animate={{ backgroundPositionX: ['0px', '-200px'] }}
-                      transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+              <div className="co2-space-scene">
+                {/* Starfield background */}
+                <div className="stars-layer">
+                  {Array.from({ length: 40 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="star"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        width: `${1 + Math.random() * 2}px`,
+                        height: `${1 + Math.random() * 2}px`,
+                        animationDelay: `${Math.random() * 3}s`,
+                      }}
                     />
-                    <div className="earth-atmosphere" />
-                    <div className="earth-gloss" />
-                  </div>
+                  ))}
                 </div>
 
-                {/* Animated smoke clouds leaving earth */}
-                {[0, 1, 2, 3, 4].map(i => (
+                {/* Real Earth photo */}
+                <div className="co2-real-earth">
+                  <motion.img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/The_Blue_Marble_%28remastered%29.jpg/600px-The_Blue_Marble_%28remastered%29.jpg"
+                    alt="Earth"
+                    className="earth-photo"
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 60, ease: 'linear' }}
+                  />
+                  <div className="earth-shadow" />
+                </div>
+
+                {/* Smoke clouds streaming away from earth */}
+                {[0, 1, 2, 3, 4, 5].map(i => (
                   <motion.div
                     key={i}
-                    className="smoke-particle"
-                    style={{ top: `${20 + i * 12}%` }}
-                    initial={{ left: 80, opacity: 0.8, scale: 0.6 + i * 0.1 }}
-                    animate={{ left: 300, opacity: 0, scale: 0.1 }}
+                    className="co2-smoke-cloud"
+                    style={{ top: `${15 + i * 12}%` }}
+                    initial={{ left: '22%', opacity: 0, scale: 0.3 }}
+                    animate={{ left: '85%', opacity: [0, 0.7, 0.5, 0], scale: [0.3, 0.8, 1.2, 0.5] }}
                     transition={{
-                      delay: 0.6 + i * 0.25,
-                      duration: 2,
-                      ease: 'easeIn',
+                      delay: 0.5 + i * 0.3,
+                      duration: 2.5,
+                      ease: 'easeOut',
                       repeat: Infinity,
-                      repeatDelay: 1 + i * 0.3,
+                      repeatDelay: 1.5 + i * 0.2,
                     }}
                   />
                 ))}
 
-                {/* Void / vacuum */}
-                <div className="co2-void">
-                  <motion.div
-                    className="co2-void-ring co2-void-ring-outer"
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.1, 0.4] }}
-                    transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-                  />
-                  <motion.div
-                    className="co2-void-ring"
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.3, 0.6] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                  />
-                  <motion.div
-                    className="co2-void-center"
-                    animate={{ boxShadow: ['0 0 20px rgba(60,0,100,0.5)', '0 0 40px rgba(80,0,140,0.8)', '0 0 20px rgba(60,0,100,0.5)'] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                  />
-                </div>
-
+                {/* Pulsing label */}
                 <motion.span
-                  className="co2-cloud-label-float"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 0.8, 0] }}
-                  transition={{ delay: 1, duration: 3, repeat: Infinity, repeatDelay: 2 }}
-                  style={{ left: 100, top: '20%' }}
+                  className="co2-space-label"
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
                 >
-                  {fmt(co2Lbs, 1)} lbs
+                  {fmt(co2Lbs, 1)} lbs avoided
                 </motion.span>
+
+                {/* Vacuum vortex */}
+                <div className="co2-vortex-container">
+                  <motion.div className="co2-vortex-outer"
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 4, ease: 'linear' }}
+                  />
+                  <motion.div className="co2-vortex-inner"
+                    animate={{ rotate: -360 }}
+                    transition={{ repeat: Infinity, duration: 2.5, ease: 'linear' }}
+                  />
+                  <div className="co2-vortex-core" />
+                </div>
               </div>
               <p className="co2-caption">This pollution didn't enter the atmosphere</p>
             </motion.div>
 
-            {/* Water — Nalgene warehouse + real crops with rotation */}
+            {/* Water — Nalgene warehouse with real bottle images + crops */}
             <motion.div className="visual-stat glass water-section"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
             >
@@ -387,20 +393,21 @@ export default function HomeScreen() {
                 <span className="visual-stat-value">{fmt(result.impact.water)} gal</span>
               </div>
 
-              {/* Nalgene warehouse visual */}
               <div className="nalgene-section">
                 <p className="nalgene-headline">
                   That's <strong>~{fmt(nalgeneCount)} Nalgene bottles</strong> of water
                 </p>
                 <div className="nalgene-warehouse">
                   <div className="nalgene-warehouse-inner">
-                    {Array.from({ length: Math.min(nalgeneCount, 400) }).map((_, i) => (
-                      <NalgeneBottle key={i} size="small" />
+                    {Array.from({ length: Math.min(nalgeneCount, 60) }).map((_, i) => (
+                      <NalgeneBottle key={i} />
                     ))}
-                    {nalgeneCount > 400 && (
-                      <div className="nalgene-overflow">+{fmt(nalgeneCount - 400)} more</div>
-                    )}
                   </div>
+                  {nalgeneCount > 60 && (
+                    <div className="nalgene-warehouse-overlay">
+                      <span className="nalgene-total-label">x{fmt(nalgeneCount)} total</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
