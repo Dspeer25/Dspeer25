@@ -6,9 +6,9 @@ import { getTrades, getSettings } from '@/lib/store';
 
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-      <div className="text-xs text-text-muted mb-1">{label}</div>
-      <div className={`text-xl font-bold ${color || 'text-text-primary'}`}>{value}</div>
+    <div className="glass rounded-xl p-4">
+      <div className="text-xs text-[#55556a] mb-1">{label}</div>
+      <div className={`text-xl font-bold ${color || 'text-white'}`}>{value}</div>
     </div>
   );
 }
@@ -61,22 +61,22 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
     }).sort((a, b) => b.totalPnl - a.totalPnl);
   }, [trades, groupBy, settings]);
 
-  if (loading || !settings) return <div className="text-text-muted py-8 text-center">Loading...</div>;
+  if (loading || !settings) return <div className="text-[#55556a] py-8 text-center">Loading...</div>;
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <h2 className="text-xl font-semibold mb-6">Stats</h2>
       {basicStats ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-            <StatCard label="Total PnL" value={`$${basicStats.totalPnl.toFixed(2)}`} color={basicStats.totalPnl >= 0 ? 'text-accent-green' : 'text-accent-red'} />
-            <StatCard label="Win Rate" value={`${basicStats.winRate.toFixed(1)}%`} color={basicStats.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'} />
+            <StatCard label="Total PnL" value={`$${basicStats.totalPnl.toFixed(2)}`} color={basicStats.totalPnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'} />
+            <StatCard label="Win Rate" value={`${basicStats.winRate.toFixed(1)}%`} color={basicStats.winRate >= 50 ? 'text-[#34d399]' : 'text-[#f87171]'} />
             <StatCard label="Avg R" value={`${basicStats.avgR.toFixed(2)}R`} />
             <StatCard label="Total Trades" value={String(basicStats.totalTrades)} />
-            <StatCard label="Avg Win" value={`$${basicStats.avgWin.toFixed(2)}`} color="text-accent-green" />
-            <StatCard label="Avg Loss" value={`$${basicStats.avgLoss.toFixed(2)}`} color="text-accent-red" />
+            <StatCard label="Avg Win" value={`$${basicStats.avgWin.toFixed(2)}`} color="text-[#34d399]" />
+            <StatCard label="Avg Loss" value={`$${basicStats.avgLoss.toFixed(2)}`} color="text-[#f87171]" />
             <StatCard label="Profit Factor" value={basicStats.profitFactor.toFixed(2)} />
-            <StatCard label="Largest Win" value={`$${basicStats.largestWin.toFixed(2)}`} color="text-accent-green" />
+            <StatCard label="Largest Win" value={`$${basicStats.largestWin.toFixed(2)}`} color="text-[#34d399]" />
           </div>
 
           {settings.customFields.length > 0 && (
@@ -91,36 +91,36 @@ export default function Stats({ refreshKey }: { refreshKey: number }) {
               </div>
               <div className="space-y-2">
                 {groupedStats.map((group) => (
-                  <div key={group.name} className="bg-bg-secondary border border-border-primary rounded-lg p-4 flex items-center justify-between">
+                  <div key={group.name} className="glass rounded-xl p-4 flex items-center justify-between">
                     <div>
                       <div className="font-medium">{group.name}</div>
-                      <div className="text-xs text-text-muted">{group.count} trades</div>
+                      <div className="text-xs text-[#55556a]">{group.count} trades</div>
                     </div>
                     <div className="flex gap-6 text-sm">
                       <div className="text-center">
-                        <div className="text-xs text-text-muted">Win Rate</div>
-                        <div className={`font-bold ${group.winRate >= 50 ? 'text-accent-green' : 'text-accent-red'}`}>{group.winRate.toFixed(1)}%</div>
+                        <div className="text-xs text-[#55556a]">Win Rate</div>
+                        <div className={`font-bold ${group.winRate >= 50 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>{group.winRate.toFixed(1)}%</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-text-muted">Avg R</div>
+                        <div className="text-xs text-[#55556a]">Avg R</div>
                         <div className="font-bold">{group.avgR.toFixed(2)}R</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-text-muted">PnL</div>
-                        <div className={`font-bold ${group.totalPnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                        <div className="text-xs text-[#55556a]">PnL</div>
+                        <div className={`font-bold ${group.totalPnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                           {group.totalPnl >= 0 ? '+' : ''}${group.totalPnl.toFixed(2)}
                         </div>
                       </div>
                     </div>
                   </div>
                 ))}
-                {groupedStats.length === 0 && <div className="text-center py-8 text-text-muted">No data yet</div>}
+                {groupedStats.length === 0 && <div className="text-center py-8 text-[#55556a]">No data yet</div>}
               </div>
             </div>
           )}
         </>
       ) : (
-        <div className="text-center py-12 text-text-muted">No trades logged yet. Start trading to see your stats.</div>
+        <div className="text-center py-12 text-[#55556a]">No trades logged yet. Start trading to see your stats.</div>
       )}
     </div>
   );

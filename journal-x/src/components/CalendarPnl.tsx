@@ -53,38 +53,38 @@ export default function CalendarPnl({ refreshKey }: { refreshKey: number }) {
 
   const monthName = new Date(year, monthNum - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-  if (loading) return <div className="text-text-muted py-8 text-center">Loading...</div>;
+  if (loading) return <div className="text-[#55556a] py-8 text-center">Loading...</div>;
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-6">Calendar</h2>
+    <div className="animate-fade-in">
+      <h2 className="text-xl font-semibold mb-6 text-white">Calendar</h2>
 
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted mb-1">Monthly PnL</div>
-          <div className={`text-xl font-bold ${totalPnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a] mb-1">Monthly PnL</div>
+          <div className={`text-xl font-bold ${totalPnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
             {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
           </div>
         </div>
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted mb-1">Win Rate</div>
-          <div className="text-xl font-bold text-text-primary">{winRate}%</div>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a] mb-1">Win Rate</div>
+          <div className="text-xl font-bold text-white">{winRate}%</div>
         </div>
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted mb-1">Total Trades</div>
-          <div className="text-xl font-bold text-text-primary">{monthTrades.length}</div>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a] mb-1">Total Trades</div>
+          <div className="text-xl font-bold text-white">{monthTrades.length}</div>
         </div>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="text-text-secondary hover:text-text-primary px-3 py-1 rounded bg-bg-secondary">&larr;</button>
-        <span className="font-medium">{monthName}</span>
-        <button onClick={nextMonth} className="text-text-secondary hover:text-text-primary px-3 py-1 rounded bg-bg-secondary">&rarr;</button>
+        <button onClick={prevMonth} className="text-[#8b8b9e] hover:text-white px-3 py-1 rounded-xl glass transition-colors duration-200">&larr;</button>
+        <span className="font-medium text-white">{monthName}</span>
+        <button onClick={nextMonth} className="text-[#8b8b9e] hover:text-white px-3 py-1 rounded-xl glass transition-colors duration-200">&rarr;</button>
       </div>
 
       <div className="grid grid-cols-7 gap-1.5">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div key={d} className="text-center text-xs text-text-muted py-2 font-medium">{d}</div>
+          <div key={d} className="text-center text-xs text-[#55556a] py-2 font-medium">{d}</div>
         ))}
         {days.map((day, i) => {
           if (day === null) return <div key={`e-${i}`} />;
@@ -93,23 +93,23 @@ export default function CalendarPnl({ refreshKey }: { refreshKey: number }) {
           return (
             <div
               key={day}
-              className={`rounded-lg border p-2 min-h-[72px] transition-colors ${
+              className={`rounded-xl p-2 min-h-[72px] transition-colors duration-200 ${
                 data
                   ? data.pnl > 0
-                    ? 'border-accent-green/30 bg-accent-green/5'
+                    ? 'border border-[#34d399]/30 bg-[#34d399]/5'
                     : data.pnl < 0
-                    ? 'border-accent-red/30 bg-accent-red/5'
-                    : 'border-accent-yellow/30 bg-accent-yellow/5'
-                  : 'border-border-primary/20 bg-bg-secondary/20'
+                    ? 'border border-[#f87171]/30 bg-[#f87171]/5'
+                    : 'border border-yellow-400/30 bg-yellow-400/5'
+                  : 'glass'
               }`}
             >
-              <div className="text-xs text-text-muted">{day}</div>
+              <div className="text-xs text-[#55556a]">{day}</div>
               {data && (
                 <div className="mt-1">
-                  <div className={`text-sm font-bold ${data.pnl > 0 ? 'text-accent-green' : data.pnl < 0 ? 'text-accent-red' : 'text-accent-yellow'}`}>
+                  <div className={`text-sm font-bold ${data.pnl > 0 ? 'text-[#34d399]' : data.pnl < 0 ? 'text-[#f87171]' : 'text-yellow-400'}`}>
                     {data.pnl > 0 ? '+' : ''}{data.pnl.toFixed(0)}
                   </div>
-                  <div className="text-[10px] text-text-muted mt-0.5">{data.count} trade{data.count !== 1 ? 's' : ''}</div>
+                  <div className="text-[10px] text-[#55556a] mt-0.5">{data.count} trade{data.count !== 1 ? 's' : ''}</div>
                 </div>
               )}
             </div>

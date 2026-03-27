@@ -20,12 +20,12 @@ export default function RiskOverlay() {
   if (!locked) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center animate-fade-in">
       <div className="text-center">
-        <div className="text-6xl font-black text-accent-red mb-4">LOCKED</div>
-        <p className="text-text-secondary text-lg mb-2">Max daily loss reached.</p>
-        <p className="text-text-muted text-sm">Step away. Review your trades tomorrow.</p>
-        <button onClick={() => setLocked(false)} className="mt-8 text-xs text-text-muted hover:text-text-secondary underline">
+        <div className="text-6xl font-black text-[#f87171] mb-4">LOCKED</div>
+        <p className="text-[#8b8b9e] text-lg mb-2">Max daily loss reached.</p>
+        <p className="text-[#55556a] text-sm">Step away. Review your trades tomorrow.</p>
+        <button onClick={() => setLocked(false)} className="mt-8 text-xs text-[#55556a] hover:text-[#8b8b9e] underline">
           Override (not recommended)
         </button>
       </div>

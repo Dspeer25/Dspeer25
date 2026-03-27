@@ -58,19 +58,19 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
     return dates[dates.length - 1].slice(0, 7);
   }, [calendarData]);
 
-  if (loading || !settings) return <div className="text-text-muted py-8 text-center">Loading...</div>;
+  if (loading || !settings) return <div className="text-[#55556a] py-8 text-center">Loading...</div>;
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Entries</h2>
-        <div className="flex gap-1 bg-bg-secondary rounded-lg p-1">
+        <div className="flex gap-1 glass rounded-xl p-1">
           {(['table', 'calendar'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setViewMode(v)}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                viewMode === v ? 'bg-accent-blue text-white' : 'text-text-secondary hover:text-text-primary'
+                viewMode === v ? 'bg-[#6366f1] text-white' : 'text-[#8b8b9e] hover:text-white'
               }`}
             >
               {v === 'table' ? 'Table' : 'Calendar'}
@@ -117,7 +117,7 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border-primary text-text-secondary text-xs">
+              <tr className="border-b border-[rgba(255,255,255,0.06)] text-[#8b8b9e] text-xs">
                 <th className="py-2 px-2 text-left w-8"></th>
                 <th className="py-2 px-2 text-left">Date</th>
                 <th className="py-2 px-2 text-left">Ticker</th>
@@ -135,44 +135,44 @@ export default function EntriesTable({ refreshKey }: { refreshKey: number }) {
             </thead>
             <tbody>
               {filtered.map((trade) => (
-                <tr key={trade.id} className="border-b border-border-primary/50 hover:bg-bg-secondary/50 transition-colors">
+                <tr key={trade.id} className="border-b border-[rgba(255,255,255,0.03)] hover:bg-[rgba(18,18,26,0.5)] transition-colors">
                   <td className="py-2 px-2">
-                    <button onClick={() => toggleStar(trade)} className={`text-sm ${trade.starred ? 'text-accent-yellow' : 'text-text-muted hover:text-text-secondary'}`}>
+                    <button onClick={() => toggleStar(trade)} className={`text-sm ${trade.starred ? 'text-[#fbbf24]' : 'text-[#55556a] hover:text-[#8b8b9e]'}`}>
                       {trade.starred ? '\u2605' : '\u2606'}
                     </button>
                   </td>
-                  <td className="py-2 px-2 text-text-secondary">{trade.date}</td>
+                  <td className="py-2 px-2 text-[#8b8b9e]">{trade.date}</td>
                   <td className="py-2 px-2 font-medium">{trade.ticker}</td>
                   <td className="py-2 px-2">
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${trade.tradeType === 'Day' ? 'bg-accent-blue/10 text-accent-blue' : 'bg-accent-purple/10 text-accent-purple'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${trade.tradeType === 'Day' ? 'bg-[#6366f1]/10 text-[#6366f1]' : 'bg-[#a78bfa]/10 text-[#a78bfa]'}`}>
                       {trade.tradeType}
                     </span>
                   </td>
                   {settings.customFields.map((f) => (
-                    <td key={f.id} className="py-2 px-2 text-text-secondary hidden lg:table-cell">{trade.customFields[f.id] || '\u2014'}</td>
+                    <td key={f.id} className="py-2 px-2 text-[#8b8b9e] hidden lg:table-cell">{trade.customFields[f.id] || '\u2014'}</td>
                   ))}
-                  <td className="py-2 px-2 text-text-secondary">${trade.initialRisk}</td>
+                  <td className="py-2 px-2 text-[#8b8b9e]">${trade.initialRisk}</td>
                   <td className="py-2 px-2">
                     <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                      trade.result === 'W' ? 'bg-accent-green/10 text-accent-green' : trade.result === 'L' ? 'bg-accent-red/10 text-accent-red' : 'bg-accent-yellow/10 text-accent-yellow'
+                      trade.result === 'W' ? 'bg-[#34d399]/10 text-[#34d399]' : trade.result === 'L' ? 'bg-[#f87171]/10 text-[#f87171]' : 'bg-[#fbbf24]/10 text-[#fbbf24]'
                     }`}>
                       {trade.result}
                     </span>
                   </td>
-                  <td className={`py-2 px-2 text-right font-medium ${trade.dollarPnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                  <td className={`py-2 px-2 text-right font-medium ${trade.dollarPnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                     {trade.dollarPnl >= 0 ? '+' : ''}{trade.dollarPnl.toFixed(2)}
                   </td>
-                  <td className="py-2 px-2 text-right text-text-secondary">{trade.rr.toFixed(1)}R</td>
+                  <td className="py-2 px-2 text-right text-[#8b8b9e]">{trade.rr.toFixed(1)}R</td>
                   <td className="py-2 px-2 text-center text-xs font-bold">{trade.grade || '\u2014'}</td>
                   <td className="py-2 px-2">
-                    <button onClick={() => handleDelete(trade.id)} className="text-text-muted hover:text-accent-red text-xs">\u2715</button>
+                    <button onClick={() => handleDelete(trade.id)} className="text-[#55556a] hover:text-[#f87171] text-xs">\u2715</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <div className="text-center py-12 text-text-muted">No trades found</div>
+            <div className="text-center py-12 text-[#55556a]">No trades found</div>
           )}
         </div>
       ) : (
@@ -194,7 +194,7 @@ function EntriesCalendar({ calendarData, month }: { calendarData: Record<string,
   return (
     <div className="grid grid-cols-7 gap-1">
       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-        <div key={d} className="text-center text-xs text-text-muted py-1">{d}</div>
+        <div key={d} className="text-center text-xs text-[#55556a] py-1">{d}</div>
       ))}
       {days.map((day, i) => {
         if (day === null) return <div key={`e-${i}`} />;
@@ -206,21 +206,21 @@ function EntriesCalendar({ calendarData, month }: { calendarData: Record<string,
         return (
           <div
             key={day}
-            className={`p-2 rounded-lg border text-center min-h-[60px] ${
+            className={`p-2 rounded-xl border text-center min-h-[60px] ${
               hasTrades
                 ? pnl >= 0
-                  ? 'border-accent-green/20 bg-accent-green/5'
-                  : 'border-accent-red/20 bg-accent-red/5'
-                : 'border-border-primary/30 bg-bg-secondary/30'
+                  ? 'border-[#34d399]/20 bg-[#34d399]/5'
+                  : 'border-[#f87171]/20 bg-[#f87171]/5'
+                : 'border-[rgba(255,255,255,0.03)] bg-[rgba(18,18,26,0.3)]'
             }`}
           >
-            <div className="text-xs text-text-muted">{day}</div>
+            <div className="text-xs text-[#55556a]">{day}</div>
             {hasTrades && (
               <>
-                <div className={`text-xs font-bold mt-1 ${pnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                <div className={`text-xs font-bold mt-1 ${pnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                   {pnl >= 0 ? '+' : ''}{pnl.toFixed(0)}
                 </div>
-                <div className="text-[10px] text-text-muted">{dayTrades.length}t</div>
+                <div className="text-[10px] text-[#55556a]">{dayTrades.length}t</div>
               </>
             )}
           </div>

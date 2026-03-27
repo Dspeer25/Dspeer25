@@ -65,50 +65,50 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
     return current;
   }, [trades]);
 
-  if (loading) return <div className="text-text-muted py-8 text-center">Loading...</div>;
+  if (loading) return <div className="text-[#55556a] py-8 text-center">Loading...</div>;
 
   if (trades.length === 0) {
     return (
-      <div>
+      <div className="animate-fade-in">
         <h2 className="text-xl font-semibold mb-6">Performance</h2>
-        <div className="text-center py-12 text-text-muted">No trades logged yet.</div>
+        <div className="text-center py-12 text-[#55556a]">No trades logged yet.</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <h2 className="text-xl font-semibold">Performance</h2>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted">Green Day Streak</div>
-          <div className="text-2xl font-bold text-accent-green">{streak}</div>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a]">Green Day Streak</div>
+          <div className="text-2xl font-bold text-[#34d399]">{streak}</div>
         </div>
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted">Best Day</div>
-          <div className="text-2xl font-bold text-accent-green">+${dailyData.best[0]?.pnl.toFixed(0) || '0'}</div>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a]">Best Day</div>
+          <div className="text-2xl font-bold text-[#34d399]">+${dailyData.best[0]?.pnl.toFixed(0) || '0'}</div>
         </div>
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted">Worst Day</div>
-          <div className="text-2xl font-bold text-accent-red">${dailyData.worst[0]?.pnl.toFixed(0) || '0'}</div>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a]">Worst Day</div>
+          <div className="text-2xl font-bold text-[#f87171]">${dailyData.worst[0]?.pnl.toFixed(0) || '0'}</div>
         </div>
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <div className="text-xs text-text-muted">Trading Days</div>
+        <div className="glass rounded-xl p-4">
+          <div className="text-xs text-[#55556a]">Trading Days</div>
           <div className="text-2xl font-bold">{Array.from(new Set(trades.map((t) => t.date))).length}</div>
         </div>
       </div>
 
-      <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
+      <div className="glass rounded-xl p-4">
         <h3 className="text-sm font-medium mb-3">Monthly Performance</h3>
         <div className="space-y-2">
           {monthlyData.map((m) => (
-            <div key={m.month} className="flex items-center justify-between py-2 border-b border-border-primary/30 last:border-0">
+            <div key={m.month} className="flex items-center justify-between py-2 border-b border-[rgba(255,255,255,0.03)] last:border-0">
               <div>
                 <div className="font-medium text-sm">{new Date(m.month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' })}</div>
-                <div className="text-xs text-text-muted">{m.trades} trades / {m.winRate.toFixed(0)}% WR</div>
+                <div className="text-xs text-[#55556a]">{m.trades} trades / {m.winRate.toFixed(0)}% WR</div>
               </div>
-              <div className={`text-lg font-bold ${m.pnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+              <div className={`text-lg font-bold ${m.pnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                 {m.pnl >= 0 ? '+' : ''}${m.pnl.toFixed(2)}
               </div>
             </div>
@@ -116,7 +116,7 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
         </div>
       </div>
 
-      <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
+      <div className="glass rounded-xl p-4">
         <h3 className="text-sm font-medium mb-3">Weekly Performance</h3>
         <div className="space-y-2">
           {weeklyData.slice(0, 8).map((w) => {
@@ -124,14 +124,14 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
             const barWidth = Math.min(Math.abs(w.pnl) / maxPnl * 100, 100);
             return (
               <div key={w.week} className="flex items-center gap-3">
-                <div className="w-24 text-xs text-text-muted shrink-0">{w.week}</div>
-                <div className="flex-1 h-6 bg-bg-primary rounded overflow-hidden relative">
-                  <div className={`h-full rounded ${w.pnl >= 0 ? 'bg-accent-green/30' : 'bg-accent-red/30'}`} style={{ width: `${barWidth}%` }} />
-                  <span className={`absolute inset-0 flex items-center px-2 text-xs font-medium ${w.pnl >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                <div className="w-24 text-xs text-[#55556a] shrink-0">{w.week}</div>
+                <div className="flex-1 h-6 bg-[#0c0c14] rounded overflow-hidden relative">
+                  <div className={`h-full rounded ${w.pnl >= 0 ? 'bg-[#34d399]/30' : 'bg-[#f87171]/30'}`} style={{ width: `${barWidth}%` }} />
+                  <span className={`absolute inset-0 flex items-center px-2 text-xs font-medium ${w.pnl >= 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                     {w.pnl >= 0 ? '+' : ''}${w.pnl.toFixed(0)}
                   </span>
                 </div>
-                <div className="w-16 text-xs text-text-muted text-right">{w.winRate.toFixed(0)}% WR</div>
+                <div className="w-16 text-xs text-[#55556a] text-right">{w.winRate.toFixed(0)}% WR</div>
               </div>
             );
           })}
@@ -139,21 +139,21 @@ export default function Leaderboard({ refreshKey }: { refreshKey: number }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <h3 className="text-sm font-medium mb-3 text-accent-green">Best Days</h3>
+        <div className="glass rounded-xl p-4">
+          <h3 className="text-sm font-medium mb-3 text-[#34d399]">Best Days</h3>
           {dailyData.best.map((d) => (
             <div key={d.date} className="flex items-center justify-between py-1 text-sm">
-              <span className="text-text-muted">{d.date}</span>
-              <span className="text-accent-green font-medium">+${d.pnl.toFixed(2)}</span>
+              <span className="text-[#55556a]">{d.date}</span>
+              <span className="text-[#34d399] font-medium">+${d.pnl.toFixed(2)}</span>
             </div>
           ))}
         </div>
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-4">
-          <h3 className="text-sm font-medium mb-3 text-accent-red">Worst Days</h3>
+        <div className="glass rounded-xl p-4">
+          <h3 className="text-sm font-medium mb-3 text-[#f87171]">Worst Days</h3>
           {dailyData.worst.map((d) => (
             <div key={d.date} className="flex items-center justify-between py-1 text-sm">
-              <span className="text-text-muted">{d.date}</span>
-              <span className="text-accent-red font-medium">${d.pnl.toFixed(2)}</span>
+              <span className="text-[#55556a]">{d.date}</span>
+              <span className="text-[#f87171] font-medium">${d.pnl.toFixed(2)}</span>
             </div>
           ))}
         </div>
