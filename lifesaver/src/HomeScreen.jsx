@@ -2,71 +2,69 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   IMPACT, inferMeatType, HEADERS, FLAVOR_LINES, randomFrom,
-  saveMeal, calculateImpactFromItems, getApiKey, resizeImage
+  saveMeal, calculateImpactFromItems, getApiKey, resizeImage,
+  CO2_FACTS, CROP_SETS
 } from './data'
 import { analyzeMealImage, analyzeMealText } from './api/claude'
 import AnimalReveal from './AnimalReveal'
+
+// Realistic spinning earth using an Unsplash satellite image
+function SpinningEarth() {
+  return (
+    <div className="earth-sphere">
+      <motion.div
+        className="earth-texture"
+        animate={{ backgroundPositionX: [0, -120] }}
+        transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
+        style={{
+          backgroundImage: "url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Earth_Western_Hemisphere_transparent_background.png/600px-Earth_Western_Hemisphere_transparent_background.png')",
+          backgroundSize: '120px 60px',
+          backgroundRepeat: 'repeat-x',
+          backgroundPosition: '0 center',
+          width: '100%',
+          height: '100%',
+          borderRadius: '50%',
+        }}
+      />
+      <div className="earth-gloss" />
+    </div>
+  )
+}
 
 function SmokeCloud({ delay = 0, size = 1, y = 0 }) {
   return (
     <motion.div
       style={{
         position: 'absolute',
-        left: 48,
+        left: 68,
         top: `calc(50% + ${y}px)`,
         transform: 'translateY(-50%)',
+        filter: 'blur(1px)',
       }}
-      initial={{ x: 0, opacity: 0.85, scale: size }}
-      animate={{ x: 220, opacity: 0, scale: size * 0.2 }}
-      transition={{ delay: 0.8 + delay, duration: 1.5, ease: 'easeIn' }}
+      initial={{ x: 0, opacity: 0.9, scale: size }}
+      animate={{ x: 180, opacity: 0, scale: size * 0.15 }}
+      transition={{ delay: 0.8 + delay, duration: 2, ease: 'easeIn' }}
     >
-      <svg width="40" height="28" viewBox="0 0 40 28" fill="none">
-        <ellipse cx="20" cy="16" rx="18" ry="11" fill="rgba(60,60,60,0.7)" />
-        <ellipse cx="14" cy="12" rx="12" ry="9" fill="rgba(80,80,80,0.6)" />
-        <ellipse cx="26" cy="10" rx="10" ry="8" fill="rgba(50,50,50,0.65)" />
-        <ellipse cx="20" cy="8" rx="8" ry="6" fill="rgba(70,70,70,0.5)" />
+      <svg width="50" height="34" viewBox="0 0 50 34" fill="none">
+        <ellipse cx="25" cy="20" rx="22" ry="13" fill="rgba(40,35,30,0.75)" />
+        <ellipse cx="17" cy="15" rx="15" ry="10" fill="rgba(55,50,45,0.65)" />
+        <ellipse cx="33" cy="12" rx="13" ry="10" fill="rgba(35,30,25,0.7)" />
+        <ellipse cx="25" cy="9" rx="10" ry="7" fill="rgba(60,55,50,0.55)" />
+        <ellipse cx="20" cy="22" rx="8" ry="5" fill="rgba(45,40,35,0.5)" />
       </svg>
     </motion.div>
   )
 }
 
-function EarthIcon() {
+function NalgeneBottle({ size = 'small' }) {
+  const w = size === 'small' ? 6 : 18
+  const h = size === 'small' ? 14 : 36
   return (
-    <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="22" cy="22" r="20" fill="#1a6b4a" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-      <ellipse cx="16" cy="14" rx="8" ry="6" fill="#2d8a5e" />
-      <ellipse cx="28" cy="24" rx="7" ry="8" fill="#2d8a5e" />
-      <ellipse cx="12" cy="28" rx="5" ry="4" fill="#2d8a5e" />
-      <circle cx="22" cy="22" r="20" fill="url(#earthShine)" />
-      <defs>
-        <radialGradient id="earthShine" cx="0.35" cy="0.35" r="0.7">
-          <stop offset="0%" stopColor="rgba(100,180,255,0.2)" />
-          <stop offset="100%" stopColor="rgba(0,50,100,0.3)" />
-        </radialGradient>
-      </defs>
+    <svg width={w} height={h} viewBox="0 0 18 36" fill="none" style={{ flexShrink: 0 }}>
+      <rect x="5" y="0" width="8" height="4" rx="1" fill="rgba(255,255,255,0.25)" />
+      <rect x="3" y="4" width="12" height="30" rx="3" fill="rgba(80,170,255,0.35)" stroke="rgba(80,170,255,0.3)" strokeWidth="0.5" />
+      <rect x="4" y="8" width="10" height="26" rx="2" fill="rgba(80,170,255,0.45)" />
     </svg>
-  )
-}
-
-function NalgeneBottle({ delay = 0 }) {
-  return (
-    <motion.svg
-      width="18" height="36" viewBox="0 0 18 36" fill="none"
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.3 }}
-      style={{ flexShrink: 0 }}
-    >
-      <rect x="5" y="0" width="8" height="4" rx="1" fill="rgba(255,255,255,0.3)" />
-      <rect x="3" y="4" width="12" height="30" rx="3" fill="rgba(80,170,255,0.15)" stroke="rgba(80,170,255,0.4)" strokeWidth="1" />
-      <motion.rect
-        x="4" y="34" width="10" height="0" rx="2"
-        fill="rgba(80,170,255,0.5)"
-        initial={{ height: 0, y: 34 }}
-        animate={{ height: 26, y: 8 }}
-        transition={{ delay: delay + 0.3, duration: 0.8, ease: 'easeOut' }}
-      />
-    </motion.svg>
   )
 }
 
@@ -77,6 +75,7 @@ export default function HomeScreen() {
   const [analyzing, setAnalyzing] = useState(false)
   const [result, setResult] = useState(null)
   const [debugError, setDebugError] = useState(null)
+  const [cropSetIndex, setCropSetIndex] = useState(0)
   const fileRef = useRef(null)
 
   async function handlePhotoSelect(e) {
@@ -105,6 +104,7 @@ export default function HomeScreen() {
       water: impact.water,
       meal: description || meal.trim() || 'Meal',
       items,
+      byAnimal: impact.byAnimal,
     })
 
     setResult({
@@ -116,6 +116,7 @@ export default function HomeScreen() {
       flavor: randomFrom(FLAVOR_LINES),
     })
 
+    setCropSetIndex(0)
     setMeal('')
     setPhoto(null)
     setPreview(null)
@@ -158,14 +159,23 @@ export default function HomeScreen() {
 
   const hasInput = photo || meal.trim()
   const co2Lbs = result ? (result.impact.co2 * 2.205).toFixed(1) : 0
-  const miles = result ? (result.impact.co2 / 0.41).toFixed(1) : 0
+  const co2LbsNum = result ? result.impact.co2 * 2.205 : 0
+
+  // CO2 fun fact
+  const co2Fact = result ? CO2_FACTS(co2LbsNum) : ''
 
   // Water: Nalgene bottles (1 Nalgene = 32oz = 0.25 gal)
   const nalgeneCount = result ? Math.round(result.impact.water / 0.25) : 0
-  // Real crop equivalents
-  const lettuceHeads = result ? Math.round(result.impact.water / 4) : 0
-  const tomatoPlants = result ? Math.round(result.impact.water / 3.5) : 0
-  const potatoLbs = result ? Math.round(result.impact.water / 25) : 0
+
+  // Crop rotation
+  const currentCrops = result ? CROP_SETS[cropSetIndex % CROP_SETS.length].map(c => ({
+    ...c,
+    amount: c.calc(result.impact.water),
+  })) : []
+
+  function rotateCrops() {
+    setCropSetIndex(prev => prev + 1)
+  }
 
   return (
     <div className="home">
@@ -289,7 +299,7 @@ export default function HomeScreen() {
               <AnimalReveal key={type} animalType={data.image} count={data.count} label={data.label} />
             ))}
 
-            {/* CO2 — SVG smoke cloud leaving earth */}
+            {/* CO2 — realistic earth + smoke leaving */}
             <motion.div className="visual-stat glass co2-section"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
@@ -297,26 +307,29 @@ export default function HomeScreen() {
                 <span className="visual-stat-label">CO2 Kept Out</span>
                 <span className="visual-stat-value">{co2Lbs} lbs</span>
               </div>
-              <p className="visual-stat-desc">
-                That's like <strong>not driving {miles} miles</strong>.
-              </p>
+              <p className="visual-stat-desc">{co2Fact}</p>
 
               <div className="co2-animation-scene">
                 <div className="co2-earth-icon">
-                  <EarthIcon />
+                  <SpinningEarth />
                 </div>
-                <SmokeCloud delay={0} size={1.1} y={-6} />
-                <SmokeCloud delay={0.15} size={0.8} y={8} />
-                <SmokeCloud delay={0.3} size={0.9} y={-2} />
+                <SmokeCloud delay={0} size={1.1} y={-8} />
+                <SmokeCloud delay={0.2} size={0.85} y={10} />
+                <SmokeCloud delay={0.4} size={0.95} y={0} />
                 <motion.div
                   className="co2-cloud-label-float"
-                  initial={{ x: 60, opacity: 0.9 }}
-                  animate={{ x: 220, opacity: 0 }}
-                  transition={{ delay: 0.9, duration: 1.5, ease: 'easeIn' }}
+                  initial={{ x: 80, opacity: 0.9 }}
+                  animate={{ x: 240, opacity: 0 }}
+                  transition={{ delay: 1, duration: 2, ease: 'easeIn' }}
                 >
                   {co2Lbs} lbs
                 </motion.div>
                 <div className="co2-void">
+                  <motion.div
+                    className="co2-void-ring co2-void-ring-outer"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.15, 0.4] }}
+                    transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+                  />
                   <motion.div
                     className="co2-void-ring"
                     animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.3, 0.6] }}
@@ -328,7 +341,7 @@ export default function HomeScreen() {
               <p className="co2-caption">This pollution didn't enter the atmosphere</p>
             </motion.div>
 
-            {/* Water — Nalgene bottles + real crops */}
+            {/* Water — Nalgene warehouse + real crops with rotation */}
             <motion.div className="visual-stat glass water-section"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
             >
@@ -337,46 +350,52 @@ export default function HomeScreen() {
                 <span className="visual-stat-value">{result.impact.water.toFixed(0)} gal</span>
               </div>
 
-              {/* Nalgene bottle comparison */}
+              {/* Nalgene warehouse visual */}
               <div className="nalgene-section">
                 <p className="nalgene-headline">
                   That's <strong>~{nalgeneCount.toLocaleString()} Nalgene bottles</strong> of water
                 </p>
-                <div className="nalgene-grid">
-                  {Array.from({ length: Math.min(16, Math.ceil(nalgeneCount / 30)) }).map((_, i) => (
-                    <NalgeneBottle key={i} delay={1 + i * 0.06} />
-                  ))}
-                  {nalgeneCount > 16 && (
-                    <motion.span className="nalgene-more"
-                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2 }}
-                    >
-                      x{nalgeneCount.toLocaleString()}
-                    </motion.span>
-                  )}
+                <div className="nalgene-warehouse">
+                  <div className="nalgene-warehouse-inner">
+                    {Array.from({ length: Math.min(nalgeneCount, 300) }).map((_, i) => (
+                      <NalgeneBottle key={i} size="small" />
+                    ))}
+                    {nalgeneCount > 300 && (
+                      <div className="nalgene-overflow">+{(nalgeneCount - 300).toLocaleString()} more</div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Real crop equivalents */}
+              {/* Real crop equivalents with rotation */}
               <div className="crops-section">
-                <p className="crops-title">That water could grow:</p>
-                <motion.div className="crop-item"
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.4 }}
-                >
-                  <span className="crop-icon">🥬</span>
-                  <span className="crop-text">~{lettuceHeads} heads of lettuce</span>
-                </motion.div>
-                <motion.div className="crop-item"
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.55 }}
-                >
-                  <span className="crop-icon">🍅</span>
-                  <span className="crop-text">~{tomatoPlants} tomato plants</span>
-                </motion.div>
-                <motion.div className="crop-item"
-                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 1.7 }}
-                >
-                  <span className="crop-icon">🥔</span>
-                  <span className="crop-text">~{potatoLbs} lbs of potatoes</span>
-                </motion.div>
+                <div className="crops-header">
+                  <p className="crops-title">That water could grow:</p>
+                  <button className="crops-refresh" onClick={rotateCrops} title="Show different crops">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M13.65 2.35A7.96 7.96 0 008 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 018 14 6 6 0 1114 8h-3l4 4 4-4h-3a7.96 7.96 0 00-2.35-5.65z" fill="rgba(255,255,255,0.5)" transform="scale(0.85)" />
+                    </svg>
+                    <span>Or</span>
+                  </button>
+                </div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={cropSetIndex}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    {currentCrops.map((crop, i) => (
+                      <motion.div className="crop-item" key={crop.name}
+                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 * i }}
+                      >
+                        <span className="crop-icon">{crop.emoji}</span>
+                        <span className="crop-text">~{crop.amount} {crop.name}</span>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </motion.div>
 

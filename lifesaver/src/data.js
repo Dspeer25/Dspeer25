@@ -73,6 +73,54 @@ export function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// CO2 facts based on lbs saved
+export function CO2_FACTS(lbs) {
+  const miles = (lbs / 0.9).toFixed(1);
+  const phones = Math.round(lbs * 25);
+  const balloons = Math.round(lbs * 8.5);
+  const breaths = Math.round(lbs * 110);
+  const bulbHours = Math.round(lbs * 15);
+  const treeMinutes = Math.round(lbs * 45);
+  const facts = [
+    `That's like not driving ${miles} miles. Imagine that stretch of highway staying clean.`,
+    `That much CO2 could fill ${balloons.toLocaleString()} party balloons with toxic gas. Not today.`,
+    `A tree would need ${treeMinutes} minutes of photosynthesis to absorb this much CO2.`,
+    `That's enough CO2 to charge a phone ${phones.toLocaleString()} times. Kept out of the sky instead.`,
+    `You just prevented the equivalent of ${breaths.toLocaleString()} human breaths worth of CO2 from polluting the air.`,
+    `That could've powered a lightbulb for ${bulbHours} hours. Instead, it stayed out of the atmosphere.`,
+  ];
+  return facts[Math.floor(Math.random() * facts.length)];
+}
+
+// Crop sets for rotation (gallons per unit)
+export const CROP_SETS = [
+  [
+    { emoji: '🥬', name: 'heads of lettuce', calc: (gal) => Math.round(gal / 4) },
+    { emoji: '🍅', name: 'tomato plants', calc: (gal) => Math.round(gal / 3.5) },
+    { emoji: '🥔', name: 'lbs of potatoes', calc: (gal) => Math.round(gal / 25) },
+  ],
+  [
+    { emoji: '🥕', name: 'lbs of carrots', calc: (gal) => Math.round(gal / 6.8) },
+    { emoji: '🫑', name: 'bell peppers', calc: (gal) => Math.round(gal / 7) },
+    { emoji: '🍓', name: 'pints of strawberries', calc: (gal) => Math.round(gal / 10) },
+  ],
+  [
+    { emoji: '🌽', name: 'ears of corn', calc: (gal) => Math.round(gal / 10) },
+    { emoji: '🥦', name: 'heads of broccoli', calc: (gal) => Math.round(gal / 5.5) },
+    { emoji: '🍌', name: 'bananas', calc: (gal) => Math.round(gal / 2) },
+  ],
+  [
+    { emoji: '🍇', name: 'bunches of grapes', calc: (gal) => Math.round(gal / 12) },
+    { emoji: '🧅', name: 'onions', calc: (gal) => Math.round(gal / 5) },
+    { emoji: '🥒', name: 'cucumbers', calc: (gal) => Math.round(gal / 4.5) },
+  ],
+  [
+    { emoji: '🍑', name: 'peaches', calc: (gal) => Math.round(gal / 9) },
+    { emoji: '🥜', name: 'oz of peanuts', calc: (gal) => Math.round(gal / 4.7) },
+    { emoji: '🫘', name: 'lbs of beans', calc: (gal) => Math.round(gal / 14) },
+  ],
+];
+
 export function loadMeals() {
   try {
     return JSON.parse(localStorage.getItem('lifesaver_meals') || '[]');
@@ -89,15 +137,26 @@ export function saveMeal(entry) {
 
 export function getTotals() {
   const meals = loadMeals();
-  return meals.reduce(
-    (acc, m) => ({
-      animals: acc.animals + (m.animals || 0),
-      co2: acc.co2 + (m.co2 || 0),
-      water: acc.water + (m.water || 0),
-      count: acc.count + 1,
-    }),
-    { animals: 0, co2: 0, water: 0, count: 0 }
+  const totals = meals.reduce(
+    (acc, m) => {
+      acc.animals += (m.animals || 0);
+      acc.co2 += (m.co2 || 0);
+      acc.water += (m.water || 0);
+      acc.count += 1;
+      // Aggregate by animal type
+      if (m.byAnimal) {
+        for (const [type, data] of Object.entries(m.byAnimal)) {
+          if (!acc.byAnimal[type]) {
+            acc.byAnimal[type] = { count: 0, label: data.label, emoji: data.emoji };
+          }
+          acc.byAnimal[type].count += data.count || 0;
+        }
+      }
+      return acc;
+    },
+    { animals: 0, co2: 0, water: 0, count: 0, byAnimal: {} }
   );
+  return totals;
 }
 
 export function getApiKey() {

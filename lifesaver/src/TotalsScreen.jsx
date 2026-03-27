@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { getTotals, loadMeals } from './data'
+import { getTotals, loadMeals, IMPACT } from './data'
 
 function getStreak() {
   const meals = loadMeals()
@@ -36,6 +36,18 @@ function CountUp({ value, decimals = 2 }) {
   return <>{display.toFixed(decimals)}</>
 }
 
+const ANIMAL_EMOJIS = {
+  cow: '🐄',
+  chicken: '🐔',
+  pig: '🐖',
+}
+
+const ANIMAL_LABELS = {
+  cow: 'Cows',
+  chicken: 'Chickens',
+  pig: 'Pigs',
+}
+
 export default function TotalsScreen() {
   const totals = getTotals()
   const streak = getStreak()
@@ -50,19 +62,25 @@ export default function TotalsScreen() {
     )
   }
 
-  const cards = [
+  const co2Lbs = totals.co2 * 2.205
+  const nalgeneBottles = Math.round(totals.water / 0.25)
+
+  const mainCards = [
     { emoji: '🍽️', value: totals.count, decimals: 0, label: 'Meals Logged' },
-    { emoji: '🐾', value: totals.animals, decimals: 2, label: 'Animals Saved' },
-    { emoji: '☁️', value: totals.co2, decimals: 1, label: 'kg CO₂ Avoided' },
+    { emoji: '☁️', value: co2Lbs, decimals: 1, label: 'lbs CO2 Avoided' },
     { emoji: '💧', value: totals.water, decimals: 0, label: 'Gallons Water Saved' },
+    { emoji: '🫙', value: nalgeneBottles, decimals: 0, label: 'Nalgene Bottles Worth' },
   ]
+
+  // Break down animals by type
+  const animalEntries = Object.entries(totals.byAnimal)
 
   return (
     <div className="totals">
       <h1 className="totals-title">Your Impact</h1>
       <p className="home-subtitle">Every meal counts.</p>
 
-      {cards.map((card, i) => (
+      {mainCards.map((card, i) => (
         <motion.div
           key={card.label}
           className="total-card glass"
@@ -77,6 +95,38 @@ export default function TotalsScreen() {
           <div className="total-label">{card.label}</div>
         </motion.div>
       ))}
+
+      {/* Animal breakdown by type */}
+      {animalEntries.length > 0 && (
+        <motion.div
+          className="total-card glass"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: mainCards.length * 0.1, duration: 0.4 }}
+        >
+          <div className="total-emoji">🐾</div>
+          <div className="total-label" style={{ marginBottom: 14 }}>Animals Saved (by type)</div>
+          <div className="animal-breakdown">
+            {animalEntries.map(([type, data]) => (
+              <div className="animal-breakdown-row" key={type}>
+                <span className="animal-breakdown-emoji">
+                  {ANIMAL_EMOJIS[data.label] || ANIMAL_EMOJIS[type] || '🐾'}
+                </span>
+                <span className="animal-breakdown-label">
+                  {ANIMAL_LABELS[data.label] || ANIMAL_LABELS[type] || type}
+                </span>
+                <span className="animal-breakdown-value">
+                  {data.count.toFixed(3)}
+                </span>
+              </div>
+            ))}
+            <div className="animal-breakdown-total">
+              <span>Total</span>
+              <span>{totals.animals.toFixed(3)}</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {streak > 0 && (
         <motion.div
