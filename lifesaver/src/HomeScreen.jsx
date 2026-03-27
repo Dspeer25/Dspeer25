@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   IMPACT, inferMeatType, HEADERS, FLAVOR_LINES, randomFrom,
@@ -87,11 +87,10 @@ export default function HomeScreen() {
   }
 
   const hasInput = photo || meal.trim()
-
-  // Water comparison: average shower = 17 gallons
-  const showers = result ? (result.impact.water / 17).toFixed(1) : 0
-  // CO2 comparison: driving 1 mile = ~0.41 kg CO2
+  const co2Lbs = result ? (result.impact.co2 * 2.205).toFixed(1) : 0
   const miles = result ? (result.impact.co2 / 0.41).toFixed(1) : 0
+  const showers = result ? (result.impact.water / 17).toFixed(1) : 0
+  const plants = result ? Math.round(result.impact.water / 3) : 0
 
   return (
     <div className="home">
@@ -106,7 +105,6 @@ export default function HomeScreen() {
         style={{ display: 'none' }}
       />
 
-      {/* Camera circle or photo preview */}
       <AnimatePresence mode="wait">
         {!preview ? (
           <motion.div
@@ -134,7 +132,6 @@ export default function HomeScreen() {
         )}
       </AnimatePresence>
 
-      {/* Text input */}
       <div className="input-section">
         <p className="or-divider">or type it</p>
         <input
@@ -151,14 +148,10 @@ export default function HomeScreen() {
         {analyzing ? 'Analyzing...' : photo ? 'Analyze meal' : 'Log it'}
       </button>
 
-      {/* Analyzing */}
       <AnimatePresence>
         {analyzing && (
-          <motion.div
-            className="analyzing glass"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+          <motion.div className="analyzing glass"
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
           >
             <div className="analyzing-spinner" />
             <p className="analyzing-text">Reading your meal...</p>
@@ -167,124 +160,122 @@ export default function HomeScreen() {
         )}
       </AnimatePresence>
 
-      {/* Results */}
       <AnimatePresence>
         {result && (
-          <motion.div
-            className="results"
-            key={result.header + result.flavor}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+          <motion.div className="results" key={result.header + result.flavor}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
           >
             <motion.p className="result-header"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             >
               {result.header}
             </motion.p>
 
             {result.description && (
               <motion.p className="result-subheader"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.15 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
               >
                 {result.description}
               </motion.p>
             )}
 
-            {/* AI item breakdown */}
+            {/* AI spotted these items */}
             <motion.div className="ai-breakdown glass"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
             >
-              <p className="ai-breakdown-title">What we found</p>
+              <p className="ai-breakdown-title">🔍 What we spotted</p>
               {result.items.map((item, i) => (
                 <div className="ai-breakdown-item" key={i}>
+                  <span className="ai-breakdown-bullet">•</span>
                   <span className="ai-breakdown-name">{item.name}</span>
-                  <span className="ai-breakdown-equiv">replaces {item.meatEquivalent}</span>
+                  <span className="ai-breakdown-equiv">→ replaces {item.meatEquivalent} (~{item.portionGrams}g)</span>
                 </div>
               ))}
             </motion.div>
 
             {/* Animal reveal */}
             {Object.entries(result.impact.byAnimal).map(([type, data]) => (
-              <AnimalReveal
-                key={type}
-                animalType={data.image}
-                count={data.count}
-                label={data.label}
-              />
+              <AnimalReveal key={type} animalType={data.image} count={data.count} label={data.label} />
             ))}
 
-            {/* CO2 — visual comparison */}
-            <motion.div className="visual-stat glass"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+            {/* CO2 — animated cloud leaving earth */}
+            <motion.div className="visual-stat glass co2-section"
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
               <div className="visual-stat-header">
-                <span className="visual-stat-label">☁️ CO₂ Avoided</span>
-                <span className="visual-stat-value">{result.impact.co2.toFixed(1)} kg</span>
+                <span className="visual-stat-label">☁️ CO₂ Kept Out</span>
+                <span className="visual-stat-value">{co2Lbs} lbs</span>
               </div>
               <p className="visual-stat-desc">
-                That's like <strong>not driving {miles} miles</strong>. This much pollution stayed out of the atmosphere:
+                That's like <strong>not driving {miles} miles</strong>.
               </p>
-              <div className="co2-visual">
-                {Array.from({ length: 8 }).map((_, i) => {
-                  const threshold = (i / 8) * 10
-                  const isAvoided = result.impact.co2 > threshold
-                  return (
-                    <motion.div
-                      key={i}
-                      className={`co2-stack ${isAvoided ? 'avoided' : 'normal'}`}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${20 + Math.random() * 60}%` }}
-                      transition={{ delay: 0.8 + i * 0.05, duration: 0.6 }}
-                    />
-                  )
-                })}
-              </div>
-              <div className="co2-labels">
-                <span>Your meal</span>
-                <span>Meat equivalent</span>
+
+              <div className="co2-animation-scene">
+                <div className="co2-earth">🌍</div>
+                <motion.div className="co2-cloud-group"
+                  initial={{ x: 0, opacity: 0.9 }}
+                  animate={{ x: 200, opacity: 0, scale: 0.3 }}
+                  transition={{ delay: 1, duration: 2, ease: 'easeIn' }}
+                >
+                  <div className="co2-dirty-cloud">
+                    <span>💨</span><span>💨</span><span>💨</span>
+                  </div>
+                  <span className="co2-cloud-label">{co2Lbs} lbs</span>
+                </motion.div>
+                <div className="co2-vortex">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
+                  >🌀</motion.div>
+                </div>
+                <p className="co2-caption">This pollution didn't enter the atmosphere</p>
               </div>
             </motion.div>
 
-            {/* Water — tank visual */}
-            <motion.div className="visual-stat glass"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+            {/* Water — bathtub fill + plants */}
+            <motion.div className="visual-stat glass water-section"
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}
             >
               <div className="visual-stat-header">
                 <span className="visual-stat-label">💧 Water Saved</span>
                 <span className="visual-stat-value">{result.impact.water.toFixed(0)} gal</span>
               </div>
               <p className="visual-stat-desc">
-                That's <strong>{showers} showers</strong> worth of water that didn't get used raising livestock.
+                That's <strong>{showers} showers</strong> worth of water.
               </p>
-              <div className="water-visual">
-                <motion.div
-                  className="water-fill"
-                  initial={{ height: 0 }}
-                  animate={{ height: `${Math.min((result.impact.water / 700) * 100, 95)}%` }}
-                  transition={{ delay: 1, duration: 1.2, ease: 'easeOut' }}
-                />
-                <div className="water-equivalent">
-                  <span className="water-equiv-number">🚿 {showers}</span>
-                  <span className="water-equiv-text">showers worth</span>
+
+              <div className="water-scene">
+                <div className="bathtub-container">
+                  <div className="bathtub-outline">
+                    <motion.div className="bathtub-water"
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.min((result.impact.water / 700) * 100, 90)}%` }}
+                      transition={{ delay: 1.2, duration: 1.5, ease: 'easeOut' }}
+                    />
+                    <div className="bathtub-label">
+                      <span className="bathtub-icon">🛁</span>
+                      <span>{result.impact.water.toFixed(0)} gal</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="plants-grown">
+                  <p className="plants-title">That water could grow:</p>
+                  <div className="plants-row">
+                    {Array.from({ length: Math.min(plants, 30) }).map((_, i) => (
+                      <motion.span key={i} className="plant-icon"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1.5 + i * 0.04 }}
+                      >🌱</motion.span>
+                    ))}
+                  </div>
+                  <p className="plants-count"><strong>{plants}</strong> edible plants</p>
                 </div>
               </div>
             </motion.div>
 
             <motion.p className="flavor"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }}
             >
               {result.flavor}
             </motion.p>

@@ -363,7 +363,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1) brightness(0.15);
+  filter: grayscale(1) brightness(0.4) contrast(1.1);
 }
 
 .animal-image-color {
@@ -692,3 +692,147 @@
 
 .error-card { padding: 16px; margin-top: 16px; }
 .error-text { font-size: 13px; color: rgba(255, 100, 100, 0.8); text-align: center; }
+
+/* ── AI Breakdown Bullet ── */
+.ai-breakdown-bullet {
+  color: rgba(100, 200, 150, 0.8);
+  font-size: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* ── CO2 Animation Scene ── */
+.co2-animation-scene {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.co2-earth {
+  font-size: 40px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+.co2-cloud-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.co2-dirty-cloud {
+  display: flex;
+  gap: 2px;
+  font-size: 28px;
+  filter: sepia(0.5) saturate(0.6) brightness(0.7);
+}
+
+.co2-cloud-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 200, 150, 0.8);
+  white-space: nowrap;
+}
+
+.co2-vortex {
+  font-size: 36px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 12px rgba(80, 0, 120, 0.5));
+}
+
+.co2-caption {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* ── Water Scene ── */
+.water-scene {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.bathtub-container {
+  flex-shrink: 0;
+  width: 100px;
+}
+
+.bathtub-outline {
+  width: 100px;
+  height: 90px;
+  border: 2px solid rgba(80, 170, 255, 0.4);
+  border-radius: 8px 8px 16px 16px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(80, 170, 255, 0.05);
+}
+
+.bathtub-water {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(80, 170, 255, 0.6), rgba(80, 170, 255, 0.25));
+  border-radius: 0 0 14px 14px;
+}
+
+.bathtub-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  z-index: 1;
+}
+
+.bathtub-icon {
+  font-size: 24px;
+}
+
+.bathtub-label span:last-child {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Plants Section ── */
+.plants-grown {
+  flex: 1;
+  min-width: 0;
+}
+
+.plants-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.plants-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.plant-icon {
+  font-size: 18px;
+  display: inline-block;
+}
+
+.plants-count {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
