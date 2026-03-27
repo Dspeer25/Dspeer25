@@ -25,13 +25,15 @@
 }
 
 body {
-  background: #080810;
+  background-color: #0a0a0a;
   background-image:
-    radial-gradient(ellipse 120% 80% at 50% -20%, #1e1e3a 0%, transparent 60%),
-    radial-gradient(ellipse 80% 60% at 100% 0%, #2a2040 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 0% 50%, #1a1830 0%, transparent 50%),
-    radial-gradient(ellipse 80% 50% at 50% 100%, #16162a 0%, transparent 50%),
-    linear-gradient(180deg, #0e0e1a 0%, #181828 30%, #1e1e35 50%, #141425 75%, #0a0a14 100%);
+    /* Subtle felt/matte noise texture via radial dots */
+    radial-gradient(circle at 20% 30%, rgba(30, 30, 30, 0.5) 0%, transparent 1px),
+    radial-gradient(circle at 60% 70%, rgba(35, 35, 35, 0.4) 0%, transparent 1px),
+    radial-gradient(circle at 80% 20%, rgba(28, 28, 28, 0.5) 0%, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(32, 32, 32, 0.4) 0%, transparent 1px),
+    /* Very subtle warm undertone for felt look */
+    radial-gradient(ellipse 100% 100% at 50% 50%, rgba(20, 18, 16, 1) 0%, rgba(10, 10, 10, 1) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -39,35 +41,37 @@ body {
   min-height: 100vh;
 }
 
+/* CLEAR Apple glass — very low opacity, high blur, visible borders */
 .glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .glass-hover:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .glow-accent {
   box-shadow: 0 0 40px var(--accent-glow), 0 0 80px rgba(99, 102, 241, 0.08), 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
+/* Clear glass orb */
 .orb {
-  background: radial-gradient(circle at 30% 25%, rgba(120, 120, 255, 0.18), rgba(99, 102, 241, 0.08) 35%, rgba(255, 255, 255, 0.06) 60%, rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0.015) 70%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(99, 102, 241, 0.1), inset 0 2px 0 rgba(255, 255, 255, 0.18), inset 0 0 80px rgba(255, 255, 255, 0.03);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(99, 102, 241, 0.08), inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 0 60px rgba(255, 255, 255, 0.02);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .orb:hover {
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 0 100px rgba(99, 102, 241, 0.3), 0 0 200px rgba(99, 102, 241, 0.12), 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 100px rgba(99, 102, 241, 0.25), 0 0 200px rgba(99, 102, 241, 0.1), 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.15);
   transform: scale(1.04);
 }
 

@@ -4,8 +4,44 @@ import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
 import Link from 'next/link';
 
+/* ── Ascending Man Logo (SVG) ─────────────────────── */
+function JournalXLogo() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {/* Glow circle behind figure */}
+        <circle cx="24" cy="20" r="18" fill="url(#logoGlow)" opacity="0.3" />
+        {/* Ascending figure — man on back being pulled upward */}
+        <g transform="translate(14, 8) rotate(-15, 10, 16)">
+          {/* Head */}
+          <circle cx="10" cy="4" r="3.5" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" fill="none" />
+          {/* Body - leaning back, ascending */}
+          <line x1="10" y1="7.5" x2="10" y2="18" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Arms reaching up/back */}
+          <line x1="10" y1="11" x2="4" y2="7" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round" />
+          <line x1="10" y1="11" x2="16" y2="7" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round" />
+          {/* Legs trailing down */}
+          <line x1="10" y1="18" x2="6" y2="24" stroke="rgba(255,255,255,0.6)" strokeWidth="1.3" strokeLinecap="round" />
+          <line x1="10" y1="18" x2="14" y2="24" stroke="rgba(255,255,255,0.6)" strokeWidth="1.3" strokeLinecap="round" />
+        </g>
+        {/* Upward energy lines */}
+        <line x1="24" y1="4" x2="24" y2="0" stroke="rgba(99,102,241,0.6)" strokeWidth="1" strokeLinecap="round" />
+        <line x1="19" y1="6" x2="17" y2="2" stroke="rgba(99,102,241,0.4)" strokeWidth="0.8" strokeLinecap="round" />
+        <line x1="29" y1="6" x2="31" y2="2" stroke="rgba(99,102,241,0.4)" strokeWidth="0.8" strokeLinecap="round" />
+        <defs>
+          <radialGradient id="logoGlow" cx="0.5" cy="0.3" r="0.7">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+      </svg>
+      <span className="text-base font-semibold tracking-tight">Journal X</span>
+    </div>
+  );
+}
+
+/* ── Candlestick Background ───────────────────────── */
 function CandlestickBackground() {
-  // SVG candlestick chart with moving averages
   const candles = [
     { x: 40, o: 280, c: 220, h: 200, l: 300 },
     { x: 70, o: 220, c: 240, h: 210, l: 260 },
@@ -42,11 +78,9 @@ function CandlestickBackground() {
     { x: 1000, o: 155, c: 145, h: 120, l: 175 },
   ];
 
-  // 9-period moving average (simple)
   const ma9Points: string[] = [];
   const ma21Points: string[] = [];
   for (let i = 0; i < candles.length; i++) {
-    const avg = (candles[i].o + candles[i].c) / 2;
     if (i >= 8) {
       let sum = 0;
       for (let j = i - 8; j <= i; j++) sum += (candles[j].o + candles[j].c) / 2;
@@ -60,14 +94,11 @@ function CandlestickBackground() {
   }
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.12]">
+    <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.08]">
       <svg viewBox="0 0 1024 400" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
-        {/* Grid lines */}
         {[100, 150, 200, 250, 300].map((y) => (
-          <line key={y} x1="0" y1={y} x2="1024" y2={y} stroke="rgba(255,255,255,0.15)" strokeWidth="0.5" strokeDasharray="4,8" />
+          <line key={y} x1="0" y1={y} x2="1024" y2={y} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" strokeDasharray="4,8" />
         ))}
-
-        {/* Candles */}
         {candles.map((c, i) => {
           const bullish = c.c < c.o;
           const color = bullish ? '#34d399' : '#f87171';
@@ -80,13 +111,9 @@ function CandlestickBackground() {
             </g>
           );
         })}
-
-        {/* 9 MA - fast line (indigo) */}
         {ma9Points.length > 1 && (
           <polyline points={ma9Points.join(' ')} fill="none" stroke="#818cf8" strokeWidth="1.5" opacity="0.8" />
         )}
-
-        {/* 21 MA - slow line (yellow) */}
         {ma21Points.length > 1 && (
           <polyline points={ma21Points.join(' ')} fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6" />
         )}
@@ -95,25 +122,37 @@ function CandlestickBackground() {
   );
 }
 
+/* ── Felt Texture Overlay ─────────────────────────── */
+function FeltTexture() {
+  return (
+    <div
+      className="fixed inset-0 pointer-events-none z-0"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
+        backgroundRepeat: 'repeat',
+        backgroundSize: '256px 256px',
+      }}
+    />
+  );
+}
+
+/* ── How It Works Modal ───────────────────────────── */
 function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; onClose: () => void }) {
   const steps = [
     {
       num: '01',
       title: 'Sign Up',
       desc: 'Create your account in seconds. You\'re already here.',
-      icon: '→',
     },
     {
       num: '02',
       title: 'Tell Us Your Story',
       desc: 'Share your experience level, goals, and trading rules. The AI listens and tailors the entire experience to YOUR trading level — from beginner to advanced.',
-      icon: '◎',
     },
     {
       num: '03',
       title: 'Trade with Accountability',
       desc: 'Log trades, track performance, and let AI hold you accountable in real-time when you break your own rules.',
-      icon: '◈',
     },
   ];
 
@@ -128,18 +167,22 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
         <p className="text-[#8b8b9e] text-center text-sm mb-10">Three steps to trading with real accountability.</p>
 
         {/* Horizontal 3-step layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 items-start">
           {steps.map((s, i) => (
-            <div key={s.num} className="flex flex-col items-center text-center relative">
+            <div key={s.num} className="flex flex-col items-center text-center relative px-2">
               <div className="w-14 h-14 rounded-full glass flex items-center justify-center mb-4">
                 <span className="text-[#6366f1] font-black text-sm">{s.num}</span>
               </div>
               <h3 className="font-semibold text-base mb-2">{s.title}</h3>
               <p className="text-xs text-[#8b8b9e] leading-relaxed">{s.desc}</p>
 
-              {/* Connector arrow between steps */}
+              {/* Large connector arrow */}
               {i < steps.length - 1 && (
-                <div className="hidden sm:block absolute top-7 -right-3 text-[#6366f1]/40 text-lg">→</div>
+                <div className="hidden sm:flex absolute top-6 -right-4 w-8 h-8 items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                  </svg>
+                </div>
               )}
             </div>
           ))}
@@ -159,6 +202,7 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
   );
 }
 
+/* ── Pricing Modal ────────────────────────────────── */
 function PricingModal({ onClose }: { onClose: () => void }) {
   const features = [
     { name: 'Trade Logging', essential: true, full: true },
@@ -199,15 +243,26 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in">
+      <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in overflow-visible">
         <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">&#10005;</button>
 
         <h2 className="text-2xl font-bold text-center mb-2">Choose Your Plan</h2>
         <p className="text-[#8b8b9e] text-center text-sm mb-8">One-time payment. Lifetime access. No subscriptions ever.</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4">
           {/* Essential - $25 */}
-          <div className="glass rounded-2xl p-6 flex flex-col transition-all duration-300 hover:shadow-[0_0_40px_rgba(99,102,241,0.2),0_0_80px_rgba(99,102,241,0.08)] hover:border-[rgba(99,102,241,0.4)]" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+          <div
+            className="glass rounded-2xl p-6 flex flex-col transition-all duration-300"
+            style={{ borderColor: 'rgba(255,255,255,0.12)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 50px rgba(99,102,241,0.35), 0 0 100px rgba(99,102,241,0.15), 0 0 150px rgba(99,102,241,0.08)';
+              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+            }}
+          >
             <div className="text-xs text-[#8b8b9e] uppercase tracking-[0.15em] mb-1">Essential</div>
             <div className="text-3xl font-black mb-1">$25</div>
             <div className="text-sm text-[#6366f1] font-medium mb-5">one-time payment</div>
@@ -228,14 +283,25 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             </ul>
             <button
               onClick={() => handleCheckout('essential')}
-              className="mt-6 block w-full text-center py-3 px-6 glass rounded-xl font-semibold text-sm hover:bg-[rgba(255,255,255,0.12)] transition-all"
+              className="mt-6 block w-full text-center py-3 px-6 glass rounded-xl font-semibold text-sm hover:bg-[rgba(255,255,255,0.08)] transition-all"
             >
               Get Essential
             </button>
           </div>
 
           {/* Complete - $50 */}
-          <div className="glass rounded-2xl p-6 flex flex-col relative overflow-visible transition-all duration-300 hover:shadow-[0_0_40px_rgba(99,102,241,0.25),0_0_80px_rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.5)]" style={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+          <div
+            className="glass rounded-2xl p-6 flex flex-col relative transition-all duration-300"
+            style={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 0 60px rgba(99,102,241,0.4), 0 0 120px rgba(99,102,241,0.2), 0 0 180px rgba(99,102,241,0.1)';
+              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+            }}
+          >
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366f1] to-transparent" />
             <div className="text-xs text-[#6366f1] uppercase tracking-[0.15em] mb-1 font-semibold">Complete</div>
             <div className="text-3xl font-black mb-1">$50</div>
@@ -247,14 +313,16 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                   <span className="text-[#34d399] text-xs shrink-0">&#10003;</span>
                   <span className="text-[#e0e0ea]">{f.name}</span>
                   {f.hasInfo && (
-                    <span
-                      className="relative"
-                      onMouseEnter={() => setShowTooltip(true)}
-                      onMouseLeave={() => setShowTooltip(false)}
-                      onClick={() => setShowTooltip(!showTooltip)}
+                    <button
+                      type="button"
+                      className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[9px] inline-flex items-center justify-center text-[#8b8b9e] cursor-help shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowTooltip(!showTooltip);
+                      }}
                     >
-                      <span className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[9px] inline-flex items-center justify-center text-[#8b8b9e] cursor-help">?</span>
-                    </span>
+                      ?
+                    </button>
                   )}
                 </li>
               ))}
@@ -268,11 +336,21 @@ function PricingModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Tooltip rendered OUTSIDE the cards, fixed at bottom of modal so it can't be cut off */}
+        {/* Tooltip as a separate panel below cards — click toggled, no layout shift issues */}
         {showTooltip && (
           <div className="glass rounded-xl p-4 text-xs text-[#c0c0d0] leading-relaxed animate-fade-in mb-4">
-            <strong className="text-white block mb-1">AI Accountability Coach</strong>
-            Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. It knows who you are as a trader and coaches you toward consistency and discipline.
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <strong className="text-white block mb-1">AI Accountability Coach</strong>
+                Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. It knows who you are as a trader and coaches you toward consistency and discipline.
+              </div>
+              <button
+                onClick={() => setShowTooltip(false)}
+                className="text-[#55556a] hover:text-white text-sm shrink-0 bg-transparent"
+              >
+                &#10005;
+              </button>
+            </div>
           </div>
         )}
 
@@ -282,6 +360,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/* ── Landing Page ─────────────────────────────────── */
 export default function LandingPage() {
   const { isSignedIn } = useAuth();
   const [showHowItWorks, setShowHowItWorks] = useState(false);
@@ -294,25 +373,22 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen text-[#f0f0f5] relative overflow-hidden">
+      {/* Matte felt texture */}
+      <FeltTexture />
+
       {/* Candlestick chart background */}
       <CandlestickBackground />
 
-      {/* Colored blobs behind glass elements */}
+      {/* Subtle colored blobs for glass refraction */}
       <div className="fixed inset-0 pointer-events-none z-[1]">
-        <div className="absolute top-[-10%] left-[20%] w-[800px] h-[800px] rounded-full bg-[#6366f1]/[0.08] blur-[200px]" />
-        <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#818cf8]/[0.06] blur-[180px]" />
-        <div className="absolute bottom-[-5%] left-[40%] w-[700px] h-[700px] rounded-full bg-[#4f46e5]/[0.07] blur-[200px]" />
-        <div className="absolute top-[60%] left-[-5%] w-[500px] h-[500px] rounded-full bg-[#7c3aed]/[0.05] blur-[150px]" />
+        <div className="absolute top-[-10%] left-[20%] w-[800px] h-[800px] rounded-full bg-[#6366f1]/[0.04] blur-[200px]" />
+        <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#818cf8]/[0.03] blur-[180px]" />
+        <div className="absolute bottom-[-5%] left-[40%] w-[700px] h-[700px] rounded-full bg-[#4f46e5]/[0.035] blur-[200px]" />
       </div>
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl glass flex items-center justify-center">
-            <span className="text-[#6366f1] text-xs font-black">X</span>
-          </div>
-          <span className="text-base font-semibold tracking-tight">Journal X</span>
-        </div>
+        <JournalXLogo />
         <div className="flex gap-3">
           {isSignedIn ? (
             <Link href="/dashboard" className="px-5 py-2.5 glass rounded-xl text-sm font-medium glass-hover transition-all">
@@ -355,9 +431,9 @@ export default function LandingPage() {
             <div className="text-3xl sm:text-4xl font-bold mb-1">Start Your</div>
             <div className="text-3xl sm:text-4xl font-bold text-[#6366f1]">Journal</div>
           </div>
-          <div className="absolute inset-[-20px] rounded-full border border-[rgba(255,255,255,0.08)] group-hover:border-[rgba(255,255,255,0.15)] transition-all duration-500" />
-          <div className="absolute inset-[-44px] rounded-full border border-[rgba(255,255,255,0.04)] group-hover:border-[rgba(255,255,255,0.1)] transition-all duration-700" />
-          <div className="absolute inset-[-72px] rounded-full border border-[rgba(255,255,255,0.02)] group-hover:border-[rgba(255,255,255,0.06)] transition-all duration-1000" />
+          <div className="absolute inset-[-20px] rounded-full border border-[rgba(255,255,255,0.06)] group-hover:border-[rgba(255,255,255,0.12)] transition-all duration-500" />
+          <div className="absolute inset-[-44px] rounded-full border border-[rgba(255,255,255,0.03)] group-hover:border-[rgba(255,255,255,0.08)] transition-all duration-700" />
+          <div className="absolute inset-[-72px] rounded-full border border-[rgba(255,255,255,0.015)] group-hover:border-[rgba(255,255,255,0.05)] transition-all duration-1000" />
         </button>
 
         <p className="text-xs text-[#55556a] mt-14">One-time payment. Full access forever. No subscriptions.</p>
@@ -404,7 +480,6 @@ export default function LandingPage() {
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 
-      {/* How It Works Modal */}
       {showHowItWorks && (
         <HowItWorksModal
           onSelectPlan={openPricingFromSteps}
@@ -412,7 +487,6 @@ export default function LandingPage() {
         />
       )}
 
-      {/* Pricing Modal */}
       {showPricing && <PricingModal onClose={() => setShowPricing(false)} />}
     </div>
   );
