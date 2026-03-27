@@ -4,6 +4,97 @@ import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
 import Link from 'next/link';
 
+function CandlestickBackground() {
+  // SVG candlestick chart with moving averages
+  const candles = [
+    { x: 40, o: 280, c: 220, h: 200, l: 300 },
+    { x: 70, o: 220, c: 240, h: 210, l: 260 },
+    { x: 100, o: 240, c: 200, h: 180, l: 260 },
+    { x: 130, o: 200, c: 170, h: 150, l: 220 },
+    { x: 160, o: 170, c: 190, h: 150, l: 210 },
+    { x: 190, o: 190, c: 160, h: 140, l: 210 },
+    { x: 220, o: 160, c: 140, h: 120, l: 180 },
+    { x: 250, o: 140, c: 180, h: 120, l: 200 },
+    { x: 280, o: 180, c: 150, h: 130, l: 200 },
+    { x: 310, o: 150, c: 130, h: 110, l: 170 },
+    { x: 340, o: 130, c: 160, h: 110, l: 180 },
+    { x: 370, o: 160, c: 140, h: 120, l: 180 },
+    { x: 400, o: 140, c: 120, h: 100, l: 160 },
+    { x: 430, o: 120, c: 150, h: 100, l: 170 },
+    { x: 460, o: 150, c: 170, h: 90, l: 190 },
+    { x: 490, o: 170, c: 140, h: 120, l: 190 },
+    { x: 520, o: 140, c: 160, h: 110, l: 180 },
+    { x: 550, o: 160, c: 130, h: 110, l: 180 },
+    { x: 580, o: 130, c: 150, h: 100, l: 170 },
+    { x: 610, o: 150, c: 120, h: 100, l: 170 },
+    { x: 640, o: 120, c: 140, h: 90, l: 160 },
+    { x: 670, o: 140, c: 110, h: 90, l: 160 },
+    { x: 700, o: 110, c: 130, h: 80, l: 150 },
+    { x: 730, o: 130, c: 150, h: 80, l: 170 },
+    { x: 760, o: 150, c: 120, h: 100, l: 170 },
+    { x: 790, o: 120, c: 145, h: 95, l: 165 },
+    { x: 820, o: 145, c: 130, h: 105, l: 165 },
+    { x: 850, o: 130, c: 155, h: 95, l: 170 },
+    { x: 880, o: 155, c: 140, h: 115, l: 175 },
+    { x: 910, o: 140, c: 160, h: 100, l: 180 },
+    { x: 940, o: 160, c: 135, h: 110, l: 175 },
+    { x: 970, o: 135, c: 155, h: 105, l: 170 },
+    { x: 1000, o: 155, c: 145, h: 120, l: 175 },
+  ];
+
+  // 9-period moving average (simple)
+  const ma9Points: string[] = [];
+  const ma21Points: string[] = [];
+  for (let i = 0; i < candles.length; i++) {
+    const avg = (candles[i].o + candles[i].c) / 2;
+    if (i >= 8) {
+      let sum = 0;
+      for (let j = i - 8; j <= i; j++) sum += (candles[j].o + candles[j].c) / 2;
+      ma9Points.push(`${candles[i].x},${sum / 9}`);
+    }
+    if (i >= 20) {
+      let sum = 0;
+      for (let j = i - 20; j <= i; j++) sum += (candles[j].o + candles[j].c) / 2;
+      ma21Points.push(`${candles[i].x},${sum / 21}`);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.12]">
+      <svg viewBox="0 0 1024 400" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+        {/* Grid lines */}
+        {[100, 150, 200, 250, 300].map((y) => (
+          <line key={y} x1="0" y1={y} x2="1024" y2={y} stroke="rgba(255,255,255,0.15)" strokeWidth="0.5" strokeDasharray="4,8" />
+        ))}
+
+        {/* Candles */}
+        {candles.map((c, i) => {
+          const bullish = c.c < c.o;
+          const color = bullish ? '#34d399' : '#f87171';
+          const top = Math.min(c.o, c.c);
+          const height = Math.abs(c.o - c.c);
+          return (
+            <g key={i}>
+              <line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={color} strokeWidth="1" opacity="0.8" />
+              <rect x={c.x - 5} y={top} width={10} height={Math.max(height, 2)} fill={color} opacity="0.9" rx="1" />
+            </g>
+          );
+        })}
+
+        {/* 9 MA - fast line (indigo) */}
+        {ma9Points.length > 1 && (
+          <polyline points={ma9Points.join(' ')} fill="none" stroke="#818cf8" strokeWidth="1.5" opacity="0.8" />
+        )}
+
+        {/* 21 MA - slow line (yellow) */}
+        {ma21Points.length > 1 && (
+          <polyline points={ma21Points.join(' ')} fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6" />
+        )}
+      </svg>
+    </div>
+  );
+}
+
 function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; onClose: () => void }) {
   const steps = [
     {
@@ -15,13 +106,13 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
     {
       num: '02',
       title: 'Tell Us Your Story',
-      desc: 'Share your experience, goals, and trading rules. Our AI listens and evaluates — it becomes your personal coach.',
+      desc: 'Share your experience level, goals, and trading rules. The AI listens and tailors the entire experience to YOUR trading level — from beginner to advanced.',
       icon: '◎',
     },
     {
       num: '03',
-      title: 'Log & Analyze in Real-Time',
-      desc: 'Log trades, track performance, and let AI hold you accountable when you\'re falling short of your stated goals and metrics.',
+      title: 'Trade with Accountability',
+      desc: 'Log trades, track performance, and let AI hold you accountable in real-time when you break your own rules.',
       icon: '◈',
     },
   ];
@@ -30,24 +121,25 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-2xl w-full animate-fade-in">
-        <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">x</button>
+      <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in">
+        <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">&#10005;</button>
 
         <h2 className="text-2xl font-bold text-center mb-2">How Journal X Works</h2>
         <p className="text-[#8b8b9e] text-center text-sm mb-10">Three steps to trading with real accountability.</p>
 
-        <div className="space-y-6 mb-10">
+        {/* Horizontal 3-step layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
           {steps.map((s, i) => (
-            <div key={s.num} className="flex items-start gap-5">
-              <div className="shrink-0 w-12 h-12 rounded-full glass flex items-center justify-center">
+            <div key={s.num} className="flex flex-col items-center text-center relative">
+              <div className="w-14 h-14 rounded-full glass flex items-center justify-center mb-4">
                 <span className="text-[#6366f1] font-black text-sm">{s.num}</span>
               </div>
-              <div className="flex-1 pt-1">
-                <h3 className="font-semibold text-lg mb-1">{s.title}</h3>
-                <p className="text-sm text-[#8b8b9e] leading-relaxed">{s.desc}</p>
-              </div>
+              <h3 className="font-semibold text-base mb-2">{s.title}</h3>
+              <p className="text-xs text-[#8b8b9e] leading-relaxed">{s.desc}</p>
+
+              {/* Connector arrow between steps */}
               {i < steps.length - 1 && (
-                <div className="absolute left-[calc(2rem+24px)] mt-12 w-[1px] h-6 bg-[rgba(255,255,255,0.06)]" />
+                <div className="hidden sm:block absolute top-7 -right-3 text-[#6366f1]/40 text-lg">→</div>
               )}
             </div>
           ))}
@@ -78,7 +170,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     { name: 'Risk Management Lockout', essential: true, full: true },
     { name: 'Toolkit (Calculators, Checklists)', essential: true, full: true },
     { name: 'AI Accountability Coach', essential: false, full: true, hasInfo: true },
-    { name: 'Real-time AI Chat', essential: false, full: true },
+    { name: 'Real-Time AI Chat (Mark Douglas)', essential: false, full: true },
     { name: 'AI Weekly Check-in Reviews', essential: false, full: true },
     { name: 'AI Rule Violation Detection', essential: false, full: true },
   ];
@@ -108,14 +200,14 @@ function PricingModal({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
       <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in">
-        <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">x</button>
+        <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">&#10005;</button>
 
         <h2 className="text-2xl font-bold text-center mb-2">Choose Your Plan</h2>
         <p className="text-[#8b8b9e] text-center text-sm mb-8">One-time payment. Lifetime access. No subscriptions ever.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           {/* Essential - $25 */}
-          <div className="glass rounded-2xl p-6 flex flex-col">
+          <div className="glass rounded-2xl p-6 flex flex-col transition-all duration-300 hover:shadow-[0_0_40px_rgba(99,102,241,0.2),0_0_80px_rgba(99,102,241,0.08)] hover:border-[rgba(99,102,241,0.4)]" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
             <div className="text-xs text-[#8b8b9e] uppercase tracking-[0.15em] mb-1">Essential</div>
             <div className="text-3xl font-black mb-1">$25</div>
             <div className="text-sm text-[#6366f1] font-medium mb-5">one-time payment</div>
@@ -143,7 +235,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Complete - $50 */}
-          <div className="glass rounded-2xl p-6 flex flex-col relative overflow-hidden" style={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}>
+          <div className="glass rounded-2xl p-6 flex flex-col relative overflow-visible transition-all duration-300 hover:shadow-[0_0_40px_rgba(99,102,241,0.25),0_0_80px_rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.5)]" style={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366f1] to-transparent" />
             <div className="text-xs text-[#6366f1] uppercase tracking-[0.15em] mb-1 font-semibold">Complete</div>
             <div className="text-3xl font-black mb-1">$50</div>
@@ -159,14 +251,9 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                       className="relative"
                       onMouseEnter={() => setShowTooltip(true)}
                       onMouseLeave={() => setShowTooltip(false)}
+                      onClick={() => setShowTooltip(!showTooltip)}
                     >
                       <span className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[9px] inline-flex items-center justify-center text-[#8b8b9e] cursor-help">?</span>
-                      {showTooltip && (
-                        <span className="absolute right-6 bottom-0 w-80 glass rounded-xl p-4 text-xs text-[#c0c0d0] leading-relaxed z-50 pointer-events-none animate-fade-in whitespace-normal">
-                          <strong className="text-white block mb-1">AI Accountability Coach</strong>
-                          Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. It knows who you are as a trader and coaches you toward consistency and discipline.
-                        </span>
-                      )}
                     </span>
                   )}
                 </li>
@@ -180,6 +267,14 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         </div>
+
+        {/* Tooltip rendered OUTSIDE the cards, fixed at bottom of modal so it can't be cut off */}
+        {showTooltip && (
+          <div className="glass rounded-xl p-4 text-xs text-[#c0c0d0] leading-relaxed animate-fade-in mb-4">
+            <strong className="text-white block mb-1">AI Accountability Coach</strong>
+            Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. It knows who you are as a trader and coaches you toward consistency and discipline.
+          </div>
+        )}
 
         <p className="text-center text-xs text-[#55556a]">Secure checkout powered by Stripe.</p>
       </div>
@@ -199,8 +294,11 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen text-[#f0f0f5] relative overflow-hidden">
+      {/* Candlestick chart background */}
+      <CandlestickBackground />
+
       {/* Colored blobs behind glass elements */}
-      <div className="fixed inset-0 pointer-events-none">
+      <div className="fixed inset-0 pointer-events-none z-[1]">
         <div className="absolute top-[-10%] left-[20%] w-[800px] h-[800px] rounded-full bg-[#6366f1]/[0.08] blur-[200px]" />
         <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#818cf8]/[0.06] blur-[180px]" />
         <div className="absolute bottom-[-5%] left-[40%] w-[700px] h-[700px] rounded-full bg-[#4f46e5]/[0.07] blur-[200px]" />
@@ -250,7 +348,7 @@ export default function LandingPage() {
           Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
-        {/* THE ORB - opens how it works first */}
+        {/* THE ORB */}
         <button onClick={() => setShowHowItWorks(true)} className="group relative bg-transparent">
           <div className="orb w-72 h-72 sm:w-96 sm:h-96 rounded-full flex flex-col items-center justify-center text-center animate-pulse-glow cursor-pointer group-hover:scale-[1.04] transition-transform duration-500">
             <div className="text-[#8b8b9e] text-[11px] uppercase tracking-[0.25em] mb-4">Begin</div>
@@ -306,7 +404,7 @@ export default function LandingPage() {
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 
-      {/* How It Works Modal (shows first) */}
+      {/* How It Works Modal */}
       {showHowItWorks && (
         <HowItWorksModal
           onSelectPlan={openPricingFromSteps}
@@ -314,7 +412,7 @@ export default function LandingPage() {
         />
       )}
 
-      {/* Pricing Modal (shows after how it works) */}
+      {/* Pricing Modal */}
       {showPricing && <PricingModal onClose={() => setShowPricing(false)} />}
     </div>
   );
