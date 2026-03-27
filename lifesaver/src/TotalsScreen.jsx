@@ -44,9 +44,6 @@ function CountUp({ value, decimals = 2, format = true }) {
   return <>{display.toFixed(decimals)}</>
 }
 
-const ANIMAL_EMOJIS = { cow: '🐄', chicken: '🐔', pig: '🐖' }
-const ANIMAL_LABELS = { cow: 'Cows', chicken: 'Chickens', pig: 'Pigs' }
-
 export default function TotalsScreen() {
   const totals = getTotals()
   const streak = getStreak()
@@ -63,18 +60,6 @@ export default function TotalsScreen() {
 
   const co2Lbs = totals.co2 * 2.205
   const nalgeneBottles = Math.round(totals.water / 0.25)
-
-  // Merge animal entries by label (cow/chicken/pig)
-  const mergedAnimals = {}
-  for (const [key, data] of Object.entries(totals.byAnimal)) {
-    const label = data.label || key
-    if (!mergedAnimals[label]) {
-      mergedAnimals[label] = { count: 0, label, emoji: data.emoji }
-    }
-    mergedAnimals[label].count += data.count
-  }
-
-  const animalEntries = Object.entries(mergedAnimals)
 
   const mainCards = [
     { emoji: '🍽️', value: totals.count, decimals: 0, label: 'Meals Logged' },
@@ -103,38 +88,6 @@ export default function TotalsScreen() {
           <div className="total-label">{card.label}</div>
         </motion.div>
       ))}
-
-      {/* Animal breakdown by type */}
-      {animalEntries.length > 0 && (
-        <motion.div
-          className="total-card glass"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: mainCards.length * 0.1, duration: 0.4 }}
-        >
-          <div className="total-emoji">🐾</div>
-          <div className="total-label" style={{ marginBottom: 14 }}>Animals Saved (by type)</div>
-          <div className="animal-breakdown">
-            {animalEntries.map(([label, data]) => (
-              <div className="animal-breakdown-row" key={label}>
-                <span className="animal-breakdown-emoji">
-                  {ANIMAL_EMOJIS[label] || '🐾'}
-                </span>
-                <span className="animal-breakdown-label">
-                  {ANIMAL_LABELS[label] || label}
-                </span>
-                <span className="animal-breakdown-value">
-                  {data.count.toFixed(3)}
-                </span>
-              </div>
-            ))}
-            <div className="animal-breakdown-total">
-              <span>Total</span>
-              <span>{totals.animals.toFixed(3)}</span>
-            </div>
-          </div>
-        </motion.div>
-      )}
 
       {streak > 0 && (
         <motion.div
