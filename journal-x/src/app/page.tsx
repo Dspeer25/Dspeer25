@@ -371,14 +371,20 @@ export default function LandingPage() {
 
       {/* Product nav — borderless elegant text links */}
       <div className="relative z-10 flex items-center justify-center gap-10 sm:gap-14 px-8 pt-2 pb-4 max-w-7xl mx-auto">
-        {['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals'].map((item) => (
-          <span
-            key={item}
-            className={`text-[11px] font-bold tracking-[0.35em] uppercase cursor-pointer transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-[#ccc]'}`}
+        {[
+          { label: 'Log a Trade', href: '/log-trade' },
+          { label: 'Past Trades', href: '/past-trades' },
+          { label: 'Analysis', href: '/analysis' },
+          { label: 'Trading Goals', href: '/trading-goals' },
+        ].map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`text-[11px] font-bold tracking-[0.35em] uppercase transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-[#ccc]'}`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
           >
-            {item}
-          </span>
+            {item.label}
+          </Link>
         ))}
       </div>
 

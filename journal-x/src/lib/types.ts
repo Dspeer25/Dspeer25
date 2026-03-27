@@ -14,6 +14,10 @@ export interface Trade {
   ticker: string;
   time: string;
   tradeType: 'Day' | 'Swing';
+  direction: 'Long' | 'Short';
+  entryPrice: number;
+  exitPrice: number;
+  positionSize: number;
   initialRisk: number;
   result: 'W' | 'L' | 'BE';
   dollarPnl: number;
