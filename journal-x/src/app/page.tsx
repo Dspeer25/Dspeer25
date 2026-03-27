@@ -376,6 +376,7 @@ export default function LandingPage() {
           { label: 'Past Trades', href: '/past-trades' },
           { label: 'Analysis', href: '/analysis' },
           { label: 'Trading Goals', href: '/trading-goals' },
+          { label: 'Trader Profile', href: '/trader-profile' },
         ].map((item) => (
           <Link
             key={item.label}

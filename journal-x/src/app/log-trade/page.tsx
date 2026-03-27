@@ -47,8 +47,8 @@ function CoachIcon({ light = false }: { light?: boolean }) {
 }
 
 /* ── Nav links ── */
-const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals'] as const;
-const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals'] as const;
+const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals', 'Trader Profile'] as const;
+const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '/trader-profile'] as const;
 
 /* ── Fake AI coach responses for demo ── */
 const coachResponses: Record<string, string> = {
