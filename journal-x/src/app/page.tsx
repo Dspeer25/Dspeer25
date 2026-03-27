@@ -9,22 +9,15 @@ function JournalXLogo() {
   return (
     <div className="flex items-center gap-2.5">
       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Glow circle behind figure */}
         <circle cx="24" cy="20" r="18" fill="url(#logoGlow)" opacity="0.3" />
-        {/* Ascending figure — man on back being pulled upward */}
         <g transform="translate(14, 8) rotate(-15, 10, 16)">
-          {/* Head */}
           <circle cx="10" cy="4" r="3.5" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" fill="none" />
-          {/* Body - leaning back, ascending */}
           <line x1="10" y1="7.5" x2="10" y2="18" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" />
-          {/* Arms reaching up/back */}
           <line x1="10" y1="11" x2="4" y2="7" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round" />
           <line x1="10" y1="11" x2="16" y2="7" stroke="rgba(255,255,255,0.7)" strokeWidth="1.3" strokeLinecap="round" />
-          {/* Legs trailing down */}
           <line x1="10" y1="18" x2="6" y2="24" stroke="rgba(255,255,255,0.6)" strokeWidth="1.3" strokeLinecap="round" />
           <line x1="10" y1="18" x2="14" y2="24" stroke="rgba(255,255,255,0.6)" strokeWidth="1.3" strokeLinecap="round" />
         </g>
-        {/* Upward energy lines */}
         <line x1="24" y1="4" x2="24" y2="0" stroke="rgba(99,102,241,0.6)" strokeWidth="1" strokeLinecap="round" />
         <line x1="19" y1="6" x2="17" y2="2" stroke="rgba(99,102,241,0.4)" strokeWidth="0.8" strokeLinecap="round" />
         <line x1="29" y1="6" x2="31" y2="2" stroke="rgba(99,102,241,0.4)" strokeWidth="0.8" strokeLinecap="round" />
@@ -36,6 +29,33 @@ function JournalXLogo() {
         </defs>
       </svg>
       <span className="text-base font-semibold tracking-tight">Journal X</span>
+    </div>
+  );
+}
+
+/* ── Dark Felt Texture Background ─────────────────── */
+function FeltBackground() {
+  return (
+    <div className="fixed inset-0 z-0">
+      {/* Base dark color */}
+      <div className="absolute inset-0 bg-[#0c0c0c]" />
+
+      {/* SVG noise filter for felt grain texture — high frequency, visible */}
+      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        <filter id="feltNoise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="6" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#feltNoise)" opacity="0.06" />
+      </svg>
+
+      {/* Subtle warm vignette for depth */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.4) 100%)',
+        }}
+      />
     </div>
   );
 }
@@ -94,7 +114,7 @@ function CandlestickBackground() {
   }
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.08]">
+    <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.10]">
       <svg viewBox="0 0 1024 400" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
         {[100, 150, 200, 250, 300].map((y) => (
           <line key={y} x1="0" y1={y} x2="1024" y2={y} stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" strokeDasharray="4,8" />
@@ -119,20 +139,6 @@ function CandlestickBackground() {
         )}
       </svg>
     </div>
-  );
-}
-
-/* ── Felt Texture Overlay ─────────────────────────── */
-function FeltTexture() {
-  return (
-    <div
-      className="fixed inset-0 pointer-events-none z-0"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'repeat',
-        backgroundSize: '256px 256px',
-      }}
-    />
   );
 }
 
@@ -176,11 +182,11 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
               <h3 className="font-semibold text-base mb-2">{s.title}</h3>
               <p className="text-xs text-[#8b8b9e] leading-relaxed">{s.desc}</p>
 
-              {/* Large connector arrow */}
+              {/* Large connector arrow between steps */}
               {i < steps.length - 1 && (
-                <div className="hidden sm:flex absolute top-6 -right-4 w-8 h-8 items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                <div className="hidden sm:flex absolute top-5 -right-5 w-10 h-10 items-center justify-center">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12h16m0 0l-6-6m6 6l-6 6" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
                   </svg>
                 </div>
               )}
@@ -219,8 +225,6 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     { name: 'AI Rule Violation Detection', essential: false, full: true },
   ];
 
-  const [showTooltip, setShowTooltip] = useState(false);
-
   const handleCheckout = async (tier: 'essential' | 'complete') => {
     try {
       const res = await fetch('/api/checkout', {
@@ -243,24 +247,24 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in overflow-visible">
+      <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in">
         <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">&#10005;</button>
 
         <h2 className="text-2xl font-bold text-center mb-2">Choose Your Plan</h2>
         <p className="text-[#8b8b9e] text-center text-sm mb-8">One-time payment. Lifetime access. No subscriptions ever.</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           {/* Essential - $25 */}
           <div
             className="glass rounded-2xl p-6 flex flex-col transition-all duration-300"
-            style={{ borderColor: 'rgba(255,255,255,0.12)' }}
+            style={{ borderColor: 'rgba(255,255,255,0.18)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 0 50px rgba(99,102,241,0.35), 0 0 100px rgba(99,102,241,0.15), 0 0 150px rgba(99,102,241,0.08)';
               e.currentTarget.style.borderColor = 'rgba(99,102,241,0.5)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.boxShadow = '';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
             }}
           >
             <div className="text-xs text-[#8b8b9e] uppercase tracking-[0.15em] mb-1">Essential</div>
@@ -283,7 +287,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             </ul>
             <button
               onClick={() => handleCheckout('essential')}
-              className="mt-6 block w-full text-center py-3 px-6 glass rounded-xl font-semibold text-sm hover:bg-[rgba(255,255,255,0.08)] transition-all"
+              className="mt-6 block w-full text-center py-3 px-6 glass rounded-xl font-semibold text-sm hover:bg-[rgba(255,255,255,0.12)] transition-all"
             >
               Get Essential
             </button>
@@ -313,16 +317,22 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                   <span className="text-[#34d399] text-xs shrink-0">&#10003;</span>
                   <span className="text-[#e0e0ea]">{f.name}</span>
                   {f.hasInfo && (
-                    <button
-                      type="button"
-                      className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[9px] inline-flex items-center justify-center text-[#8b8b9e] cursor-help shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowTooltip(!showTooltip);
-                      }}
-                    >
-                      ?
-                    </button>
+                    <span className="relative group/tip inline-flex">
+                      <span className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[9px] inline-flex items-center justify-center text-[#8b8b9e] cursor-help">?</span>
+                      {/* Tooltip: absolute positioned, pointer-events none = no layout shift, no shaking */}
+                      <span className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 rounded-xl p-4 text-xs text-[#c0c0d0] leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal"
+                        style={{
+                          background: 'rgba(20, 20, 30, 0.95)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          backdropFilter: 'blur(20px)',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                        }}
+                      >
+                        <strong className="text-white block mb-1">AI Accountability Coach</strong>
+                        Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection.
+                        <span className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[rgba(20,20,30,0.95)]" />
+                      </span>
+                    </span>
                   )}
                 </li>
               ))}
@@ -335,24 +345,6 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
         </div>
-
-        {/* Tooltip as a separate panel below cards — click toggled, no layout shift issues */}
-        {showTooltip && (
-          <div className="glass rounded-xl p-4 text-xs text-[#c0c0d0] leading-relaxed animate-fade-in mb-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <strong className="text-white block mb-1">AI Accountability Coach</strong>
-                Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. It knows who you are as a trader and coaches you toward consistency and discipline.
-              </div>
-              <button
-                onClick={() => setShowTooltip(false)}
-                className="text-[#55556a] hover:text-white text-sm shrink-0 bg-transparent"
-              >
-                &#10005;
-              </button>
-            </div>
-          </div>
-        )}
 
         <p className="text-center text-xs text-[#55556a]">Secure checkout powered by Stripe.</p>
       </div>
@@ -373,17 +365,17 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen text-[#f0f0f5] relative overflow-hidden">
-      {/* Matte felt texture */}
-      <FeltTexture />
+      {/* Matte felt background */}
+      <FeltBackground />
 
-      {/* Candlestick chart background */}
+      {/* Candlestick chart behind glass */}
       <CandlestickBackground />
 
       {/* Subtle colored blobs for glass refraction */}
-      <div className="fixed inset-0 pointer-events-none z-[1]">
-        <div className="absolute top-[-10%] left-[20%] w-[800px] h-[800px] rounded-full bg-[#6366f1]/[0.04] blur-[200px]" />
-        <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#818cf8]/[0.03] blur-[180px]" />
-        <div className="absolute bottom-[-5%] left-[40%] w-[700px] h-[700px] rounded-full bg-[#4f46e5]/[0.035] blur-[200px]" />
+      <div className="fixed inset-0 pointer-events-none z-[2]">
+        <div className="absolute top-[-10%] left-[20%] w-[800px] h-[800px] rounded-full bg-[#6366f1]/[0.05] blur-[200px]" />
+        <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#818cf8]/[0.04] blur-[180px]" />
+        <div className="absolute bottom-[-5%] left-[40%] w-[700px] h-[700px] rounded-full bg-[#4f46e5]/[0.04] blur-[200px]" />
       </div>
 
       {/* Nav */}
