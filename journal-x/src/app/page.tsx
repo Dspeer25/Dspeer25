@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 import { useState } from 'react';
+import Link from 'next/link';
 
 function PricingModal({ onClose }: { onClose: () => void }) {
   const features = [
@@ -22,21 +22,37 @@ function PricingModal({ onClose }: { onClose: () => void }) {
 
   const [showTooltip, setShowTooltip] = useState(false);
 
+  const handleCheckout = async (tier: 'essential' | 'complete') => {
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        // If not logged in, redirect to sign-up first
+        window.location.href = `/sign-up?tier=${tier}`;
+      }
+    } catch {
+      window.location.href = '/sign-up';
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative glass rounded-3xl p-8 sm:p-10 max-w-3xl w-full animate-fade-in">
         <button onClick={onClose} className="absolute top-4 right-5 text-[#55556a] hover:text-white text-xl transition-colors bg-transparent">x</button>
 
         <h2 className="text-2xl font-bold text-center mb-2">Choose Your Plan</h2>
         <p className="text-[#8b8b9e] text-center text-sm mb-8">One-time payment. Lifetime access. No subscriptions ever.</p>
 
-        {/* Plans side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
-          {/* Essential */}
+          {/* Essential - $25 */}
           <div className="glass rounded-2xl p-6 flex flex-col">
             <div className="text-xs text-[#8b8b9e] uppercase tracking-[0.15em] mb-1">Essential</div>
             <div className="text-3xl font-black mb-1">$25</div>
@@ -44,7 +60,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             <div className="text-xs text-[#8b8b9e] uppercase tracking-wider mb-3">Includes:</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
-                <li key={f.name} className="flex items-center gap-2.5 text-sm">
+                <li key={`e-${f.name}`} className="flex items-center gap-2.5 text-sm">
                   {f.essential ? (
                     <span className="text-[#34d399] text-xs shrink-0">&#10003;</span>
                   ) : (
@@ -56,16 +72,16 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                 </li>
               ))}
             </ul>
-            <Link
-              href="/sign-up?tier=essential"
-              className="mt-6 block text-center py-3 px-6 glass rounded-xl font-semibold text-sm hover:bg-[rgba(255,255,255,0.1)] transition-all"
+            <button
+              onClick={() => handleCheckout('essential')}
+              className="mt-6 block w-full text-center py-3 px-6 glass rounded-xl font-semibold text-sm hover:bg-[rgba(255,255,255,0.12)] transition-all"
             >
               Get Essential
-            </Link>
+            </button>
           </div>
 
-          {/* Full - highlighted */}
-          <div className="glass rounded-2xl p-6 flex flex-col border-[#6366f1]/30 relative overflow-hidden">
+          {/* Complete - $50 */}
+          <div className="glass rounded-2xl p-6 flex flex-col relative overflow-hidden" style={{ borderColor: 'rgba(99, 102, 241, 0.3)' }}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366f1] to-transparent" />
             <div className="text-xs text-[#6366f1] uppercase tracking-[0.15em] mb-1 font-semibold">Complete</div>
             <div className="text-3xl font-black mb-1">$50</div>
@@ -73,7 +89,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             <div className="text-xs text-[#8b8b9e] uppercase tracking-wider mb-3">Includes:</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
-                <li key={f.name} className="flex items-center gap-2.5 text-sm">
+                <li key={`c-${f.name}`} className="flex items-center gap-2.5 text-sm">
                   <span className="text-[#34d399] text-xs shrink-0">&#10003;</span>
                   <span className="text-[#e0e0ea]">{f.name}</span>
                   {f.hasInfo && (
@@ -82,10 +98,11 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                       onMouseEnter={() => setShowTooltip(true)}
                       onMouseLeave={() => setShowTooltip(false)}
                     >
-                      <span className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] text-[9px] flex items-center justify-center text-[#8b8b9e] cursor-help">?</span>
+                      <span className="w-4 h-4 rounded-full bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.15)] text-[9px] inline-flex items-center justify-center text-[#8b8b9e] cursor-help">?</span>
                       {showTooltip && (
-                        <span className="absolute left-6 top-[-60px] w-72 glass rounded-xl p-3 text-xs text-[#c0c0d0] leading-relaxed z-50 pointer-events-none animate-fade-in">
-                          Your AI coach is modeled after Mark Douglas&apos; trading psychology. It has full access to your past stats, logged trades, and stated goals — so it can hold you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. That&apos;s how you grow as a trader.
+                        <span className="absolute left-6 top-[-80px] w-80 glass rounded-xl p-4 text-xs text-[#c0c0d0] leading-relaxed z-50 pointer-events-none animate-fade-in whitespace-normal">
+                          <strong className="text-white block mb-1">AI Accountability Coach</strong>
+                          Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection. It knows who you are as a trader and coaches you toward consistency and discipline.
                         </span>
                       )}
                     </span>
@@ -93,12 +110,12 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                 </li>
               ))}
             </ul>
-            <Link
-              href="/sign-up?tier=complete"
-              className="mt-6 block text-center py-3 px-6 bg-[#6366f1] hover:bg-[#5558e6] rounded-xl font-semibold text-sm transition-all glow-accent"
+            <button
+              onClick={() => handleCheckout('complete')}
+              className="mt-6 block w-full text-center py-3 px-6 bg-[#6366f1] hover:bg-[#5558e6] rounded-xl font-semibold text-sm transition-all glow-accent"
             >
               Get Complete
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -114,11 +131,12 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen text-[#f0f0f5] relative overflow-hidden">
-      {/* Ambient glows */}
+      {/* Colored blobs behind glass elements so blur is actually visible */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-15%] left-[25%] w-[700px] h-[700px] rounded-full bg-[#6366f1]/[0.06] blur-[150px]" />
-        <div className="absolute bottom-[-10%] right-[15%] w-[500px] h-[500px] rounded-full bg-[#818cf8]/[0.04] blur-[120px]" />
-        <div className="absolute top-[40%] left-[-10%] w-[400px] h-[400px] rounded-full bg-[#6366f1]/[0.03] blur-[100px]" />
+        <div className="absolute top-[-10%] left-[20%] w-[800px] h-[800px] rounded-full bg-[#6366f1]/[0.08] blur-[200px]" />
+        <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#818cf8]/[0.06] blur-[180px]" />
+        <div className="absolute bottom-[-5%] left-[40%] w-[700px] h-[700px] rounded-full bg-[#4f46e5]/[0.07] blur-[200px]" />
+        <div className="absolute top-[60%] left-[-5%] w-[500px] h-[500px] rounded-full bg-[#7c3aed]/[0.05] blur-[150px]" />
       </div>
 
       {/* Nav */}
@@ -148,7 +166,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 flex flex-col items-center justify-center min-h-[85vh] px-6">
+      <section className="relative z-10 flex flex-col items-center justify-center min-h-[88vh] px-6">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 glass rounded-full text-xs text-[#8b8b9e] mb-10">
           <span className="w-1.5 h-1.5 rounded-full bg-[#6366f1] animate-pulse" />
           The first AI-powered accountability trading journal
@@ -164,20 +182,20 @@ export default function LandingPage() {
           Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
-        {/* THE ORB - big, centered, clickable */}
-        <button onClick={() => setShowPricing(true)} className="group relative">
-          <div className="orb w-64 h-64 sm:w-80 sm:h-80 rounded-full flex flex-col items-center justify-center text-center animate-pulse-glow cursor-pointer group-hover:scale-[1.04] transition-transform duration-500">
-            <div className="text-[#8b8b9e] text-[10px] uppercase tracking-[0.25em] mb-3">Begin</div>
-            <div className="text-2xl sm:text-3xl font-bold mb-1">Start Your</div>
-            <div className="text-2xl sm:text-3xl font-bold text-[#6366f1]">Journal</div>
+        {/* THE ORB - huge, centered, opens pricing modal */}
+        <button onClick={() => setShowPricing(true)} className="group relative bg-transparent">
+          <div className="orb w-72 h-72 sm:w-96 sm:h-96 rounded-full flex flex-col items-center justify-center text-center animate-pulse-glow cursor-pointer group-hover:scale-[1.04] transition-transform duration-500">
+            <div className="text-[#8b8b9e] text-[11px] uppercase tracking-[0.25em] mb-4">Begin</div>
+            <div className="text-3xl sm:text-4xl font-bold mb-1">Start Your</div>
+            <div className="text-3xl sm:text-4xl font-bold text-[#6366f1]">Journal</div>
           </div>
           {/* Outer rings */}
-          <div className="absolute inset-[-16px] rounded-full border border-[rgba(99,102,241,0.1)] group-hover:border-[rgba(99,102,241,0.2)] transition-all duration-500" />
-          <div className="absolute inset-[-36px] rounded-full border border-[rgba(99,102,241,0.05)] group-hover:border-[rgba(99,102,241,0.1)] transition-all duration-700" />
-          <div className="absolute inset-[-60px] rounded-full border border-[rgba(99,102,241,0.02)] group-hover:border-[rgba(99,102,241,0.05)] transition-all duration-1000" />
+          <div className="absolute inset-[-20px] rounded-full border border-[rgba(255,255,255,0.08)] group-hover:border-[rgba(255,255,255,0.15)] transition-all duration-500" />
+          <div className="absolute inset-[-44px] rounded-full border border-[rgba(255,255,255,0.04)] group-hover:border-[rgba(255,255,255,0.1)] transition-all duration-700" />
+          <div className="absolute inset-[-72px] rounded-full border border-[rgba(255,255,255,0.02)] group-hover:border-[rgba(255,255,255,0.06)] transition-all duration-1000" />
         </button>
 
-        <p className="text-xs text-[#55556a] mt-12">One-time payment. Full access forever. No subscriptions.</p>
+        <p className="text-xs text-[#55556a] mt-14">One-time payment. Full access forever. No subscriptions.</p>
       </section>
 
       {/* Features */}
@@ -230,7 +248,7 @@ export default function LandingPage() {
           <p className="text-[#8b8b9e] mb-8 max-w-md mx-auto">The difference between profitable and unprofitable traders? Discipline. Journal X makes discipline automatic.</p>
           <button
             onClick={() => setShowPricing(true)}
-            className="inline-block px-10 py-4 glass rounded-2xl font-semibold text-lg transition-all glass-hover glow-accent"
+            className="inline-block px-10 py-4 glass rounded-2xl font-semibold text-lg transition-all glass-hover glow-accent bg-transparent"
           >
             Get Started
           </button>

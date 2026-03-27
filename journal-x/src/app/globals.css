@@ -27,10 +27,11 @@
 body {
   background: #080810;
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(30, 30, 50, 0.8) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(40, 35, 55, 0.5) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 40% at 20% 80%, rgba(25, 25, 45, 0.4) 0%, transparent 50%),
-    linear-gradient(180deg, #0a0a14 0%, #12121e 25%, #1a1a2e 50%, #151524 75%, #0a0a12 100%);
+    radial-gradient(ellipse 120% 80% at 50% -20%, #1e1e3a 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 100% 0%, #2a2040 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 50%, #1a1830 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, #16162a 0%, transparent 50%),
+    linear-gradient(180deg, #0e0e1a 0%, #181828 30%, #1e1e35 50%, #141425 75%, #0a0a14 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -39,16 +40,16 @@ body {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(60px) saturate(180%);
-  -webkit-backdrop-filter: blur(60px) saturate(180%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 80px rgba(255, 255, 255, 0.01);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .glass-hover:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .glow-accent {
@@ -56,18 +57,18 @@ body {
 }
 
 .orb {
-  background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.06) 40%, rgba(255, 255, 255, 0.04) 70%, rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(60px) saturate(180%);
-  -webkit-backdrop-filter: blur(60px) saturate(180%);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.1), inset 0 0 60px rgba(255, 255, 255, 0.02);
+  background: radial-gradient(circle at 30% 25%, rgba(120, 120, 255, 0.18), rgba(99, 102, 241, 0.08) 35%, rgba(255, 255, 255, 0.06) 60%, rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 80px rgba(99, 102, 241, 0.1), inset 0 2px 0 rgba(255, 255, 255, 0.18), inset 0 0 80px rgba(255, 255, 255, 0.03);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .orb:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 0 80px rgba(99, 102, 241, 0.25), 0 0 160px rgba(99, 102, 241, 0.1), 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.12);
-  transform: scale(1.03);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 100px rgba(99, 102, 241, 0.3), 0 0 200px rgba(99, 102, 241, 0.12), 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  transform: scale(1.04);
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
