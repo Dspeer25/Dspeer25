@@ -88,30 +88,37 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
 }
 
 /* ── How It Works Modal ───────────────────────────── */
-function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; onClose: () => void }) {
+function HowItWorksModal({ onSelectPlan, onClose, light = false }: { onSelectPlan: () => void; onClose: () => void; light?: boolean }) {
   const steps = [
     { num: '01', title: 'Sign Up', desc: 'Create your account in seconds. You\'re already here.' },
     { num: '02', title: 'Tell Us Your Story', desc: 'Share your experience level, goals, and trading rules. The AI tailors the entire experience to YOUR trading level.' },
     { num: '03', title: 'Trade with Accountability', desc: 'Log trades, track performance, and let AI hold you accountable in real-time.' },
   ];
 
+  const modalBg: React.CSSProperties = light
+    ? { background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(245,245,240,0.95) 100%)', border: '1px solid rgba(0,0,0,0.08)', backdropFilter: 'blur(40px)', boxShadow: '0 24px 80px rgba(0,0,0,0.12)' }
+    : {};
+  const stepCircle: React.CSSProperties = light
+    ? { background: 'rgba(245,245,240,0.8)', border: '1px solid rgba(0,0,0,0.06)' }
+    : {};
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-      <div className="relative glass rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in">
-        <button onClick={onClose} className="absolute top-5 right-6 text-[#555] hover:text-white text-lg transition-colors bg-transparent">&#10005;</button>
+      <div className={`absolute inset-0 backdrop-blur-md ${light ? 'bg-black/30' : 'bg-black/70'}`} onClick={onClose} />
+      <div className={`relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in ${light ? '' : 'glass'}`} style={light ? modalBg : {}}>
+        <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-white'}`}>&#10005;</button>
 
-        <h2 className="text-3xl font-light text-center mb-3 tracking-tight">How Journal X Works</h2>
-        <p className="text-[#888] text-center text-sm mb-12">Three steps to trading with real accountability.</p>
+        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>How Journal X Works</h2>
+        <p className={`text-center text-sm mb-12 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Three steps to trading with real accountability.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12 items-start">
           {steps.map((s, i) => (
             <div key={s.num} className="flex flex-col items-center text-center relative">
-              <div className="w-14 h-14 rounded-full glass flex items-center justify-center mb-5">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-5 ${light ? '' : 'glass'}`} style={light ? stepCircle : {}}>
                 <span className="text-[#30C48B] font-semibold text-sm">{s.num}</span>
               </div>
-              <h3 className="font-medium text-base mb-2">{s.title}</h3>
-              <p className="text-xs text-[#888] leading-relaxed">{s.desc}</p>
+              <h3 className={`font-medium text-base mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{s.title}</h3>
+              <p className={`text-xs leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>{s.desc}</p>
 
               {i < steps.length - 1 && (
                 <div className="hidden sm:flex absolute top-6 -right-6 items-center justify-center">
@@ -139,7 +146,7 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
 }
 
 /* ── Pricing Modal ────────────────────────────────── */
-function PricingModal({ onClose }: { onClose: () => void }) {
+function PricingModal({ onClose, light = false }: { onClose: () => void; light?: boolean }) {
   const features = [
     { name: 'Trade Logging', essential: true, full: true },
     { name: 'Weekly Goal Setting', essential: true, full: true },
@@ -163,31 +170,39 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     } catch { window.location.href = '/sign-up'; }
   };
 
+  const modalBg: React.CSSProperties = light
+    ? { background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(245,245,240,0.95) 100%)', border: '1px solid rgba(0,0,0,0.08)', backdropFilter: 'blur(40px)', boxShadow: '0 24px 80px rgba(0,0,0,0.12)' }
+    : {};
+  const cardBg: React.CSSProperties = light
+    ? { background: 'rgba(245,245,240,0.6)', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }
+    : {};
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      <div className={`absolute inset-0 backdrop-blur-md ${light ? 'bg-black/30' : 'bg-black/70'}`} onClick={onClose} />
 
-      <div className="relative glass rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in">
-        <button onClick={onClose} className="absolute top-5 right-6 text-[#555] hover:text-white text-lg transition-colors bg-transparent">&#10005;</button>
+      <div className={`relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in ${light ? '' : 'glass'}`} style={light ? modalBg : {}}>
+        <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-white'}`}>&#10005;</button>
 
-        <h2 className="text-3xl font-light text-center mb-3 tracking-tight">Choose Your Plan</h2>
-        <p className="text-[#888] text-center text-sm mb-10">One-time payment. Lifetime access. No subscriptions.</p>
+        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Choose Your Plan</h2>
+        <p className={`text-center text-sm mb-10 ${light ? 'text-[#999]' : 'text-[#888]'}`}>One-time payment. Lifetime access. No subscriptions.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           {/* Essential */}
           <div
-            className="glass rounded-2xl p-7 flex flex-col transition-all duration-300"
+            className={`rounded-2xl p-7 flex flex-col transition-all duration-300 ${light ? '' : 'glass'}`}
+            style={light ? { ...cardBg } : {}}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 0 60px rgba(48,196,139,0.25), 0 0 120px rgba(48,196,139,0.10)';
               e.currentTarget.style.borderColor = 'rgba(48,196,139,0.35)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '';
-              e.currentTarget.style.borderColor = '';
+              e.currentTarget.style.boxShadow = light ? (cardBg.boxShadow as string) : '';
+              e.currentTarget.style.borderColor = light ? 'rgba(0,0,0,0.06)' : '';
             }}
           >
             <div className="text-xs text-[#888] uppercase tracking-[0.2em] mb-2">Essential</div>
-            <div className="text-4xl font-light mb-1">$25</div>
+            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$25</div>
             <div className="text-sm text-[#30C48B] mb-6">one-time payment</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
@@ -195,13 +210,13 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                   {f.essential
                     ? <span className="text-[#30C48B] text-xs shrink-0">&#10003;</span>
                     : <span className="text-[#f87171]/40 text-xs shrink-0">&#10005;</span>}
-                  <span className={f.essential ? 'text-[#ddd]' : 'text-[#555] line-through'}>{f.name}</span>
+                  <span className={f.essential ? (light ? 'text-[#333]' : 'text-[#ddd]') : (light ? 'text-[#bbb] line-through' : 'text-[#555] line-through')}>{f.name}</span>
                 </li>
               ))}
             </ul>
             <button
               onClick={() => handleCheckout('essential')}
-              className="mt-7 w-full py-3 rounded-full font-medium text-sm transition-all glass glass-hover"
+              className={`mt-7 w-full py-3 rounded-full font-medium text-sm transition-all ${light ? 'bg-[#eee] hover:bg-[#ddd] text-[#333]' : 'glass glass-hover'}`}
             >
               Get Essential
             </button>
@@ -209,33 +224,33 @@ function PricingModal({ onClose }: { onClose: () => void }) {
 
           {/* Complete */}
           <div
-            className="glass rounded-2xl p-7 flex flex-col relative transition-all duration-300"
-            style={{ borderColor: 'rgba(48,196,139,0.3)' }}
+            className={`rounded-2xl p-7 flex flex-col relative transition-all duration-300 ${light ? '' : 'glass'}`}
+            style={light ? { ...cardBg, borderColor: 'rgba(48,196,139,0.2)' } : { borderColor: 'rgba(48,196,139,0.3)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 0 70px rgba(48,196,139,0.3), 0 0 140px rgba(48,196,139,0.12)';
               e.currentTarget.style.borderColor = 'rgba(48,196,139,0.5)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '';
-              e.currentTarget.style.borderColor = 'rgba(48,196,139,0.3)';
+              e.currentTarget.style.boxShadow = light ? (cardBg.boxShadow as string) : '';
+              e.currentTarget.style.borderColor = light ? 'rgba(48,196,139,0.2)' : 'rgba(48,196,139,0.3)';
             }}
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#30C48B] to-transparent" />
             <div className="text-xs text-[#30C48B] uppercase tracking-[0.2em] mb-2 font-medium">Complete</div>
-            <div className="text-4xl font-light mb-1">$50</div>
+            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$50</div>
             <div className="text-sm text-[#30C48B] mb-6">one-time payment</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
                 <li key={`c-${f.name}`} className="flex items-center gap-2.5 text-sm">
                   <span className="text-[#30C48B] text-xs shrink-0">&#10003;</span>
-                  <span className="text-[#ddd]">{f.name}</span>
+                  <span className={light ? 'text-[#333]' : 'text-[#ddd]'}>{f.name}</span>
                   {f.hasInfo && (
                     <span className="relative group/tip inline-flex">
-                      <span className="w-4 h-4 rounded-full glass text-[9px] inline-flex items-center justify-center text-[#999] cursor-help">?</span>
+                      <span className={`w-4 h-4 rounded-full text-[9px] inline-flex items-center justify-center cursor-help ${light ? 'bg-[#e5e5e0] text-[#888]' : 'glass text-[#999]'}`}>?</span>
                       <span
-                        className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 glass rounded-xl p-4 text-xs text-[#bbb] leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal"
+                        className={`absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 rounded-xl p-4 text-xs leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal ${light ? 'bg-white text-[#666] shadow-lg border border-[rgba(0,0,0,0.08)]' : 'glass text-[#bbb]'}`}
                       >
-                        <strong className="text-white block mb-1">AI Accountability Coach</strong>
+                        <strong className={`block mb-1 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>AI Accountability Coach</strong>
                         Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection.
                       </span>
                     </span>
@@ -253,7 +268,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <p className="text-center text-xs text-[#555]">Secure checkout powered by Stripe.</p>
+        <p className={`text-center text-xs ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>Secure checkout powered by Stripe.</p>
       </div>
     </div>
   );
@@ -354,6 +369,19 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      {/* Product nav — borderless elegant text links */}
+      <div className="relative z-10 flex items-center justify-center gap-10 sm:gap-14 px-8 pt-2 pb-4 max-w-7xl mx-auto">
+        {['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals'].map((item) => (
+          <span
+            key={item}
+            className={`text-[11px] font-bold tracking-[0.35em] uppercase cursor-pointer transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-[#ccc]'}`}
+            style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
         <h2 className={`text-lg sm:text-xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#888]' : 'text-[#888]'}`}>
@@ -366,18 +394,18 @@ export default function LandingPage() {
           : <CandlestickCTA onClick={() => setShowHowItWorks(true)} />
         }
 
-        {/* Rising moving average line */}
+        {/* Rising moving average line — slightly more curved */}
         <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
           <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none">
             <path
-              d="M-50 800 Q200 720 360 660 Q520 600 600 540 Q700 470 800 420 Q900 370 1000 310 Q1100 250 1200 200 Q1300 150 1500 80"
+              d="M-50 810 C120 780 200 740 320 680 C440 620 500 580 600 530 C700 480 750 440 850 390 C950 340 1050 280 1150 220 C1250 160 1350 110 1500 60"
               stroke={light ? 'rgba(48,140,220,0.10)' : 'rgba(100,180,255,0.12)'}
               strokeWidth="3"
               strokeLinecap="round"
               fill="none"
             />
             <path
-              d="M-50 820 Q200 745 360 690 Q520 635 600 580 Q700 510 800 460 Q900 410 1000 355 Q1100 295 1200 245 Q1300 200 1500 130"
+              d="M-50 835 C120 805 200 770 320 715 C440 660 500 620 600 570 C700 520 750 485 850 435 C950 385 1050 325 1150 265 C1250 210 1350 165 1500 110"
               stroke={light ? 'rgba(48,140,220,0.05)' : 'rgba(100,180,255,0.06)'}
               strokeWidth="2"
               strokeLinecap="round"
@@ -451,8 +479,8 @@ export default function LandingPage() {
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 
-      {showHowItWorks && <HowItWorksModal onSelectPlan={openPricingFromSteps} onClose={() => setShowHowItWorks(false)} />}
-      {showPricing && <PricingModal onClose={() => setShowPricing(false)} />}
+      {showHowItWorks && <HowItWorksModal onSelectPlan={openPricingFromSteps} onClose={() => setShowHowItWorks(false)} light={light} />}
+      {showPricing && <PricingModal onClose={() => setShowPricing(false)} light={light} />}
     </div>
   );
 }
