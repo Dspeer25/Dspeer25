@@ -84,7 +84,7 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="relative glass rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in">
         <button onClick={onClose} className="absolute top-5 right-6 text-[#555] hover:text-white text-lg transition-colors bg-transparent">&#10005;</button>
 
         <h2 className="text-3xl font-light text-center mb-3 tracking-tight">How Journal X Works</h2>
@@ -93,7 +93,7 @@ function HowItWorksModal({ onSelectPlan, onClose }: { onSelectPlan: () => void; 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12 items-start">
           {steps.map((s, i) => (
             <div key={s.num} className="flex flex-col items-center text-center relative">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              <div className="w-14 h-14 rounded-full glass flex items-center justify-center mb-5">
                 <span className="text-[#6366f1] font-semibold text-sm">{s.num}</span>
               </div>
               <h3 className="font-medium text-base mb-2">{s.title}</h3>
@@ -153,7 +153,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="relative glass rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in">
         <button onClick={onClose} className="absolute top-5 right-6 text-[#555] hover:text-white text-lg transition-colors bg-transparent">&#10005;</button>
 
         <h2 className="text-3xl font-light text-center mb-3 tracking-tight">Choose Your Plan</h2>
@@ -162,15 +162,14 @@ function PricingModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           {/* Essential */}
           <div
-            className="rounded-2xl p-7 flex flex-col transition-all duration-300"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="glass rounded-2xl p-7 flex flex-col transition-all duration-300"
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 0 60px rgba(99,102,241,0.25), 0 0 120px rgba(99,102,241,0.10)';
               e.currentTarget.style.borderColor = 'rgba(99,102,241,0.35)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.boxShadow = '';
+              e.currentTarget.style.borderColor = '';
             }}
           >
             <div className="text-xs text-[#777] uppercase tracking-[0.2em] mb-2">Essential</div>
@@ -188,10 +187,7 @@ function PricingModal({ onClose }: { onClose: () => void }) {
             </ul>
             <button
               onClick={() => handleCheckout('essential')}
-              className="mt-7 w-full py-3 rounded-full font-medium text-sm transition-all"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+              className="mt-7 w-full py-3 rounded-full font-medium text-sm transition-all glass glass-hover"
             >
               Get Essential
             </button>
@@ -199,15 +195,15 @@ function PricingModal({ onClose }: { onClose: () => void }) {
 
           {/* Complete */}
           <div
-            className="rounded-2xl p-7 flex flex-col relative transition-all duration-300"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(99,102,241,0.2)' }}
+            className="glass rounded-2xl p-7 flex flex-col relative transition-all duration-300"
+            style={{ borderColor: 'rgba(99,102,241,0.25)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 0 70px rgba(99,102,241,0.3), 0 0 140px rgba(99,102,241,0.12)';
               e.currentTarget.style.borderColor = 'rgba(99,102,241,0.45)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.2)';
+              e.currentTarget.style.boxShadow = '';
+              e.currentTarget.style.borderColor = 'rgba(99,102,241,0.25)';
             }}
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#6366f1] to-transparent" />
@@ -221,14 +217,13 @@ function PricingModal({ onClose }: { onClose: () => void }) {
                   <span className="text-[#ccc]">{f.name}</span>
                   {f.hasInfo && (
                     <span className="relative group/tip inline-flex">
-                      <span className="w-4 h-4 rounded-full text-[9px] inline-flex items-center justify-center text-[#666] cursor-help" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>?</span>
+                      <span className="w-4 h-4 rounded-full glass text-[9px] inline-flex items-center justify-center text-[#999] cursor-help">?</span>
                       <span
-                        className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 rounded-xl p-4 text-xs text-[#aaa] leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal"
-                        style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
+                        className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 glass rounded-xl p-4 text-xs text-[#aaa] leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal"
                       >
                         <strong className="text-white block mb-1">AI Accountability Coach</strong>
                         Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection.
-                        <span className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[#1a1a1a]" />
+                        <span className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[rgba(255,255,255,0.12)]" />
                       </span>
                     </span>
                   )}
@@ -281,10 +276,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/sign-up"
-                className="text-sm px-5 py-2 rounded-full transition-all"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
-                onMouseEnter={(e) => { (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.12)'; }}
-                onMouseLeave={(e) => { (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; }}
+                className="text-sm px-5 py-2 rounded-full transition-all glass glass-hover"
               >
                 Get Started
               </Link>
@@ -336,16 +328,7 @@ export default function LandingPage() {
           ].map((f) => (
             <div
               key={f.title}
-              className="rounded-2xl p-7 transition-all duration-300"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-              }}
+              className="glass glass-hover rounded-2xl p-7 transition-all duration-300"
             >
               <div className="text-xs text-[#555] mb-4 font-medium">{f.num}.</div>
               <h3 className="font-medium text-base mb-2">{f.title}</h3>
@@ -363,10 +346,7 @@ export default function LandingPage() {
         </p>
         <button
           onClick={() => setShowHowItWorks(true)}
-          className="px-10 py-4 rounded-full font-medium text-base transition-all"
-          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+          className="px-10 py-4 rounded-full font-medium text-base transition-all glass glass-hover"
         >
           Get Started
         </button>
