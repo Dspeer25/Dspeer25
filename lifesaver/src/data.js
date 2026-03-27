@@ -171,28 +171,20 @@ export function setApiKey(key) {
 }
 
 // Resize image for API (max 1024px, returns base64)
+// Uses createImageBitmap to handle EXIF orientation from camera photos
 export function resizeImage(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 1024;
-        let w = img.width;
-        let h = img.height;
-        if (w > maxDim || h > maxDim) {
-          if (w > h) { h = (h / w) * maxDim; w = maxDim; }
-          else { w = (w / h) * maxDim; h = maxDim; }
-        }
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        resolve(dataUrl);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  return createImageBitmap(file).then((bitmap) => {
+    const canvas = document.createElement('canvas');
+    const maxDim = 1024;
+    let w = bitmap.width;
+    let h = bitmap.height;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) { h = (h / w) * maxDim; w = maxDim; }
+      else { w = (w / h) * maxDim; h = maxDim; }
+    }
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', 0.85);
   });
 }
