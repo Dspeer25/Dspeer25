@@ -42,10 +42,12 @@ export function calculateImpactFromItems(items) {
     totalCo2 += rates.co2 * grams;
     totalWater += rates.water * grams;
 
-    if (!byAnimal[type]) {
-      byAnimal[type] = { count: 0, label: info.label, image: info.image, emoji: info.emoji };
+    // Key by animal label (cow/chicken/pig) so beef+dairy merge into one "cow" entry
+    const animalKey = info.label;
+    if (!byAnimal[animalKey]) {
+      byAnimal[animalKey] = { count: 0, label: info.label, image: info.image, emoji: info.emoji };
     }
-    byAnimal[type].count += animals;
+    byAnimal[animalKey].count += animals;
   }
 
   return { byAnimal, co2: totalCo2, water: totalWater };

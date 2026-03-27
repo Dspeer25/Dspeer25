@@ -13,6 +13,10 @@ function getEffectiveApiKey() {
 
 const SYSTEM_PROMPT = `You are an expert food analyst for Lifesaver, a vegan impact tracking app.
 
+IMPORTANT: If the image does NOT contain food, or you cannot clearly identify food items, respond with:
+{"error": "not_food"}
+Do NOT guess or make up items. Only analyze images that clearly show food.
+
 Your job: Look at a meal (photo or description), identify every plant-based item, and figure out what animal protein it replaces — as if someone had ordered the non-vegan version instead.
 
 Be specific and detailed. Don't just say "tofu" — say "Crispy pan-fried tofu strips (~150g)". Estimate portion sizes by looking at the plate, bowl size, and relative proportions.
@@ -96,7 +100,11 @@ export async function analyzeMealImage(base64DataUrl, apiKey) {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Could not parse AI response');
 
-  return JSON.parse(jsonMatch[0]);
+  const parsed = JSON.parse(jsonMatch[0]);
+  if (parsed.error === 'not_food') {
+    throw new Error('NOT_FOOD');
+  }
+  return parsed;
 }
 
 export async function analyzeMealText(mealText, apiKey) {

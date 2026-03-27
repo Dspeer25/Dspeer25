@@ -8,52 +8,12 @@ import {
 import { analyzeMealImage, analyzeMealText } from './api/claude'
 import AnimalReveal from './AnimalReveal'
 
-// Realistic spinning earth using an Unsplash satellite image
-function SpinningEarth() {
-  return (
-    <div className="earth-sphere">
-      <motion.div
-        className="earth-texture"
-        animate={{ backgroundPositionX: [0, -120] }}
-        transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
-        style={{
-          backgroundImage: "url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Earth_Western_Hemisphere_transparent_background.png/600px-Earth_Western_Hemisphere_transparent_background.png')",
-          backgroundSize: '120px 60px',
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: '0 center',
-          width: '100%',
-          height: '100%',
-          borderRadius: '50%',
-        }}
-      />
-      <div className="earth-gloss" />
-    </div>
-  )
-}
-
-function SmokeCloud({ delay = 0, size = 1, y = 0 }) {
-  return (
-    <motion.div
-      style={{
-        position: 'absolute',
-        left: 68,
-        top: `calc(50% + ${y}px)`,
-        transform: 'translateY(-50%)',
-        filter: 'blur(1px)',
-      }}
-      initial={{ x: 0, opacity: 0.9, scale: size }}
-      animate={{ x: 180, opacity: 0, scale: size * 0.15 }}
-      transition={{ delay: 0.8 + delay, duration: 2, ease: 'easeIn' }}
-    >
-      <svg width="50" height="34" viewBox="0 0 50 34" fill="none">
-        <ellipse cx="25" cy="20" rx="22" ry="13" fill="rgba(40,35,30,0.75)" />
-        <ellipse cx="17" cy="15" rx="15" ry="10" fill="rgba(55,50,45,0.65)" />
-        <ellipse cx="33" cy="12" rx="13" ry="10" fill="rgba(35,30,25,0.7)" />
-        <ellipse cx="25" cy="9" rx="10" ry="7" fill="rgba(60,55,50,0.55)" />
-        <ellipse cx="20" cy="22" rx="8" ry="5" fill="rgba(45,40,35,0.5)" />
-      </svg>
-    </motion.div>
-  )
+// Format numbers with commas
+function fmt(n, decimals = 0) {
+  return Number(n).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
 }
 
 function NalgeneBottle({ size = 'small' }) {
@@ -76,6 +36,7 @@ export default function HomeScreen() {
   const [result, setResult] = useState(null)
   const [debugError, setDebugError] = useState(null)
   const [cropSetIndex, setCropSetIndex] = useState(0)
+  const [showFunny, setShowFunny] = useState(false)
   const fileRef = useRef(null)
 
   async function handlePhotoSelect(e) {
@@ -128,26 +89,28 @@ export default function HomeScreen() {
     if (!photo && !meal.trim()) return
     setResult(null)
     setAnalyzing(true)
+    setDebugError(null)
 
     const apiKey = getApiKey() || undefined
 
     try {
-      console.log('[Lifesaver] API key loaded:', apiKey ? `${apiKey.slice(0, 12)}...` : 'NONE')
-      console.log('[Lifesaver] Using photo:', !!photo, 'preview length:', preview?.length || 0)
-
       let aiResult
       if (photo && preview) {
         aiResult = await analyzeMealImage(preview, apiKey)
       } else {
         aiResult = await analyzeMealText(meal.trim(), apiKey)
       }
-      console.log('[Lifesaver] AI response:', aiResult)
       const items = aiResult.items || []
       if (items.length === 0) throw new Error('empty')
       setDebugError(null)
       doLog(items, aiResult.description)
     } catch (err) {
-      console.error('[Lifesaver] AI FAILED:', err.message, err)
+      console.error('[Lifesaver] AI FAILED:', err.message)
+      if (err.message === 'NOT_FOOD') {
+        setDebugError("That doesn't look right. Make sure the photo is clear and that food is pictured only.")
+        setAnalyzing(false)
+        return
+      }
       setDebugError(`AI error: ${err.message}`)
       const text = meal.trim() || 'plant-based meal'
       const type = inferMeatType(text)
@@ -158,11 +121,8 @@ export default function HomeScreen() {
   }
 
   const hasInput = photo || meal.trim()
-  const co2Lbs = result ? (result.impact.co2 * 2.205).toFixed(1) : 0
-  const co2LbsNum = result ? result.impact.co2 * 2.205 : 0
-
-  // CO2 fun fact
-  const co2Fact = result ? CO2_FACTS(co2LbsNum) : ''
+  const co2Lbs = result ? (result.impact.co2 * 2.205) : 0
+  const co2Fact = result ? CO2_FACTS(co2Lbs) : ''
 
   // Water: Nalgene bottles (1 Nalgene = 32oz = 0.25 gal)
   const nalgeneCount = result ? Math.round(result.impact.water / 0.25) : 0
@@ -233,17 +193,62 @@ export default function HomeScreen() {
         {analyzing ? 'Analyzing...' : photo ? 'Analyze meal' : 'Log it'}
       </button>
 
+      {/* Fun easter egg button */}
+      <button
+        className="funny-btn"
+        onClick={() => setShowFunny(prev => !prev)}
+      >
+        press for something funny
+      </button>
+
+      <AnimatePresence>
+        {showFunny && (
+          <motion.div
+            className="funny-scene"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+          >
+            <div className="funny-container">
+              <motion.div
+                className="funny-poop"
+                initial={{ y: -60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5, type: 'spring', bounce: 0.5 }}
+              >
+                💩
+              </motion.div>
+              <div className="funny-trump">🍊</div>
+              <motion.div
+                className="funny-splat"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.6, duration: 0.3 }}
+              >
+                💩💩💩
+              </motion.div>
+            </div>
+            <p className="funny-caption">Oops.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {debugError && (
         <div style={{
-          background: 'rgba(255,50,50,0.15)',
-          border: '1px solid rgba(255,100,100,0.3)',
+          background: debugError.includes("doesn't look right")
+            ? 'rgba(255,180,50,0.15)'
+            : 'rgba(255,50,50,0.15)',
+          border: `1px solid ${debugError.includes("doesn't look right")
+            ? 'rgba(255,180,50,0.3)'
+            : 'rgba(255,100,100,0.3)'}`,
           borderRadius: 12,
           padding: '10px 14px',
           marginTop: 12,
           width: '100%',
-          fontSize: 12,
-          color: '#ff9999',
+          fontSize: 13,
+          color: debugError.includes("doesn't look right") ? '#ffcc66' : '#ff9999',
           wordBreak: 'break-all',
+          textAlign: 'center',
         }}>
           {debugError}
         </div>
@@ -294,40 +299,58 @@ export default function HomeScreen() {
               ))}
             </motion.div>
 
-            {/* Animal reveal */}
-            {Object.entries(result.impact.byAnimal).map(([type, data]) => (
-              <AnimalReveal key={type} animalType={data.image} count={data.count} label={data.label} />
+            {/* Animal reveal — one per animal type (merged) */}
+            {Object.entries(result.impact.byAnimal).map(([key, data]) => (
+              <AnimalReveal key={key} animalType={data.image} count={data.count} label={data.label} />
             ))}
 
-            {/* CO2 — realistic earth + smoke leaving */}
+            {/* CO2 — real earth image + animated smoke scene */}
             <motion.div className="visual-stat glass co2-section"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
               <div className="visual-stat-header">
                 <span className="visual-stat-label">CO2 Kept Out</span>
-                <span className="visual-stat-value">{co2Lbs} lbs</span>
+                <span className="visual-stat-value">{fmt(co2Lbs, 1)} lbs</span>
               </div>
               <p className="visual-stat-desc">{co2Fact}</p>
 
               <div className="co2-animation-scene">
+                {/* Real earth image */}
                 <div className="co2-earth-icon">
-                  <SpinningEarth />
+                  <div className="earth-sphere">
+                    <motion.div
+                      className="earth-texture"
+                      animate={{ backgroundPositionX: ['0px', '-200px'] }}
+                      transition={{ repeat: Infinity, duration: 20, ease: 'linear' }}
+                    />
+                    <div className="earth-atmosphere" />
+                    <div className="earth-gloss" />
+                  </div>
                 </div>
-                <SmokeCloud delay={0} size={1.1} y={-8} />
-                <SmokeCloud delay={0.2} size={0.85} y={10} />
-                <SmokeCloud delay={0.4} size={0.95} y={0} />
-                <motion.div
-                  className="co2-cloud-label-float"
-                  initial={{ x: 80, opacity: 0.9 }}
-                  animate={{ x: 240, opacity: 0 }}
-                  transition={{ delay: 1, duration: 2, ease: 'easeIn' }}
-                >
-                  {co2Lbs} lbs
-                </motion.div>
+
+                {/* Animated smoke clouds leaving earth */}
+                {[0, 1, 2, 3, 4].map(i => (
+                  <motion.div
+                    key={i}
+                    className="smoke-particle"
+                    style={{ top: `${20 + i * 12}%` }}
+                    initial={{ left: 80, opacity: 0.8, scale: 0.6 + i * 0.1 }}
+                    animate={{ left: 300, opacity: 0, scale: 0.1 }}
+                    transition={{
+                      delay: 0.6 + i * 0.25,
+                      duration: 2,
+                      ease: 'easeIn',
+                      repeat: Infinity,
+                      repeatDelay: 1 + i * 0.3,
+                    }}
+                  />
+                ))}
+
+                {/* Void / vacuum */}
                 <div className="co2-void">
                   <motion.div
                     className="co2-void-ring co2-void-ring-outer"
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.15, 0.4] }}
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.1, 0.4] }}
                     transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
                   />
                   <motion.div
@@ -335,8 +358,22 @@ export default function HomeScreen() {
                     animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.3, 0.6] }}
                     transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
                   />
-                  <div className="co2-void-center" />
+                  <motion.div
+                    className="co2-void-center"
+                    animate={{ boxShadow: ['0 0 20px rgba(60,0,100,0.5)', '0 0 40px rgba(80,0,140,0.8)', '0 0 20px rgba(60,0,100,0.5)'] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  />
                 </div>
+
+                <motion.span
+                  className="co2-cloud-label-float"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.8, 0] }}
+                  transition={{ delay: 1, duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                  style={{ left: 100, top: '20%' }}
+                >
+                  {fmt(co2Lbs, 1)} lbs
+                </motion.span>
               </div>
               <p className="co2-caption">This pollution didn't enter the atmosphere</p>
             </motion.div>
@@ -347,21 +384,21 @@ export default function HomeScreen() {
             >
               <div className="visual-stat-header">
                 <span className="visual-stat-label">Water Saved</span>
-                <span className="visual-stat-value">{result.impact.water.toFixed(0)} gal</span>
+                <span className="visual-stat-value">{fmt(result.impact.water)} gal</span>
               </div>
 
               {/* Nalgene warehouse visual */}
               <div className="nalgene-section">
                 <p className="nalgene-headline">
-                  That's <strong>~{nalgeneCount.toLocaleString()} Nalgene bottles</strong> of water
+                  That's <strong>~{fmt(nalgeneCount)} Nalgene bottles</strong> of water
                 </p>
                 <div className="nalgene-warehouse">
                   <div className="nalgene-warehouse-inner">
-                    {Array.from({ length: Math.min(nalgeneCount, 300) }).map((_, i) => (
+                    {Array.from({ length: Math.min(nalgeneCount, 400) }).map((_, i) => (
                       <NalgeneBottle key={i} size="small" />
                     ))}
-                    {nalgeneCount > 300 && (
-                      <div className="nalgene-overflow">+{(nalgeneCount - 300).toLocaleString()} more</div>
+                    {nalgeneCount > 400 && (
+                      <div className="nalgene-overflow">+{fmt(nalgeneCount - 400)} more</div>
                     )}
                   </div>
                 </div>
@@ -372,7 +409,7 @@ export default function HomeScreen() {
                 <div className="crops-header">
                   <p className="crops-title">That water could grow:</p>
                   <button className="crops-refresh" onClick={rotateCrops} title="Show different crops">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                       <path d="M13.65 2.35A7.96 7.96 0 008 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 018 14 6 6 0 1114 8h-3l4 4 4-4h-3a7.96 7.96 0 00-2.35-5.65z" fill="rgba(255,255,255,0.5)" transform="scale(0.85)" />
                     </svg>
                     <span>Or</span>
@@ -391,7 +428,7 @@ export default function HomeScreen() {
                         initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 * i }}
                       >
                         <span className="crop-icon">{crop.emoji}</span>
-                        <span className="crop-text">~{crop.amount} {crop.name}</span>
+                        <span className="crop-text">~{fmt(crop.amount)} {crop.name}</span>
                       </motion.div>
                     ))}
                   </motion.div>

@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { getTotals, loadMeals, IMPACT } from './data'
+import { getTotals, loadMeals } from './data'
+
+function fmt(n, decimals = 0) {
+  return Number(n).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
+}
 
 function getStreak() {
   const meals = loadMeals()
@@ -20,7 +27,7 @@ function getStreak() {
   return streak
 }
 
-function CountUp({ value, decimals = 2 }) {
+function CountUp({ value, decimals = 2, format = true }) {
   const [display, setDisplay] = useState(0)
   useState(() => {
     const duration = 800
@@ -33,20 +40,12 @@ function CountUp({ value, decimals = 2 }) {
     }
     requestAnimationFrame(tick)
   }, [])
+  if (format) return <>{fmt(display, decimals)}</>
   return <>{display.toFixed(decimals)}</>
 }
 
-const ANIMAL_EMOJIS = {
-  cow: '🐄',
-  chicken: '🐔',
-  pig: '🐖',
-}
-
-const ANIMAL_LABELS = {
-  cow: 'Cows',
-  chicken: 'Chickens',
-  pig: 'Pigs',
-}
+const ANIMAL_EMOJIS = { cow: '🐄', chicken: '🐔', pig: '🐖' }
+const ANIMAL_LABELS = { cow: 'Cows', chicken: 'Chickens', pig: 'Pigs' }
 
 export default function TotalsScreen() {
   const totals = getTotals()
@@ -65,15 +64,24 @@ export default function TotalsScreen() {
   const co2Lbs = totals.co2 * 2.205
   const nalgeneBottles = Math.round(totals.water / 0.25)
 
+  // Merge animal entries by label (cow/chicken/pig)
+  const mergedAnimals = {}
+  for (const [key, data] of Object.entries(totals.byAnimal)) {
+    const label = data.label || key
+    if (!mergedAnimals[label]) {
+      mergedAnimals[label] = { count: 0, label, emoji: data.emoji }
+    }
+    mergedAnimals[label].count += data.count
+  }
+
+  const animalEntries = Object.entries(mergedAnimals)
+
   const mainCards = [
     { emoji: '🍽️', value: totals.count, decimals: 0, label: 'Meals Logged' },
     { emoji: '☁️', value: co2Lbs, decimals: 1, label: 'lbs CO2 Avoided' },
     { emoji: '💧', value: totals.water, decimals: 0, label: 'Gallons Water Saved' },
     { emoji: '🫙', value: nalgeneBottles, decimals: 0, label: 'Nalgene Bottles Worth' },
   ]
-
-  // Break down animals by type
-  const animalEntries = Object.entries(totals.byAnimal)
 
   return (
     <div className="totals">
@@ -107,13 +115,13 @@ export default function TotalsScreen() {
           <div className="total-emoji">🐾</div>
           <div className="total-label" style={{ marginBottom: 14 }}>Animals Saved (by type)</div>
           <div className="animal-breakdown">
-            {animalEntries.map(([type, data]) => (
-              <div className="animal-breakdown-row" key={type}>
+            {animalEntries.map(([label, data]) => (
+              <div className="animal-breakdown-row" key={label}>
                 <span className="animal-breakdown-emoji">
-                  {ANIMAL_EMOJIS[data.label] || ANIMAL_EMOJIS[type] || '🐾'}
+                  {ANIMAL_EMOJIS[label] || '🐾'}
                 </span>
                 <span className="animal-breakdown-label">
-                  {ANIMAL_LABELS[data.label] || ANIMAL_LABELS[type] || type}
+                  {ANIMAL_LABELS[label] || label}
                 </span>
                 <span className="animal-breakdown-value">
                   {data.count.toFixed(3)}
