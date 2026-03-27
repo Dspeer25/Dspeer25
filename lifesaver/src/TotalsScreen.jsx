@@ -89,12 +89,36 @@ export default function TotalsScreen() {
         </motion.div>
       ))}
 
+      {/* Cumulative animals saved by type */}
+      {Object.keys(totals.byAnimal).length > 0 && (
+        <motion.div
+          className="total-card glass"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+        >
+          <div className="total-emoji">🐾</div>
+          <div className="total-label" style={{ marginBottom: 14 }}>Animals Saved</div>
+          <div className="animal-breakdown">
+            {Object.entries(totals.byAnimal).map(([key, data]) => (
+              <div className="animal-breakdown-row" key={key}>
+                <span className="animal-breakdown-emoji">{data.emoji}</span>
+                <span className="animal-breakdown-label">{data.label}s</span>
+                <span className="animal-breakdown-value">
+                  <CountUp value={data.count} decimals={2} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {streak > 0 && (
         <motion.div
           className="streak-badge"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
         >
           🔥 <span className="streak-number">{streak}</span> day streak
         </motion.div>

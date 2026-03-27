@@ -111,7 +111,13 @@ export default function HomeScreen() {
   const co2Lbs = result ? (result.impact.co2 * 2.205) : 0
   const co2Fact = result ? CO2_FACTS(co2Lbs) : ''
   const nalgeneCount = result ? Math.round(result.impact.water / 0.25) : 0
-  const waterPercent = result ? Math.min((result.impact.water / 1000) * 100, 100) : 0
+  // Nalgene is ~10.5 inches tall = 0.267m. Stack height in feet:
+  const stackFt = nalgeneCount * 0.875
+  const landmarks = [
+    { name: 'Eiffel Tower', ft: 1063, emoji: '🗼' },
+    { name: 'Empire State', ft: 1454, emoji: '🏙️' },
+    { name: 'Burj Khalifa', ft: 2717, emoji: '🏗️' },
+  ]
 
   const currentCrops = result ? CROP_SETS[cropSetIndex % CROP_SETS.length].map(c => ({
     ...c,
@@ -199,6 +205,7 @@ export default function HomeScreen() {
                   <div className="cartoon-eye cartoon-eye-left" />
                   <div className="cartoon-eye cartoon-eye-right" />
                   <div className="cartoon-mouth" />
+                  <div className="cartoon-tie" />
                 </div>
               </div>
               {/* Poop liquid dripping down - 3 big goopy streams */}
@@ -397,22 +404,38 @@ export default function HomeScreen() {
                 <span className="visual-stat-value">{fmt(result.impact.water)} gal</span>
               </div>
 
-              <div className="warehouse-fill-section">
-                <div className="warehouse-container">
-                  <img
-                    src="https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&q=80"
-                    alt="Warehouse"
-                    className="warehouse-bg-img"
-                    loading="lazy"
-                  />
-                  <div
-                    className="warehouse-water-fill"
-                    style={{ height: `${Math.max(waterPercent, 5)}%` }}
-                  />
-                  <div className="warehouse-text-overlay">
-                    <span className="warehouse-nalgene-count">{fmt(nalgeneCount)}</span>
-                    <span className="warehouse-nalgene-label">Nalgene bottles worth</span>
+              <div className="nalgene-height-section">
+                <div className="nalgene-big-count">
+                  <span className="nalgene-count-number">{fmt(nalgeneCount)}</span>
+                  <span className="nalgene-count-label">Nalgene bottles</span>
+                </div>
+                <p className="nalgene-stack-subtitle">
+                  Stacked up, that's <strong>{fmt(Math.round(stackFt))}</strong> feet tall
+                </p>
+                <div className="height-bars">
+                  {/* Nalgene stack bar */}
+                  <div className="height-bar-col">
+                    <motion.div
+                      className="height-bar nalgene-bar"
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.min((stackFt / 2717) * 100, 100)}%` }}
+                      transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
+                    />
+                    <span className="height-bar-label">Your bottles</span>
+                    <span className="height-bar-ft">{fmt(Math.round(stackFt))} ft</span>
                   </div>
+                  {landmarks.map((lm, i) => (
+                    <div className="height-bar-col" key={lm.name}>
+                      <motion.div
+                        className="height-bar landmark-bar"
+                        initial={{ height: 0 }}
+                        animate={{ height: `${(lm.ft / 2717) * 100}%` }}
+                        transition={{ duration: 1, ease: 'easeOut', delay: 0.5 + i * 0.15 }}
+                      />
+                      <span className="height-bar-label">{lm.emoji} {lm.name}</span>
+                      <span className="height-bar-ft">{fmt(lm.ft)} ft</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
