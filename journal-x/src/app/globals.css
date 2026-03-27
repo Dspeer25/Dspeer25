@@ -25,37 +25,43 @@
 }
 
 body {
-  background: var(--surface);
+  background: linear-gradient(165deg, #0c0c14 0%, #151520 30%, #1a1a28 55%, #111118 80%, #0a0a10 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 .glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .glass-hover:hover {
-  background: rgba(18, 18, 26, 0.85);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .glow-accent {
-  box-shadow: 0 0 40px var(--accent-glow), 0 0 80px rgba(99, 102, 241, 0.05);
+  box-shadow: 0 0 40px var(--accent-glow), 0 0 80px rgba(99, 102, 241, 0.08), 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .orb {
-  background: radial-gradient(circle at 35% 35%, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.03) 60%, transparent 80%);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  background: radial-gradient(circle at 35% 35%, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.04) 50%, rgba(255, 255, 255, 0.02) 80%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .orb:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 0 60px rgba(99, 102, 241, 0.15), 0 0 120px rgba(99, 102, 241, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 60px rgba(99, 102, 241, 0.2), 0 0 120px rgba(99, 102, 241, 0.08), 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   transform: scale(1.02);
 }
 
