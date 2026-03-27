@@ -33,103 +33,54 @@ function JournalXLogo() {
   );
 }
 
-/* ── Candlestick CTA — shaped like a big bullish candle ── */
+/* ── Candlestick CTA — big bullish candle, green glow, no outer frame ── */
 function CandlestickCTA({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} className="group relative bg-transparent mb-16">
-      {/* Glass plate underneath the candle */}
-      <div
-        className="absolute -inset-8 rounded-[40px]"
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)',
-          border: '1px solid rgba(255,255,255,0.18)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(255,255,255,0.04)',
-        }}
-      />
-
-      {/* The candlestick itself */}
+      {/* The candlestick itself — larger, radiating green */}
       <div className="relative flex flex-col items-center">
         {/* Upper wick */}
         <div
-          className="w-[3px] h-16 rounded-full mb-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.3), rgba(48,196,139,0.8))' }}
+          className="w-[4px] h-24 rounded-full"
+          style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.15), rgba(48,196,139,0.7))' }}
         />
 
-        {/* Candle body — the main interactive element */}
+        {/* Candle body */}
         <div
-          className="relative w-40 sm:w-48 rounded-2xl flex flex-col items-center justify-center text-center py-16 sm:py-20 transition-all duration-500 group-hover:scale-[1.03] cursor-pointer"
+          className="relative w-52 sm:w-64 rounded-2xl flex flex-col items-center justify-center text-center py-20 sm:py-28 transition-all duration-500 group-hover:scale-[1.03] cursor-pointer"
           style={{
-            background: 'linear-gradient(180deg, rgba(48,196,139,0.25) 0%, rgba(48,196,139,0.15) 100%)',
-            border: '1px solid rgba(48,196,139,0.35)',
-            boxShadow: '0 0 60px rgba(48,196,139,0.12), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(255,255,255,0.05)',
+            background: 'linear-gradient(180deg, rgba(48,196,139,0.20) 0%, rgba(48,196,139,0.10) 100%)',
+            border: '1px solid rgba(48,196,139,0.30)',
+            boxShadow: '0 0 80px rgba(48,196,139,0.15), 0 0 160px rgba(48,196,139,0.06), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.04)',
             backdropFilter: 'blur(40px)',
             WebkitBackdropFilter: 'blur(40px)',
           }}
         >
-          {/* Glass highlight on top of candle */}
-          <div className="absolute inset-0 rounded-2xl overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.15), transparent)' }} />
+          {/* Glass highlight on top */}
+          <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.14), transparent)' }} />
           </div>
 
           <div className="relative z-10">
-            <div className="text-[#999] text-[9px] uppercase tracking-[0.3em] mb-4">Begin</div>
-            <div className="text-xl sm:text-2xl font-light mb-1 leading-tight">Start Your</div>
-            <div className="text-xl sm:text-2xl font-light text-[#30C48B] leading-tight">Journal</div>
+            <div className="text-[#888] text-[9px] uppercase tracking-[0.3em] mb-5">Begin</div>
+            <div className="text-2xl sm:text-3xl font-light mb-1 leading-tight">Start Your</div>
+            <div className="text-2xl sm:text-3xl font-light text-[#30C48B] leading-tight">Journal</div>
           </div>
+
+          {/* Hover glow intensifies */}
+          <div
+            className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+            style={{ boxShadow: '0 0 100px rgba(48,196,139,0.3), 0 0 200px rgba(48,196,139,0.1)' }}
+          />
         </div>
 
         {/* Lower wick */}
         <div
-          className="w-[3px] h-10 rounded-full mt-0"
-          style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.3), rgba(48,196,139,0.8))' }}
+          className="w-[4px] h-14 rounded-full"
+          style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.15), rgba(48,196,139,0.7))' }}
         />
       </div>
-
-      {/* Outer glow ring */}
-      <div className="absolute -inset-12 rounded-[48px] border border-[rgba(255,255,255,0.06)] group-hover:border-[rgba(48,196,139,0.15)] transition-all duration-700" />
     </button>
-  );
-}
-
-/* ── Candlestick Background ───────────────────────── */
-function CandlestickBackground() {
-  const candles = [
-    { x: 40, o: 280, c: 220, h: 200, l: 300 }, { x: 70, o: 220, c: 240, h: 210, l: 260 },
-    { x: 100, o: 240, c: 200, h: 180, l: 260 }, { x: 130, o: 200, c: 170, h: 150, l: 220 },
-    { x: 160, o: 170, c: 190, h: 150, l: 210 }, { x: 190, o: 190, c: 160, h: 140, l: 210 },
-    { x: 220, o: 160, c: 140, h: 120, l: 180 }, { x: 250, o: 140, c: 180, h: 120, l: 200 },
-    { x: 280, o: 180, c: 150, h: 130, l: 200 }, { x: 310, o: 150, c: 130, h: 110, l: 170 },
-    { x: 340, o: 130, c: 160, h: 110, l: 180 }, { x: 370, o: 160, c: 140, h: 120, l: 180 },
-    { x: 400, o: 140, c: 120, h: 100, l: 160 }, { x: 430, o: 120, c: 150, h: 100, l: 170 },
-    { x: 460, o: 150, c: 170, h: 90, l: 190 }, { x: 490, o: 170, c: 140, h: 120, l: 190 },
-    { x: 520, o: 140, c: 160, h: 110, l: 180 }, { x: 550, o: 160, c: 130, h: 110, l: 180 },
-    { x: 580, o: 130, c: 150, h: 100, l: 170 }, { x: 610, o: 150, c: 120, h: 100, l: 170 },
-    { x: 640, o: 120, c: 140, h: 90, l: 160 }, { x: 670, o: 140, c: 110, h: 90, l: 160 },
-    { x: 700, o: 110, c: 130, h: 80, l: 150 }, { x: 730, o: 130, c: 150, h: 80, l: 170 },
-    { x: 760, o: 150, c: 120, h: 100, l: 170 }, { x: 790, o: 120, c: 145, h: 95, l: 165 },
-    { x: 820, o: 145, c: 130, h: 105, l: 165 }, { x: 850, o: 130, c: 155, h: 95, l: 170 },
-    { x: 880, o: 155, c: 140, h: 115, l: 175 }, { x: 910, o: 140, c: 160, h: 100, l: 180 },
-    { x: 940, o: 160, c: 135, h: 110, l: 175 }, { x: 970, o: 135, c: 155, h: 105, l: 170 },
-  ];
-  const ma9: string[] = [], ma21: string[] = [];
-  for (let i = 0; i < candles.length; i++) {
-    if (i >= 8) { let s = 0; for (let j = i-8; j<=i; j++) s+=(candles[j].o+candles[j].c)/2; ma9.push(`${candles[i].x},${s/9}`); }
-    if (i >= 20) { let s = 0; for (let j = i-20; j<=i; j++) s+=(candles[j].o+candles[j].c)/2; ma21.push(`${candles[i].x},${s/21}`); }
-  }
-  return (
-    <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.08]">
-      <svg viewBox="0 0 1024 400" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
-        {candles.map((c, i) => {
-          const bull = c.c < c.o; const color = bull ? '#30C48B' : '#f87171';
-          const top = Math.min(c.o, c.c); const h = Math.abs(c.o - c.c);
-          return (<g key={i}><line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={color} strokeWidth="1" /><rect x={c.x-5} y={top} width={10} height={Math.max(h,2)} fill={color} rx="1" /></g>);
-        })}
-        {ma9.length > 1 && <polyline points={ma9.join(' ')} fill="none" stroke="#30C48B" strokeWidth="1.5" opacity="0.7" />}
-        {ma21.length > 1 && <polyline points={ma21.join(' ')} fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.5" />}
-      </svg>
-    </div>
   );
 }
 
@@ -318,27 +269,14 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen text-white relative">
-      <CandlestickBackground />
-
-      {/* Nav */}
+      {/* Nav — logo only */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
         <JournalXLogo />
-        <div className="flex items-center gap-6">
-          {isSignedIn ? (
-            <Link href="/dashboard" className="text-sm text-[#999] hover:text-white transition-colors">
-              Dashboard
-            </Link>
-          ) : (
-            <>
-              <Link href="/sign-in" className="text-sm text-[#777] hover:text-white transition-colors">
-                Sign In
-              </Link>
-              <Link href="/sign-up" className="text-sm px-5 py-2 rounded-full transition-all glass glass-hover">
-                Get Started
-              </Link>
-            </>
-          )}
-        </div>
+        {isSignedIn && (
+          <Link href="/dashboard" className="text-sm text-[#999] hover:text-white transition-colors">
+            Dashboard
+          </Link>
+        )}
       </nav>
 
       {/* Hero */}
@@ -350,7 +288,7 @@ export default function LandingPage() {
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
           Your trades. <span className="text-[#30C48B]">Your rules.</span><br />
-          <span className="text-[#666]">Real accountability.</span>
+          <span className="text-[#666] underline decoration-[#30C48B] decoration-2 underline-offset-8">Real accountability.</span>
         </h1>
 
         <p className="text-base text-[#888] max-w-lg mx-auto leading-relaxed text-center">
