@@ -4,7 +4,6 @@ const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 function getEffectiveApiKey() {
   const envKey = import.meta.env.VITE_ANTHROPIC_KEY || '';
   const storedKey = localStorage.getItem('lifesaver_api_key') || '';
-  // If env key exists and localStorage is empty, auto-save it
   if (envKey && !storedKey) {
     localStorage.setItem('lifesaver_api_key', envKey);
   }
