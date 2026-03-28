@@ -11,7 +11,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
   const manColorLeg = light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.55)';
   return (
     <div className="flex flex-col items-start">
-      <svg width="52" height="52" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="68" height="68" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
         {/* Stick man */}
         <circle cx="18" cy="12" r="4.5" stroke={manColor} strokeWidth="1.8" fill="none" />
         <line x1="18" y1="16.5" x2="18" y2="30" stroke={manColor} strokeWidth="1.8" strokeLinecap="round" />
@@ -25,10 +25,10 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
         <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
       <div className="mt-[-2px] ml-[2px]">
-        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>
+        <span className="text-[14px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>
           Journal
         </span>
-        <span className="text-[11px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
+        <span className="text-[14px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
           X
         </span>
       </div>
@@ -47,27 +47,26 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.1), rgba(48,196,139,0.9))', boxShadow: '0 0 12px rgba(48,196,139,0.4)' }}
         />
 
-        {/* Candle body — crystal glass, bigger */}
+        {/* Candle body — see-through frosted glass */}
         <div
           className="relative w-64 sm:w-76 rounded-2xl flex flex-col items-center justify-center text-center py-24 sm:py-32 transition-all duration-500 group-hover:scale-[1.04] cursor-pointer"
           style={{
-            background: 'linear-gradient(180deg, rgba(48,196,139,0.28) 0%, rgba(48,196,139,0.08) 100%)',
-            border: '1px solid rgba(48,196,139,0.45)',
-            boxShadow: '0 0 100px rgba(48,196,139,0.25), 0 0 200px rgba(48,196,139,0.12), 0 0 40px rgba(48,196,139,0.15), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(40px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            background: 'linear-gradient(180deg, rgba(48,196,139,0.10) 0%, rgba(48,196,139,0.03) 100%)',
+            border: '1px solid rgba(48,196,139,0.35)',
+            boxShadow: '0 0 100px rgba(48,196,139,0.25), 0 0 200px rgba(48,196,139,0.12), 0 0 40px rgba(48,196,139,0.15), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(255,255,255,0.05)',
+            backdropFilter: 'blur(60px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(60px) saturate(200%)',
           }}
         >
-          {/* Crystal glass highlight */}
+          {/* Glass highlight — top shimmer */}
           <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.20), transparent)' }} />
-            <div className="absolute bottom-0 left-0 right-0 h-1/4" style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.06), transparent)' }} />
+            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.18), transparent)' }} />
           </div>
 
           <div className="relative z-10 px-2">
             <div className="text-[#30C48B]/60 text-[11px] tracking-[0.25em] mb-6">[start here]</div>
-            <div className="text-5xl sm:text-6xl font-medium mb-1 leading-none tracking-tight whitespace-nowrap">Start Your</div>
-            <div className="text-5xl sm:text-6xl font-medium text-[#30C48B] leading-none tracking-tight" style={{ textShadow: '0 0 30px rgba(48,196,139,0.3)' }}>Journal</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl font-light mb-1 leading-none tracking-tight whitespace-nowrap">Start Your</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl font-light text-[#30C48B] leading-none tracking-tight" style={{ textShadow: '0 0 30px rgba(48,196,139,0.3)' }}>Journal</div>
           </div>
 
           {/* Hover neon glow */}
@@ -440,40 +439,33 @@ export default function LandingPage() {
         {/* ─── AI Coach Showcase — speech bubble with logo icon ─── */}
         <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
           <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
-            {/* Logo icon on top of the bubble */}
-            <div className="absolute -top-6 left-6 z-20">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{
-                background: 'linear-gradient(135deg, rgba(48,196,139,0.25) 0%, rgba(48,196,139,0.10) 100%)',
-                border: '1px solid rgba(48,196,139,0.35)',
-                boxShadow: '0 0 20px rgba(48,196,139,0.2)',
-                backdropFilter: 'blur(20px)',
-              }}>
-                <svg width="30" height="30" viewBox="0 0 56 56" fill="none">
-                  <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" fill="none" />
-                  <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" />
-                  <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
-                  <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
-                  <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
-                  <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-              </div>
+            {/* Logo icon on top — no circle, just the icon bigger */}
+            <div className="absolute -top-8 left-5 z-20">
+              <svg width="44" height="44" viewBox="0 0 56 56" fill="none">
+                <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" fill="none" />
+                <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" />
+                <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+                <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
+                <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
             </div>
 
-            {/* Speech bubble card */}
+            {/* Speech bubble card — frosted see-through glass */}
             <div
               className={`w-[370px] rounded-2xl rounded-tl-sm p-7 pt-12 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
                 ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
                 : ''
               }`}
               style={light ? { backdropFilter: 'blur(30px)' } : {
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
-                border: '1px solid rgba(48,196,139,0.18)',
-                backdropFilter: 'blur(40px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(40px) saturate(160%)',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 80px rgba(48,196,139,0.15), 0 0 160px rgba(48,196,139,0.06), inset 0 1px 0 rgba(255,255,255,0.15)',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(60px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+                boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 80px rgba(48,196,139,0.12), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(255,255,255,0.03)',
               }}
             >
               {/* Speech bubble tail */}
@@ -556,84 +548,92 @@ export default function LandingPage() {
 
         {/* ─── Trader Attribute Wheel Showcase ─── */}
         <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-28">
-          {/* Attribute wheel — vibrant, glowing spokes */}
-          <div className="relative w-[360px] h-[360px] sm:w-[440px] sm:h-[440px] flex-shrink-0">
-            {/* Green ambient glow behind wheel */}
-            <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(48,196,139,0.08) 0%, transparent 70%)' }} />
-            <svg viewBox="0 0 400 400" className="w-full h-full relative z-10">
-              <defs>
-                <filter id="wheelGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                </filter>
-              </defs>
-              {/* Concentric guide circles — neon style */}
-              {[60, 95, 130, 165].map((r) => (
-                <circle key={r} cx="200" cy="200" r={r} fill="none" stroke={light ? 'rgba(0,0,0,0.06)' : 'rgba(48,196,139,0.06)'} strokeWidth="0.5" strokeDasharray="2 4" />
-              ))}
-              {/* Spokes — 12 attributes */}
-              {(() => {
-                const attrs = [
-                  { label: 'Discipline', score: 82, color: '#30C48B' },
-                  { label: 'Risk Mgmt', score: 75, color: '#30C48B' },
-                  { label: 'Patience', score: 68, color: '#60a5fa' },
-                  { label: 'Entry Timing', score: 71, color: '#60a5fa' },
-                  { label: 'Exit Timing', score: 55, color: '#f59e0b' },
-                  { label: 'Psychology', score: 48, color: '#f59e0b' },
-                  { label: 'Plan Following', score: 78, color: '#30C48B' },
-                  { label: 'FOMO Resist', score: 42, color: '#f59e0b' },
-                  { label: 'Confidence', score: 65, color: '#60a5fa' },
-                  { label: 'Consistency', score: 73, color: '#30C48B' },
-                  { label: 'Loss Handling', score: 38, color: '#f59e0b' },
-                  { label: 'Execution', score: 70, color: '#60a5fa' },
-                ];
-                const cx = 200, cy = 200;
-                return attrs.map((a, i) => {
-                  const angle = (i * 360 / attrs.length - 90) * Math.PI / 180;
-                  const len = (a.score / 100) * 160;
-                  const x2 = cx + Math.cos(angle) * len;
-                  const y2 = cy + Math.sin(angle) * len;
-                  const lx = cx + Math.cos(angle) * 185;
-                  const ly = cy + Math.sin(angle) * 185;
-                  const deg = i * 360 / attrs.length;
-                  let anchor: 'middle' | 'start' | 'end' = 'middle';
-                  if (deg > 20 && deg < 160) anchor = 'start';
-                  if (deg > 200 && deg < 340) anchor = 'end';
-                  const halfW = 10;
-                  const perpAngle = angle + Math.PI / 2;
-                  const bx1 = cx + Math.cos(perpAngle) * halfW;
-                  const by1 = cy + Math.sin(perpAngle) * halfW;
-                  const bx2 = cx - Math.cos(perpAngle) * halfW;
-                  const by2 = cy - Math.sin(perpAngle) * halfW;
-                  return (
-                    <g key={a.label}>
-                      <polygon
-                        points={`${bx1},${by1} ${x2},${y2} ${bx2},${by2}`}
-                        fill={a.color}
-                        opacity={0.7}
-                        filter="url(#wheelGlow)"
-                      />
-                      <text
-                        x={lx} y={ly}
-                        textAnchor={anchor}
-                        dominantBaseline="central"
-                        fill={light ? '#777' : '#aaa'}
-                        fontSize="11"
-                        fontWeight="600"
-                        letterSpacing="0.04em"
-                        style={{ textTransform: 'uppercase' as const }}
-                      >
-                        {a.label}
-                      </text>
-                    </g>
-                  );
-                });
-              })()}
-              {/* Center circle with OVR */}
-              <circle cx="200" cy="200" r="16" fill={light ? '#e5e5e0' : '#111'} stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(48,196,139,0.25)'} strokeWidth="1.5" />
-              <text x="200" y="197" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="8" fontWeight="bold">OVR</text>
-              <text x="200" y="208" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="10" fontWeight="bold">67</text>
-            </svg>
+          {/* Attribute wheel with trader rating */}
+          <div className="relative flex-shrink-0">
+            {/* Trader rating label at top */}
+            <div className="text-center mb-4">
+              <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`}>Trader Rating</div>
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <span className="text-3xl font-light text-[#30C48B]">67</span>
+                <span className={`text-sm font-medium ${light ? 'text-[#999]' : 'text-[#666]'}`}>/ 99</span>
+                <span className="text-xs font-bold tracking-wider uppercase text-[#f59e0b] ml-2">Developing</span>
+              </div>
+            </div>
+
+            <div className="relative w-[340px] h-[340px] sm:w-[400px] sm:h-[400px]">
+              {/* Ambient glow */}
+              <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(48,196,139,0.08) 0%, transparent 70%)' }} />
+              <svg viewBox="0 0 400 400" className="w-full h-full relative z-10">
+                <defs>
+                  <filter id="wheelGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                </defs>
+                {/* Concentric guide circles */}
+                {[60, 100, 140].map((r) => (
+                  <circle key={r} cx="200" cy="200" r={r} fill="none" stroke={light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'} strokeWidth="0.5" strokeDasharray="2 4" />
+                ))}
+                {/* 8 spokes — simplified for landing page */}
+                {(() => {
+                  const attrs = [
+                    { label: 'Discipline', score: 82, color: '#30C48B' },
+                    { label: 'Risk Mgmt', score: 75, color: '#30C48B' },
+                    { label: 'Patience', score: 68, color: '#60a5fa' },
+                    { label: 'Entry Timing', score: 71, color: '#60a5fa' },
+                    { label: 'Psychology', score: 48, color: '#f59e0b' },
+                    { label: 'Consistency', score: 73, color: '#30C48B' },
+                    { label: 'Loss Handling', score: 38, color: '#f59e0b' },
+                    { label: 'Execution', score: 70, color: '#60a5fa' },
+                  ];
+                  const cx = 200, cy = 200;
+                  return attrs.map((a, i) => {
+                    const angle = (i * 360 / attrs.length - 90) * Math.PI / 180;
+                    const len = (a.score / 100) * 150;
+                    const x2 = cx + Math.cos(angle) * len;
+                    const y2 = cy + Math.sin(angle) * len;
+                    const lx = cx + Math.cos(angle) * 172;
+                    const ly = cy + Math.sin(angle) * 172;
+                    const deg = i * 360 / attrs.length;
+                    let anchor: 'middle' | 'start' | 'end' = 'middle';
+                    if (deg > 20 && deg < 160) anchor = 'start';
+                    if (deg > 200 && deg < 340) anchor = 'end';
+                    const halfW = 12;
+                    const perpAngle = angle + Math.PI / 2;
+                    const bx1 = cx + Math.cos(perpAngle) * halfW;
+                    const by1 = cy + Math.sin(perpAngle) * halfW;
+                    const bx2 = cx - Math.cos(perpAngle) * halfW;
+                    const by2 = cy - Math.sin(perpAngle) * halfW;
+                    return (
+                      <g key={a.label}>
+                        <polygon
+                          points={`${bx1},${by1} ${x2},${y2} ${bx2},${by2}`}
+                          fill={a.color}
+                          opacity={0.7}
+                          filter="url(#wheelGlow)"
+                        />
+                        <text
+                          x={lx} y={ly}
+                          textAnchor={anchor}
+                          dominantBaseline="central"
+                          fill={light ? '#777' : '#aaa'}
+                          fontSize="11"
+                          fontWeight="600"
+                          letterSpacing="0.04em"
+                          style={{ textTransform: 'uppercase' as const }}
+                        >
+                          {a.label}
+                        </text>
+                      </g>
+                    );
+                  });
+                })()}
+                {/* Center OVR */}
+                <circle cx="200" cy="200" r="18" fill={light ? '#e5e5e0' : '#111'} stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(48,196,139,0.25)'} strokeWidth="1.5" />
+                <text x="200" y="196" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="8" fontWeight="bold">OVR</text>
+                <text x="200" y="210" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="12" fontWeight="bold">67</text>
+              </svg>
+            </div>
           </div>
 
           {/* Floating tagline text */}
@@ -660,26 +660,26 @@ export default function LandingPage() {
               key={f.title}
               className={`rounded-2xl p-7 transition-all duration-300 ${light ? '' : 'glass glass-hover'}`}
               style={light ? { ...lightGlass } : {
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                backdropFilter: 'blur(40px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(40px) saturate(160%)',
-                boxShadow: '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.04)',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(60px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+                boxShadow: '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.03)',
               }}
               onMouseEnter={(e) => {
                 if (light) {
                   e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)';
                 } else {
-                  e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.3), 0 0 40px rgba(48,196,139,0.08), inset 0 1px 0 rgba(255,255,255,0.30)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+                  e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.3), 0 0 30px rgba(48,196,139,0.06), inset 0 1px 0 rgba(255,255,255,0.25)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (light) {
                   e.currentTarget.style.boxShadow = lightGlass.boxShadow as string;
                 } else {
-                  e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.04)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
+                  e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.03)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
                 }
               }}
             >
