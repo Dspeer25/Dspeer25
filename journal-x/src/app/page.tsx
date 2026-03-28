@@ -381,7 +381,7 @@ export default function LandingPage() {
           <Link
             key={item.label}
             href={item.href}
-            className={`text-[12px] font-bold tracking-[0.35em] uppercase transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#888] hover:text-white'}`}
+            className={`text-[13px] font-bold tracking-[0.3em] uppercase transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#888] hover:text-white'}`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
           >
             {item.label}
@@ -391,7 +391,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-lg sm:text-xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#888]' : 'text-[#bbb]'}`}>
+        <h2 className={`text-xl sm:text-2xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#888]' : 'text-[#bbb]'}`}>
           AI-Powered Trading Journal That Holds You Accountable
         </h2>
 
@@ -438,7 +438,7 @@ export default function LandingPage() {
         {/* ─── Animated Product Showcase (like Sunday Light hero demo) ─── */}
         <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
           <div
-            className={`w-80 rounded-2xl p-5 animate-fade-in ${light
+            className={`w-[340px] rounded-2xl p-6 animate-fade-in transition-transform duration-500 hover:scale-[1.08] ${light
               ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
               : ''
             }`}
@@ -446,81 +446,172 @@ export default function LandingPage() {
               background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
               border: '1px solid rgba(255,255,255,0.12)',
               backdropFilter: 'blur(40px) saturate(150%)',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.3), 0 0 60px rgba(48,196,139,0.12), 0 0 120px rgba(48,196,139,0.06), inset 0 1px 0 rgba(255,255,255,0.15)',
               animation: 'float 6s ease-in-out infinite',
             }}
           >
             {/* Mini coach header */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-full bg-[#30C48B]/20 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-[#30C48B]" />
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-7 h-7 rounded-full bg-[#30C48B]/20 flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#30C48B]" />
               </div>
-              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">AI Coach — Live</span>
+              <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">AI Coach — Live</span>
             </div>
 
-            {/* Typewriter insight lines */}
-            <div className="space-y-2.5">
-              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
+            {/* Typewriter insight lines — alternating green and light grey bold labels */}
+            <div className="space-y-3">
+              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 0.5s both' }}>
                 <span className="text-[#30C48B] font-bold">Pattern detected:</span> You exit winners 40% earlier than your plan allows.
               </div>
-              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
+              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 1.5s both' }}>
-                <span className="text-[#60a5fa] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
+                <span className="text-[#ccc] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
               </div>
-              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
+              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 2.5s both' }}>
-                <span className="text-[#f59e0b] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
+                <span className="text-[#30C48B] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
               </div>
-              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
+              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 3.5s both' }}>
-                <span className="text-[#a78bfa] font-bold">Suggestion:</span> Your best R-multiples come from the first hour.
+                <span className="text-[#ccc] font-bold">Suggestion:</span> Your best R-multiples come from the first hour.
               </div>
             </div>
 
             {/* Mini attribute bars preview */}
-            <div className="mt-4 pt-3 space-y-1.5" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(255,255,255,0.04)', animation: 'typeIn 0.8s ease-out 4.5s both' }}>
-              <div className="flex items-center gap-2">
-                <span className={`text-[8px] font-bold tracking-wider uppercase w-16 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Discipline</span>
-                <div className={`flex-1 h-1 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+            <div className="mt-5 pt-4 space-y-2" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(255,255,255,0.06)', animation: 'typeIn 0.8s ease-out 4.5s both' }}>
+              <div className="flex items-center gap-2.5">
+                <span className={`text-[9px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Discipline</span>
+                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full bg-[#30C48B]" style={{ width: '72%' }} />
                 </div>
-                <span className="text-[8px] font-bold text-[#30C48B]">72</span>
+                <span className="text-[10px] font-bold text-[#30C48B]">72</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[8px] font-bold tracking-wider uppercase w-16 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Psychology</span>
-                <div className={`flex-1 h-1 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`text-[9px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Psychology</span>
+                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full bg-[#f59e0b]" style={{ width: '45%' }} />
                 </div>
-                <span className="text-[8px] font-bold text-[#f59e0b]">45</span>
+                <span className="text-[10px] font-bold text-[#f59e0b]">45</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[8px] font-bold tracking-wider uppercase w-16 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Execution</span>
-                <div className={`flex-1 h-1 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`text-[9px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Execution</span>
+                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full bg-[#60a5fa]" style={{ width: '68%' }} />
                 </div>
-                <span className="text-[8px] font-bold text-[#60a5fa]">68</span>
+                <span className="text-[10px] font-bold text-[#60a5fa]">68</span>
               </div>
             </div>
           </div>
         </div>
 
-        <h1 className="relative z-10 text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
+        <h1 className="relative z-10 text-5xl sm:text-6xl lg:text-7xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
           <span className={light ? 'text-[#999]' : 'text-[#999]'}>Your trades. Your rules.</span><br />
           <span className={`underline decoration-[#30C48B] decoration-2 underline-offset-8 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Real accountability.</span>
         </h1>
 
-        <p className={`relative z-10 text-base max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#888]' : 'text-[#aaa]'}`}>
+        <p className={`relative z-10 text-lg max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#888]' : 'text-[#aaa]'}`}>
           Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
-        <p className={`relative z-10 text-xs mt-16 ${light ? 'text-[#bbb]' : 'text-[#777]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
+        <p className={`relative z-10 text-sm mt-16 ${light ? 'text-[#bbb]' : 'text-[#777]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
       </section>
 
       {/* Features */}
       <section className="relative z-10 max-w-6xl mx-auto px-8 py-32">
-        <h2 className={`text-center text-3xl font-light mb-4 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Not just a journal. A trading coach.</h2>
-        <p className={`text-center text-sm mb-16 max-w-md mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
+        <h2 className={`text-center text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Not just a journal. A trading coach.</h2>
+        <p className={`text-center text-base mb-20 max-w-lg mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
+
+        {/* ─── Trader Attribute Wheel Showcase ─── */}
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-24">
+          {/* Simplified attribute wheel — orange, green, light blue, grey */}
+          <div className="relative w-[320px] h-[320px] sm:w-[380px] sm:h-[380px] flex-shrink-0">
+            <svg viewBox="0 0 400 400" className="w-full h-full">
+              <defs>
+                <filter id="wheelGlow">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+              {/* Concentric guide circles */}
+              {[80, 120, 160].map((r) => (
+                <circle key={r} cx="200" cy="200" r={r} fill="none" stroke={light ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'} strokeWidth="0.5" />
+              ))}
+              {/* Spokes — 12 attributes with varied lengths */}
+              {(() => {
+                const attrs = [
+                  { label: 'Discipline', score: 82, color: '#30C48B' },
+                  { label: 'Risk Mgmt', score: 75, color: '#30C48B' },
+                  { label: 'Patience', score: 68, color: '#60a5fa' },
+                  { label: 'Entry Timing', score: 71, color: '#60a5fa' },
+                  { label: 'Exit Timing', score: 55, color: '#f59e0b' },
+                  { label: 'Psychology', score: 48, color: '#f59e0b' },
+                  { label: 'Plan Following', score: 78, color: '#30C48B' },
+                  { label: 'FOMO Resist', score: 42, color: '#f59e0b' },
+                  { label: 'Confidence', score: 65, color: '#60a5fa' },
+                  { label: 'Consistency', score: 73, color: '#30C48B' },
+                  { label: 'Loss Handling', score: 38, color: '#f59e0b' },
+                  { label: 'Execution', score: 70, color: '#60a5fa' },
+                ];
+                const cx = 200, cy = 200;
+                return attrs.map((a, i) => {
+                  const angle = (i * 360 / attrs.length - 90) * Math.PI / 180;
+                  const len = (a.score / 100) * 155;
+                  const x2 = cx + Math.cos(angle) * len;
+                  const y2 = cy + Math.sin(angle) * len;
+                  const lx = cx + Math.cos(angle) * 178;
+                  const ly = cy + Math.sin(angle) * 178;
+                  const deg = i * 360 / attrs.length;
+                  let anchor: 'middle' | 'start' | 'end' = 'middle';
+                  if (deg > 20 && deg < 160) anchor = 'start';
+                  if (deg > 200 && deg < 340) anchor = 'end';
+                  // Wedge shape
+                  const halfW = 8;
+                  const perpAngle = angle + Math.PI / 2;
+                  const bx1 = cx + Math.cos(perpAngle) * halfW;
+                  const by1 = cy + Math.sin(perpAngle) * halfW;
+                  const bx2 = cx - Math.cos(perpAngle) * halfW;
+                  const by2 = cy - Math.sin(perpAngle) * halfW;
+                  return (
+                    <g key={a.label}>
+                      <polygon
+                        points={`${bx1},${by1} ${x2},${y2} ${bx2},${by2}`}
+                        fill={a.color}
+                        opacity={0.5}
+                        filter="url(#wheelGlow)"
+                      />
+                      <text
+                        x={lx} y={ly}
+                        textAnchor={anchor}
+                        dominantBaseline="central"
+                        fill={light ? '#888' : '#777'}
+                        fontSize="10"
+                        fontWeight="600"
+                        letterSpacing="0.04em"
+                        style={{ textTransform: 'uppercase' as const }}
+                      >
+                        {a.label}
+                      </text>
+                    </g>
+                  );
+                });
+              })()}
+              {/* Center dot */}
+              <circle cx="200" cy="200" r="12" fill={light ? '#e5e5e0' : '#1a1a1a'} stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'} strokeWidth="1" />
+              <text x="200" y="201" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="8" fontWeight="bold">OVR</text>
+            </svg>
+          </div>
+
+          {/* Floating tagline text */}
+          <div className="max-w-md text-center lg:text-left">
+            <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1a1a]' : 'text-[#ccc]'}`}>
+              Understand your trading strengths and weaknesses from new perspectives
+            </h3>
+            <p className={`text-base leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>
+              Your Trader Profile is built from real data and AI-driven observations — showing you exactly where you excel and where you need to grow.
+            </p>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[
@@ -529,7 +620,7 @@ export default function LandingPage() {
             { title: 'Smart Stats', desc: 'Upload your data in any format. AI analyzes patterns and tells you what works.', num: '03' },
             { title: 'Real-time Coach', desc: 'Chat with an AI modeled after Mark Douglas\' trading psychology.', num: '04' },
             { title: 'Trade Logging', desc: 'Fast, clean, zero friction. Log trades in seconds.', num: '05' },
-            { title: 'Performance Insights', desc: 'AI-generated insights comparing performance against stated goals.', num: '06' },
+            { title: 'Works with Existing Logbooks', desc: 'Upload any form of trading record or journal — screenshots, CSVs, broker statements. The AI will use it to build your profile.', num: '06' },
           ].map((f) => (
             <div
               key={f.title}
@@ -538,9 +629,9 @@ export default function LandingPage() {
               onMouseEnter={light ? (e) => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)'; } : undefined}
               onMouseLeave={light ? (e) => { e.currentTarget.style.boxShadow = lightGlass.boxShadow as string; } : undefined}
             >
-              <div className="text-xs text-[#30C48B] mb-4 font-medium">{f.num}.</div>
-              <h3 className={`font-medium text-base mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{f.title}</h3>
-              <p className={`text-sm leading-relaxed ${light ? 'text-[#777]' : 'text-[#999]'}`}>{f.desc}</p>
+              <div className="text-sm text-[#30C48B] mb-4 font-medium">{f.num}.</div>
+              <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{f.title}</h3>
+              <p className={`text-[15px] leading-relaxed ${light ? 'text-[#777]' : 'text-[#999]'}`}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -552,8 +643,8 @@ export default function LandingPage() {
           className={`rounded-3xl p-12 ${light ? '' : 'glass'}`}
           style={light ? { ...lightGlass } : {}}
         >
-          <h2 className={`text-3xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Stop trading without accountability.</h2>
-          <p className={`mb-10 max-w-md mx-auto text-sm leading-relaxed ${light ? 'text-[#888]' : 'text-[#888]'}`}>
+          <h2 className={`text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Stop trading without accountability.</h2>
+          <p className={`mb-10 max-w-md mx-auto text-base leading-relaxed ${light ? 'text-[#888]' : 'text-[#888]'}`}>
             The difference between profitable and unprofitable traders? Discipline. Journal X makes discipline automatic.
           </p>
           <button
@@ -566,7 +657,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className={`relative z-10 border-t py-10 text-center text-xs ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#555]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-sm ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#555]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 
