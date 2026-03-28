@@ -65,8 +65,8 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           </div>
 
           <div className="relative z-10 px-2">
-            <div className="text-5xl sm:text-6xl lg:text-7xl mb-2 leading-none tracking-wide whitespace-nowrap" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 300, fontStyle: 'italic' }}>Start Your</div>
-            <div className="text-5xl sm:text-6xl lg:text-7xl text-[#30C48B] leading-none tracking-wide" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 300, fontStyle: 'italic', textShadow: '0 0 40px rgba(48,196,139,0.4), 0 0 80px rgba(48,196,139,0.15)' }}>Journal</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl mb-2 leading-none tracking-[0.08em] whitespace-nowrap font-bold uppercase" style={{ fontFamily: "'Courier New', 'Lucida Console', monospace", letterSpacing: '0.06em' }}>Start Your</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl text-[#30C48B] leading-none tracking-[0.08em] font-bold uppercase" style={{ fontFamily: "'Courier New', 'Lucida Console', monospace", letterSpacing: '0.06em', textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
           </div>
 
           {/* Hover neon glow */}
@@ -314,51 +314,69 @@ function CandlestickCTALight({ onClick }: { onClick: () => void }) {
   );
 }
 
-/* ── Coach Showcase — rotating insights every 25s ── */
-const insightSets = [
-  [
-    { label: 'Pattern Detected:', text: 'Your last three trades show premature profit-taking relative to your stated weekly targets. Would you like to review these?', color: '#30C48B' },
-    { label: 'Pattern Detected:', text: 'You\'ve noted hesitation again despite committing to eliminate this habit. Let\'s explore what\'s driving that.', color: '#30C48B' },
-    { label: 'Milestone Reached:', text: 'You\'ve hit your stated weekly goal of only taking A+ pullbacks off the narrow moving averages. Nice job.', color: '#30C48B' },
-    { label: 'Observation:', text: 'Both win rate and R are significantly higher before 12:30 PM EDT — nearly double compared to afternoon trades.', color: '#ccc' },
-  ],
-  [
-    { label: 'Pattern Detected:', text: 'You\'ve widened your stop three times this week after entry. Each time resulted in a larger loss than planned.', color: '#30C48B' },
-    { label: 'Observation:', text: 'Your breakout entries have a 72% win rate, but your reversal plays are hitting only 28%. Consider reducing size on reversals.', color: '#ccc' },
-    { label: 'Milestone Reached:', text: 'Three consecutive weeks of staying within your max daily loss limit. Your discipline score has improved by 11 points.', color: '#30C48B' },
-    { label: 'Pattern Detected:', text: 'You tend to increase position size after a winning streak. The data shows this consistently leads to your largest drawdowns.', color: '#ccc' },
-  ],
+/* ── Coach Showcase — rotating insights + ratings every 25s ── */
+const coachSets = [
+  {
+    insights: [
+      { label: 'Pattern Detected:', text: 'Your last three trades show premature profit-taking vs. your stated targets. Want to review them?', color: '#30C48B' },
+      { label: 'Pattern Detected:', text: 'You\'ve noted hesitation again despite committing to remove this habit. Let\'s explore what\'s behind it.', color: '#30C48B' },
+      { label: 'Milestone Reached:', text: 'Weekly goal hit — only A+ pullbacks off the narrow MAs. Nice job.', color: '#30C48B' },
+      { label: 'Observation:', text: 'Win rate and R are nearly 2x higher before 12:30 PM EDT vs. afternoon trades.', color: '#ccc' },
+    ],
+    weeklyRating: 76,
+    bars: [
+      { name: 'Discipline', pct: 72, color: '#30C48B', val: 72 },
+      { name: 'Psychology', pct: 45, color: '#f59e0b', val: 45 },
+      { name: 'Execution', pct: 68, color: '#60a5fa', val: 68 },
+      { name: 'Risk Mgmt', pct: 81, color: '#30C48B', val: 81 },
+    ],
+  },
+  {
+    insights: [
+      { label: 'Pattern Detected:', text: 'You widened your stop 3x this week post-entry. Each led to a larger loss than planned.', color: '#30C48B' },
+      { label: 'Observation:', text: 'Breakout entries: 72% win rate. Reversals: 28%. Consider sizing down on reversals.', color: '#ccc' },
+      { label: 'Milestone Reached:', text: 'Three straight weeks within your max daily loss limit. Discipline up 11 points.', color: '#30C48B' },
+      { label: 'Pattern Detected:', text: 'You size up after winning streaks — data shows this leads to your largest drawdowns.', color: '#ccc' },
+    ],
+    weeklyRating: 71,
+    bars: [
+      { name: 'Discipline', pct: 80, color: '#30C48B', val: 80 },
+      { name: 'Psychology', pct: 52, color: '#f59e0b', val: 52 },
+      { name: 'Execution', pct: 63, color: '#60a5fa', val: 63 },
+      { name: 'Risk Mgmt', pct: 74, color: '#30C48B', val: 74 },
+    ],
+  },
+  {
+    insights: [
+      { label: 'Observation:', text: 'Your best R-multiples come within the first 30 min of your session. Performance drops after hour 3.', color: '#ccc' },
+      { label: 'Pattern Detected:', text: 'You\'ve revenge-traded twice this week after taking a loss. Both resulted in further drawdown.', color: '#30C48B' },
+      { label: 'Milestone Reached:', text: 'You followed your exit rules on 9 of 10 trades this week. That\'s a personal best.', color: '#30C48B' },
+      { label: 'Observation:', text: 'Average R on planned trades: 2.4. Average R on impulse trades: -0.8. The data is clear.', color: '#ccc' },
+    ],
+    weeklyRating: 82,
+    bars: [
+      { name: 'Discipline', pct: 88, color: '#30C48B', val: 88 },
+      { name: 'Psychology', pct: 58, color: '#f59e0b', val: 58 },
+      { name: 'Execution', pct: 75, color: '#60a5fa', val: 75 },
+      { name: 'Risk Mgmt', pct: 85, color: '#30C48B', val: 85 },
+    ],
+  },
 ];
 
 function CoachShowcase({ light }: { light: boolean }) {
   const [setIdx, setSetIdx] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => setSetIdx(i => (i + 1) % insightSets.length), 25000);
+    const interval = setInterval(() => setSetIdx(i => (i + 1) % coachSets.length), 25000);
     return () => clearInterval(interval);
   }, []);
-  const insights = insightSets[setIdx];
+  const current = coachSets[setIdx];
 
   return (
-    <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
+    <div className="absolute right-8 lg:right-16 top-[55%] -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
       <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
-        {/* Logo icon centered at top */}
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
-          <svg width="48" height="48" viewBox="0 0 56 56" fill="none">
-            <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" fill="none" />
-            <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" />
-            <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
-            <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
-            <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-        </div>
-
         {/* Speech bubble card */}
         <div
-          className={`w-[390px] rounded-2xl p-7 pt-14 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
+          className={`w-[370px] rounded-2xl p-6 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
             ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
             : ''
           }`}
@@ -371,47 +389,55 @@ function CoachShowcase({ light }: { light: boolean }) {
           }}
         >
           {/* Speech bubble tail */}
-          <div className="absolute -left-3 top-16 w-0 h-0" style={{
+          <div className="absolute -left-3 top-12 w-0 h-0" style={{
             borderTop: '8px solid transparent',
             borderBottom: '8px solid transparent',
             borderRight: light ? '12px solid rgba(255,255,255,0.5)' : '12px solid rgba(255,255,255,0.10)',
           }} />
 
-          {/* Coach header */}
-          <div className="flex items-center gap-2.5 mb-5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#30C48B] animate-pulse" />
-            <span className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#30C48B]" style={{ textShadow: '0 0 10px rgba(48,196,139,0.3)' }}>AI Coach — Live</span>
+          {/* Logo icon upper-left + Coach header in same row */}
+          <div className="flex items-center gap-3 mb-4">
+            <svg width="36" height="36" viewBox="0 0 56 56" fill="none" className="flex-shrink-0">
+              <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" fill="none" />
+              <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+              <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
+              <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#30C48B] animate-pulse" />
+              <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]" style={{ textShadow: '0 0 10px rgba(48,196,139,0.3)' }}>AI Coach — Live</span>
+            </div>
           </div>
 
-          {/* Rotating insight lines */}
-          <div key={setIdx} className="space-y-3.5">
-            {insights.map((ins, i) => (
-              <div key={i} className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
-                style={{ animation: `typeIn 0.6s ease-out ${i * 0.4}s both` }}>
+          {/* Rotating insight lines — shorter text */}
+          <div key={setIdx} className="space-y-2.5">
+            {current.insights.map((ins, i) => (
+              <div key={i} className={`text-[13px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+                style={{ animation: `typeIn 0.6s ease-out ${i * 0.3}s both` }}>
                 <span className="font-bold" style={{ color: ins.color }}>{ins.label}</span> {ins.text}
-                <span className="text-[#30C48B] text-[11px] ml-1 opacity-70">(View trades)</span>
+                <span className="text-[#30C48B] text-[10px] ml-1 opacity-70">(View trades)</span>
               </div>
             ))}
           </div>
 
-          {/* Weekly Rating + attribute bars */}
-          <div className="mt-6 pt-4" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)' }}>
-            <div className="flex items-center justify-between mb-3">
+          {/* Weekly Rating + rotating attribute bars */}
+          <div className="mt-5 pt-3" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)' }}>
+            <div className="flex items-center justify-between mb-2.5">
               <span className={`text-[10px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#888]'}`}>Weekly Rating</span>
-              <span className="text-[16px] font-bold text-[#30C48B]">76</span>
+              <span className="text-[18px] font-bold text-[#30C48B]" style={{ textShadow: '0 0 12px rgba(48,196,139,0.5), 0 0 24px rgba(48,196,139,0.25)' }}>{current.weeklyRating}</span>
             </div>
-            {[
-              { name: 'Discipline', pct: 72, color: '#30C48B', val: 72 },
-              { name: 'Psychology', pct: 45, color: '#f59e0b', val: 45 },
-              { name: 'Execution', pct: 68, color: '#60a5fa', val: 68 },
-              { name: 'Risk Mgmt', pct: 81, color: '#30C48B', val: 81 },
-            ].map((bar) => (
-              <div key={bar.name} className="flex items-center gap-2.5 mb-2">
-                <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>{bar.name}</span>
+            {current.bars.map((bar) => (
+              <div key={bar.name} className="flex items-center gap-2 mb-1.5">
+                <span className={`text-[9px] font-bold tracking-wider uppercase w-[72px] ${light ? 'text-[#999]' : 'text-[#999]'}`}>{bar.name}</span>
                 <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                  <div className="h-full rounded-full" style={{ width: `${bar.pct}%`, background: bar.color, boxShadow: `0 0 6px ${bar.color}66` }} />
+                  <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${bar.pct}%`, background: bar.color, boxShadow: `0 0 6px ${bar.color}66` }} />
                 </div>
-                <span className="text-[11px] font-bold" style={{ color: bar.color }}>{bar.val}</span>
+                <span className="text-[10px] font-bold" style={{ color: bar.color }}>{bar.val}</span>
               </div>
             ))}
           </div>
