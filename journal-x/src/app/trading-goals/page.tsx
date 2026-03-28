@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
+import { demoWeeklyGoals, demoTrades, getCoachObservations } from '@/lib/demoData';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -33,14 +34,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
 const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals', 'Trader Profile'] as const;
 const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '/trader-profile'] as const;
 
-/* Demo goals */
-const weeklyGoals = [
-  { goal: 'Only take A+ pullback setups off narrow MAs', status: 'on-track' as const, progress: 80 },
-  { goal: 'Max 3 trades per day', status: 'on-track' as const, progress: 100 },
-  { goal: 'No revenge trades after a loss', status: 'at-risk' as const, progress: 60 },
-  { goal: 'Hold winners to 2R minimum', status: 'behind' as const, progress: 40 },
-  { goal: 'Journal every trade within 5 minutes of closing', status: 'on-track' as const, progress: 90 },
-];
+const weeklyGoals = demoWeeklyGoals;
 
 const monthlyGoals = [
   { goal: 'Maintain 60%+ win rate on breakout setups', current: '68%', target: '60%', met: true },
@@ -162,10 +156,11 @@ export default function TradingGoalsPage() {
             <div className="w-2 h-2 rounded-full bg-[#30C48B] animate-pulse" />
             <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">Coach Note</span>
           </div>
-          <p className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>
-            You&apos;re close to hitting your weekly target on holding winners. The data shows your average exit is at 1.4R — just 0.6R shy of your 2R goal.
-            Consider adding a trailing stop at 1R to lock in profit while letting runners run.
-          </p>
+          {getCoachObservations(demoTrades).map((obs, i) => (
+            <p key={i} className={`text-[14px] leading-relaxed ${i > 0 ? 'mt-2' : ''} ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>
+              {obs}
+            </p>
+          ))}
         </div>
       </main>
 

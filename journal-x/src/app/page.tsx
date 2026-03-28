@@ -3,6 +3,7 @@
 import { useAuth } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { demoTrades, computeAttributes, getCoachObservations } from '@/lib/demoData';
 
 /* ── Logo — stick man holding candlestick with "JOURNAL X" below ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -65,8 +66,8 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           </div>
 
           <div className="relative z-10 px-2">
-            <div className="text-5xl sm:text-6xl lg:text-7xl mb-2 leading-none tracking-[0.08em] whitespace-nowrap uppercase" style={{ fontFamily: "'Share Tech Mono', monospace", fontWeight: 400 }}>Start Your</div>
-            <div className="text-5xl sm:text-6xl lg:text-7xl text-[#30C48B] leading-none tracking-[0.08em] uppercase" style={{ fontFamily: "'Share Tech Mono', monospace", fontWeight: 400, textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl mb-3 leading-none tracking-[0.12em] whitespace-nowrap uppercase" style={{ fontFamily: "'Press Start 2P', monospace" }}>Start Your</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl text-[#30C48B] leading-none tracking-[0.12em] uppercase" style={{ fontFamily: "'Press Start 2P', monospace", textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
           </div>
 
           {/* Hover neon glow */}
@@ -108,21 +109,22 @@ function HowItWorksModal({ onSelectPlan, onClose, light = false }: { onSelectPla
         <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-white'}`}>&#10005;</button>
 
         <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>How Journal X Works</h2>
-        <p className={`text-center text-sm mb-12 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Three steps to trading with real accountability.</p>
+        <p className={`text-center text-[15px] mb-12 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Three steps to trading with real accountability.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12 items-start">
           {steps.map((s, i) => (
             <div key={s.num} className="flex flex-col items-center text-center relative">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-5 ${light ? '' : 'glass'}`} style={light ? stepCircle : {}}>
-                <span className="text-[#30C48B] font-semibold text-sm">{s.num}</span>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-5 ${light ? '' : 'glass'}`} style={light ? stepCircle : {}}>
+                <span className="text-[#30C48B] font-bold text-lg">{s.num}</span>
               </div>
-              <h3 className={`font-medium text-base mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{s.title}</h3>
-              <p className={`text-xs leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>{s.desc}</p>
+              <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{s.title}</h3>
+              <p className={`text-[14px] leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>{s.desc}</p>
 
               {i < steps.length - 1 && (
-                <div className="hidden sm:flex absolute top-6 -right-6 items-center justify-center">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="#30C48B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+                <div className="hidden sm:flex absolute top-7 -right-5 items-center justify-center">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <path d="M8 20h24" stroke="#30C48B" strokeWidth="2.5" strokeLinecap="round" />
+                    <path d="M24 12l8 8-8 8" stroke="#30C48B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               )}
@@ -267,7 +269,7 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
           </div>
         </div>
 
-        <p className={`text-center text-xs ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>Secure checkout powered by Stripe.</p>
+        <p className={`text-center text-[13px] ${light ? 'text-[#bbb]' : 'text-[rgba(255,255,255,0.45)]'}`}>Secure checkout powered by Stripe.</p>
       </div>
     </div>
   );
@@ -372,8 +374,8 @@ function CoachShowcase({ light }: { light: boolean }) {
   const current = coachSets[setIdx];
 
   return (
-    <div className="absolute right-8 lg:right-16 top-[55%] -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
-      <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
+    <div className="absolute right-8 lg:right-16 top-[62%] -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
+      <div className="relative" style={{ animation: 'float 10s ease-in-out infinite', willChange: 'transform' }}>
         {/* Speech bubble card */}
         <div
           className={`w-[370px] rounded-2xl p-6 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
@@ -397,7 +399,7 @@ function CoachShowcase({ light }: { light: boolean }) {
 
           {/* Logo icon upper-left + Coach header in same row */}
           <div className="flex items-center gap-3 mb-4">
-            <svg width="36" height="36" viewBox="0 0 56 56" fill="none" className="flex-shrink-0">
+            <svg width="44" height="44" viewBox="0 0 56 56" fill="none" className="flex-shrink-0">
               <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" fill="none" />
               <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" />
               <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
@@ -417,10 +419,10 @@ function CoachShowcase({ light }: { light: boolean }) {
           {/* Rotating insight lines — shorter text */}
           <div key={setIdx} className="space-y-2.5">
             {current.insights.map((ins, i) => (
-              <div key={i} className={`text-[13px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+              <div key={i} className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
                 style={{ animation: `typeIn 0.6s ease-out ${i * 0.3}s both` }}>
                 <span className="font-bold" style={{ color: ins.color }}>{ins.label}</span> {ins.text}
-                <span className="text-[#30C48B] text-[10px] ml-1 opacity-70">(View trades)</span>
+                <span className="text-[#30C48B] text-[11px] ml-1 opacity-70">(View trades)</span>
               </div>
             ))}
           </div>
@@ -428,16 +430,16 @@ function CoachShowcase({ light }: { light: boolean }) {
           {/* Weekly Rating + rotating attribute bars */}
           <div className="mt-5 pt-3" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)' }}>
             <div className="flex items-center justify-between mb-2.5">
-              <span className={`text-[10px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#888]'}`}>Weekly Rating</span>
+              <span className={`text-[12px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#888]'}`}>Weekly Rating</span>
               <span className="text-[18px] font-bold text-[#30C48B]" style={{ textShadow: '0 0 12px rgba(48,196,139,0.5), 0 0 24px rgba(48,196,139,0.25)' }}>{current.weeklyRating}</span>
             </div>
             {current.bars.map((bar) => (
               <div key={bar.name} className="flex items-center gap-2 mb-1.5">
-                <span className={`text-[9px] font-bold tracking-wider uppercase w-[72px] ${light ? 'text-[#999]' : 'text-[#999]'}`}>{bar.name}</span>
+                <span className={`text-[11px] font-bold tracking-wider uppercase w-[78px] ${light ? 'text-[#999]' : 'text-[#999]'}`}>{bar.name}</span>
                 <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${bar.pct}%`, background: bar.color, boxShadow: `0 0 6px ${bar.color}66` }} />
                 </div>
-                <span className="text-[10px] font-bold" style={{ color: bar.color }}>{bar.val}</span>
+                <span className="text-[12px] font-bold" style={{ color: bar.color }}>{bar.val}</span>
               </div>
             ))}
           </div>
@@ -523,8 +525,8 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-2xl sm:text-3xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#555]' : 'text-white'}`} style={{ fontFamily: "'Share Tech Mono', monospace" }}>
-          AI-Powered Trading Journal That Holds You Accountable
+        <h2 className={`text-[11px] sm:text-[14px] lg:text-[16px] tracking-[0.12em] mb-20 text-center leading-relaxed ${light ? 'text-[#555]' : 'text-white'}`} style={{ fontFamily: "'Press Start 2P', monospace" }}>
+          AI-Powered Trading Journal<br />That Holds You Accountable
         </h2>
 
         {/* THE CANDLESTICK CTA */}
@@ -642,12 +644,12 @@ export default function LandingPage() {
                   const attrs = [
                     { label: 'Discipline', score: 82, color: '#30C48B' },
                     { label: 'Risk Mgmt', score: 75, color: '#30C48B' },
-                    { label: 'Patience', score: 68, color: '#60a5fa' },
-                    { label: 'Entry Timing', score: 71, color: '#60a5fa' },
-                    { label: 'Psychology', score: 48, color: '#f59e0b' },
+                    { label: 'Patience', score: 68, color: '#4A9EFF' },
+                    { label: 'Entry Timing', score: 71, color: '#4A9EFF' },
+                    { label: 'Psychology', score: 48, color: '#FF6B35' },
                     { label: 'Consistency', score: 73, color: '#30C48B' },
-                    { label: 'Loss Handling', score: 38, color: '#f59e0b' },
-                    { label: 'Execution', score: 70, color: '#60a5fa' },
+                    { label: 'Loss Handling', score: 38, color: '#FF6B35' },
+                    { label: 'Execution', score: 70, color: '#4A9EFF' },
                   ];
                   const cx = 200, cy = 200;
                   return attrs.map((a, i) => {

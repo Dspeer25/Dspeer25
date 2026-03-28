@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
+import { demoTrades, getCoachObservations } from '@/lib/demoData';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -97,12 +98,7 @@ const insights = [
   },
 ];
 
-const aiObservations = [
-  'Your breakout entries have a significantly higher win rate than reversals. Consider reducing reversal position sizes by 50% until win rate improves.',
-  'Morning session (9:30–10:30) accounts for 65% of your total profits. Your edge is strongest here — protect this time slot.',
-  'After a losing trade, your next trade has a 38% win rate vs. your baseline 62%. Consider implementing a mandatory 15-minute cool-down.',
-  'Your R-multiple on planned trades is 2.4x vs. -0.8x on impulse trades. Every impulse trade costs you an average of $180.',
-];
+const aiObservations = getCoachObservations(demoTrades);
 
 export default function AnalysisPage() {
   const { isSignedIn } = useAuth();

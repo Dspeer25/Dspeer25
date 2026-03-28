@@ -24,9 +24,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+          <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
         </head>
-        <body className="antialiased">{children}</body>
+        <body className="antialiased">
+          {children}
+          {/* Aggressively remove Clerk dev mode banners via DOM observer */}
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function(){
+              function killClerkDev(){
+                document.querySelectorAll('div[style*="position: fixed"]').forEach(function(el){
+                  var s = el.getAttribute('style') || '';
+                  var t = el.textContent || '';
+                  if((s.indexOf('bottom')!==-1 && (s.indexOf('z-index')!==-1 || s.indexOf('left')!==-1)) ||
+                     t.indexOf('Development')!==-1 || t.indexOf('development')!==-1 ||
+                     t.indexOf('Clerk')!==-1 || t.indexOf('pk_test')!==-1){
+                    el.remove();
+                  }
+                });
+              }
+              killClerkDev();
+              var o = new MutationObserver(function(){ killClerkDev(); });
+              o.observe(document.body, { childList: true, subtree: true });
+            })();
+          `}} />
+        </body>
       </html>
     </ClerkProvider>
   );

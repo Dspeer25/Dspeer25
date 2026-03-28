@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 import { Trade, INSTRUMENTS } from '@/lib/types';
+import { demoTrades } from '@/lib/demoData';
+import TickerLogo from '@/components/TickerLogo';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -198,7 +200,7 @@ type SortCol = 'date' | 'ticker' | 'instrument' | 'strategy' | 'result' | 'initi
 export default function PastTradesPage() {
   const { isSignedIn } = useAuth();
   const [light, setLight] = useState(false);
-  const [trades, setTrades] = useState<Trade[]>(() => makeDemoTrades());
+  const [trades, setTrades] = useState<Trade[]>(() => demoTrades);
   const [period, setPeriod] = useState<Period>('Max');
   const [resultFilter, setResultFilter] = useState<'' | 'W' | 'L' | 'BE'>('');
   const [tickerSearch, setTickerSearch] = useState('');
@@ -391,13 +393,7 @@ export default function PastTradesPage() {
 
                 {/* Ticker */}
                 <div className="flex items-center gap-1.5">
-                  {trade.tickerLogo ? (
-                    <img src={trade.tickerLogo} alt="" className="w-5 h-5 rounded-full" />
-                  ) : (
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold ${
-                      light ? 'bg-[#eee] text-[#888]' : 'bg-[rgba(255,255,255,0.08)] text-[#888]'
-                    }`}>{trade.ticker.slice(0, 2)}</div>
-                  )}
+                  <TickerLogo ticker={trade.ticker} size={20} />
                   <span className={`text-xs font-medium ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>{trade.ticker}</span>
                 </div>
 

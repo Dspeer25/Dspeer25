@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
+import { demoTrades, computeAttributes } from '@/lib/demoData';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -34,36 +35,12 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
 const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals', 'Trader Profile'] as const;
 const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '/trader-profile'] as const;
 
-/* ── Attribute data ── */
+/* ── Attribute data — computed from shared demo trades ── */
 interface Attribute {
   name: string;
   value: number; // 0-99
   color: string;
 }
-
-// Demo data — in production, populated from AI analysis of trades + coach convos
-const attributes: Attribute[] = [
-  { name: 'Rule Adherence', value: 72, color: '#30C48B' },
-  { name: 'Patience', value: 58, color: '#30C48B' },
-  { name: 'Position Sizing', value: 78, color: '#60a5fa' },
-  { name: 'Stop Discipline', value: 54, color: '#60a5fa' },
-  { name: 'R:R Quality', value: 70, color: '#60a5fa' },
-  { name: 'Loss Handling', value: 42, color: '#f59e0b' },
-  { name: 'FOMO Resistance', value: 38, color: '#f59e0b' },
-  { name: 'Revenge Control', value: 33, color: '#f87171' },
-  { name: 'Confidence', value: 67, color: '#f59e0b' },
-  { name: 'Entry Timing', value: 74, color: '#a78bfa' },
-  { name: 'Exit Timing', value: 55, color: '#a78bfa' },
-  { name: 'Trade Management', value: 62, color: '#a78bfa' },
-  { name: 'Setup Quality', value: 81, color: '#30C48B' },
-  { name: 'Market Reading', value: 69, color: '#60a5fa' },
-  { name: 'Trend ID', value: 73, color: '#a78bfa' },
-  { name: 'Pattern Recognition', value: 76, color: '#30C48B' },
-  { name: 'Consistency', value: 61, color: '#30C48B' },
-  { name: 'Plan Following', value: 65, color: '#f59e0b' },
-  { name: 'Daily Limit Respect', value: 45, color: '#f87171' },
-  { name: 'Scaling', value: 48, color: '#f87171' },
-];
 
 function getGradeFromOvr(ovr: number): string {
   if (ovr >= 85) return 'Elite';
@@ -212,6 +189,7 @@ export default function TraderProfilePage() {
     localStorage.setItem('jx-theme', light ? 'light' : 'dark');
   }, [light]);
 
+  const attributes = useMemo(() => computeAttributes(demoTrades), []);
   const overallRating = Math.round(attributes.reduce((s, a) => s + a.value, 0) / attributes.length);
   const grade = getGradeFromOvr(overallRating);
 
