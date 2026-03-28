@@ -4,18 +4,13 @@ import { useState } from 'react';
 
 /* Static fallback logos for ETFs, indexes, and crypto that Polygon doesn't cover */
 const ETF_LOGOS: Record<string, string> = {
-  SPY: 'https://companieslogo.com/img/orig/SPY-d16c77f0.png',
-  QQQ: 'https://companieslogo.com/img/orig/QQQ-3a6b7aca.png',
-  IWM: 'https://companieslogo.com/img/orig/IWM.png',
-  GLD: 'https://companieslogo.com/img/orig/GLD.png',
-  DIA: 'https://companieslogo.com/img/orig/DIA.png',
-  TLT: 'https://companieslogo.com/img/orig/TLT.png',
-  VTI: 'https://companieslogo.com/img/orig/VTI.png',
-  VOO: 'https://companieslogo.com/img/orig/VOO.png',
-  XLF: 'https://companieslogo.com/img/orig/XLF.png',
-  XLE: 'https://companieslogo.com/img/orig/XLE.png',
-  XLK: 'https://companieslogo.com/img/orig/XLK.png',
-  GOOG: 'https://companieslogo.com/img/orig/GOOGL-0ed88f7c.png',
+  SPY: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/State_Street_Global_Advisors_logo.svg/320px-State_Street_Global_Advisors_logo.svg.png',
+  QQQ: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Invesco_Logo.svg/320px-Invesco_Logo.svg.png',
+  GOOG: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/320px-Google_2015_logo.svg.png',
+  GOOGL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/320px-Google_2015_logo.svg.png',
+  IWM: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/BlackRock_wordmark.svg/320px-BlackRock_wordmark.svg.png',
+  GLD: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/SSGA_Logo.svg/320px-SSGA_Logo.svg.png',
+  DIA: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/State_Street_Global_Advisors_logo.svg/320px-State_Street_Global_Advisors_logo.svg.png',
   // Crypto
   BTC: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
   ETH: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',

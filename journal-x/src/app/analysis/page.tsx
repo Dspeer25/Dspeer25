@@ -220,7 +220,7 @@ export default function AnalysisPage() {
 
           {/* Win Rate by Setup — SVG horizontal bar chart */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Win Rate by Setup</span>
+            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 text-[#30C48B]`}>Win Rate by Setup</span>
             <svg viewBox="0 0 260 160" className="w-full">
               {stats.winRateBySetup.map((item, i) => {
                 const y = i * 32;
@@ -239,7 +239,7 @@ export default function AnalysisPage() {
 
           {/* Performance by Time — SVG vertical bar chart */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Performance by Time</span>
+            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 text-[#30C48B]`}>Performance by Time</span>
             <svg viewBox="0 0 260 170" className="w-full">
               {/* Zero line */}
               <line x1="0" y1="100" x2="260" y2="100" stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'} strokeWidth="1" />
@@ -264,7 +264,7 @@ export default function AnalysisPage() {
 
           {/* Risk Management */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Risk Management</span>
+            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 text-[#30C48B]`}>Risk Management</span>
             <div className="space-y-3">
               {[
                 { label: 'Avg Risk/Trade', value: stats.avgRisk, color: '#60a5fa' },
@@ -282,7 +282,7 @@ export default function AnalysisPage() {
 
           {/* Psychology Patterns — 2x2 metric tiles */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Psychology Patterns</span>
+            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 text-[#30C48B]`}>Psychology Patterns</span>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Revenge Trades', value: stats.revengeCount, color: '#f87171' },
@@ -300,7 +300,7 @@ export default function AnalysisPage() {
 
           {/* Best & Worst */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Best & Worst</span>
+            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 text-[#30C48B]`}>Best & Worst</span>
             <div className="space-y-3">
               {[
                 { label: 'Largest Win', value: stats.largestWin, color: '#30C48B' },
@@ -318,7 +318,7 @@ export default function AnalysisPage() {
 
           {/* Consistency Score */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Consistency Score</span>
+            <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 text-[#30C48B]`}>Consistency Score</span>
             <div className="space-y-3">
               {[
                 { label: 'This Week', value: '78/99', color: '#30C48B' },
@@ -337,16 +337,15 @@ export default function AnalysisPage() {
 
         {/* Statistical Analysis — 3-column grid */}
         <div className={`${glassPanelCls} rounded-2xl p-6 sm:p-8 mb-8`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-          <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-6 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Statistical Analysis</span>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <span className="text-[12px] font-bold tracking-[0.15em] uppercase block mb-6 text-[#30C48B]">Statistical Analysis</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Sharpe Ratio', value: stats.sharpe, color: parseFloat(stats.sharpe) > 0 ? '#30C48B' : '#f87171' },
-              { label: 'Profit Factor', value: stats.profitFactor, color: '#30C48B' },
-              { label: 'Expected Value', value: stats.expectedValue, color: stats.expectedValue.startsWith('+') ? '#30C48B' : '#f87171' },
-              { label: 'Max Drawdown', value: stats.maxDrawdown, color: '#f87171' },
-              { label: 'Avg Win / Avg Loss', value: stats.avgWinLoss, color: '#30C48B' },
-              { label: 'Largest Win', value: stats.largestWin, color: '#30C48B' },
-              { label: 'Largest Loss', value: stats.largestLoss, color: '#f87171' },
+              { label: 'Sharpe Ratio', value: '1.8', color: '#30C48B' },
+              { label: 'Profit Factor', value: '2.3', color: '#30C48B' },
+              { label: 'Expected Value', value: '+$47/trade', color: '#30C48B' },
+              { label: 'Max Drawdown', value: '-$640', color: '#f87171' },
+              { label: 'Avg Win / Avg Loss', value: '3.2:1', color: '#30C48B' },
+              { label: 'Consistency Score', value: '74/99', color: '#30C48B' },
             ].map((item) => (
               <div key={item.label} className={`rounded-xl p-4 text-center ${light ? 'bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'}`}>
                 <div className="text-xl font-bold tabular-nums mb-1" style={{ color: item.color }}>{item.value}</div>

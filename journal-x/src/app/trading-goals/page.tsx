@@ -40,11 +40,11 @@ const weeks = [
     goals: [
       { goal: 'Only take A+ pullback setups off narrow MAs', status: 'on-track' as const, progress: 65 },
       { goal: 'Max 3 trades per day — no overtrading', status: 'on-track' as const, progress: 85 },
-      { goal: 'No revenge trades after a loss', status: 'behind' as const, progress: 40 },
+      { goal: 'No revenge trades after a loss', status: 'completed' as const, progress: 100 },
       { goal: 'Hold swing trades for minimum 2 days', status: 'at-risk' as const, progress: 50 },
       { goal: 'Review pre-market levels before first trade', status: 'on-track' as const, progress: 75 },
       { goal: 'Keep max daily drawdown under $300', status: 'at-risk' as const, progress: 55 },
-      { goal: 'Journal emotional state before each session', status: 'behind' as const, progress: 30 },
+      { goal: 'Journal emotional state before each session', status: 'completed' as const, progress: 100 },
     ],
     coachNote: 'Last week was a mixed bag. You revenge-traded twice after losses on Tuesday and Thursday — both resulted in additional drawdown. Your A+ setups had a 70% hit rate when you stuck to the plan, but impulse entries dragged your overall performance down. The emotional journaling habit hasn\'t taken hold yet — only 2 out of 5 sessions logged. Focus on that this week.',
   },
@@ -87,8 +87,8 @@ export default function TradingGoalsPage() {
     ? 'bg-white/60 border border-[rgba(0,0,0,0.06)] shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
     : 'glass';
 
-  const statusColor = (s: string) => s === 'on-track' ? '#30C48B' : s === 'at-risk' ? '#f59e0b' : '#f87171';
-  const statusLabel = (s: string) => s === 'on-track' ? 'On Track' : s === 'at-risk' ? 'At Risk' : 'Behind';
+  const statusColor = (s: string) => s === 'completed' ? '#30C48B' : s === 'on-track' ? '#30C48B' : s === 'at-risk' ? '#f59e0b' : '#f87171';
+  const statusLabel = (s: string) => s === 'completed' ? 'Completed' : s === 'on-track' ? 'On Track' : s === 'at-risk' ? 'At Risk' : 'Behind';
 
   const currentWeek = weeks[weekIdx];
 

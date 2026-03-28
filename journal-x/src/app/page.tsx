@@ -53,11 +53,11 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
         <div
           className="relative w-64 sm:w-76 rounded-2xl flex flex-col items-center justify-center text-center py-24 sm:py-32 transition-all duration-500 group-hover:scale-[1.04] cursor-pointer"
           style={{
-            background: 'linear-gradient(180deg, rgba(48,196,139,0.08) 0%, rgba(48,196,139,0.02) 100%)',
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.18), rgba(48,196,139,0.08))',
             border: '1px solid rgba(48,196,139,0.30)',
-            boxShadow: '0 0 120px rgba(48,196,139,0.30), 0 0 240px rgba(48,196,139,0.15), 0 0 50px rgba(48,196,139,0.20), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(60px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(60px) saturate(200%)',
+            boxShadow: '0 0 60px rgba(48,196,139,0.4), 0 0 120px rgba(48,196,139,0.2), inset 0 1px 0 rgba(255,255,255,0.35)',
+            backdropFilter: 'blur(60px)',
+            WebkitBackdropFilter: 'blur(60px)',
           }}
         >
           {/* Glossy shimmer — top + side highlights */}
@@ -526,7 +526,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-[11px] sm:text-[14px] lg:text-[16px] tracking-[0.12em] mb-20 text-center leading-relaxed font-light ${light ? 'text-[#555]' : 'text-white'}`}>
+        <h2 className={`text-3xl sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight mb-20 text-center leading-tight font-light ${light ? 'text-[#555]' : 'text-white'}`}>
           AI-Powered Trading Journal<br />That Holds You Accountable
         </h2>
 

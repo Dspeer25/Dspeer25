@@ -37,6 +37,18 @@ async function fetchPolygonLogo(ticker: string, apiKey: string): Promise<NextRes
   });
 }
 
+// Hardcoded logos for ETFs, crypto, and tickers that Polygon doesn't cover
+const STATIC_LOGOS: Record<string, string> = {
+  SPY: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/State_Street_Global_Advisors_logo.svg/320px-State_Street_Global_Advisors_logo.svg.png',
+  QQQ: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Invesco_Logo.svg/320px-Invesco_Logo.svg.png',
+  GOOG: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/320px-Google_2015_logo.svg.png',
+  GOOGL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/320px-Google_2015_logo.svg.png',
+  IWM: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/BlackRock_wordmark.svg/320px-BlackRock_wordmark.svg.png',
+  GLD: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/SSGA_Logo.svg/320px-SSGA_Logo.svg.png',
+  BTC: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+  ETH: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+};
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ ticker: string }> }
@@ -44,6 +56,11 @@ export async function GET(
   const { ticker } = await params;
   const apiKey = process.env.POLYGON_API_KEY;
   const upperTicker = ticker.toUpperCase();
+
+  // Redirect to static logo immediately for known ETFs/crypto — skip Polygon
+  if (STATIC_LOGOS[upperTicker]) {
+    return NextResponse.redirect(STATIC_LOGOS[upperTicker]);
+  }
 
   if (!apiKey) {
     return NextResponse.json({ logoUrl: null });
