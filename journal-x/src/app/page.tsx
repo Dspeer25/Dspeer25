@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@clerk/nextjs';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 /* ── Logo — stick man holding candlestick with "JOURNAL X" below ── */
@@ -11,7 +11,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
   const manColorLeg = light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.55)';
   return (
     <div className="flex flex-col items-start">
-      <svg width="68" height="68" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="82" height="82" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
         {/* Stick man */}
         <circle cx="18" cy="12" r="4.5" stroke={manColor} strokeWidth="1.8" fill="none" />
         <line x1="18" y1="16.5" x2="18" y2="30" stroke={manColor} strokeWidth="1.8" strokeLinecap="round" />
@@ -25,10 +25,10 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
         <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
       <div className="mt-[-2px] ml-[2px]">
-        <span className="text-[14px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>
+        <span className="text-[16px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>
           Journal
         </span>
-        <span className="text-[14px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
+        <span className="text-[16px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
           X
         </span>
       </div>
@@ -47,26 +47,26 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.1), rgba(48,196,139,0.9))', boxShadow: '0 0 12px rgba(48,196,139,0.4)' }}
         />
 
-        {/* Candle body — see-through frosted glass */}
+        {/* Candle body — glossy frosted glass */}
         <div
           className="relative w-64 sm:w-76 rounded-2xl flex flex-col items-center justify-center text-center py-24 sm:py-32 transition-all duration-500 group-hover:scale-[1.04] cursor-pointer"
           style={{
-            background: 'linear-gradient(180deg, rgba(48,196,139,0.10) 0%, rgba(48,196,139,0.03) 100%)',
-            border: '1px solid rgba(48,196,139,0.35)',
-            boxShadow: '0 0 100px rgba(48,196,139,0.25), 0 0 200px rgba(48,196,139,0.12), 0 0 40px rgba(48,196,139,0.15), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(255,255,255,0.05)',
+            background: 'linear-gradient(180deg, rgba(48,196,139,0.08) 0%, rgba(48,196,139,0.02) 100%)',
+            border: '1px solid rgba(48,196,139,0.30)',
+            boxShadow: '0 0 120px rgba(48,196,139,0.30), 0 0 240px rgba(48,196,139,0.15), 0 0 50px rgba(48,196,139,0.20), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(255,255,255,0.06)',
             backdropFilter: 'blur(60px) saturate(200%)',
             WebkitBackdropFilter: 'blur(60px) saturate(200%)',
           }}
         >
-          {/* Glass highlight — top shimmer */}
+          {/* Glossy shimmer — top + side highlights */}
           <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.18), transparent)' }} />
+            <div className="absolute top-0 left-0 right-0 h-2/5" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)' }} />
+            <div className="absolute top-0 left-0 bottom-0 w-1/4" style={{ background: 'linear-gradient(to right, rgba(255,255,255,0.06), transparent)' }} />
           </div>
 
           <div className="relative z-10 px-2">
-            <div className="text-[#30C48B]/60 text-[11px] tracking-[0.25em] mb-6">[start here]</div>
-            <div className="text-5xl sm:text-6xl lg:text-7xl font-light mb-1 leading-none tracking-tight whitespace-nowrap">Start Your</div>
-            <div className="text-5xl sm:text-6xl lg:text-7xl font-light text-[#30C48B] leading-none tracking-tight" style={{ textShadow: '0 0 30px rgba(48,196,139,0.3)' }}>Journal</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl mb-2 leading-none tracking-wide whitespace-nowrap" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 300, fontStyle: 'italic' }}>Start Your</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl text-[#30C48B] leading-none tracking-wide" style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 300, fontStyle: 'italic', textShadow: '0 0 40px rgba(48,196,139,0.4), 0 0 80px rgba(48,196,139,0.15)' }}>Journal</div>
           </div>
 
           {/* Hover neon glow */}
@@ -314,6 +314,113 @@ function CandlestickCTALight({ onClick }: { onClick: () => void }) {
   );
 }
 
+/* ── Coach Showcase — rotating insights every 25s ── */
+const insightSets = [
+  [
+    { label: 'Pattern Detected:', text: 'Your last three trades show premature profit-taking relative to your stated weekly targets. Would you like to review these?', color: '#30C48B' },
+    { label: 'Pattern Detected:', text: 'You\'ve noted hesitation again despite committing to eliminate this habit. Let\'s explore what\'s driving that.', color: '#30C48B' },
+    { label: 'Milestone Reached:', text: 'You\'ve hit your stated weekly goal of only taking A+ pullbacks off the narrow moving averages. Nice job.', color: '#30C48B' },
+    { label: 'Observation:', text: 'Both win rate and R are significantly higher before 12:30 PM EDT — nearly double compared to afternoon trades.', color: '#ccc' },
+  ],
+  [
+    { label: 'Pattern Detected:', text: 'You\'ve widened your stop three times this week after entry. Each time resulted in a larger loss than planned.', color: '#30C48B' },
+    { label: 'Observation:', text: 'Your breakout entries have a 72% win rate, but your reversal plays are hitting only 28%. Consider reducing size on reversals.', color: '#ccc' },
+    { label: 'Milestone Reached:', text: 'Three consecutive weeks of staying within your max daily loss limit. Your discipline score has improved by 11 points.', color: '#30C48B' },
+    { label: 'Pattern Detected:', text: 'You tend to increase position size after a winning streak. The data shows this consistently leads to your largest drawdowns.', color: '#ccc' },
+  ],
+];
+
+function CoachShowcase({ light }: { light: boolean }) {
+  const [setIdx, setSetIdx] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setSetIdx(i => (i + 1) % insightSets.length), 25000);
+    return () => clearInterval(interval);
+  }, []);
+  const insights = insightSets[setIdx];
+
+  return (
+    <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
+      <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
+        {/* Logo icon centered at top */}
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
+          <svg width="48" height="48" viewBox="0 0 56 56" fill="none">
+            <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" fill="none" />
+            <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" />
+            <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+            <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
+            <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </div>
+
+        {/* Speech bubble card */}
+        <div
+          className={`w-[390px] rounded-2xl p-7 pt-14 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
+            ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
+            : ''
+          }`}
+          style={light ? { backdropFilter: 'blur(30px)' } : {
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(60px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 80px rgba(48,196,139,0.12), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(255,255,255,0.03)',
+          }}
+        >
+          {/* Speech bubble tail */}
+          <div className="absolute -left-3 top-16 w-0 h-0" style={{
+            borderTop: '8px solid transparent',
+            borderBottom: '8px solid transparent',
+            borderRight: light ? '12px solid rgba(255,255,255,0.5)' : '12px solid rgba(255,255,255,0.10)',
+          }} />
+
+          {/* Coach header */}
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#30C48B] animate-pulse" />
+            <span className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#30C48B]" style={{ textShadow: '0 0 10px rgba(48,196,139,0.3)' }}>AI Coach — Live</span>
+          </div>
+
+          {/* Rotating insight lines */}
+          <div key={setIdx} className="space-y-3.5">
+            {insights.map((ins, i) => (
+              <div key={i} className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+                style={{ animation: `typeIn 0.6s ease-out ${i * 0.4}s both` }}>
+                <span className="font-bold" style={{ color: ins.color }}>{ins.label}</span> {ins.text}
+                <span className="text-[#30C48B] text-[11px] ml-1 opacity-70">(View trades)</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Weekly Rating + attribute bars */}
+          <div className="mt-6 pt-4" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className={`text-[10px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#888]'}`}>Weekly Rating</span>
+              <span className="text-[16px] font-bold text-[#30C48B]">76</span>
+            </div>
+            {[
+              { name: 'Discipline', pct: 72, color: '#30C48B', val: 72 },
+              { name: 'Psychology', pct: 45, color: '#f59e0b', val: 45 },
+              { name: 'Execution', pct: 68, color: '#60a5fa', val: 68 },
+              { name: 'Risk Mgmt', pct: 81, color: '#30C48B', val: 81 },
+            ].map((bar) => (
+              <div key={bar.name} className="flex items-center gap-2.5 mb-2">
+                <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>{bar.name}</span>
+                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
+                  <div className="h-full rounded-full" style={{ width: `${bar.pct}%`, background: bar.color, boxShadow: `0 0 6px ${bar.color}66` }} />
+                </div>
+                <span className="text-[11px] font-bold" style={{ color: bar.color }}>{bar.val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Landing Page ─────────────────────────────────── */
 export default function LandingPage() {
   const { isSignedIn } = useAuth();
@@ -390,7 +497,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-xl sm:text-2xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#888]' : 'text-[#bbb]'}`}>
+        <h2 className={`text-2xl sm:text-3xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#555]' : 'text-white'}`}>
           AI-Powered Trading Journal That Holds You Accountable
         </h2>
 
@@ -436,98 +543,8 @@ export default function LandingPage() {
           </svg>
         </div>
 
-        {/* ─── AI Coach Showcase — speech bubble with logo icon ─── */}
-        <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
-          <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
-            {/* Logo icon on top — no circle, just the icon bigger */}
-            <div className="absolute -top-8 left-5 z-20">
-              <svg width="44" height="44" viewBox="0 0 56 56" fill="none">
-                <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" fill="none" />
-                <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
-                <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
-                <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
-            </div>
-
-            {/* Speech bubble card — frosted see-through glass */}
-            <div
-              className={`w-[370px] rounded-2xl rounded-tl-sm p-7 pt-12 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
-                ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
-                : ''
-              }`}
-              style={light ? { backdropFilter: 'blur(30px)' } : {
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(60px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(60px) saturate(180%)',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 80px rgba(48,196,139,0.12), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -1px 0 rgba(255,255,255,0.03)',
-              }}
-            >
-              {/* Speech bubble tail */}
-              <div className="absolute -left-3 top-14 w-0 h-0" style={{
-                borderTop: '8px solid transparent',
-                borderBottom: '8px solid transparent',
-                borderRight: light ? '12px solid rgba(255,255,255,0.5)' : '12px solid rgba(255,255,255,0.10)',
-              }} />
-
-              {/* Coach header */}
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#30C48B] animate-pulse" />
-                <span className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#30C48B]" style={{ textShadow: '0 0 10px rgba(48,196,139,0.3)' }}>AI Coach — Live</span>
-              </div>
-
-              {/* Insight lines — bigger text, alternating green and light grey */}
-              <div className="space-y-3.5">
-                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
-                  style={{ animation: 'typeIn 0.8s ease-out 0.5s both' }}>
-                  <span className="text-[#30C48B] font-bold">Pattern detected:</span> You exit winners 40% earlier than your plan allows.
-                </div>
-                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
-                  style={{ animation: 'typeIn 0.8s ease-out 1.5s both' }}>
-                  <span className="text-[#ccc] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
-                </div>
-                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
-                  style={{ animation: 'typeIn 0.8s ease-out 2.5s both' }}>
-                  <span className="text-[#30C48B] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
-                </div>
-                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
-                  style={{ animation: 'typeIn 0.8s ease-out 3.5s both' }}>
-                  <span className="text-[#ccc] font-bold">Suggestion:</span> Your best R-multiples come from the first hour.
-                </div>
-              </div>
-
-              {/* Mini attribute bars */}
-              <div className="mt-6 pt-4 space-y-2.5" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)', animation: 'typeIn 0.8s ease-out 4.5s both' }}>
-                <div className="flex items-center gap-2.5">
-                  <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>Discipline</span>
-                  <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                    <div className="h-full rounded-full" style={{ width: '72%', background: '#30C48B', boxShadow: '0 0 6px rgba(48,196,139,0.4)' }} />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#30C48B]">72</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>Psychology</span>
-                  <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                    <div className="h-full rounded-full" style={{ width: '45%', background: '#f59e0b', boxShadow: '0 0 6px rgba(245,158,11,0.3)' }} />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#f59e0b]">45</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>Execution</span>
-                  <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                    <div className="h-full rounded-full" style={{ width: '68%', background: '#60a5fa', boxShadow: '0 0 6px rgba(96,165,250,0.3)' }} />
-                  </div>
-                  <span className="text-[11px] font-bold text-[#60a5fa]">68</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* ─── AI Coach Showcase — rotating insights ─── */}
+        <CoachShowcase light={light} />
 
         <h1 className="relative z-10 text-5xl sm:text-6xl lg:text-7xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
           <span className={light ? 'text-[#999]' : 'text-[#999]'}>Your trades. Your rules.</span><br />
