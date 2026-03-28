@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { demoTrades, computeAttributes, getCoachObservations } from '@/lib/demoData';
+import AttributeWheel from '@/components/AttributeWheel';
 
 /* ── Logo — stick man holding candlestick with "JOURNAL X" below ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -66,8 +67,8 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           </div>
 
           <div className="relative z-10 px-2">
-            <div className="text-2xl sm:text-3xl lg:text-4xl mb-3 leading-none tracking-[0.12em] whitespace-nowrap uppercase" style={{ fontFamily: "'Press Start 2P', monospace" }}>Start Your</div>
-            <div className="text-2xl sm:text-3xl lg:text-4xl text-[#30C48B] leading-none tracking-[0.12em] uppercase" style={{ fontFamily: "'Press Start 2P', monospace", textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl mb-3 leading-none tracking-[0.12em] whitespace-nowrap uppercase" style={{ fontFamily: "'Orbitron', sans-serif" }}>Start Your</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl text-[#30C48B] leading-none tracking-[0.12em] uppercase" style={{ fontFamily: "'Orbitron', sans-serif", textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
           </div>
 
           {/* Hover neon glow */}
@@ -525,7 +526,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-[11px] sm:text-[14px] lg:text-[16px] tracking-[0.12em] mb-20 text-center leading-relaxed ${light ? 'text-[#555]' : 'text-white'}`} style={{ fontFamily: "'Press Start 2P', monospace" }}>
+        <h2 className={`text-[11px] sm:text-[14px] lg:text-[16px] tracking-[0.12em] mb-20 text-center leading-relaxed ${light ? 'text-[#555]' : 'text-white'}`} style={{ fontFamily: "'Orbitron', sans-serif" }}>
           AI-Powered Trading Journal<br />That Holds You Accountable
         </h2>
 
@@ -611,106 +612,39 @@ export default function LandingPage() {
         <h2 className={`text-center text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Not just a journal. A trading coach.</h2>
         <p className={`text-center text-base mb-20 max-w-lg mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
 
-        {/* ─── Trader Attribute Wheel Showcase ─── */}
-        <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-28">
-          {/* Attribute wheel with trader rating */}
-          <div className="relative flex-shrink-0">
-            {/* Trader rating label at top */}
-            <div className="text-center mb-4">
-              <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`}>Trader Rating</div>
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <span className="text-3xl font-light text-[#30C48B]">67</span>
-                <span className={`text-sm font-medium ${light ? 'text-[#999]' : 'text-[#666]'}`}>/ 99</span>
-                <span className="text-xs font-bold tracking-wider uppercase text-[#f59e0b] ml-2">Developing</span>
+        {/* ─── Trader Attribute Wheel Showcase (full 20-spoke from demo data) ─── */}
+        {(() => {
+          const wheelAttrs = computeAttributes(demoTrades);
+          const ovr = Math.round(wheelAttrs.reduce((s, a) => s + a.value, 0) / wheelAttrs.length);
+          const grade = ovr >= 85 ? 'Elite' : ovr >= 75 ? 'Pro' : ovr >= 65 ? 'Solid' : ovr >= 50 ? 'Developing' : 'Rookie';
+          const gradeColor = ovr >= 75 ? '#30C48B' : ovr >= 50 ? '#f59e0b' : '#f87171';
+          return (
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-28">
+              <div className="relative flex-shrink-0">
+                <div className="text-center mb-4">
+                  <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`}>Trader Rating</div>
+                  <div className="flex items-center justify-center gap-2 mt-1">
+                    <span className="text-3xl font-light text-[#30C48B]">{ovr}</span>
+                    <span className={`text-sm font-medium ${light ? 'text-[#999]' : 'text-[#666]'}`}>/ 99</span>
+                    <span className="text-xs font-bold tracking-wider uppercase ml-2" style={{ color: gradeColor }}>{grade}</span>
+                  </div>
+                </div>
+                <div className="relative w-[380px] h-[380px] sm:w-[440px] sm:h-[440px]">
+                  <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(48,196,139,0.08) 0%, transparent 70%)' }} />
+                  <AttributeWheel attrs={wheelAttrs} light={light} />
+                </div>
+              </div>
+              <div className="max-w-md text-center lg:text-left">
+                <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1a1a]' : 'text-[#ddd]'}`}>
+                  Understand your trading strengths and weaknesses from new perspectives
+                </h3>
+                <p className={`text-lg leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>
+                  Your Trader Profile is built from real data and AI-driven observations — showing you exactly where you excel and where you need to grow.
+                </p>
               </div>
             </div>
-
-            <div className="relative w-[340px] h-[340px] sm:w-[400px] sm:h-[400px]">
-              {/* Ambient glow */}
-              <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(48,196,139,0.08) 0%, transparent 70%)' }} />
-              <svg viewBox="0 0 400 400" className="w-full h-full relative z-10">
-                <defs>
-                  <filter id="wheelGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
-                {/* Concentric guide circles */}
-                {[60, 100, 140].map((r) => (
-                  <circle key={r} cx="200" cy="200" r={r} fill="none" stroke={light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'} strokeWidth="0.5" strokeDasharray="2 4" />
-                ))}
-                {/* 8 spokes — simplified for landing page */}
-                {(() => {
-                  const attrs = [
-                    { label: 'Discipline', score: 82, color: '#30C48B' },
-                    { label: 'Risk Mgmt', score: 75, color: '#30C48B' },
-                    { label: 'Patience', score: 68, color: '#4A9EFF' },
-                    { label: 'Entry Timing', score: 71, color: '#4A9EFF' },
-                    { label: 'Psychology', score: 48, color: '#FF6B35' },
-                    { label: 'Consistency', score: 73, color: '#30C48B' },
-                    { label: 'Loss Handling', score: 38, color: '#FF6B35' },
-                    { label: 'Execution', score: 70, color: '#4A9EFF' },
-                  ];
-                  const cx = 200, cy = 200;
-                  return attrs.map((a, i) => {
-                    const angle = (i * 360 / attrs.length - 90) * Math.PI / 180;
-                    const len = (a.score / 100) * 150;
-                    const x2 = cx + Math.cos(angle) * len;
-                    const y2 = cy + Math.sin(angle) * len;
-                    const lx = cx + Math.cos(angle) * 172;
-                    const ly = cy + Math.sin(angle) * 172;
-                    const deg = i * 360 / attrs.length;
-                    let anchor: 'middle' | 'start' | 'end' = 'middle';
-                    if (deg > 20 && deg < 160) anchor = 'start';
-                    if (deg > 200 && deg < 340) anchor = 'end';
-                    const halfW = 12;
-                    const perpAngle = angle + Math.PI / 2;
-                    const bx1 = cx + Math.cos(perpAngle) * halfW;
-                    const by1 = cy + Math.sin(perpAngle) * halfW;
-                    const bx2 = cx - Math.cos(perpAngle) * halfW;
-                    const by2 = cy - Math.sin(perpAngle) * halfW;
-                    return (
-                      <g key={a.label}>
-                        <polygon
-                          points={`${bx1},${by1} ${x2},${y2} ${bx2},${by2}`}
-                          fill={a.color}
-                          opacity={0.7}
-                          filter="url(#wheelGlow)"
-                        />
-                        <text
-                          x={lx} y={ly}
-                          textAnchor={anchor}
-                          dominantBaseline="central"
-                          fill={light ? '#777' : '#aaa'}
-                          fontSize="11"
-                          fontWeight="600"
-                          letterSpacing="0.04em"
-                          style={{ textTransform: 'uppercase' as const }}
-                        >
-                          {a.label}
-                        </text>
-                      </g>
-                    );
-                  });
-                })()}
-                {/* Center OVR */}
-                <circle cx="200" cy="200" r="18" fill={light ? '#e5e5e0' : '#111'} stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(48,196,139,0.25)'} strokeWidth="1.5" />
-                <text x="200" y="196" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="8" fontWeight="bold">OVR</text>
-                <text x="200" y="210" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="12" fontWeight="bold">67</text>
-              </svg>
-            </div>
-          </div>
-
-          {/* Floating tagline text */}
-          <div className="max-w-md text-center lg:text-left">
-            <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1a1a]' : 'text-[#ddd]'}`}>
-              Understand your trading strengths and weaknesses from new perspectives
-            </h3>
-            <p className={`text-lg leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>
-              Your Trader Profile is built from real data and AI-driven observations — showing you exactly where you excel and where you need to grow.
-            </p>
-          </div>
-        </div>
+          );
+        })()}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[

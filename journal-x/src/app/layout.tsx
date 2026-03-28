@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+          <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
         </head>
         <body className="antialiased">
           {children}
@@ -32,17 +32,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <script dangerouslySetInnerHTML={{ __html: `
             (function(){
               function killClerkDev(){
-                document.querySelectorAll('div[style*="position: fixed"]').forEach(function(el){
+                document.querySelectorAll('div[style*="position: fixed"], div[role="status"], div[role="alert"], div[data-clerk-toast], div[class*="toast"]').forEach(function(el){
                   var s = el.getAttribute('style') || '';
-                  var t = el.textContent || '';
-                  if((s.indexOf('bottom')!==-1 && (s.indexOf('z-index')!==-1 || s.indexOf('left')!==-1)) ||
-                     t.indexOf('Development')!==-1 || t.indexOf('development')!==-1 ||
-                     t.indexOf('Clerk')!==-1 || t.indexOf('pk_test')!==-1){
+                  var t = (el.textContent || '').toLowerCase();
+                  var isFixed = s.indexOf('position: fixed') !== -1 || s.indexOf('position:fixed') !== -1;
+                  var isClerk = t.indexOf('development') !== -1 || t.indexOf('clerk') !== -1 || t.indexOf('pk_test') !== -1;
+                  var isBottom = s.indexOf('bottom') !== -1;
+                  var isToast = el.hasAttribute('data-clerk-toast') || (el.className && el.className.toString().indexOf('toast') !== -1);
+                  if(isToast || (isFixed && (isBottom || isClerk)) || (isFixed && !el.id && !el.className)){
                     el.remove();
                   }
                 });
               }
               killClerkDev();
+              setInterval(killClerkDev, 500);
               var o = new MutationObserver(function(){ killClerkDev(); });
               o.observe(document.body, { childList: true, subtree: true });
             })();

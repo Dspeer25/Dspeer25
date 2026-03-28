@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 import { demoTrades, computeAttributes } from '@/lib/demoData';
+import AttributeWheel from '@/components/AttributeWheel';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -35,146 +36,12 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
 const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals', 'Trader Profile'] as const;
 const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '/trader-profile'] as const;
 
-/* ── Attribute data — computed from shared demo trades ── */
-interface Attribute {
-  name: string;
-  value: number; // 0-99
-  color: string;
-}
-
 function getGradeFromOvr(ovr: number): string {
   if (ovr >= 85) return 'Elite';
   if (ovr >= 75) return 'Pro';
   if (ovr >= 65) return 'Solid';
   if (ovr >= 50) return 'Developing';
   return 'Rookie';
-}
-
-/* ── Radial Spoke Wheel ── */
-function AttributeWheel({ attrs, light }: { attrs: Attribute[]; light: boolean }) {
-  const [animated, setAnimated] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 200);
-    return () => clearTimeout(t);
-  }, []);
-
-  const cx = 300;
-  const cy = 300;
-  const maxRadius = 220;
-  const minRadius = 30;
-  const spokeWidth = 10; // half-width of wedge at tip
-  const n = attrs.length;
-  const angleStep = (2 * Math.PI) / n;
-
-  // Ring radii for the concentric guide circles (25%, 50%, 75%, 100%)
-  const rings = [0.25, 0.5, 0.75, 1.0];
-
-  return (
-    <svg viewBox="0 0 600 600" className="w-full max-w-[560px] mx-auto">
-      <defs>
-        {attrs.map((attr, i) => {
-          const id = `spoke-grad-${i}`;
-          return (
-            <linearGradient key={id} id={id} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor={attr.color} stopOpacity="0.9" />
-              <stop offset="100%" stopColor={attr.color} stopOpacity="0.4" />
-            </linearGradient>
-          );
-        })}
-      </defs>
-
-      {/* Concentric guide circles */}
-      {rings.map((r, i) => (
-        <circle key={i} cx={cx} cy={cy} r={minRadius + r * (maxRadius - minRadius)}
-          fill="none"
-          stroke={light ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}
-          strokeWidth="1"
-        />
-      ))}
-
-      {/* Spoke lines (faint guides) */}
-      {attrs.map((_, i) => {
-        const angle = angleStep * i - Math.PI / 2;
-        const x2 = cx + Math.cos(angle) * maxRadius;
-        const y2 = cy + Math.sin(angle) * maxRadius;
-        return (
-          <line key={`guide-${i}`} x1={cx} y1={cy} x2={x2} y2={y2}
-            stroke={light ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)'}
-            strokeWidth="1"
-          />
-        );
-      })}
-
-      {/* Attribute spokes (wedge shapes) */}
-      {attrs.map((attr, i) => {
-        const angle = angleStep * i - Math.PI / 2;
-        const length = animated ? minRadius + (attr.value / 99) * (maxRadius - minRadius) : minRadius;
-
-        // Wedge: narrow at center, widens toward tip
-        const tipWidthAngle = spokeWidth / length; // angular width at tip
-        const baseWidthAngle = 3 / minRadius; // narrow at base
-
-        const baseLX = cx + Math.cos(angle - baseWidthAngle) * minRadius;
-        const baseLY = cy + Math.sin(angle - baseWidthAngle) * minRadius;
-        const baseRX = cx + Math.cos(angle + baseWidthAngle) * minRadius;
-        const baseRY = cy + Math.sin(angle + baseWidthAngle) * minRadius;
-        const tipLX = cx + Math.cos(angle - tipWidthAngle) * length;
-        const tipLY = cy + Math.sin(angle - tipWidthAngle) * length;
-        const tipRX = cx + Math.cos(angle + tipWidthAngle) * length;
-        const tipRY = cy + Math.sin(angle + tipWidthAngle) * length;
-
-        const path = `M ${baseLX} ${baseLY} L ${tipLX} ${tipLY} L ${tipRX} ${tipRY} L ${baseRX} ${baseRY} Z`;
-
-        return (
-          <path
-            key={`spoke-${i}`}
-            d={path}
-            fill={`url(#spoke-grad-${i})`}
-            className="transition-all duration-1000 ease-out"
-            style={{ filter: `drop-shadow(0 0 4px ${attr.color}40)` }}
-          />
-        );
-      })}
-
-      {/* Center circle */}
-      <circle cx={cx} cy={cy} r={minRadius - 4} fill={light ? '#f0f0eb' : '#1a1a1a'} />
-      <circle cx={cx} cy={cy} r={minRadius - 4}
-        fill="none"
-        stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)'}
-        strokeWidth="1.5"
-      />
-      {/* Small inner glow */}
-      <circle cx={cx} cy={cy} r={6} fill={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.15)'} />
-
-      {/* Labels */}
-      {attrs.map((attr, i) => {
-        const angle = angleStep * i - Math.PI / 2;
-        const labelR = maxRadius + 28;
-        const lx = cx + Math.cos(angle) * labelR;
-        const ly = cy + Math.sin(angle) * labelR;
-
-        // Determine text-anchor based on position
-        const degrees = (angle * 180) / Math.PI + 90;
-        let anchor: 'middle' | 'start' | 'end' = 'middle';
-        if (degrees > 20 && degrees < 160) anchor = 'start';
-        if (degrees > 200 && degrees < 340) anchor = 'end';
-
-        return (
-          <text key={`label-${i}`} x={lx} y={ly}
-            textAnchor={anchor}
-            dominantBaseline="middle"
-            className="text-[12px] font-bold uppercase"
-            style={{
-              fill: light ? '#888' : '#888',
-              letterSpacing: '0.08em',
-            }}
-          >
-            {attr.name}
-          </text>
-        );
-      })}
-    </svg>
-  );
 }
 
 export default function TraderProfilePage() {

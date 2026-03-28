@@ -169,7 +169,18 @@ div[style*="position: fixed"][style*="left: 24px"],
 body > div:last-child[style*="position: fixed"],
 div[style*="position: fixed"] > div[style*="border-radius"][style*="padding"][style*="background"],
 div[style*="Development mode"],
-div[style*="development instance"] {
+div[style*="development instance"],
+div[data-clerk-toast],
+div[class*="toast"],
+div[role="status"][style*="position: fixed"],
+div[role="alert"][style*="position: fixed"],
+div[style*="position: fixed"][style*="bottom: 12px"],
+div[style*="position: fixed"][style*="bottom: 8px"],
+div[style*="position: fixed"][style*="inset"],
+body > div:not([id]):not([class])[style*="position: fixed"],
+body > div[style*="position: fixed"][style*="pointer-events"],
+div[style*="position: fixed"][style*="transform"],
+div[style*="position: fixed"][style*="transition"][style*="bottom"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -181,4 +192,6 @@ div[style*="development instance"] {
   max-width: 0 !important;
   position: absolute !important;
   left: -9999px !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
 }

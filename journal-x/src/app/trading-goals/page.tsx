@@ -62,6 +62,9 @@ export default function TradingGoalsPage() {
   const statusColor = (s: string) => s === 'on-track' ? '#30C48B' : s === 'at-risk' ? '#f59e0b' : '#f87171';
   const statusLabel = (s: string) => s === 'on-track' ? 'On Track' : s === 'at-risk' ? 'At Risk' : 'Behind';
 
+  const coachObs = getCoachObservations(demoTrades);
+  const coachParagraph = coachObs.join(' ');
+
   return (
     <div
       className="min-h-screen relative transition-colors duration-500"
@@ -109,58 +112,66 @@ export default function TradingGoalsPage() {
           <p className={`text-[14px] ${light ? 'text-[#888]' : 'text-[#999]'}`}>Set intentions, track progress, and let the AI hold you accountable.</p>
         </div>
 
-        {/* Weekly Goals */}
-        <div className={`${glassPanelCls} rounded-2xl p-6 sm:p-8 mb-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-          <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-6">This Week&apos;s Goals</span>
-          <div className="space-y-5">
+        {/* Weekly Goals — individual glass cards */}
+        <div className="mb-8">
+          <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-5">This Week&apos;s Goals</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {weeklyGoals.map((g, i) => (
-              <div key={i}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[14px] ${light ? 'text-[#333]' : 'text-[#ddd]'}`}>{g.goal}</span>
-                  <span className="text-[12px] font-bold tracking-wider uppercase" style={{ color: statusColor(g.status) }}>{statusLabel(g.status)}</span>
+              <div key={i} className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
+                <div className="flex items-start justify-between mb-4">
+                  <span className={`text-[16px] font-bold leading-snug flex-1 mr-3 ${light ? 'text-[#333]' : 'text-[#eee]'}`}>{g.goal}</span>
+                  <span
+                    className="text-[13px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shrink-0"
+                    style={{
+                      color: statusColor(g.status),
+                      background: `${statusColor(g.status)}18`,
+                      border: `1px solid ${statusColor(g.status)}30`,
+                    }}
+                  >
+                    {statusLabel(g.status)}
+                  </span>
                 </div>
-                <div className={`w-full h-2 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
+                <div className={`w-full h-3 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${g.progress}%`, background: statusColor(g.status), boxShadow: `0 0 8px ${statusColor(g.status)}44` }} />
                 </div>
+                <div className={`text-[12px] mt-2 text-right ${light ? 'text-[#aaa]' : 'text-[#666]'}`}>{g.progress}%</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Monthly Goals */}
+        {/* Monthly Goals — text +2px */}
         <div className={`${glassPanelCls} rounded-2xl p-6 sm:p-8 mb-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-6">Monthly Targets</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {monthlyGoals.map((g, i) => (
               <div key={i} className={`rounded-xl p-5 ${light ? 'bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'}`}>
-                <p className={`text-[14px] mb-3 ${light ? 'text-[#333]' : 'text-[#ddd]'}`}>{g.goal}</p>
+                <p className={`text-[16px] mb-3 ${light ? 'text-[#333]' : 'text-[#ddd]'}`}>{g.goal}</p>
                 <div className="flex items-center justify-between">
                   <div>
                     <span className={`text-[12px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>Current: </span>
-                    <span className={`text-[14px] font-bold ${g.met ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>{g.current}</span>
+                    <span className={`text-[16px] font-bold ${g.met ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>{g.current}</span>
                   </div>
                   <div>
                     <span className={`text-[12px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>Target: </span>
-                    <span className={`text-[14px] font-medium ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{g.target}</span>
+                    <span className={`text-[16px] font-medium ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{g.target}</span>
                   </div>
-                  <span className={`text-[14px] font-bold ${g.met ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>{g.met ? '✓' : '✗'}</span>
+                  <span className={`text-[16px] font-bold ${g.met ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>{g.met ? '\u2713' : '\u2717'}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* AI Coach Accountability Note */}
+        {/* AI Coach Accountability Note — single flowing paragraph */}
         <div className={`${glassPanelCls} rounded-xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-[#30C48B] animate-pulse" />
             <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">Coach Note</span>
           </div>
-          {getCoachObservations(demoTrades).map((obs, i) => (
-            <p key={i} className={`text-[14px] leading-relaxed ${i > 0 ? 'mt-2' : ''} ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>
-              {obs}
-            </p>
-          ))}
+          <p className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>
+            {coachParagraph}
+          </p>
         </div>
       </main>
 
