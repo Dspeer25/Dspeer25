@@ -526,7 +526,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-[11px] sm:text-[14px] lg:text-[16px] tracking-[0.12em] mb-20 text-center leading-relaxed ${light ? 'text-[#555]' : 'text-white'}`} style={{ fontFamily: "'Orbitron', sans-serif" }}>
+        <h2 className={`text-[11px] sm:text-[14px] lg:text-[16px] tracking-[0.12em] mb-20 text-center leading-relaxed font-light ${light ? 'text-[#555]' : 'text-white'}`}>
           AI-Powered Trading Journal<br />That Holds You Accountable
         </h2>
 
