@@ -401,24 +401,94 @@ export default function LandingPage() {
           : <CandlestickCTA onClick={() => setShowHowItWorks(true)} />
         }
 
-        {/* Rising moving average line — slightly more curved */}
+        {/* Moving averages — 20SMA (fast, wiggly, blue) + 200SMA (slow, smooth, red-tinted) */}
         <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
           <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none">
+            {/* 20SMA — fast, curvy, light blue */}
             <path
-              d="M-50 810 C120 780 200 740 320 680 C440 620 500 580 600 530 C700 480 750 440 850 390 C950 340 1050 280 1150 220 C1250 160 1350 110 1500 60"
-              stroke={light ? 'rgba(48,140,220,0.10)' : 'rgba(100,180,255,0.12)'}
-              strokeWidth="3"
+              d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
+              stroke={light ? 'rgba(80,160,240,0.18)' : 'rgba(100,180,255,0.22)'}
+              strokeWidth="2.5"
               strokeLinecap="round"
               fill="none"
             />
+            {/* 200SMA — slow, smooth, warm red */}
             <path
-              d="M-50 835 C120 805 200 770 320 715 C440 660 500 620 600 570 C700 520 750 485 850 435 C950 385 1050 325 1150 265 C1250 210 1350 165 1500 110"
-              stroke={light ? 'rgba(48,140,220,0.05)' : 'rgba(100,180,255,0.06)'}
+              d="M-50 760 C200 740 400 700 600 640 C800 580 1000 480 1200 360 C1350 280 1450 220 1520 180"
+              stroke={light ? 'rgba(220,80,80,0.12)' : 'rgba(255,100,100,0.14)'}
               strokeWidth="2"
               strokeLinecap="round"
               fill="none"
             />
+            {/* Crossover glow where they meet (~x:600) */}
+            <circle cx="600" cy="590" r="40"
+              fill={light ? 'rgba(100,180,255,0.04)' : 'rgba(100,180,255,0.06)'}
+            />
           </svg>
+        </div>
+
+        {/* ─── Animated Product Showcase (like Sunday Light hero demo) ─── */}
+        <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
+          <div
+            className={`w-80 rounded-2xl p-5 animate-fade-in ${light
+              ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
+              : 'bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]'
+            }`}
+            style={{ backdropFilter: 'blur(30px)', animation: 'float 6s ease-in-out infinite' }}
+          >
+            {/* Mini coach header */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-[#30C48B]/20 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-[#30C48B]" />
+              </div>
+              <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">AI Coach — Live</span>
+            </div>
+
+            {/* Typewriter insight lines */}
+            <div className="space-y-2.5">
+              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+                style={{ animation: 'typeIn 0.8s ease-out 0.5s both' }}>
+                <span className="text-[#30C48B] font-bold">Pattern detected:</span> You exit winners 40% earlier than your plan allows.
+              </div>
+              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+                style={{ animation: 'typeIn 0.8s ease-out 1.5s both' }}>
+                <span className="text-[#60a5fa] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
+              </div>
+              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+                style={{ animation: 'typeIn 0.8s ease-out 2.5s both' }}>
+                <span className="text-[#f59e0b] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
+              </div>
+              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+                style={{ animation: 'typeIn 0.8s ease-out 3.5s both' }}>
+                <span className="text-[#a78bfa] font-bold">Suggestion:</span> Your best R-multiples come from the first hour. Consider limiting afternoon trades.
+              </div>
+            </div>
+
+            {/* Mini attribute bars preview */}
+            <div className="mt-4 pt-3 space-y-1.5" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(255,255,255,0.04)', animation: 'typeIn 0.8s ease-out 4.5s both' }}>
+              <div className="flex items-center gap-2">
+                <span className={`text-[8px] font-bold tracking-wider uppercase w-16 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Discipline</span>
+                <div className={`flex-1 h-1 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+                  <div className="h-full rounded-full bg-[#30C48B]" style={{ width: '72%' }} />
+                </div>
+                <span className="text-[8px] font-bold text-[#30C48B]">72</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[8px] font-bold tracking-wider uppercase w-16 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Psychology</span>
+                <div className={`flex-1 h-1 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+                  <div className="h-full rounded-full bg-[#f59e0b]" style={{ width: '45%' }} />
+                </div>
+                <span className="text-[8px] font-bold text-[#f59e0b]">45</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[8px] font-bold tracking-wider uppercase w-16 ${light ? 'text-[#999]' : 'text-[#666]'}`}>Execution</span>
+                <div className={`flex-1 h-1 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+                  <div className="h-full rounded-full bg-[#60a5fa]" style={{ width: '68%' }} />
+                </div>
+                <span className="text-[8px] font-bold text-[#60a5fa]">68</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <h1 className="relative z-10 text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
