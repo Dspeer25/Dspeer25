@@ -381,7 +381,7 @@ export default function LandingPage() {
           <Link
             key={item.label}
             href={item.href}
-            className={`text-[11px] font-bold tracking-[0.35em] uppercase transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-[#ccc]'}`}
+            className={`text-[12px] font-bold tracking-[0.35em] uppercase transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#888] hover:text-white'}`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
           >
             {item.label}
@@ -391,7 +391,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-lg sm:text-xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#888]' : 'text-[#888]'}`}>
+        <h2 className={`text-lg sm:text-xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#888]' : 'text-[#bbb]'}`}>
           AI-Powered Trading Journal That Holds You Accountable
         </h2>
 
@@ -404,25 +404,33 @@ export default function LandingPage() {
         {/* Moving averages — 20SMA (fast, wiggly, blue) + 200SMA (slow, smooth, red-tinted) */}
         <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
           <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none">
-            {/* 20SMA — fast, curvy, light blue */}
+            <defs>
+              <filter id="glow20">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              <filter id="glow200">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+            {/* 20SMA — fast, curvy, light blue, glowing */}
             <path
               d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
-              stroke={light ? 'rgba(80,160,240,0.18)' : 'rgba(100,180,255,0.22)'}
+              stroke={light ? 'rgba(80,160,240,0.25)' : 'rgba(100,180,255,0.35)'}
               strokeWidth="2.5"
               strokeLinecap="round"
               fill="none"
+              filter="url(#glow20)"
             />
-            {/* 200SMA — slow, smooth, warm red */}
+            {/* 200SMA — slow, smooth, warm red, glowing */}
             <path
               d="M-50 760 C200 740 400 700 600 640 C800 580 1000 480 1200 360 C1350 280 1450 220 1520 180"
-              stroke={light ? 'rgba(220,80,80,0.12)' : 'rgba(255,100,100,0.14)'}
+              stroke={light ? 'rgba(220,80,80,0.18)' : 'rgba(255,100,100,0.25)'}
               strokeWidth="2"
               strokeLinecap="round"
               fill="none"
-            />
-            {/* Crossover glow where they meet (~x:600) */}
-            <circle cx="600" cy="590" r="40"
-              fill={light ? 'rgba(100,180,255,0.04)' : 'rgba(100,180,255,0.06)'}
+              filter="url(#glow200)"
             />
           </svg>
         </div>
@@ -432,35 +440,41 @@ export default function LandingPage() {
           <div
             className={`w-80 rounded-2xl p-5 animate-fade-in ${light
               ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
-              : 'bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)]'
+              : ''
             }`}
-            style={{ backdropFilter: 'blur(30px)', animation: 'float 6s ease-in-out infinite' }}
+            style={light ? { backdropFilter: 'blur(30px)', animation: 'float 6s ease-in-out infinite' } : {
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(40px) saturate(150%)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+              animation: 'float 6s ease-in-out infinite',
+            }}
           >
             {/* Mini coach header */}
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-full bg-[#30C48B]/20 flex items-center justify-center">
                 <div className="w-2 h-2 rounded-full bg-[#30C48B]" />
               </div>
-              <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">AI Coach — Live</span>
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">AI Coach — Live</span>
             </div>
 
             {/* Typewriter insight lines */}
             <div className="space-y-2.5">
-              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 0.5s both' }}>
                 <span className="text-[#30C48B] font-bold">Pattern detected:</span> You exit winners 40% earlier than your plan allows.
               </div>
-              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 1.5s both' }}>
                 <span className="text-[#60a5fa] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
               </div>
-              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 2.5s both' }}>
                 <span className="text-[#f59e0b] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
               </div>
-              <div className={`text-[11px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#aaa]'}`}
+              <div className={`text-xs leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
                 style={{ animation: 'typeIn 0.8s ease-out 3.5s both' }}>
-                <span className="text-[#a78bfa] font-bold">Suggestion:</span> Your best R-multiples come from the first hour. Consider limiting afternoon trades.
+                <span className="text-[#a78bfa] font-bold">Suggestion:</span> Your best R-multiples come from the first hour.
               </div>
             </div>
 
@@ -492,21 +506,21 @@ export default function LandingPage() {
         </div>
 
         <h1 className="relative z-10 text-4xl sm:text-5xl lg:text-6xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
-          <span className={light ? 'text-[#999]' : 'text-[#666]'}>Your trades. Your rules.</span><br />
+          <span className={light ? 'text-[#999]' : 'text-[#999]'}>Your trades. Your rules.</span><br />
           <span className={`underline decoration-[#30C48B] decoration-2 underline-offset-8 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Real accountability.</span>
         </h1>
 
-        <p className={`relative z-10 text-base max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#888]' : 'text-[#888]'}`}>
+        <p className={`relative z-10 text-base max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#888]' : 'text-[#aaa]'}`}>
           Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
-        <p className={`relative z-10 text-xs mt-16 ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
+        <p className={`relative z-10 text-xs mt-16 ${light ? 'text-[#bbb]' : 'text-[#777]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
       </section>
 
       {/* Features */}
       <section className="relative z-10 max-w-6xl mx-auto px-8 py-32">
         <h2 className={`text-center text-3xl font-light mb-4 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Not just a journal. A trading coach.</h2>
-        <p className={`text-center text-sm mb-16 max-w-md mx-auto ${light ? 'text-[#999]' : 'text-[#888]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
+        <p className={`text-center text-sm mb-16 max-w-md mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[
