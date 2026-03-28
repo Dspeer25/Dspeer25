@@ -1,9 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-// Module-level cache — persists across renders within a session
-const logoCache = new Map<string, string | null>();
+import { useState } from 'react';
 
 interface TickerLogoProps {
   ticker: string;
@@ -12,68 +9,23 @@ interface TickerLogoProps {
 }
 
 export default function TickerLogo({ ticker, size = 22, className = '' }: TickerLogoProps) {
-  const [logoUrl, setLogoUrl] = useState<string | null | undefined>(
-    logoCache.has(ticker) ? logoCache.get(ticker) : undefined
-  );
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    if (logoCache.has(ticker)) {
-      setLogoUrl(logoCache.get(ticker) ?? null);
-      return;
-    }
-
-    let cancelled = false;
-
-    fetch(`/api/tickers/logo/${encodeURIComponent(ticker)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!cancelled) {
-          const url = data.logoUrl ?? null;
-          logoCache.set(ticker, url);
-          setLogoUrl(url);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          logoCache.set(ticker, null);
-          setLogoUrl(null);
-        }
-      });
-
-    return () => { cancelled = true; };
-  }, [ticker]);
-
-  // Loading state
-  if (logoUrl === undefined) {
-    return (
-      <div
-        className={`rounded-full flex-shrink-0 animate-pulse ${className}`}
-        style={{
-          width: size,
-          height: size,
-          background: 'rgba(255,255,255,0.06)',
-        }}
-      />
-    );
-  }
-
-  // Logo loaded successfully
-  if (logoUrl) {
+  // Use our proxy route directly as the image src
+  // The route fetches from Polygon server-side and returns the image bytes
+  if (!failed) {
     return (
       <img
-        src={logoUrl}
+        src={`/api/tickers/logo/${encodeURIComponent(ticker)}`}
         alt={ticker}
         className={`rounded-full object-cover flex-shrink-0 ${className}`}
         style={{ width: size, height: size }}
-        onError={() => {
-          logoCache.set(ticker, null);
-          setLogoUrl(null);
-        }}
+        onError={() => setFailed(true)}
       />
     );
   }
 
-  // Fallback: colored letter circle (only when Polygon returned null)
+  // Fallback: colored letter circle (only when Polygon has no logo)
   const colors = ['#30C48B', '#4A9EFF', '#FF6B35', '#a78bfa', '#f59e0b'];
   const colorIdx = ticker.charCodeAt(0) % colors.length;
   return (
