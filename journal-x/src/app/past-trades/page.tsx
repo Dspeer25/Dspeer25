@@ -37,10 +37,16 @@ const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '
 /* ── Demo trades ── */
 function makeDemoTrades(): Trade[] {
   const tickers = [
-    { t: 'AAPL', logo: '' }, { t: 'TSLA', logo: '' }, { t: 'NVDA', logo: '' },
-    { t: 'SPY', logo: '' }, { t: 'AMZN', logo: '' }, { t: 'META', logo: '' },
-    { t: 'MSFT', logo: '' }, { t: 'QQQ', logo: '' }, { t: 'AMD', logo: '' },
-    { t: 'GOOGL', logo: '' },
+    { t: 'AAPL', logo: 'https://logo.clearbit.com/apple.com' },
+    { t: 'TSLA', logo: 'https://logo.clearbit.com/tesla.com' },
+    { t: 'NVDA', logo: 'https://logo.clearbit.com/nvidia.com' },
+    { t: 'SPY', logo: 'https://logo.clearbit.com/ssga.com' },
+    { t: 'AMZN', logo: 'https://logo.clearbit.com/amazon.com' },
+    { t: 'META', logo: 'https://logo.clearbit.com/meta.com' },
+    { t: 'MSFT', logo: 'https://logo.clearbit.com/microsoft.com' },
+    { t: 'QQQ', logo: 'https://logo.clearbit.com/invesco.com' },
+    { t: 'AMD', logo: 'https://logo.clearbit.com/amd.com' },
+    { t: 'GOOGL', logo: 'https://logo.clearbit.com/google.com' },
   ];
   const instruments = ['0DTE Call', '0DTE Put', 'Stock Long', 'Call Spread', 'Scalp', 'Swing Call', 'Put Spread', 'Stock Short'];
   const strategies = ['VWAP reclaim', 'Breakout', 'Opening range', 'Mean reversion', 'Gap fill', 'Trend continuation', 'Reversal', 'Momentum scalp', 'Support bounce', 'Breakdown fade'];
@@ -200,7 +206,7 @@ export default function PastTradesPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const perPage = 10;
+  const perPage = 6;
 
   useEffect(() => {
     const saved = localStorage.getItem('jx-theme');

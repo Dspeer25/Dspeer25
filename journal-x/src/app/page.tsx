@@ -36,51 +36,51 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
   );
 }
 
-/* ── Candlestick CTA — big bullish candle, green glow, no outer frame ── */
+/* ── Candlestick CTA — crystal neon candle, vibrant glow ── */
 function CandlestickCTA({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} className="group relative bg-transparent mb-16">
-      {/* The candlestick — short top wick, big body, long bottom wick (bullish) */}
       <div className="relative z-10 flex flex-col items-center">
-        {/* Upper wick — short (bullish = small upper shadow) */}
+        {/* Upper wick */}
         <div
-          className="w-[4px] h-10 rounded-full"
-          style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.15), rgba(48,196,139,0.7))' }}
+          className="w-[5px] h-14 rounded-full"
+          style={{ background: 'linear-gradient(to bottom, rgba(48,196,139,0.1), rgba(48,196,139,0.9))', boxShadow: '0 0 12px rgba(48,196,139,0.4)' }}
         />
 
-        {/* Candle body */}
+        {/* Candle body — crystal glass, bigger */}
         <div
-          className="relative w-56 sm:w-68 rounded-2xl flex flex-col items-center justify-center text-center py-20 sm:py-28 transition-all duration-500 group-hover:scale-[1.03] cursor-pointer"
+          className="relative w-64 sm:w-76 rounded-2xl flex flex-col items-center justify-center text-center py-24 sm:py-32 transition-all duration-500 group-hover:scale-[1.04] cursor-pointer"
           style={{
-            background: 'linear-gradient(180deg, rgba(48,196,139,0.22) 0%, rgba(48,196,139,0.10) 100%)',
-            border: '1px solid rgba(48,196,139,0.30)',
-            boxShadow: '0 0 80px rgba(48,196,139,0.18), 0 0 160px rgba(48,196,139,0.08), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
+            background: 'linear-gradient(180deg, rgba(48,196,139,0.28) 0%, rgba(48,196,139,0.08) 100%)',
+            border: '1px solid rgba(48,196,139,0.45)',
+            boxShadow: '0 0 100px rgba(48,196,139,0.25), 0 0 200px rgba(48,196,139,0.12), 0 0 40px rgba(48,196,139,0.15), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
           }}
         >
-          {/* Glass highlight on top */}
+          {/* Crystal glass highlight */}
           <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.14), transparent)' }} />
+            <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.20), transparent)' }} />
+            <div className="absolute bottom-0 left-0 right-0 h-1/4" style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.06), transparent)' }} />
           </div>
 
           <div className="relative z-10 px-2">
-            <div className="text-[#888] text-[10px] tracking-[0.2em] mb-5">[start here]</div>
-            <div className="text-4xl sm:text-5xl font-medium mb-1 leading-none tracking-tight whitespace-nowrap">Start Your</div>
-            <div className="text-4xl sm:text-5xl font-medium text-[#30C48B] leading-none tracking-tight">Journal</div>
+            <div className="text-[#30C48B]/60 text-[11px] tracking-[0.25em] mb-6">[start here]</div>
+            <div className="text-5xl sm:text-6xl font-medium mb-1 leading-none tracking-tight whitespace-nowrap">Start Your</div>
+            <div className="text-5xl sm:text-6xl font-medium text-[#30C48B] leading-none tracking-tight" style={{ textShadow: '0 0 30px rgba(48,196,139,0.3)' }}>Journal</div>
           </div>
 
-          {/* Hover glow intensifies */}
+          {/* Hover neon glow */}
           <div
             className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-            style={{ boxShadow: '0 0 100px rgba(48,196,139,0.35), 0 0 200px rgba(48,196,139,0.12)' }}
+            style={{ boxShadow: '0 0 120px rgba(48,196,139,0.45), 0 0 240px rgba(48,196,139,0.15), 0 0 60px rgba(48,196,139,0.2)' }}
           />
         </div>
 
-        {/* Lower wick — long (bullish = long lower shadow, buyers pushed price up) */}
+        {/* Lower wick */}
         <div
-          className="w-[4px] h-32 rounded-full"
-          style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.1), rgba(48,196,139,0.7))' }}
+          className="w-[5px] h-40 rounded-full"
+          style={{ background: 'linear-gradient(to top, rgba(48,196,139,0.05), rgba(48,196,139,0.9))', boxShadow: '0 0 12px rgba(48,196,139,0.4)' }}
         />
       </div>
     </button>
@@ -401,32 +401,34 @@ export default function LandingPage() {
           : <CandlestickCTA onClick={() => setShowHowItWorks(true)} />
         }
 
-        {/* Moving averages — 20SMA (fast, wiggly, blue) + 200SMA (slow, smooth, red-tinted) */}
+        {/* Moving averages — neon Tron-style glow */}
         <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
           <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none">
             <defs>
-              <filter id="glow20">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              <filter id="glow20" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="8" result="blur1" />
+                <feGaussianBlur stdDeviation="3" in="SourceGraphic" result="blur2" />
+                <feMerge><feMergeNode in="blur1" /><feMergeNode in="blur2" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
-              <filter id="glow200">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              <filter id="glow200" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur1" />
+                <feGaussianBlur stdDeviation="2" in="SourceGraphic" result="blur2" />
+                <feMerge><feMergeNode in="blur1" /><feMergeNode in="blur2" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
             </defs>
-            {/* 20SMA — fast, curvy, light blue, glowing */}
+            {/* 20SMA — neon cyan-blue */}
             <path
               d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
-              stroke={light ? 'rgba(80,160,240,0.25)' : 'rgba(100,180,255,0.35)'}
+              stroke={light ? 'rgba(80,160,240,0.30)' : 'rgba(100,200,255,0.55)'}
               strokeWidth="2.5"
               strokeLinecap="round"
               fill="none"
               filter="url(#glow20)"
             />
-            {/* 200SMA — slow, smooth, warm red, glowing */}
+            {/* 200SMA — neon warm red-orange */}
             <path
               d="M-50 760 C200 740 400 700 600 640 C800 580 1000 480 1200 360 C1350 280 1450 220 1520 180"
-              stroke={light ? 'rgba(220,80,80,0.18)' : 'rgba(255,100,100,0.25)'}
+              stroke={light ? 'rgba(220,80,80,0.22)' : 'rgba(255,120,80,0.40)'}
               strokeWidth="2"
               strokeLinecap="round"
               fill="none"
@@ -435,71 +437,101 @@ export default function LandingPage() {
           </svg>
         </div>
 
-        {/* ─── Animated Product Showcase (like Sunday Light hero demo) ─── */}
+        {/* ─── AI Coach Showcase — speech bubble with logo icon ─── */}
         <div className="absolute right-8 lg:right-16 top-1/2 -translate-y-1/2 z-[6] pointer-events-none hidden lg:block">
-          <div
-            className={`w-[340px] rounded-2xl p-6 animate-fade-in transition-transform duration-500 hover:scale-[1.08] ${light
-              ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
-              : ''
-            }`}
-            style={light ? { backdropFilter: 'blur(30px)', animation: 'float 6s ease-in-out infinite' } : {
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(40px) saturate(150%)',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.3), 0 0 60px rgba(48,196,139,0.12), 0 0 120px rgba(48,196,139,0.06), inset 0 1px 0 rgba(255,255,255,0.15)',
-              animation: 'float 6s ease-in-out infinite',
-            }}
-          >
-            {/* Mini coach header */}
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-7 h-7 rounded-full bg-[#30C48B]/20 flex items-center justify-center">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#30C48B]" />
-              </div>
-              <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">AI Coach — Live</span>
-            </div>
-
-            {/* Typewriter insight lines — alternating green and light grey bold labels */}
-            <div className="space-y-3">
-              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
-                style={{ animation: 'typeIn 0.8s ease-out 0.5s both' }}>
-                <span className="text-[#30C48B] font-bold">Pattern detected:</span> You exit winners 40% earlier than your plan allows.
-              </div>
-              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
-                style={{ animation: 'typeIn 0.8s ease-out 1.5s both' }}>
-                <span className="text-[#ccc] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
-              </div>
-              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
-                style={{ animation: 'typeIn 0.8s ease-out 2.5s both' }}>
-                <span className="text-[#30C48B] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
-              </div>
-              <div className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ddd]'}`}
-                style={{ animation: 'typeIn 0.8s ease-out 3.5s both' }}>
-                <span className="text-[#ccc] font-bold">Suggestion:</span> Your best R-multiples come from the first hour.
+          <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
+            {/* Logo icon on top of the bubble */}
+            <div className="absolute -top-6 left-6 z-20">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{
+                background: 'linear-gradient(135deg, rgba(48,196,139,0.25) 0%, rgba(48,196,139,0.10) 100%)',
+                border: '1px solid rgba(48,196,139,0.35)',
+                boxShadow: '0 0 20px rgba(48,196,139,0.2)',
+                backdropFilter: 'blur(20px)',
+              }}>
+                <svg width="30" height="30" viewBox="0 0 56 56" fill="none">
+                  <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" fill="none" />
+                  <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" />
+                  <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+                  <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1" />
+                  <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
               </div>
             </div>
 
-            {/* Mini attribute bars preview */}
-            <div className="mt-5 pt-4 space-y-2" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(255,255,255,0.06)', animation: 'typeIn 0.8s ease-out 4.5s both' }}>
-              <div className="flex items-center gap-2.5">
-                <span className={`text-[9px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Discipline</span>
-                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                  <div className="h-full rounded-full bg-[#30C48B]" style={{ width: '72%' }} />
-                </div>
-                <span className="text-[10px] font-bold text-[#30C48B]">72</span>
+            {/* Speech bubble card */}
+            <div
+              className={`w-[370px] rounded-2xl rounded-tl-sm p-7 pt-12 animate-fade-in transition-transform duration-500 hover:scale-[1.10] ${light
+                ? 'bg-white/50 border border-[rgba(0,0,0,0.06)] shadow-[0_8px_40px_rgba(0,0,0,0.06)]'
+                : ''
+              }`}
+              style={light ? { backdropFilter: 'blur(30px)' } : {
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)',
+                border: '1px solid rgba(48,196,139,0.18)',
+                backdropFilter: 'blur(40px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(160%)',
+                boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 80px rgba(48,196,139,0.15), 0 0 160px rgba(48,196,139,0.06), inset 0 1px 0 rgba(255,255,255,0.15)',
+              }}
+            >
+              {/* Speech bubble tail */}
+              <div className="absolute -left-3 top-14 w-0 h-0" style={{
+                borderTop: '8px solid transparent',
+                borderBottom: '8px solid transparent',
+                borderRight: light ? '12px solid rgba(255,255,255,0.5)' : '12px solid rgba(255,255,255,0.10)',
+              }} />
+
+              {/* Coach header */}
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#30C48B] animate-pulse" />
+                <span className="text-[13px] font-bold tracking-[0.2em] uppercase text-[#30C48B]" style={{ textShadow: '0 0 10px rgba(48,196,139,0.3)' }}>AI Coach — Live</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className={`text-[9px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Psychology</span>
-                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                  <div className="h-full rounded-full bg-[#f59e0b]" style={{ width: '45%' }} />
+
+              {/* Insight lines — bigger text, alternating green and light grey */}
+              <div className="space-y-3.5">
+                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+                  style={{ animation: 'typeIn 0.8s ease-out 0.5s both' }}>
+                  <span className="text-[#30C48B] font-bold">Pattern detected:</span> You exit winners 40% earlier than your plan allows.
                 </div>
-                <span className="text-[10px] font-bold text-[#f59e0b]">45</span>
+                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+                  style={{ animation: 'typeIn 0.8s ease-out 1.5s both' }}>
+                  <span className="text-[#ccc] font-bold">Win rate:</span> 68% on breakout setups vs 31% on reversals.
+                </div>
+                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+                  style={{ animation: 'typeIn 0.8s ease-out 2.5s both' }}>
+                  <span className="text-[#30C48B] font-bold">Risk alert:</span> 3 trades this week exceeded your stated max risk.
+                </div>
+                <div className={`text-[15px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+                  style={{ animation: 'typeIn 0.8s ease-out 3.5s both' }}>
+                  <span className="text-[#ccc] font-bold">Suggestion:</span> Your best R-multiples come from the first hour.
+                </div>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className={`text-[9px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Execution</span>
-                <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-                  <div className="h-full rounded-full bg-[#60a5fa]" style={{ width: '68%' }} />
+
+              {/* Mini attribute bars */}
+              <div className="mt-6 pt-4 space-y-2.5" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)', animation: 'typeIn 0.8s ease-out 4.5s both' }}>
+                <div className="flex items-center gap-2.5">
+                  <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>Discipline</span>
+                  <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
+                    <div className="h-full rounded-full" style={{ width: '72%', background: '#30C48B', boxShadow: '0 0 6px rgba(48,196,139,0.4)' }} />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#30C48B]">72</span>
                 </div>
-                <span className="text-[10px] font-bold text-[#60a5fa]">68</span>
+                <div className="flex items-center gap-2.5">
+                  <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>Psychology</span>
+                  <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
+                    <div className="h-full rounded-full" style={{ width: '45%', background: '#f59e0b', boxShadow: '0 0 6px rgba(245,158,11,0.3)' }} />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#f59e0b]">45</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <span className={`text-[10px] font-bold tracking-wider uppercase w-20 ${light ? 'text-[#999]' : 'text-[#999]'}`}>Execution</span>
+                  <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
+                    <div className="h-full rounded-full" style={{ width: '68%', background: '#60a5fa', boxShadow: '0 0 6px rgba(96,165,250,0.3)' }} />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#60a5fa]">68</span>
+                </div>
               </div>
             </div>
           </div>
@@ -523,21 +555,23 @@ export default function LandingPage() {
         <p className={`text-center text-base mb-20 max-w-lg mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
 
         {/* ─── Trader Attribute Wheel Showcase ─── */}
-        <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-24">
-          {/* Simplified attribute wheel — orange, green, light blue, grey */}
-          <div className="relative w-[320px] h-[320px] sm:w-[380px] sm:h-[380px] flex-shrink-0">
-            <svg viewBox="0 0 400 400" className="w-full h-full">
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-28">
+          {/* Attribute wheel — vibrant, glowing spokes */}
+          <div className="relative w-[360px] h-[360px] sm:w-[440px] sm:h-[440px] flex-shrink-0">
+            {/* Green ambient glow behind wheel */}
+            <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle, rgba(48,196,139,0.08) 0%, transparent 70%)' }} />
+            <svg viewBox="0 0 400 400" className="w-full h-full relative z-10">
               <defs>
-                <filter id="wheelGlow">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
+                <filter id="wheelGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
                   <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
                 </filter>
               </defs>
-              {/* Concentric guide circles */}
-              {[80, 120, 160].map((r) => (
-                <circle key={r} cx="200" cy="200" r={r} fill="none" stroke={light ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.04)'} strokeWidth="0.5" />
+              {/* Concentric guide circles — neon style */}
+              {[60, 95, 130, 165].map((r) => (
+                <circle key={r} cx="200" cy="200" r={r} fill="none" stroke={light ? 'rgba(0,0,0,0.06)' : 'rgba(48,196,139,0.06)'} strokeWidth="0.5" strokeDasharray="2 4" />
               ))}
-              {/* Spokes — 12 attributes with varied lengths */}
+              {/* Spokes — 12 attributes */}
               {(() => {
                 const attrs = [
                   { label: 'Discipline', score: 82, color: '#30C48B' },
@@ -556,17 +590,16 @@ export default function LandingPage() {
                 const cx = 200, cy = 200;
                 return attrs.map((a, i) => {
                   const angle = (i * 360 / attrs.length - 90) * Math.PI / 180;
-                  const len = (a.score / 100) * 155;
+                  const len = (a.score / 100) * 160;
                   const x2 = cx + Math.cos(angle) * len;
                   const y2 = cy + Math.sin(angle) * len;
-                  const lx = cx + Math.cos(angle) * 178;
-                  const ly = cy + Math.sin(angle) * 178;
+                  const lx = cx + Math.cos(angle) * 185;
+                  const ly = cy + Math.sin(angle) * 185;
                   const deg = i * 360 / attrs.length;
                   let anchor: 'middle' | 'start' | 'end' = 'middle';
                   if (deg > 20 && deg < 160) anchor = 'start';
                   if (deg > 200 && deg < 340) anchor = 'end';
-                  // Wedge shape
-                  const halfW = 8;
+                  const halfW = 10;
                   const perpAngle = angle + Math.PI / 2;
                   const bx1 = cx + Math.cos(perpAngle) * halfW;
                   const by1 = cy + Math.sin(perpAngle) * halfW;
@@ -577,15 +610,15 @@ export default function LandingPage() {
                       <polygon
                         points={`${bx1},${by1} ${x2},${y2} ${bx2},${by2}`}
                         fill={a.color}
-                        opacity={0.5}
+                        opacity={0.7}
                         filter="url(#wheelGlow)"
                       />
                       <text
                         x={lx} y={ly}
                         textAnchor={anchor}
                         dominantBaseline="central"
-                        fill={light ? '#888' : '#777'}
-                        fontSize="10"
+                        fill={light ? '#777' : '#aaa'}
+                        fontSize="11"
                         fontWeight="600"
                         letterSpacing="0.04em"
                         style={{ textTransform: 'uppercase' as const }}
@@ -596,18 +629,19 @@ export default function LandingPage() {
                   );
                 });
               })()}
-              {/* Center dot */}
-              <circle cx="200" cy="200" r="12" fill={light ? '#e5e5e0' : '#1a1a1a'} stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'} strokeWidth="1" />
-              <text x="200" y="201" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="8" fontWeight="bold">OVR</text>
+              {/* Center circle with OVR */}
+              <circle cx="200" cy="200" r="16" fill={light ? '#e5e5e0' : '#111'} stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(48,196,139,0.25)'} strokeWidth="1.5" />
+              <text x="200" y="197" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="8" fontWeight="bold">OVR</text>
+              <text x="200" y="208" textAnchor="middle" dominantBaseline="central" fill="#30C48B" fontSize="10" fontWeight="bold">67</text>
             </svg>
           </div>
 
           {/* Floating tagline text */}
           <div className="max-w-md text-center lg:text-left">
-            <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1a1a]' : 'text-[#ccc]'}`}>
+            <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1a1a]' : 'text-[#ddd]'}`}>
               Understand your trading strengths and weaknesses from new perspectives
             </h3>
-            <p className={`text-base leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>
+            <p className={`text-lg leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>
               Your Trader Profile is built from real data and AI-driven observations — showing you exactly where you excel and where you need to grow.
             </p>
           </div>
@@ -617,7 +651,7 @@ export default function LandingPage() {
           {[
             { title: 'Weekly Check-ins', desc: 'Start each week with intention. Set goals, reflect, trade with a plan.', num: '01' },
             { title: 'AI Accountability', desc: 'Break a rule? The AI asks why. Not punishment — reflection.', num: '02' },
-            { title: 'Smart Stats', desc: 'Upload your data in any format. AI analyzes patterns and tells you what works.', num: '03' },
+            { title: 'AI Pattern Recognition', desc: 'Your AI coach detects patterns in your trading — what setups work, when you perform best, and where you leak edge.', num: '03' },
             { title: 'Real-time Coach', desc: 'Chat with an AI modeled after Mark Douglas\' trading psychology.', num: '04' },
             { title: 'Trade Logging', desc: 'Fast, clean, zero friction. Log trades in seconds.', num: '05' },
             { title: 'Works with Existing Logbooks', desc: 'Upload any form of trading record or journal — screenshots, CSVs, broker statements. The AI will use it to build your profile.', num: '06' },
@@ -625,9 +659,29 @@ export default function LandingPage() {
             <div
               key={f.title}
               className={`rounded-2xl p-7 transition-all duration-300 ${light ? '' : 'glass glass-hover'}`}
-              style={light ? { ...lightGlass } : {}}
-              onMouseEnter={light ? (e) => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)'; } : undefined}
-              onMouseLeave={light ? (e) => { e.currentTarget.style.boxShadow = lightGlass.boxShadow as string; } : undefined}
+              style={light ? { ...lightGlass } : {
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                backdropFilter: 'blur(40px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(160%)',
+                boxShadow: '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.04)',
+              }}
+              onMouseEnter={(e) => {
+                if (light) {
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)';
+                } else {
+                  e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.3), 0 0 40px rgba(48,196,139,0.08), inset 0 1px 0 rgba(255,255,255,0.30)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (light) {
+                  e.currentTarget.style.boxShadow = lightGlass.boxShadow as string;
+                } else {
+                  e.currentTarget.style.boxShadow = '0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
+                }
+              }}
             >
               <div className="text-sm text-[#30C48B] mb-4 font-medium">{f.num}.</div>
               <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{f.title}</h3>
