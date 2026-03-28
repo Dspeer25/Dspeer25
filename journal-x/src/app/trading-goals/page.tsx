@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
-import { demoWeeklyGoals, demoTrades, getCoachObservations } from '@/lib/demoData';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -34,7 +33,35 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
 const navItems = ['Log a Trade', 'Past Trades', 'Analysis', 'Trading Goals', 'Trader Profile'] as const;
 const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '/trader-profile'] as const;
 
-const weeklyGoals = demoWeeklyGoals;
+/* ── Two weeks of goals ── */
+const weeks = [
+  {
+    label: 'Week of Mar 17',
+    goals: [
+      { goal: 'Only take A+ pullback setups off narrow MAs', status: 'on-track' as const, progress: 65 },
+      { goal: 'Max 3 trades per day — no overtrading', status: 'on-track' as const, progress: 85 },
+      { goal: 'No revenge trades after a loss', status: 'behind' as const, progress: 40 },
+      { goal: 'Hold swing trades for minimum 2 days', status: 'at-risk' as const, progress: 50 },
+      { goal: 'Review pre-market levels before first trade', status: 'on-track' as const, progress: 75 },
+      { goal: 'Keep max daily drawdown under $300', status: 'at-risk' as const, progress: 55 },
+      { goal: 'Journal emotional state before each session', status: 'behind' as const, progress: 30 },
+    ],
+    coachNote: 'Last week was a mixed bag. You revenge-traded twice after losses on Tuesday and Thursday — both resulted in additional drawdown. Your A+ setups had a 70% hit rate when you stuck to the plan, but impulse entries dragged your overall performance down. The emotional journaling habit hasn\'t taken hold yet — only 2 out of 5 sessions logged. Focus on that this week.',
+  },
+  {
+    label: 'Week of Mar 24',
+    goals: [
+      { goal: 'Only take A+ pullback setups off narrow MAs', status: 'on-track' as const, progress: 80 },
+      { goal: 'Max 3 trades per day — no overtrading', status: 'on-track' as const, progress: 100 },
+      { goal: 'No revenge trades after a loss', status: 'at-risk' as const, progress: 60 },
+      { goal: 'Hold swing trades for minimum 2 days', status: 'behind' as const, progress: 35 },
+      { goal: 'Review pre-market levels before first trade', status: 'on-track' as const, progress: 90 },
+      { goal: 'Keep max daily drawdown under $300', status: 'on-track' as const, progress: 85 },
+      { goal: 'Journal emotional state before each session', status: 'at-risk' as const, progress: 55 },
+    ],
+    coachNote: 'Improvement across the board this week. You cut revenge trades from 2 to 1 — progress, but not yet eliminated. Pre-market prep is now a habit at 90% compliance. Your max drawdown stayed controlled at $280, well under the $300 target. The swing trade holding goal is still the weakest link — you exited NVDA after 6 hours instead of the 2-day minimum. Work on trusting your thesis.',
+  },
+];
 
 const monthlyGoals = [
   { goal: 'Maintain 60%+ win rate on breakout setups', current: '68%', target: '60%', met: true },
@@ -46,6 +73,7 @@ const monthlyGoals = [
 export default function TradingGoalsPage() {
   const { isSignedIn } = useAuth();
   const [light, setLight] = useState(false);
+  const [weekIdx, setWeekIdx] = useState(1); // default to current week
 
   useEffect(() => {
     const saved = localStorage.getItem('jx-theme');
@@ -62,8 +90,7 @@ export default function TradingGoalsPage() {
   const statusColor = (s: string) => s === 'on-track' ? '#30C48B' : s === 'at-risk' ? '#f59e0b' : '#f87171';
   const statusLabel = (s: string) => s === 'on-track' ? 'On Track' : s === 'at-risk' ? 'At Risk' : 'Behind';
 
-  const coachObs = getCoachObservations(demoTrades);
-  const coachParagraph = coachObs.join(' ');
+  const currentWeek = weeks[weekIdx];
 
   return (
     <div
@@ -77,14 +104,11 @@ export default function TradingGoalsPage() {
         `}</style>
       )}
 
-      {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
         <JournalXLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
-            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>
-              Dashboard
-            </Link>
+            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>Dashboard</Link>
           )}
           <button onClick={() => setLight(!light)}
             className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#333]' : 'glass text-[#999] hover:text-white'}`}>
@@ -93,7 +117,6 @@ export default function TradingGoalsPage() {
         </div>
       </nav>
 
-      {/* Product nav */}
       <div className="relative z-10 flex items-center justify-center gap-8 sm:gap-12 px-8 pt-2 pb-4 max-w-7xl mx-auto flex-wrap">
         {navItems.map((item, i) => (
           <Link key={item} href={navPaths[i]}
@@ -112,12 +135,29 @@ export default function TradingGoalsPage() {
           <p className={`text-[14px] ${light ? 'text-[#888]' : 'text-[#999]'}`}>Set intentions, track progress, and let the AI hold you accountable.</p>
         </div>
 
-        {/* Weekly Goals — individual glass cards */}
+        {/* Week Selector */}
+        <div className="flex items-center justify-center gap-6 mb-8">
+          <button
+            onClick={() => setWeekIdx(0)}
+            className={`text-[13px] font-medium transition-colors bg-transparent px-0 ${weekIdx === 0 ? 'text-[#30C48B]' : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'}`}
+          >
+            &larr; {weeks[0].label}
+          </button>
+          <div className={`w-px h-5 ${light ? 'bg-[rgba(0,0,0,0.1)]' : 'bg-[rgba(255,255,255,0.1)]'}`} />
+          <button
+            onClick={() => setWeekIdx(1)}
+            className={`text-[13px] font-medium transition-colors bg-transparent px-0 ${weekIdx === 1 ? 'text-[#30C48B]' : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'}`}
+          >
+            {weeks[1].label} &rarr;
+          </button>
+        </div>
+
+        {/* Weekly Goals */}
         <div className="mb-8">
-          <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-5">This Week&apos;s Goals</span>
+          <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-5">{currentWeek.label}</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {weeklyGoals.map((g, i) => (
-              <div key={i} className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
+            {currentWeek.goals.map((g, i) => (
+              <div key={`${weekIdx}-${i}`} className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
                 <div className="flex items-start justify-between mb-4">
                   <span className={`text-[16px] font-bold leading-snug flex-1 mr-3 ${light ? 'text-[#333]' : 'text-[#eee]'}`}>{g.goal}</span>
                   <span
@@ -140,7 +180,7 @@ export default function TradingGoalsPage() {
           </div>
         </div>
 
-        {/* Monthly Goals — text +2px */}
+        {/* Monthly Targets */}
         <div className={`${glassPanelCls} rounded-2xl p-6 sm:p-8 mb-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-6">Monthly Targets</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -163,14 +203,14 @@ export default function TradingGoalsPage() {
           </div>
         </div>
 
-        {/* AI Coach Accountability Note — single flowing paragraph */}
+        {/* Coach Note — changes per week */}
         <div className={`${glassPanelCls} rounded-xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-[#30C48B] animate-pulse" />
-            <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">Coach Note</span>
+            <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">Coach Note — {currentWeek.label}</span>
           </div>
           <p className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>
-            {coachParagraph}
+            {currentWeek.coachNote}
           </p>
         </div>
       </main>

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
-import { demoTrades, getCoachObservations } from '@/lib/demoData';
+import { demoTrades } from '@/lib/demoData';
 
 /* ── Logo ── */
 function JournalXLogo({ light = false }: { light?: boolean }) {
@@ -37,83 +37,104 @@ const navPaths = ['/log-trade', '/past-trades', '/analysis', '/trading-goals', '
 /* ── AI Observations with tags ── */
 const aiObservationCards = [
   { tag: 'PATTERN', tagColor: '#4A9EFF', text: 'Your breakout entries have a 68% win rate, but reversals sit at 31%. The data suggests sizing down on counter-trend plays.', linkText: 'View breakout trades' },
-  { tag: 'PSYCHOLOGY', tagColor: '#FF6B35', text: 'You revenge-traded once this period after a loss on TSLA. It resulted in a further drawdown. Step away after losses.', linkText: 'View revenge trades' },
-  { tag: 'RISK', tagColor: '#f59e0b', text: 'Average loss is well-controlled at $98, but 2 trades exceeded 1.5x your planned risk. Tighten stops on momentum scalps.', linkText: 'View risk data' },
+  { tag: 'PSYCHOLOGY', tagColor: '#f59e0b', text: 'You revenge-traded once this period after a loss on TSLA. It resulted in a further drawdown. Step away after losses.', linkText: 'View revenge trades' },
+  { tag: 'RISK', tagColor: '#f87171', text: 'Average loss is well-controlled at $98, but 2 trades exceeded 1.5x your planned risk. Tighten stops on momentum scalps.', linkText: 'View risk data' },
   { tag: 'MILESTONE', tagColor: '#30C48B', text: 'Win rate at 61% this period — above your 55% baseline. Your planned setups are working. Stay disciplined.', linkText: 'View winning trades' },
 ];
 
-/* ── Stat cards data (no emojis) ── */
-const winRateBySetup = [
-  { label: 'Breakout', value: 68, color: '#30C48B' },
-  { label: 'Pullback', value: 54, color: '#f59e0b' },
-  { label: 'Reversal', value: 31, color: '#f87171' },
-  { label: 'Momentum', value: 72, color: '#30C48B' },
-];
+/* ── Compute stats from demo trades ── */
+function computeStats(trades: typeof demoTrades) {
+  const wins = trades.filter(t => t.result === 'W');
+  const losses = trades.filter(t => t.result === 'L');
+  const totalPnl = trades.reduce((s, t) => s + t.dollarPnl, 0);
+  const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.dollarPnl, 0) / wins.length : 0;
+  const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.dollarPnl, 0) / losses.length) : 1;
+  const grossWins = wins.reduce((s, t) => s + t.dollarPnl, 0);
+  const grossLosses = Math.abs(losses.reduce((s, t) => s + t.dollarPnl, 0));
 
-const performanceByTime = [
-  { label: '9:30–10:30 AM', value: 1240, max: 1240, color: '#30C48B' },
-  { label: '10:30–12:00 PM', value: 380, max: 1240, color: '#30C48B' },
-  { label: '12:00–2:00 PM', value: -290, max: 1240, color: '#f87171' },
-  { label: '2:00–4:00 PM', value: 150, max: 1240, color: '#f59e0b' },
-];
+  const profitFactor = grossLosses > 0 ? grossWins / grossLosses : grossWins > 0 ? Infinity : 0;
+  const expectedValue = trades.length > 0 ? totalPnl / trades.length : 0;
+  const largestWin = wins.length > 0 ? Math.max(...wins.map(t => t.dollarPnl)) : 0;
+  const largestLoss = losses.length > 0 ? Math.min(...losses.map(t => t.dollarPnl)) : 0;
 
-const riskManagement = [
-  { label: 'Avg Risk/Trade', value: '$142', color: '#60a5fa' },
-  { label: 'Avg Winner', value: '+$312', color: '#30C48B' },
-  { label: 'Avg Loser', value: '-$98', color: '#f87171' },
-  { label: 'Win/Loss Ratio', value: '3.2:1', color: '#30C48B' },
-];
+  // Max drawdown
+  let peak = 0, maxDD = 0, running = 0;
+  for (const t of trades) {
+    running += t.dollarPnl;
+    if (running > peak) peak = running;
+    const dd = peak - running;
+    if (dd > maxDD) maxDD = dd;
+  }
 
-const psychologyPatterns = [
-  { label: 'Revenge Trades', value: '1 this month', color: '#f87171' },
-  { label: 'FOMO Entries', value: '2 this month', color: '#f59e0b' },
-  { label: 'Plan-Following', value: '82%', color: '#30C48B' },
-  { label: 'Early Exits', value: '6 trades', color: '#f59e0b' },
-];
+  // Simplified Sharpe (mean return / std dev)
+  const returns = trades.map(t => t.dollarPnl);
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length;
+  const stdDev = Math.sqrt(variance);
+  const sharpe = stdDev > 0 ? mean / stdDev : 0;
 
-const bestWorst = [
-  { label: 'Best Day', value: '+$890 (Mar 12)', color: '#30C48B' },
-  { label: 'Worst Day', value: '-$420 (Mar 8)', color: '#f87171' },
-  { label: 'Longest Streak', value: '7 wins', color: '#30C48B' },
-  { label: 'Max Drawdown', value: '-$640', color: '#f87171' },
-];
+  // Win rate by setup
+  const setupMap = new Map<string, { wins: number; total: number }>();
+  for (const t of trades) {
+    const s = t.strategy;
+    const entry = setupMap.get(s) || { wins: 0, total: 0 };
+    entry.total++;
+    if (t.result === 'W') entry.wins++;
+    setupMap.set(s, entry);
+  }
+  const winRateBySetup = Array.from(setupMap.entries())
+    .filter(([, v]) => v.total >= 1)
+    .map(([k, v]) => ({ label: k, value: Math.round((v.wins / v.total) * 100) }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
 
-const consistencyScore = [
-  { label: 'This Week', value: '78/99', color: '#30C48B' },
-  { label: 'Last Week', value: '65/99', color: '#f59e0b' },
-  { label: 'Monthly Avg', value: '71/99', color: '#60a5fa' },
-  { label: 'Trend', value: 'Improving', color: '#30C48B' },
-];
+  // Performance by time slot
+  const timeSlots = [
+    { label: '9:30–10:30', filter: (h: number) => h >= 9 && h < 10.5 },
+    { label: '10:30–12:00', filter: (h: number) => h >= 10.5 && h < 12 },
+    { label: '12:00–2:00', filter: (h: number) => h >= 12 && h < 14 },
+    { label: '2:00–4:00', filter: (h: number) => h >= 14 && h <= 16 },
+  ];
+  const perfByTime = timeSlots.map(slot => {
+    const hour = (t: typeof trades[0]) => {
+      const parts = t.time.split(':');
+      return parseInt(parts[0]) + parseInt(parts[1]) / 60;
+    };
+    const slotTrades = trades.filter(t => slot.filter(hour(t)));
+    const pnl = slotTrades.reduce((s, t) => s + t.dollarPnl, 0);
+    return { label: slot.label, value: Math.round(pnl) };
+  });
 
-/* ── Inline bar chart component ── */
-function HorizontalBar({ label, pct, color, light }: { label: string; pct: number; color: string; light: boolean }) {
-  return (
-    <div className="mb-3 last:mb-0">
-      <div className="flex items-center justify-between mb-1">
-        <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{label}</span>
-        <span className="text-[14px] font-bold tabular-nums" style={{ color }}>{pct}%</span>
-      </div>
-      <div className={`w-full h-2.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color, boxShadow: `0 0 8px ${color}44` }} />
-      </div>
-    </div>
-  );
-}
+  // Psychology
+  const revengeCount = trades.filter(t => t.strategy.toLowerCase().includes('revenge')).length;
+  const fomoCount = trades.filter(t => t.strategy.toLowerCase().includes('fomo') || t.strategy.toLowerCase().includes('impulse') || t.strategy.toLowerCase().includes('chase')).length;
+  const plannedCount = trades.filter(t =>
+    t.strategy.toLowerCase().includes('breakout') || t.strategy.toLowerCase().includes('pullback') ||
+    t.strategy.toLowerCase().includes('a+ setup') || t.strategy.toLowerCase().includes('vwap')
+  ).length;
+  const planFollowing = trades.length > 0 ? Math.round((plannedCount / trades.length) * 100) : 0;
 
-function PnlBar({ label, value, maxVal, color, light }: { label: string; value: number; maxVal: number; color: string; light: boolean }) {
-  const pct = Math.abs(value) / maxVal * 100;
-  const display = value >= 0 ? `+$${value.toLocaleString()}` : `-$${Math.abs(value).toLocaleString()}`;
-  return (
-    <div className="mb-3 last:mb-0">
-      <div className="flex items-center justify-between mb-1">
-        <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{label}</span>
-        <span className="text-[14px] font-bold tabular-nums" style={{ color }}>{display}</span>
-      </div>
-      <div className={`w-full h-2.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color, boxShadow: `0 0 8px ${color}44` }} />
-      </div>
-    </div>
-  );
+  // Early exits (wins with RR < 1)
+  const earlyExits = wins.filter(t => t.rr > 0 && t.rr < 1).length;
+
+  return {
+    profitFactor: profitFactor === Infinity ? '∞' : profitFactor.toFixed(2),
+    expectedValue: expectedValue >= 0 ? `+$${Math.round(expectedValue)}` : `-$${Math.abs(Math.round(expectedValue))}`,
+    sharpe: sharpe.toFixed(2),
+    maxDrawdown: `-$${Math.round(maxDD)}`,
+    avgWinLoss: avgLoss > 0 ? (avgWin / avgLoss).toFixed(1) + ':1' : '—',
+    largestWin: `+$${Math.round(largestWin)}`,
+    largestLoss: `-$${Math.abs(Math.round(largestLoss))}`,
+    winRateBySetup,
+    perfByTime,
+    revengeCount,
+    fomoCount,
+    planFollowing,
+    earlyExits,
+    avgWin: `+$${Math.round(avgWin)}`,
+    avgLoss: `-$${Math.round(avgLoss)}`,
+    avgRisk: `$${Math.round(trades.reduce((s, t) => s + t.initialRisk, 0) / (trades.length || 1))}`,
+  };
 }
 
 export default function AnalysisPage() {
@@ -129,9 +150,13 @@ export default function AnalysisPage() {
     localStorage.setItem('jx-theme', light ? 'light' : 'dark');
   }, [light]);
 
+  const stats = useMemo(() => computeStats(demoTrades), []);
+
   const glassPanelCls = light
     ? 'bg-white/60 border border-[rgba(0,0,0,0.06)] shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
     : 'glass';
+
+  const maxPerfAbs = Math.max(...stats.perfByTime.map(p => Math.abs(p.value)), 1);
 
   return (
     <div
@@ -145,14 +170,11 @@ export default function AnalysisPage() {
         `}</style>
       )}
 
-      {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
         <JournalXLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
-            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>
-              Dashboard
-            </Link>
+            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>Dashboard</Link>
           )}
           <button onClick={() => setLight(!light)}
             className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#333]' : 'glass text-[#999] hover:text-white'}`}>
@@ -161,7 +183,6 @@ export default function AnalysisPage() {
         </div>
       </nav>
 
-      {/* Product nav */}
       <div className="relative z-10 flex items-center justify-center gap-8 sm:gap-12 px-8 pt-2 pb-4 max-w-7xl mx-auto flex-wrap">
         {navItems.map((item, i) => (
           <Link key={item} href={navPaths[i]}
@@ -194,29 +215,63 @@ export default function AnalysisPage() {
           ))}
         </div>
 
-        {/* Insight Cards Grid — no emojis, with bar charts */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {/* Win Rate by Setup — with bar charts */}
+        {/* Charts + metrics grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+
+          {/* Win Rate by Setup — SVG horizontal bar chart */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Win Rate by Setup</span>
-            {winRateBySetup.map((item) => (
-              <HorizontalBar key={item.label} label={item.label} pct={item.value} color={item.color} light={light} />
-            ))}
+            <svg viewBox="0 0 260 160" className="w-full">
+              {stats.winRateBySetup.map((item, i) => {
+                const y = i * 32;
+                const barW = (item.value / 100) * 170;
+                const color = item.value >= 50 ? '#30C48B' : '#f87171';
+                return (
+                  <g key={item.label}>
+                    <text x="0" y={y + 14} fill={light ? '#666' : '#bbb'} fontSize="11" fontWeight="500">{item.label}</text>
+                    <rect x="85" y={y + 2} width={barW} height="14" rx="3" fill={color} opacity="0.8" />
+                    <text x={85 + barW + 5} y={y + 14} fill={color} fontSize="11" fontWeight="bold">{item.value}%</text>
+                  </g>
+                );
+              })}
+            </svg>
           </div>
 
-          {/* Performance by Time — with bar charts */}
+          {/* Performance by Time — SVG vertical bar chart */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Performance by Time</span>
-            {performanceByTime.map((item) => (
-              <PnlBar key={item.label} label={item.label} value={item.value} maxVal={item.max} color={item.color} light={light} />
-            ))}
+            <svg viewBox="0 0 260 170" className="w-full">
+              {/* Zero line */}
+              <line x1="0" y1="100" x2="260" y2="100" stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'} strokeWidth="1" />
+              {stats.perfByTime.map((item, i) => {
+                const barX = 10 + i * 62;
+                const barWidth = 42;
+                const maxH = 80;
+                const barH = (Math.abs(item.value) / maxPerfAbs) * maxH;
+                const color = item.value >= 0 ? '#30C48B' : '#f87171';
+                const barY = item.value >= 0 ? 100 - barH : 100;
+                const display = item.value >= 0 ? `+$${item.value}` : `-$${Math.abs(item.value)}`;
+                return (
+                  <g key={item.label}>
+                    <rect x={barX} y={barY} width={barWidth} height={barH} rx="4" fill={color} opacity="0.75" />
+                    <text x={barX + barWidth / 2} y={item.value >= 0 ? barY - 5 : barY + barH + 13} textAnchor="middle" fill={color} fontSize="10" fontWeight="bold">{display}</text>
+                    <text x={barX + barWidth / 2} y="155" textAnchor="middle" fill={light ? '#999' : '#777'} fontSize="8">{item.label}</text>
+                  </g>
+                );
+              })}
+            </svg>
           </div>
 
           {/* Risk Management */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Risk Management</span>
             <div className="space-y-3">
-              {riskManagement.map((item) => (
+              {[
+                { label: 'Avg Risk/Trade', value: stats.avgRisk, color: '#60a5fa' },
+                { label: 'Avg Winner', value: stats.avgWin, color: '#30C48B' },
+                { label: 'Avg Loser', value: stats.avgLoss, color: '#f87171' },
+                { label: 'Win/Loss Ratio', value: stats.avgWinLoss, color: '#30C48B' },
+              ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
                   <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
                   <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
@@ -225,14 +280,19 @@ export default function AnalysisPage() {
             </div>
           </div>
 
-          {/* Psychology Patterns */}
+          {/* Psychology Patterns — 2x2 metric tiles */}
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Psychology Patterns</span>
-            <div className="space-y-3">
-              {psychologyPatterns.map((item) => (
-                <div key={item.label} className="flex items-center justify-between">
-                  <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
-                  <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Revenge Trades', value: stats.revengeCount, color: '#f87171' },
+                { label: 'FOMO Entries', value: stats.fomoCount, color: '#f59e0b' },
+                { label: 'Plan Following', value: `${stats.planFollowing}%`, color: '#30C48B' },
+                { label: 'Early Exits', value: stats.earlyExits, color: '#f59e0b' },
+              ].map((item) => (
+                <div key={item.label} className={`rounded-xl p-3 text-center ${light ? 'bg-[rgba(0,0,0,0.02)]' : 'bg-[rgba(255,255,255,0.03)]'}`}>
+                  <div className="text-2xl font-bold tabular-nums mb-1" style={{ color: item.color }}>{item.value}</div>
+                  <div className={`text-[11px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>{item.label}</div>
                 </div>
               ))}
             </div>
@@ -242,7 +302,12 @@ export default function AnalysisPage() {
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Best & Worst</span>
             <div className="space-y-3">
-              {bestWorst.map((item) => (
+              {[
+                { label: 'Largest Win', value: stats.largestWin, color: '#30C48B' },
+                { label: 'Largest Loss', value: stats.largestLoss, color: '#f87171' },
+                { label: 'Max Drawdown', value: stats.maxDrawdown, color: '#f87171' },
+                { label: 'Expected Value', value: stats.expectedValue, color: stats.expectedValue.startsWith('+') ? '#30C48B' : '#f87171' },
+              ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
                   <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
                   <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
@@ -255,7 +320,12 @@ export default function AnalysisPage() {
           <div className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-5 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Consistency Score</span>
             <div className="space-y-3">
-              {consistencyScore.map((item) => (
+              {[
+                { label: 'This Week', value: '78/99', color: '#30C48B' },
+                { label: 'Last Week', value: '65/99', color: '#f59e0b' },
+                { label: 'Monthly Avg', value: '71/99', color: '#60a5fa' },
+                { label: 'Trend', value: 'Improving', color: '#30C48B' },
+              ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
                   <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
                   <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
@@ -265,19 +335,34 @@ export default function AnalysisPage() {
           </div>
         </div>
 
-        {/* Footer note — 16px, green first sentence, clickable $75 link */}
-        <div className={`${glassPanelCls} rounded-xl p-6 text-center mt-8`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
+        {/* Statistical Analysis — 3-column grid */}
+        <div className={`${glassPanelCls} rounded-2xl p-6 sm:p-8 mb-8`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
+          <span className={`text-[12px] font-bold tracking-[0.15em] uppercase block mb-6 ${light ? 'text-[#888]' : 'text-[#999]'}`}>Statistical Analysis</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Sharpe Ratio', value: stats.sharpe, color: parseFloat(stats.sharpe) > 0 ? '#30C48B' : '#f87171' },
+              { label: 'Profit Factor', value: stats.profitFactor, color: '#30C48B' },
+              { label: 'Expected Value', value: stats.expectedValue, color: stats.expectedValue.startsWith('+') ? '#30C48B' : '#f87171' },
+              { label: 'Max Drawdown', value: stats.maxDrawdown, color: '#f87171' },
+              { label: 'Avg Win / Avg Loss', value: stats.avgWinLoss, color: '#30C48B' },
+              { label: 'Largest Win', value: stats.largestWin, color: '#30C48B' },
+              { label: 'Largest Loss', value: stats.largestLoss, color: '#f87171' },
+            ].map((item) => (
+              <div key={item.label} className={`rounded-xl p-4 text-center ${light ? 'bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'}`}>
+                <div className="text-xl font-bold tabular-nums mb-1" style={{ color: item.color }}>{item.value}</div>
+                <div className={`text-[11px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className={`${glassPanelCls} rounded-xl p-6 text-center`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <p className="text-[16px] mb-1">
             <span style={{ color: '#30C48B' }}>Analysis insights are generated from your real trading data by the AI coach.</span>{' '}
             <span className={light ? 'text-[#999]' : 'text-[#888]'}>
               Available with the Complete plan{' '}
-              <button
-                onClick={() => setShowPricing(true)}
-                className="underline underline-offset-2 transition-colors"
-                style={{ color: light ? '#333' : '#fff', background: 'none', padding: 0, fontSize: '16px' }}
-              >
-                $75 one-time
-              </button>.
+              <button onClick={() => setShowPricing(true)} className="underline underline-offset-2 transition-colors" style={{ color: light ? '#333' : '#fff', background: 'none', padding: 0, fontSize: '16px' }}>$75 one-time</button>.
             </span>
           </p>
         </div>
@@ -287,7 +372,6 @@ export default function AnalysisPage() {
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 
-      {/* Pricing modal stub */}
       {showPricing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 backdrop-blur-md bg-black/70" onClick={() => setShowPricing(false)} />
@@ -300,9 +384,7 @@ export default function AnalysisPage() {
             </div>
             <p className={`text-center text-[14px] mb-6 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Lifetime access to AI coaching, analysis, and all features.</p>
             <div className="text-center">
-              <Link href="/sign-up?tier=complete" className="inline-block px-10 py-3 rounded-full font-medium text-base bg-[#30C48B] hover:bg-[#28A876] transition-all text-black" style={{ boxShadow: '0 0 30px rgba(48,196,139,0.15)' }}>
-                Get Complete
-              </Link>
+              <Link href="/sign-up?tier=complete" className="inline-block px-10 py-3 rounded-full font-medium text-base bg-[#30C48B] hover:bg-[#28A876] transition-all text-black" style={{ boxShadow: '0 0 30px rgba(48,196,139,0.15)' }}>Get Complete</Link>
             </div>
           </div>
         </div>

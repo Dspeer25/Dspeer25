@@ -612,10 +612,12 @@ export default function LandingPage() {
         <h2 className={`text-center text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Not just a journal. A trading coach.</h2>
         <p className={`text-center text-base mb-20 max-w-lg mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
 
-        {/* ─── Trader Attribute Wheel Showcase (full 20-spoke from demo data) ─── */}
+        {/* ─── Trader Attribute Wheel Showcase (8 key spokes from demo data) ─── */}
         {(() => {
-          const wheelAttrs = computeAttributes(demoTrades);
-          const ovr = Math.round(wheelAttrs.reduce((s, a) => s + a.value, 0) / wheelAttrs.length);
+          const allAttrs = computeAttributes(demoTrades);
+          const heroNames = ['Discipline', 'Psychology', 'Risk Mgmt', 'Consistency', 'FOMO Resistance', 'Execution', 'Patience', 'R:R Quality'];
+          const wheelAttrs = heroNames.map(n => allAttrs.find(a => a.name === n)!).filter(Boolean);
+          const ovr = Math.round(allAttrs.reduce((s, a) => s + a.value, 0) / allAttrs.length);
           const grade = ovr >= 85 ? 'Elite' : ovr >= 75 ? 'Pro' : ovr >= 65 ? 'Solid' : ovr >= 50 ? 'Developing' : 'Rookie';
           const gradeColor = ovr >= 75 ? '#30C48B' : ovr >= 50 ? '#f59e0b' : '#f87171';
           return (
