@@ -1,23 +1,5 @@
 import { Trade } from './types';
 
-/* ── Ticker logo map (Clearbit CDN) ── */
-export const tickerLogos: Record<string, string> = {
-  AAPL: 'https://logo.clearbit.com/apple.com',
-  TSLA: 'https://logo.clearbit.com/tesla.com',
-  NVDA: 'https://logo.clearbit.com/nvidia.com',
-  SPY: 'https://logo.clearbit.com/ssga.com',
-  AMZN: 'https://logo.clearbit.com/amazon.com',
-  META: 'https://logo.clearbit.com/meta.com',
-  MSFT: 'https://logo.clearbit.com/microsoft.com',
-  QQQ: 'https://logo.clearbit.com/invesco.com',
-  AMD: 'https://logo.clearbit.com/amd.com',
-  GOOGL: 'https://logo.clearbit.com/google.com',
-};
-
-export function getTickerLogo(ticker: string): string | undefined {
-  return tickerLogos[ticker.toUpperCase()];
-}
-
 /* ── Demo Trades ── */
 const tickerList = ['AAPL', 'TSLA', 'NVDA', 'SPY', 'AMZN', 'META', 'MSFT', 'QQQ', 'AMD', 'GOOGL'];
 const instruments = ['0DTE Call', '0DTE Put', 'Stock Long', 'Call Spread', 'Scalp', 'Swing Call', 'Put Spread', 'Stock Short'];
@@ -47,7 +29,7 @@ function buildDemoTrades(): Trade[] {
       id: `demo-${i}`,
       date: d.toISOString().split('T')[0],
       ticker,
-      tickerLogo: tickerLogos[ticker],
+      tickerLogo: undefined,
       time: `${9 + (i % 6)}:${String((i * 7) % 60).padStart(2, '0')}`,
       tradeType: i % 4 === 0 ? 'Swing' : 'Day',
       direction: i % 5 === 0 ? 'Short' : 'Long',
