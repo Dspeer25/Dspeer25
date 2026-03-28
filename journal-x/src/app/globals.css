@@ -142,7 +142,7 @@ button {
   pointer-events: none;
 }
 
-/* Hide Clerk dev mode banner */
+/* Hide Clerk dev mode banner and all dev toasts */
 div[data-clerk-component] + div[style*="position: fixed"],
 div[class*="cl-internal"],
 .cl-internal-b3fm6y,
@@ -150,7 +150,17 @@ div[class*="cl-internal"],
 div[style*="position: fixed"][style*="bottom"][style*="right"],
 div[style*="position: fixed"][style*="z-index"] > div[style*="background-color"],
 div[style*="Configure your application"],
-iframe[src*="clerk"] {
+iframe[src*="clerk"],
+div[style*="position: fixed"][style*="bottom"] > div[style*="background"],
+body > div[style*="position: fixed"][style*="bottom"]:not([class]):not([id]),
+div[style*="position: fixed"][style*="z-index: 400"],
+div[style*="position: fixed"][style*="z-index: 9999"],
+div[style*="position: fixed"][style*="z-index: 99999"],
+div[style*="position: fixed"][style*="bottom: 0"],
+div[style*="position: fixed"][style*="bottom: 16px"],
+div[style*="position: fixed"][style*="bottom: 20px"],
+div[data-testid*="clerk"],
+div[aria-live="polite"][style*="position: fixed"] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -158,10 +168,8 @@ iframe[src*="clerk"] {
   height: 0 !important;
   width: 0 !important;
   overflow: hidden !important;
-}
-div[style*="position: fixed"][style*="bottom"] > div[style*="background"] {
-  display: none !important;
-}
-body > div[style*="position: fixed"][style*="bottom"]:not([class]):not([id]) {
-  display: none !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
 }

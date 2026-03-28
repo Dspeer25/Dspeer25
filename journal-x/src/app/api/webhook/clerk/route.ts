@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     const email = email_addresses?.[0]?.email_address || '';
 
     const supabase = getServiceClient();
+    if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
     await supabase.from('users').upsert({
       clerk_id: id,
       email,

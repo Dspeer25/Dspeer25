@@ -11,16 +11,22 @@ export async function POST(req: NextRequest) {
   const { messages } = await req.json();
   const supabase = getServiceClient();
 
-  // Get trader context
-  const [profileRes, tradesRes, settingsRes] = await Promise.all([
-    supabase.from('trader_profiles').select('*').eq('user_id', userId).single(),
-    supabase.from('trades').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(50),
-    supabase.from('user_settings').select('settings').eq('user_id', userId).single(),
-  ]);
+  // Get trader context (AI can work without DB — just no trade history)
+  let profile = null;
+  let trades: { dollar_pnl: number; result: string; date: string; ticker: string; rr: number }[] = [];
+  let settings = null;
 
-  const profile = profileRes.data;
-  const trades = tradesRes.data || [];
-  const settings = settingsRes.data?.settings;
+  if (supabase) {
+    const [profileRes, tradesRes, settingsRes] = await Promise.all([
+      supabase.from('trader_profiles').select('*').eq('user_id', userId).single(),
+      supabase.from('trades').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(50),
+      supabase.from('user_settings').select('settings').eq('user_id', userId).single(),
+    ]);
+
+    profile = profileRes.data;
+    trades = tradesRes.data || [];
+    settings = settingsRes.data?.settings;
+  }
 
   // Build context for AI
   const tradeStats = trades.length > 0 ? {

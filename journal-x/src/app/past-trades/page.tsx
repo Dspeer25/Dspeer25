@@ -165,7 +165,7 @@ function TickerAutocomplete({ value, onChange, light, onSelect }: {
                 <div className={`text-sm font-medium ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>{r.ticker}</div>
                 <div className={`text-[10px] truncate ${light ? 'text-[#999]' : 'text-[#777]'}`}>{r.name}</div>
               </div>
-              <span className={`text-[9px] uppercase tracking-wider ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>{r.type}</span>
+              <span className={`text-[10px] uppercase tracking-wider ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>{r.type}</span>
             </button>
           ))}
         </div>
@@ -261,7 +261,7 @@ export default function PastTradesPage() {
   const glassCls = light
     ? 'bg-white/60 border border-[rgba(0,0,0,0.06)] shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
     : 'glass';
-  const labelCls = `text-[10px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`;
+  const labelCls = `text-[12px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`;
   const cellInputCls = `rounded-lg px-2 py-1.5 text-xs outline-none w-full transition-all ${
     light
       ? 'bg-white/80 border border-[rgba(0,0,0,0.08)] text-[#1a1a1a] focus:border-[#30C48B]'
@@ -298,7 +298,10 @@ export default function PastTradesPage() {
       </div>
 
       <main className="relative z-10 max-w-6xl mx-auto px-8 pt-6 pb-24">
-        <h1 className={`text-3xl font-light tracking-tight mb-8 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Past Trades</h1>
+        <div className="mb-8">
+          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Past Trades</h1>
+          <p className={`text-[14px] ${light ? 'text-[#888]' : 'text-[#999]'}`}>Review, filter, and edit every trade you&apos;ve logged.</p>
+        </div>
 
         {/* ─── Stats Bar ─── */}
         <div className="grid grid-cols-5 gap-3 mb-6">
@@ -322,7 +325,7 @@ export default function PastTradesPage() {
           <div className="flex items-center gap-0 relative">
             {periods.map(p => (
               <button key={p} onClick={() => { setPeriod(p); setPage(0); }}
-                className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all relative ${
+                className={`px-3 py-1.5 text-[12px] font-bold tracking-[0.15em] uppercase transition-all relative ${
                   period === p ? 'text-[#30C48B]' : light ? 'text-[#bbb] hover:text-[#666]' : 'text-[#666] hover:text-[#ccc]'
                 }`}>
                 {p}
@@ -337,7 +340,7 @@ export default function PastTradesPage() {
           <div className="flex items-center gap-0">
             {(['', 'W', 'L', 'BE'] as const).map(r => (
               <button key={r || 'all'} onClick={() => { setResultFilter(r); setPage(0); }}
-                className={`px-3 py-1.5 text-[10px] font-bold tracking-[0.15em] uppercase transition-all relative ${
+                className={`px-3 py-1.5 text-[12px] font-bold tracking-[0.15em] uppercase transition-all relative ${
                   resultFilter === r ? 'text-[#30C48B]' : light ? 'text-[#bbb] hover:text-[#666]' : 'text-[#666] hover:text-[#ccc]'
                 }`}>
                 {r || 'All'}
@@ -361,15 +364,15 @@ export default function PastTradesPage() {
           <div className={`grid grid-cols-[90px_90px_120px_130px_60px_80px_80px_65px_85px_40px] gap-0 px-5 py-3 border-b ${
             light ? 'border-[rgba(0,0,0,0.04)]' : 'border-[rgba(255,255,255,0.04)]'
           }`}>
-            <button className={`${thCls('date')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('date')}>Date<SortArrow col="date" /></button>
-            <button className={`${thCls('ticker')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('ticker')}>Ticker<SortArrow col="ticker" /></button>
-            <button className={`${thCls('instrument')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('instrument')}>Instrument<SortArrow col="instrument" /></button>
-            <button className={`${thCls('strategy')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('strategy')}>Strategy<SortArrow col="strategy" /></button>
-            <button className={`${thCls('result')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('result')}>Result<SortArrow col="result" /></button>
-            <button className={`${thCls('initialRisk')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('initialRisk')}>Init Risk<SortArrow col="initialRisk" /></button>
-            <button className={`${thCls('adjustedRisk')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('adjustedRisk')}>Adj Risk<SortArrow col="adjustedRisk" /></button>
-            <button className={`${thCls('rr')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('rr')}>R:R<SortArrow col="rr" /></button>
-            <button className={`${thCls('dollarPnl')} text-[10px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('dollarPnl')}>P&L<SortArrow col="dollarPnl" /></button>
+            <button className={`${thCls('date')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('date')}>Date<SortArrow col="date" /></button>
+            <button className={`${thCls('ticker')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('ticker')}>Ticker<SortArrow col="ticker" /></button>
+            <button className={`${thCls('instrument')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('instrument')}>Instrument<SortArrow col="instrument" /></button>
+            <button className={`${thCls('strategy')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('strategy')}>Strategy<SortArrow col="strategy" /></button>
+            <button className={`${thCls('result')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('result')}>Result<SortArrow col="result" /></button>
+            <button className={`${thCls('initialRisk')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('initialRisk')}>Init Risk<SortArrow col="initialRisk" /></button>
+            <button className={`${thCls('adjustedRisk')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('adjustedRisk')}>Adj Risk<SortArrow col="adjustedRisk" /></button>
+            <button className={`${thCls('rr')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('rr')}>R:R<SortArrow col="rr" /></button>
+            <button className={`${thCls('dollarPnl')} text-[12px] font-bold tracking-[0.15em] uppercase`} onClick={() => handleSort('dollarPnl')}>P&L<SortArrow col="dollarPnl" /></button>
             <div />
           </div>
 
@@ -391,7 +394,7 @@ export default function PastTradesPage() {
                   {trade.tickerLogo ? (
                     <img src={trade.tickerLogo} alt="" className="w-5 h-5 rounded-full" />
                   ) : (
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold ${
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold ${
                       light ? 'bg-[#eee] text-[#888]' : 'bg-[rgba(255,255,255,0.08)] text-[#888]'
                     }`}>{trade.ticker.slice(0, 2)}</div>
                   )}
@@ -475,16 +478,16 @@ export default function PastTradesPage() {
 
           {/* Pagination */}
           <div className={`flex items-center justify-between px-5 py-3 border-t ${light ? 'border-[rgba(0,0,0,0.04)]' : 'border-[rgba(255,255,255,0.04)]'}`}>
-            <span className={`text-[10px] ${light ? 'text-[#999]' : 'text-[#777]'}`}>
+            <span className={`text-[12px] ${light ? 'text-[#999]' : 'text-[#777]'}`}>
               {filtered.length > 0 ? `${page * perPage + 1}–${Math.min((page + 1) * perPage, filtered.length)} of ${filtered.length}` : '0 trades'}
             </span>
             <div className="flex gap-2">
               <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
-                className={`text-[10px] font-bold tracking-[0.1em] uppercase px-3 py-1 rounded-lg transition-all disabled:opacity-30 ${
+                className={`text-[12px] font-bold tracking-[0.1em] uppercase px-3 py-1 rounded-lg transition-all disabled:opacity-30 ${
                   light ? 'text-[#666] hover:bg-[rgba(0,0,0,0.04)]' : 'text-[#999] hover:bg-[rgba(255,255,255,0.05)]'
                 }`}>Prev</button>
               <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
-                className={`text-[10px] font-bold tracking-[0.1em] uppercase px-3 py-1 rounded-lg transition-all disabled:opacity-30 ${
+                className={`text-[12px] font-bold tracking-[0.1em] uppercase px-3 py-1 rounded-lg transition-all disabled:opacity-30 ${
                   light ? 'text-[#666] hover:bg-[rgba(0,0,0,0.04)]' : 'text-[#999] hover:bg-[rgba(255,255,255,0.05)]'
                 }`}>Next</button>
             </div>
@@ -492,7 +495,7 @@ export default function PastTradesPage() {
         </div>
       </main>
 
-      <footer className={`relative z-10 border-t py-10 text-center text-xs ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
     </div>

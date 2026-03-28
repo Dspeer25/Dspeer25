@@ -9,6 +9,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   const { data, error } = await supabase
     .from('trades')
     .select('*')
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const { data, error } = await supabase
     .from('trades')
@@ -61,6 +63,7 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const { data, error } = await supabase
     .from('trades')
@@ -97,6 +100,7 @@ export async function DELETE(req: NextRequest) {
 
   const { id } = await req.json();
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const { error } = await supabase
     .from('trades')

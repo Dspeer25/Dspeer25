@@ -9,6 +9,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ onboardingComplete: false });
   const { data } = await supabase.from('trader_profiles').select('*').eq('user_id', userId).single();
 
   return NextResponse.json(data || { onboardingComplete: false });
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const { error } = await supabase.from('trader_profiles').upsert({
     user_id: userId,

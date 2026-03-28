@@ -26,6 +26,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   const { data } = await supabase.from('user_settings').select('settings').eq('user_id', userId).single();
 
   return NextResponse.json(data?.settings || defaultSettings);
@@ -37,6 +38,7 @@ export async function PUT(req: NextRequest) {
 
   const settings = await req.json();
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const { error } = await supabase
     .from('user_settings')

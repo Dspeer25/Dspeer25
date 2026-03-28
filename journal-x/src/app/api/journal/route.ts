@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   if (!date) return NextResponse.json({ error: 'Date required' }, { status: 400 });
 
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
   const { data } = await supabase
     .from('journal_entries')
     .select('*')
@@ -28,6 +29,7 @@ export async function PUT(req: NextRequest) {
 
   const body = await req.json();
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
 
   const { error } = await supabase
     .from('journal_entries')

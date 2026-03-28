@@ -186,7 +186,7 @@ function AttributeWheel({ attrs, light }: { attrs: Attribute[]; light: boolean }
           <text key={`label-${i}`} x={lx} y={ly}
             textAnchor={anchor}
             dominantBaseline="middle"
-            className="text-[9px] font-bold uppercase"
+            className="text-[12px] font-bold uppercase"
             style={{
               fill: light ? '#888' : '#888',
               letterSpacing: '0.08em',
@@ -265,7 +265,7 @@ export default function TraderProfilePage() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Trader Profile</h1>
-            <p className={`text-sm ${light ? 'text-[#888]' : 'text-[#999]'}`}>
+            <p className={`text-[14px] ${light ? 'text-[#888]' : 'text-[#999]'}`}>
               Your attributes — built from every trade logged and every coach conversation.
             </p>
           </div>
@@ -281,11 +281,11 @@ export default function TraderProfilePage() {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-[10px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`}>OVR</span>
+                <span className={`text-[12px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`}>OVR</span>
                 <span className={`text-2xl font-bold ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>{overallRating}</span>
               </div>
             </div>
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#30C48B] mt-1">{grade}</span>
+            <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B] mt-1">{grade}</span>
           </div>
         </div>
 
@@ -297,7 +297,7 @@ export default function TraderProfilePage() {
         {/* ─── Strengths & Weaknesses side by side ─── */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className={`${glassPanelCls} rounded-xl p-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-4">Top Strengths</span>
+            <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-4">Top Strengths</span>
             {[...attributes].sort((a, b) => b.value - a.value).slice(0, 5).map((attr, i) => (
               <div key={i} className="flex items-center justify-between mb-2.5">
                 <span className={`text-xs ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{attr.name}</span>
@@ -306,7 +306,7 @@ export default function TraderProfilePage() {
             ))}
           </div>
           <div className={`${glassPanelCls} rounded-xl p-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[#f87171] block mb-4">Needs Work</span>
+            <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#f87171] block mb-4">Needs Work</span>
             {[...attributes].sort((a, b) => a.value - b.value).slice(0, 5).map((attr, i) => (
               <div key={i} className="flex items-center justify-between mb-2.5">
                 <span className={`text-xs ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{attr.name}</span>
@@ -318,7 +318,7 @@ export default function TraderProfilePage() {
 
         {/* ─── Coach Observations ─── */}
         <div className={`${glassPanelCls} rounded-xl p-6 mb-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-          <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-4">Coach Observations</span>
+          <span className="text-[12px] font-black tracking-[0.2em] uppercase text-[#30C48B] block mb-4">Coach Observations</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { note: 'Tends to widen stops after entry — work on trusting initial risk.', tag: 'Risk Mgmt', color: '#60a5fa' },
@@ -326,8 +326,8 @@ export default function TraderProfilePage() {
               { note: 'Consistently grades own execution honestly. Good self-awareness.', tag: 'Discipline', color: '#30C48B' },
               { note: 'Exits winners too early — leaving R on the table. Let runners run.', tag: 'Execution', color: '#a78bfa' },
             ].map((item, i) => (
-              <div key={i} className={`text-xs leading-relaxed ${light ? 'text-[#666]' : 'text-[#bbb]'}`}>
-                <span className="text-[8px] font-bold tracking-[0.15em] uppercase mr-2" style={{ color: item.color }}>{item.tag}</span>
+              <div key={i} className={`text-[14px] leading-relaxed ${light ? 'text-[#666]' : 'text-[#bbb]'}`}>
+                <span className="text-[10px] font-bold tracking-[0.15em] uppercase mr-2" style={{ color: item.color }}>{item.tag}</span>
                 {item.note}
               </div>
             ))}
@@ -336,16 +336,16 @@ export default function TraderProfilePage() {
 
         {/* $50 plan note */}
         <div className={`${glassPanelCls} rounded-xl p-6 text-center`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-          <p className={`text-xs mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>
+          <p className={`text-[14px] mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>
             Your Trader Profile evolves with every trade you log and every coach conversation.
           </p>
-          <p className={`text-[10px] ${light ? 'text-[#bbb]' : 'text-[#666]'}`}>
-            Available with the Complete plan ($50 one-time).
+          <p className={`text-[12px] ${light ? 'text-[#bbb]' : 'text-[#666]'}`}>
+            Available with the Complete plan ($75 one-time).
           </p>
         </div>
       </main>
 
-      <footer className={`relative z-10 border-t py-10 text-center text-xs ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
     </div>

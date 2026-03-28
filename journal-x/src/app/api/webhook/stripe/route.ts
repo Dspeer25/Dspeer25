@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
 
     if (clerkUserId) {
       const supabase = getServiceClient();
+      if (!supabase) return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
       await supabase
         .from('users')
         .update({

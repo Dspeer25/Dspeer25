@@ -65,8 +65,8 @@ function CandlestickCTA({ onClick }: { onClick: () => void }) {
           </div>
 
           <div className="relative z-10 px-2">
-            <div className="text-5xl sm:text-6xl lg:text-7xl mb-2 leading-none tracking-[0.08em] whitespace-nowrap font-bold uppercase" style={{ fontFamily: "'Courier New', 'Lucida Console', monospace", letterSpacing: '0.06em' }}>Start Your</div>
-            <div className="text-5xl sm:text-6xl lg:text-7xl text-[#30C48B] leading-none tracking-[0.08em] font-bold uppercase" style={{ fontFamily: "'Courier New', 'Lucida Console', monospace", letterSpacing: '0.06em', textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl mb-2 leading-none tracking-[0.08em] whitespace-nowrap uppercase" style={{ fontFamily: "'Share Tech Mono', monospace", fontWeight: 400 }}>Start Your</div>
+            <div className="text-5xl sm:text-6xl lg:text-7xl text-[#30C48B] leading-none tracking-[0.08em] uppercase" style={{ fontFamily: "'Share Tech Mono', monospace", fontWeight: 400, textShadow: '0 0 40px rgba(48,196,139,0.5), 0 0 80px rgba(48,196,139,0.2), 0 0 4px rgba(48,196,139,0.8)' }}>Journal</div>
           </div>
 
           {/* Hover neon glow */}
@@ -201,7 +201,7 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
             }}
           >
             <div className="text-xs text-[#888] uppercase tracking-[0.2em] mb-2">Essential</div>
-            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$25</div>
+            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$35</div>
             <div className="text-sm text-[#30C48B] mb-6">one-time payment</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
@@ -236,7 +236,7 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#30C48B] to-transparent" />
             <div className="text-xs text-[#30C48B] uppercase tracking-[0.2em] mb-2 font-medium">Complete</div>
-            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$50</div>
+            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$75</div>
             <div className="text-sm text-[#30C48B] mb-6">one-time payment</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
@@ -523,7 +523,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-2xl sm:text-3xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#555]' : 'text-white'}`}>
+        <h2 className={`text-2xl sm:text-3xl tracking-wide mb-20 font-light text-center ${light ? 'text-[#555]' : 'text-white'}`} style={{ fontFamily: "'Share Tech Mono', monospace" }}>
           AI-Powered Trading Journal That Holds You Accountable
         </h2>
 
@@ -548,6 +548,16 @@ export default function LandingPage() {
                 <feMerge><feMergeNode in="blur1" /><feMergeNode in="blur2" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
             </defs>
+            {/* 20SMA bloom layer — soft background glow */}
+            <path
+              d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
+              stroke={light ? 'rgba(80,160,240,0.12)' : 'rgba(100,200,255,0.20)'}
+              strokeWidth="8"
+              strokeLinecap="round"
+              fill="none"
+              filter="url(#glow20)"
+              style={{ filter: 'blur(4px) brightness(1.8)' }}
+            />
             {/* 20SMA — neon cyan-blue */}
             <path
               d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
@@ -556,6 +566,16 @@ export default function LandingPage() {
               strokeLinecap="round"
               fill="none"
               filter="url(#glow20)"
+            />
+            {/* 200SMA bloom layer — soft background glow */}
+            <path
+              d="M-50 760 C200 740 400 700 600 640 C800 580 1000 480 1200 360 C1350 280 1450 220 1520 180"
+              stroke={light ? 'rgba(220,80,80,0.10)' : 'rgba(255,120,80,0.15)'}
+              strokeWidth="7"
+              strokeLinecap="round"
+              fill="none"
+              filter="url(#glow200)"
+              style={{ filter: 'blur(4px) brightness(1.8)' }}
             />
             {/* 200SMA — neon warm red-orange */}
             <path

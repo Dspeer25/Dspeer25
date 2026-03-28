@@ -201,7 +201,7 @@ export default function LogTradePage() {
   };
 
   // ── Style helpers ──
-  const labelCls = `block text-[11px] font-bold tracking-[0.2em] uppercase mb-2 ${light ? 'text-[#777]' : 'text-[#999]'}`;
+  const labelCls = `block text-[12px] font-bold tracking-[0.2em] uppercase mb-2 ${light ? 'text-[#777]' : 'text-[#999]'}`;
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 ${
     light
       ? 'bg-white/80 border border-[rgba(0,0,0,0.10)] text-[#1a1a1a] placeholder-[#bbb] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
@@ -275,7 +275,7 @@ export default function LogTradePage() {
         <form onSubmit={handleSubmit}>
           {/* ─── THE BASICS ─── */}
           <div className={`${glassPanelCls} rounded-2xl p-8 mb-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <h2 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">The Basics</h2>
+            <h2 className="text-[18px] font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">The Basics</h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
               <div>
@@ -347,7 +347,7 @@ export default function LogTradePage() {
 
           {/* ─── NUMBERS ─── */}
           <div className={`${glassPanelCls} rounded-2xl p-8 mb-5`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <h2 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">Numbers</h2>
+            <h2 className="text-[18px] font-bold tracking-[0.3em] uppercase mb-6 text-[#30C48B]">Numbers</h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
               <div>
@@ -408,8 +408,8 @@ export default function LogTradePage() {
             <div className="flex items-center gap-3 mb-6">
               <CoachIcon light={light} />
               <div>
-                <h2 className="text-xs font-bold tracking-[0.3em] uppercase text-[#30C48B]">Trading Coach</h2>
-                <p className={`text-[10px] mt-0.5 ${light ? 'text-[#999]' : 'text-[#777]'}`}>
+                <h2 className="text-[18px] font-bold tracking-[0.3em] uppercase text-[#30C48B]">Trading Coach</h2>
+                <p className={`text-[12px] mt-0.5 ${light ? 'text-[#999]' : 'text-[#777]'}`}>
                   Modeled after Mark Douglas &middot; Trading in the Zone
                 </p>
               </div>
@@ -432,7 +432,7 @@ export default function LogTradePage() {
                           : 'bg-[rgba(255,255,255,0.06)] text-[#ccc] border border-[rgba(255,255,255,0.06)] rounded-bl-md'
                     }`}>
                       {msg.role === 'coach' && (
-                        <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
+                        <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
                       )}
                       {msg.text}
                     </div>
@@ -443,7 +443,7 @@ export default function LogTradePage() {
                     <div className={`rounded-2xl rounded-bl-md px-4 py-3 ${
                       light ? 'bg-white/80 border border-[rgba(0,0,0,0.06)]' : 'bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)]'
                     }`}>
-                      <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
+                      <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
                       <div className="flex gap-1">
                         <span className="w-2 h-2 rounded-full bg-[#30C48B]/40 animate-pulse" />
                         <span className="w-2 h-2 rounded-full bg-[#30C48B]/40 animate-pulse" style={{ animationDelay: '0.2s' }} />
@@ -475,7 +475,7 @@ export default function LogTradePage() {
                 Send
               </button>
             </div>
-            <p className={`text-[10px] mt-3 ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>
+            <p className={`text-[12px] mt-3 ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>
               The coach analyzes your trade rationale against Mark Douglas&apos; principles. Your conversation is saved with the trade.
             </p>
           </div>
@@ -509,25 +509,25 @@ export default function LogTradePage() {
           <div className={`mt-6 ${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>P&L</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>P&L</div>
                 <div className={`text-xl font-light ${parseFloat(form.dollarPnl) >= 0 ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {parseFloat(form.dollarPnl) >= 0 ? '+' : ''}${form.dollarPnl || '0'}
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>R Multiple</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>R Multiple</div>
                 <div className={`text-xl font-light ${parseFloat(form.rr) >= 0 ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {parseFloat(form.rr) >= 0 ? '+' : ''}{form.rr || '0'}R
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Direction</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Direction</div>
                 <div className={`text-xl font-light ${form.direction === 'Long' ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {form.direction}
                 </div>
               </div>
               <div>
-                <div className={`text-[10px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Position</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Position</div>
                 <div className={`text-xl font-light ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>
                   {form.positionSize} sh
                 </div>
@@ -538,7 +538,7 @@ export default function LogTradePage() {
       </main>
 
       {/* Footer */}
-      <footer className={`relative z-10 border-t py-10 text-center text-xs ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
     </div>

@@ -9,6 +9,7 @@ export async function GET() {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = getServiceClient();
+  if (!supabase) return NextResponse.json({ paid: false });
   const { data } = await supabase.from('users').select('paid').eq('clerk_id', userId).single();
 
   return NextResponse.json({ paid: data?.paid ?? false });
