@@ -12,13 +12,17 @@ export interface Trade {
   id: string;
   date: string;
   ticker: string;
+  tickerLogo?: string;
   time: string;
   tradeType: 'Day' | 'Swing';
   direction: 'Long' | 'Short';
+  instrument: string;
+  strategy: string;
   entryPrice: number;
   exitPrice: number;
   positionSize: number;
   initialRisk: number;
+  adjustedRisk: number;
   result: 'W' | 'L' | 'BE';
   dollarPnl: number;
   rr: number;
@@ -26,10 +30,16 @@ export interface Trade {
   starred: boolean;
   grade: 'A' | 'B' | 'C' | 'D' | 'F' | '';
   customFields: Record<string, string>;
-  // Accountability fields
   ruleViolation?: boolean;
   violationNote?: string;
 }
+
+export const INSTRUMENTS = [
+  '0DTE Call', '0DTE Put', 'Call Spread', 'Put Spread', 'Iron Condor',
+  'Straddle', 'Strangle', 'Covered Call', 'Cash Secured Put',
+  'Futures Long', 'Futures Short', 'Stock Long', 'Stock Short',
+  'Scalp', 'Swing Call', 'Swing Put',
+] as const;
 
 export interface GradeDefinition {
   grade: 'A' | 'B' | 'C' | 'D' | 'F';
