@@ -1812,9 +1812,327 @@ function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
   );
 }
 
+// ─── Growth Simulator ─────────────────────────────────────────────────────────
+function GrowthSimulatorTab() {
+  const [startBal, setStartBal]           = useState(50000);
+  const [tradesPerWeek, setTradesPerWeek] = useState(10);
+  const [winRate, setWinRate]             = useState(55);
+  const [rr, setRr]                       = useState(1.5);
+  const [riskPct, setRiskPct]             = useState(1);
+  const [riskCap, setRiskCap]             = useState(650);
+  const [monthlyWithdraw, setMonthlyWithdraw] = useState(4000);
+  const [chartMonths, setChartMonths]     = useState(24);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const riskFrac = riskPct / 100;
+  const wr       = winRate / 100;
+
+  function riskAmt(balance: number, frac: number, cap: number | null) {
+    const r = balance * frac;
+    return cap !== null ? Math.min(r, cap) : r;
+  }
+
+  function simulate(
+    start: number, tpw: number, win: number, rratio: number,
+    frac: number, withdraw: number, cap: number | null, months: number
+  ) {
+    let bal = start;
+    const balances = [bal];
+    const wrate = win / 100;
+    const tpm = Math.round(tpw * 4.33);
+    for (let m = 1; m <= months; m++) {
+      for (let t = 0; t < tpm; t++) {
+        const r = riskAmt(bal, frac, cap);
+        bal += Math.random() < wrate ? r * rratio : -r;
+        if (bal < 0) bal = 0;
+      }
+      bal -= withdraw;
+      if (bal < 0) bal = 0;
+      balances.push(bal);
+    }
+    return balances;
+  }
+
+  function avgSims(
+    start: number, tpw: number, win: number, rratio: number,
+    frac: number, withdraw: number, cap: number | null, months: number
+  ) {
+    const RUNS = 40;
+    const sums = Array(months + 1).fill(0);
+    for (let run = 0; run < RUNS; run++) {
+      simulate(start, tpw, win, rratio, frac, withdraw, cap, months)
+        .forEach((b, i) => { sums[i] += b; });
+    }
+    const balances = sums.map(s => s / RUNS);
+    const monthHit = balances.reduce(
+      (found: number | null, b, i) =>
+        found !== null ? found : (b >= 100000 && i > 0 ? i : null),
+      null
+    );
+    return { balances, monthHit };
+  }
+
+  // Derived math (snapshot at starting balance)
+  const r            = riskAmt(startBal, riskFrac, riskCap);
+  const avgWin       = r * rr;
+  const avgLoss      = r;
+  const expectDollar = wr * avgWin - (1 - wr) * avgLoss;
+  const expectR      = wr * rr - (1 - wr);
+  const tpm          = Math.round(tradesPerWeek * 4.33);
+  const grossMonthly = expectDollar * tpm;
+  const netWeekly    = (grossMonthly - monthlyWithdraw) / 4.33;
+  const weeklyWithdraw = monthlyWithdraw / 4.33;
+  const capKicksBal  = riskCap / riskFrac;
+
+  // Simulation state
+  const [cappedSim, setCappedSim]     = useState<{ balances: number[]; monthHit: number | null }>({ balances: [], monthHit: null });
+  const [uncappedSim, setUncappedSim] = useState<{ balances: number[]; monthHit: number | null }>({ balances: [], monthHit: null });
+
+  useEffect(() => {
+    const c = avgSims(startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, riskCap, chartMonths);
+    const u = avgSims(startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, null, chartMonths);
+    setCappedSim(c);
+    setUncappedSim(u);
+  }, [startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, riskCap, chartMonths]);
+
+  // Draw canvas chart
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || cappedSim.balances.length === 0) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = rect.width  * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    const W = rect.width;
+    const H = rect.height;
+
+    const ml = 72, mr = 78, mt = 16, mb = 36;
+    const cW = W - ml - mr;
+    const cH = H - mt - mb;
+    const months = cappedSim.balances.length - 1;
+
+    const cappedMax   = Math.max(...cappedSim.balances,   100000) * 1.12;
+    const uncappedMax = Math.max(...uncappedSim.balances, 100000) * 1.12;
+
+    const spData = chartMonths >= 60
+      ? Array.from({ length: months + 1 }, (_, i) => startBal * Math.pow(1.08, i / 12))
+      : null;
+
+    const xc  = (i: number) => ml + (i / months) * cW;
+    const yL  = (v: number) => mt + cH - (v / cappedMax)   * cH;
+    const yR  = (v: number) => mt + cH - (v / uncappedMax) * cH;
+
+    // Clear
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid
+    const ySteps = 5;
+    for (let i = 0; i <= ySteps; i++) {
+      const y = mt + (i / ySteps) * cH;
+      ctx.strokeStyle = "#2d2f45";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(W - mr, y); ctx.stroke();
+    }
+
+    // Left axis labels (green / capped)
+    ctx.fillStyle   = "#34d399";
+    ctx.font        = "11px system-ui, sans-serif";
+    ctx.textAlign   = "right";
+    ctx.textBaseline = "middle";
+    for (let i = 0; i <= ySteps; i++) {
+      const v = ((ySteps - i) / ySteps) * cappedMax;
+      ctx.fillText(fmtK(v), ml - 6, mt + (i / ySteps) * cH);
+    }
+
+    // Right axis labels (blue / uncapped)
+    ctx.fillStyle  = "#60a5fa";
+    ctx.textAlign  = "left";
+    for (let i = 0; i <= ySteps; i++) {
+      const v = ((ySteps - i) / ySteps) * uncappedMax;
+      ctx.fillText(fmtK(v), W - mr + 6, mt + (i / ySteps) * cH);
+    }
+
+    // X axis labels
+    ctx.fillStyle    = "#64748b";
+    ctx.textAlign    = "center";
+    ctx.textBaseline = "alphabetic";
+    const step = months <= 24 ? 5 : 10;
+    for (let i = 0; i <= months; i += step) {
+      ctx.fillText(i === 0 ? "Start" : `Mo ${i}`, xc(i), H - 6);
+    }
+
+    // $100k red dashed
+    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(ml, yL(100000)); ctx.lineTo(W - mr, yL(100000)); ctx.stroke();
+
+    // S&P amber dashed
+    if (spData) {
+      ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      spData.forEach((v, i) => i === 0 ? ctx.moveTo(xc(i), yL(v)) : ctx.lineTo(xc(i), yL(v)));
+      ctx.stroke();
+    }
+
+    // Uncapped blue dashed
+    ctx.strokeStyle = "#60a5fa"; ctx.lineWidth = 2; ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    uncappedSim.balances.forEach((v, i) => i === 0 ? ctx.moveTo(xc(i), yR(v)) : ctx.lineTo(xc(i), yR(v)));
+    ctx.stroke();
+
+    // Capped green fill + line
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    cappedSim.balances.forEach((v, i) => i === 0 ? ctx.moveTo(xc(i), yL(v)) : ctx.lineTo(xc(i), yL(v)));
+    ctx.lineTo(xc(months), mt + cH); ctx.lineTo(xc(0), mt + cH); ctx.closePath();
+    ctx.fillStyle = "rgba(52,211,153,0.12)"; ctx.fill();
+
+    ctx.strokeStyle = "#34d399"; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+    ctx.beginPath();
+    cappedSim.balances.forEach((v, i) => i === 0 ? ctx.moveTo(xc(i), yL(v)) : ctx.lineTo(xc(i), yL(v)));
+    ctx.stroke();
+
+  }, [cappedSim, uncappedSim, chartMonths, startBal]);
+
+  function fmtK(v: number) {
+    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1_000)     return `$${Math.round(v / 1000)}k`;
+    return `$${Math.round(v)}`;
+  }
+  function fmtD(v: number) { return "$" + Math.round(v).toLocaleString(); }
+
+  const bal15 = cappedSim.balances[15] ?? 0;
+  const totalWithdrawn = chartMonths * monthlyWithdraw;
+
+  function Slider({ label, value, min, max, step, display, onChange }: {
+    label: string; value: number; min: number; max: number; step: number;
+    display: string; onChange: (v: number) => void;
+  }) {
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
+        <span className="text-lg font-semibold text-white">{display}</span>
+        <input type="range" min={min} max={max} step={step} value={value}
+          onChange={e => onChange(parseFloat(e.target.value))}
+          className="w-full accent-indigo-500 cursor-pointer" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Sliders */}
+      <div className="grid grid-cols-4 gap-x-6 gap-y-4">
+        <Slider label="Starting balance" value={startBal} min={10000} max={100000} step={1000}
+          display={fmtD(startBal)} onChange={setStartBal} />
+        <Slider label="Trades per week" value={tradesPerWeek} min={1} max={30} step={1}
+          display={String(tradesPerWeek)} onChange={setTradesPerWeek} />
+        <Slider label="Win rate (%)" value={winRate} min={40} max={75} step={0.1}
+          display={winRate.toFixed(1) + "%"} onChange={setWinRate} />
+        <Slider label="Avg R:R ratio" value={rr} min={1} max={4} step={0.01}
+          display={rr.toFixed(2)} onChange={setRr} />
+        <Slider label="Risk per trade (%)" value={riskPct} min={0.001} max={3} step={0.001}
+          display={riskPct.toFixed(3) + "%"} onChange={setRiskPct} />
+        <Slider label="Risk cap ($)" value={riskCap} min={50} max={2000} step={5}
+          display={fmtD(riskCap)} onChange={setRiskCap} />
+        <Slider label="Monthly withdrawal" value={monthlyWithdraw} min={0} max={8000} step={250}
+          display={fmtD(monthlyWithdraw)} onChange={setMonthlyWithdraw} />
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-slate-400 uppercase tracking-wide">Weekly withdrawal (auto)</span>
+          <span className="text-lg font-semibold text-slate-500">≈ {fmtD(weeklyWithdraw)} / week</span>
+          <div className="w-full h-[18px]" />
+        </div>
+      </div>
+
+      {/* Cap info */}
+      <p className="text-xs text-slate-400">
+        Risk scales until {fmtD(capKicksBal)} — then locks at {fmtD(riskCap)} per trade.
+      </p>
+
+      {/* Metric cards */}
+      <div className="grid grid-cols-6 gap-3">
+        {[
+          {
+            label: "Month hit $100k\n(capped)",
+            main: cappedSim.monthHit !== null ? `Mo ${cappedSim.monthHit}` : "—",
+            sub: null,
+          },
+          {
+            label: "Balance at 15mo\n(capped)",
+            main: fmtD(bal15),
+            sub: null,
+          },
+          {
+            label: "Total withdrawn",
+            main: fmtD(totalWithdrawn),
+            sub: null,
+          },
+          {
+            label: "Avg win / trade",
+            main: fmtD(avgWin),
+            sub: `Expect: ${fmtD(expectDollar)}/trade`,
+          },
+          {
+            label: "Avg loss / trade",
+            main: fmtD(avgLoss),
+            sub: `+${expectR.toFixed(3)}R expectancy`,
+          },
+          {
+            label: "Net weekly (start bal)",
+            main: fmtD(netWeekly),
+            sub: `Gross mo: ${fmtD(grossMonthly)}`,
+            highlight: netWeekly >= 0 ? "green" : "red",
+          },
+        ].map((card, i) => (
+          <div key={i} className="bg-[#1e2035] rounded-lg p-3 border border-[#3d3f5e] flex flex-col gap-1">
+            <span className="text-xs text-slate-400 leading-tight whitespace-pre-line">{card.label}</span>
+            <span className={`text-xl font-bold ${
+              card.highlight === "green" ? "text-emerald-400" :
+              card.highlight === "red"   ? "text-red-400" :
+              "text-white"
+            }`}>{card.main}</span>
+            {card.sub && <span className="text-xs text-slate-500">{card.sub}</span>}
+          </div>
+        ))}
+      </div>
+
+      {/* Chart toggle */}
+      <div className="flex items-center gap-2">
+        {([24, 60] as const).map(m => (
+          <button key={m} onClick={() => setChartMonths(m)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium border transition-all ${
+              chartMonths === m
+                ? "bg-[#2d2f45] border-slate-500 text-white"
+                : "border-transparent text-slate-500 hover:text-slate-300"
+            }`}>
+            {m === 24 ? "2 Years" : "5 Years"}
+          </button>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex gap-5 text-xs text-slate-400 -mt-2">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-400 inline-block" />Capped (left axis)</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-sky-400 inline-block" />No cap (right axis)</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-500 inline-block" />$100k target</span>
+        {chartMonths >= 60 && <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-400 inline-block" />S&P 500 @ 8%/yr</span>}
+      </div>
+
+      {/* Chart */}
+      <div className="w-full rounded-xl overflow-hidden border border-[#3d3f5e]" style={{ height: 380 }}>
+        <canvas ref={canvasRef} className="w-full h-full" style={{ display: "block" }} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
@@ -1866,7 +2184,8 @@ export default function Home() {
           ["journal",     "Daily Journal"   ],
           ["leaderboard", "Leaderboard"     ],
           ["focus",       "Focus Tracks"    ],
-          ["visual",      "Visual Analysis" ],
+          ["visual",      "Visual Analysis"  ],
+          ["simulator",   "Growth Simulator" ],
         ] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -1895,7 +2214,8 @@ export default function Home() {
             <FocusTracksTab />
           </div>
         )}
-        {tab === "visual" && <VisualAnalysisTab entries={entries} />}
+        {tab === "visual"     && <VisualAnalysisTab entries={entries} />}
+        {tab === "simulator"  && <GrowthSimulatorTab />}
       </main>
     </div>
   );
