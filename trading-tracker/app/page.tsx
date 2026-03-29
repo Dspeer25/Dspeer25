@@ -1142,7 +1142,7 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
 
   // Save — only after initial load to prevent wiping stored data on mount
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || journals.length === 0) return;
     setData("trading-journals", journals);
   }, [journals, loaded]);
 
