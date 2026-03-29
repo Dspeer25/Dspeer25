@@ -1813,6 +1813,21 @@ function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
 }
 
 // ─── Growth Simulator ─────────────────────────────────────────────────────────
+function SimSlider({ label, value, min, max, step, display, onChange }: {
+  label: string; value: number; min: number; max: number; step: number;
+  display: string; onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
+      <span className="text-lg font-semibold text-white">{display}</span>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        className="w-full accent-indigo-500 cursor-pointer" />
+    </div>
+  );
+}
+
 function GrowthSimulatorTab() {
   const [startBal, setStartBal]           = useState(50000);
   const [tradesPerWeek, setTradesPerWeek] = useState(10);
@@ -2013,38 +2028,23 @@ function GrowthSimulatorTab() {
   const bal15 = cappedSim.balances[15] ?? 0;
   const totalWithdrawn = chartMonths * monthlyWithdraw;
 
-  function Slider({ label, value, min, max, step, display, onChange }: {
-    label: string; value: number; min: number; max: number; step: number;
-    display: string; onChange: (v: number) => void;
-  }) {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
-        <span className="text-lg font-semibold text-white">{display}</span>
-        <input type="range" min={min} max={max} step={step} value={value}
-          onChange={e => onChange(parseFloat(e.target.value))}
-          className="w-full accent-indigo-500 cursor-pointer" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-5">
       {/* Sliders */}
       <div className="grid grid-cols-4 gap-x-6 gap-y-4">
-        <Slider label="Starting balance" value={startBal} min={10000} max={100000} step={1000}
+        <SimSlider label="Starting balance" value={startBal} min={10000} max={100000} step={1000}
           display={fmtD(startBal)} onChange={setStartBal} />
-        <Slider label="Trades per week" value={tradesPerWeek} min={1} max={30} step={1}
+        <SimSlider label="Trades per week" value={tradesPerWeek} min={1} max={30} step={1}
           display={String(tradesPerWeek)} onChange={setTradesPerWeek} />
-        <Slider label="Win rate (%)" value={winRate} min={0.01} max={75} step={0.01}
+        <SimSlider label="Win rate (%)" value={winRate} min={0.01} max={75} step={0.01}
           display={winRate.toFixed(2) + "%"} onChange={setWinRate} />
-        <Slider label="Avg R:R ratio" value={rr} min={0.01} max={4} step={0.01}
+        <SimSlider label="Avg R:R ratio" value={rr} min={0.01} max={4} step={0.01}
           display={rr.toFixed(2)} onChange={setRr} />
-        <Slider label="Risk per trade (%)" value={riskPct} min={0.001} max={3} step={0.001}
+        <SimSlider label="Risk per trade (%)" value={riskPct} min={0.001} max={3} step={0.001}
           display={riskPct.toFixed(3) + "%"} onChange={setRiskPct} />
-        <Slider label="Risk cap ($)" value={riskCap} min={1} max={2000} step={1}
+        <SimSlider label="Risk cap ($)" value={riskCap} min={1} max={2000} step={1}
           display={fmtD(riskCap)} onChange={setRiskCap} />
-        <Slider label="Monthly withdrawal" value={monthlyWithdraw} min={0} max={8000} step={1}
+        <SimSlider label="Monthly withdrawal" value={monthlyWithdraw} min={0} max={8000} step={1}
           display={fmtD(monthlyWithdraw)} onChange={setMonthlyWithdraw} />
         <div className="flex flex-col gap-1">
           <span className="text-xs text-slate-400 uppercase tracking-wide">Weekly withdrawal (auto)</span>
