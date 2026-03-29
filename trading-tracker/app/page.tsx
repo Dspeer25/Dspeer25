@@ -1823,6 +1823,7 @@ function GrowthSimulatorTab() {
   const [monthlyWithdraw, setMonthlyWithdraw] = useState(4000);
   const [chartMonths, setChartMonths]     = useState(24);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const simTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const riskFrac = riskPct / 100;
   const wr       = winRate / 100;
@@ -1889,10 +1890,14 @@ function GrowthSimulatorTab() {
   const [uncappedSim, setUncappedSim] = useState<{ balances: number[]; monthHit: number | null }>({ balances: [], monthHit: null });
 
   useEffect(() => {
-    const c = avgSims(startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, riskCap, chartMonths);
-    const u = avgSims(startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, null, chartMonths);
-    setCappedSim(c);
-    setUncappedSim(u);
+    if (simTimer.current) clearTimeout(simTimer.current);
+    simTimer.current = setTimeout(() => {
+      const c = avgSims(startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, riskCap, chartMonths);
+      const u = avgSims(startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, null, chartMonths);
+      setCappedSim(c);
+      setUncappedSim(u);
+    }, 150);
+    return () => { if (simTimer.current) clearTimeout(simTimer.current); };
   }, [startBal, tradesPerWeek, winRate, rr, riskFrac, monthlyWithdraw, riskCap, chartMonths]);
 
   // Draw canvas chart
@@ -2031,15 +2036,15 @@ function GrowthSimulatorTab() {
           display={fmtD(startBal)} onChange={setStartBal} />
         <Slider label="Trades per week" value={tradesPerWeek} min={1} max={30} step={1}
           display={String(tradesPerWeek)} onChange={setTradesPerWeek} />
-        <Slider label="Win rate (%)" value={winRate} min={40} max={75} step={0.1}
-          display={winRate.toFixed(1) + "%"} onChange={setWinRate} />
-        <Slider label="Avg R:R ratio" value={rr} min={1} max={4} step={0.01}
+        <Slider label="Win rate (%)" value={winRate} min={0.01} max={75} step={0.01}
+          display={winRate.toFixed(2) + "%"} onChange={setWinRate} />
+        <Slider label="Avg R:R ratio" value={rr} min={0.01} max={4} step={0.01}
           display={rr.toFixed(2)} onChange={setRr} />
         <Slider label="Risk per trade (%)" value={riskPct} min={0.001} max={3} step={0.001}
           display={riskPct.toFixed(3) + "%"} onChange={setRiskPct} />
-        <Slider label="Risk cap ($)" value={riskCap} min={50} max={2000} step={5}
+        <Slider label="Risk cap ($)" value={riskCap} min={1} max={2000} step={1}
           display={fmtD(riskCap)} onChange={setRiskCap} />
-        <Slider label="Monthly withdrawal" value={monthlyWithdraw} min={0} max={8000} step={250}
+        <Slider label="Monthly withdrawal" value={monthlyWithdraw} min={0} max={8000} step={1}
           display={fmtD(monthlyWithdraw)} onChange={setMonthlyWithdraw} />
         <div className="flex flex-col gap-1">
           <span className="text-xs text-slate-400 uppercase tracking-wide">Weekly withdrawal (auto)</span>
