@@ -30,28 +30,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <body className="antialiased">
           {children}
           <AISidebar />
-          {/* Aggressively remove Clerk dev mode banners via DOM observer */}
-          <script dangerouslySetInnerHTML={{ __html: `
-            (function(){
-              function killClerkDev(){
-                document.querySelectorAll('div[style*="position: fixed"], div[role="status"], div[role="alert"], div[data-clerk-toast], div[class*="toast"]').forEach(function(el){
-                  var s = el.getAttribute('style') || '';
-                  var t = (el.textContent || '').toLowerCase();
-                  var isFixed = s.indexOf('position: fixed') !== -1 || s.indexOf('position:fixed') !== -1;
-                  var isClerk = t.indexOf('development') !== -1 || t.indexOf('clerk') !== -1 || t.indexOf('pk_test') !== -1;
-                  var isBottom = s.indexOf('bottom') !== -1;
-                  var isToast = el.hasAttribute('data-clerk-toast') || (el.className && el.className.toString().indexOf('toast') !== -1);
-                  if(isToast || (isFixed && (isBottom || isClerk))){
-                    el.remove();
-                  }
-                });
-              }
-              killClerkDev();
-              setInterval(killClerkDev, 500);
-              var o = new MutationObserver(function(){ killClerkDev(); });
-              o.observe(document.body, { childList: true, subtree: true });
-            })();
-          `}} />
         </body>
       </html>
     </ClerkProvider>
