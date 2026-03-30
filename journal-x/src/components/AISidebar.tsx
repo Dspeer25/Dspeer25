@@ -1,18 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function AISidebar() {
-  const [isOpen, setIsOpen] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('ai-sidebar-open') === 'true'
-    }
-    return false
-  })
+  const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [messages, setMessages] = useState([
     { role: 'coach', text: "Hello. I've reviewed your last 18 trades. Your breakout setups are your edge — 71% win rate. Your biggest leak is mean reversion at 28%. Consider removing it from your playbook entirely." }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return
@@ -33,7 +35,7 @@ export default function AISidebar() {
   if (!isOpen) {
     return (
       <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); localStorage.setItem('ai-sidebar-open', 'true'); setIsOpen(true) }}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsOpen(true) }}
         style={{position:'fixed',right:0,top:'50%',transform:'translateY(-50%)',zIndex:2147483647,background:'#0a0a0a',border:'0.5px solid rgba(0,212,160,0.3)',borderRight:'none',borderRadius:'8px 0 0 8px',padding:'14px 10px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}
       >
         <div style={{width:6,height:6,borderRadius:'50%',background:'#00d4a0'}}/>
@@ -66,7 +68,7 @@ export default function AISidebar() {
           <span style={{fontSize:11,color:'#00d4a0',letterSpacing:'0.1em'}}>AI COACH — LIVE</span>
           <div style={{width:6,height:6,borderRadius:'50%',background:'#00d4a0'}}/>
         </div>
-        <button onClick={(e) => { e.stopPropagation(); localStorage.setItem('ai-sidebar-open', 'false'); setIsOpen(false) }} style={{background:'none',border:'none',color:'#555',fontSize:20,cursor:'pointer',lineHeight:1,padding:'0 4px'}}>×</button>
+        <button onClick={(e) => { e.stopPropagation(); setIsOpen(false) }} style={{background:'none',border:'none',color:'#555',fontSize:20,cursor:'pointer',lineHeight:1,padding:'0 4px'}}>×</button>
       </div>
       <div style={{padding:'12px 16px',borderBottom:'0.5px solid #1a1a1a',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
         {[{l:'WIN RATE',v:'61%',c:'#00d4a0'},{l:'TOTAL P&L',v:'+$2,937',c:'#00d4a0'},{l:'AVG R:R',v:'1.27',c:'#aaa'},{l:'EXP. VALUE',v:'+$163',c:'#00d4a0'}].map(s=>(
