@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   var isClerk = t.indexOf('development') !== -1 || t.indexOf('clerk') !== -1 || t.indexOf('pk_test') !== -1;
                   var isBottom = s.indexOf('bottom') !== -1;
                   var isToast = el.hasAttribute('data-clerk-toast') || (el.className && el.className.toString().indexOf('toast') !== -1);
-                  if(isToast || (isFixed && (isBottom || isClerk)) || (isFixed && !el.id && !el.className)){
+                  if(isToast || (isFixed && (isBottom || isClerk))){
                     el.remove();
                   }
                 });
