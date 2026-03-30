@@ -45,6 +45,7 @@ export default function AISidebar() {
 
   return (
     <div
+      id="ai-sidebar-panel"
       onClick={(e) => e.stopPropagation()}
       style={{position:'fixed',right:0,top:0,height:'100vh',width:'320px',zIndex:2147483647,background:'#0a0a0a',borderLeft:'0.5px solid #1e1e1e',display:'flex',flexDirection:'column',fontFamily:'DM Mono,monospace'}}
     >
