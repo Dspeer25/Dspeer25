@@ -9,6 +9,9 @@ const H = "'Syne', sans-serif";
 
 export default function PastTradesPage() {
   const [trades] = useState<Trade[]>(() => demoTrades);
+  const [period, setPeriod] = useState<string>('MAX');
+  const [resultFilter, setResultFilter] = useState<string>('ALL');
+  const [tickerSearch, setTickerSearch] = useState('');
 
   const stats = useMemo(() => {
     const wins = trades.filter(t => t.result === 'W');
@@ -234,8 +237,50 @@ export default function PastTradesPage() {
           </div>
         </div>
 
+        {/* FILTER ROW */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 20 }}>
+          {/* Period tabs */}
+          <div style={{ display: 'flex', gap: 0, background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, overflow: 'hidden' }}>
+            {['1D', '1W', '1M', 'QTR', '1Y', 'MAX'].map(p => (
+              <button key={p} onClick={() => setPeriod(p)} style={{
+                fontFamily: M, fontSize: 12, fontWeight: 600, letterSpacing: '0.05em',
+                padding: '8px 16px', background: period === p ? '#00d4a0' : 'transparent',
+                color: period === p ? '#0a0a0a' : '#555', border: 'none', cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}>{p}</button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 28, background: '#1e1e1e', margin: '0 16px' }} />
+
+          {/* Result filter */}
+          <div style={{ display: 'flex', gap: 0, background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, overflow: 'hidden' }}>
+            {['ALL', 'W', 'L', 'BE'].map(r => (
+              <button key={r} onClick={() => setResultFilter(r)} style={{
+                fontFamily: M, fontSize: 12, fontWeight: 600, letterSpacing: '0.05em',
+                padding: '8px 16px', background: resultFilter === r ? '#00d4a0' : 'transparent',
+                color: resultFilter === r ? '#0a0a0a' : '#555', border: 'none', cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}>{r}</button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <input
+            value={tickerSearch}
+            onChange={e => setTickerSearch(e.target.value.toUpperCase())}
+            placeholder="Search ticker..."
+            style={{
+              marginLeft: 'auto', fontFamily: M, fontSize: 12, padding: '8px 14px',
+              background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8,
+              color: '#ccc', outline: 'none', width: 160,
+            }}
+          />
+        </div>
+
         {/* placeholder for next steps */}
-        <div style={{ fontFamily: M, color: '#222', fontSize: 11, textAlign: 'center', padding: 32 }}>— filters / table coming —</div>
+        <div style={{ fontFamily: M, color: '#222', fontSize: 11, textAlign: 'center', padding: 32 }}>— table coming —</div>
 
       </main>
     </div>
