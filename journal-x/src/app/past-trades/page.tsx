@@ -114,7 +114,7 @@ export default function PastTradesPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0,1fr))', gap: 8, marginBottom: 20 }}>
           {cards.map(c => (
             <div key={c.label} style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, padding: '11px 13px' }}>
-              <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#555', marginBottom: 7 }}>{c.label}</div>
+              <div style={{ fontFamily: M, fontSize: 12, fontWeight: 500, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#777', marginBottom: 7 }}>{c.label}</div>
               <div style={{ fontFamily: M, fontSize: 17, fontWeight: 600, color: c.color }}>{c.value}</div>
             </div>
           ))}
