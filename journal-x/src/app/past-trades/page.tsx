@@ -16,7 +16,7 @@ export default function PastTradesPage() {
     const totalPnl = Math.round(trades.reduce((s, t) => s + t.dollarPnl, 0));
     const avgWin = wins.length ? Math.round(wins.reduce((s, t) => s + t.dollarPnl, 0) / wins.length) : 0;
     const avgLoss = losses.length ? Math.round(Math.abs(losses.reduce((s, t) => s + t.dollarPnl, 0) / losses.length)) : 0;
-    const avgRR = trades.length ? (trades.reduce((s, t) => s + t.rr, 0) / trades.length).toFixed(2) : '0';
+    const avgRR = trades.length ? (trades.reduce((s, t) => s + t.rr, 0) / trades.length).toFixed(2) : '0.00';
     const grossW = wins.reduce((s, t) => s + t.dollarPnl, 0);
     const grossL = Math.abs(losses.reduce((s, t) => s + t.dollarPnl, 0));
     const pf = grossL > 0 ? (grossW / grossL).toFixed(1) : '∞';
@@ -26,54 +26,53 @@ export default function PastTradesPage() {
   }, [trades]);
 
   const cards = [
-    { label: 'Total Trades', value: String(stats.total), color: '#ccc' },
-    { label: 'Win Rate', value: `${stats.wr}%`, color: stats.wr >= 50 ? '#00d4a0' : '#ff5555' },
-    { label: 'Total P&L', value: `${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toLocaleString()}`, color: stats.totalPnl >= 0 ? '#00d4a0' : '#ff5555' },
-    { label: 'Avg R:R', value: stats.avgRR, color: '#ccc' },
-    { label: 'Avg Win', value: `+$${stats.avgWin}`, color: '#00d4a0' },
-    { label: 'Avg Loss', value: `-$${stats.avgLoss}`, color: '#ff5555' },
-    { label: 'Profit Factor', value: stats.pf, color: '#f5a623' },
-    { label: 'Exp. Value', value: `${stats.ev >= 0 ? '+' : ''}$${stats.ev}`, color: stats.ev >= 0 ? '#00d4a0' : '#ff5555' },
+    { label: 'Total Trades', value: String(stats.total),                                        color: '#ccc' },
+    { label: 'Win Rate',     value: `${stats.wr}%`,                                             color: stats.wr >= 50 ? '#00d4a0' : '#ff5555' },
+    { label: 'Total P&L',   value: `${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toLocaleString()}`, color: stats.totalPnl >= 0 ? '#00d4a0' : '#ff5555' },
+    { label: 'Avg R:R',     value: stats.avgRR,                                                 color: '#ccc' },
+    { label: 'Avg Win',     value: `+$${stats.avgWin}`,                                         color: '#00d4a0' },
+    { label: 'Avg Loss',    value: `-$${stats.avgLoss}`,                                        color: '#ff5555' },
+    { label: 'Profit Factor', value: stats.pf,                                                  color: '#f5a623' },
+    { label: 'Exp. Value',  value: `${stats.ev >= 0 ? '+' : ''}$${stats.ev}`,                  color: stats.ev >= 0 ? '#00d4a0' : '#ff5555' },
   ];
 
   return (
-    <div style={{ background: '#0a0a0a', minHeight: '100vh', fontFamily: M, color: '#ccc' }}>
+    <div style={{ background: '#0a0a0a', minHeight: '100vh', color: '#ccc' }}>
       <main style={{ maxWidth: 1120, margin: '0 auto', padding: '40px 32px' }}>
 
         {/* PAGE HEADER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
           <div>
-            <h1 style={{ fontFamily: H, fontSize: 32, fontWeight: 700, color: '#fff', margin: 0 }}>Past Trades</h1>
-            <p style={{ fontSize: 13, color: '#555', marginTop: 6 }}>Review, filter, and drill into every trade you&apos;ve logged.</p>
+            <h1 style={{ fontFamily: H, fontSize: 30, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1 }}>Past Trades</h1>
+            <p style={{ fontFamily: M, fontSize: 12, color: '#555', marginTop: 8, letterSpacing: '0.02em' }}>Review, filter, and drill into every trade you&apos;ve logged.</p>
           </div>
-          <div style={{ opacity: 0.2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <svg width="42" height="42" viewBox="0 0 56 56" fill="none">
-              <circle cx="18" cy="12" r="4.5" stroke="#fff" strokeWidth="1.8" fill="none" />
-              <line x1="18" y1="16.5" x2="18" y2="30" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="18" y1="21" x2="12" y2="27" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="18" y1="21" x2="32" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="18" y1="30" x2="13" y2="40" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="18" y1="30" x2="23" y2="40" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="35" y1="6" x2="35" y2="11" stroke="#00d4a0" strokeWidth="1.2" strokeLinecap="round" />
-              <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(0,212,160,0.35)" stroke="#00d4a0" strokeWidth="1" />
-              <line x1="35" y1="25" x2="35" y2="32" stroke="#00d4a0" strokeWidth="1.2" strokeLinecap="round" />
+          {/* Watermark */}
+          <div style={{ opacity: 0.2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <svg width="36" height="36" viewBox="0 0 28 32" fill="none">
+              <circle cx="11" cy="5" r="3.5" stroke="#aaa" strokeWidth="1.3" fill="none" />
+              <line x1="11" y1="8.5" x2="11" y2="17" stroke="#aaa" strokeWidth="1.3" strokeLinecap="round" />
+              <line x1="5.5" y1="12" x2="16.5" y2="12" stroke="#aaa" strokeWidth="1.3" strokeLinecap="round" />
+              <line x1="11" y1="17" x2="7" y2="23" stroke="#aaa" strokeWidth="1.3" strokeLinecap="round" />
+              <line x1="11" y1="17" x2="15" y2="23" stroke="#aaa" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
-            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.3em', color: '#fff', marginTop: 2 }}>JOURNAL X</span>
+            <span style={{ fontFamily: H, fontSize: 12, fontWeight: 400, letterSpacing: '0.2em', color: '#aaa' }}>
+              JOURNAL <span style={{ color: '#00d4a0' }}>X</span>
+            </span>
           </div>
         </div>
 
-        {/* STAT CARDS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0,1fr))', gap: 8, marginBottom: 24 }}>
+        {/* STAT CARDS — 8 across */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0,1fr))', gap: 8, marginBottom: 20 }}>
           {cards.map(c => (
-            <div key={c.label} style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 10, padding: '14px 10px', textAlign: 'center' }}>
-              <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 8 }}>{c.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 400, color: c.color, fontFamily: M }}>{c.value}</div>
+            <div key={c.label} style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, padding: '11px 13px' }}>
+              <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#555', marginBottom: 7 }}>{c.label}</div>
+              <div style={{ fontFamily: M, fontSize: 17, fontWeight: 600, color: c.color }}>{c.value}</div>
             </div>
           ))}
         </div>
 
-        {/* TODO: equity curve, filters, table — next pieces */}
-        <div style={{ color: '#333', fontSize: 12, padding: 40, textAlign: 'center' }}>More sections coming...</div>
+        {/* placeholder for next steps */}
+        <div style={{ fontFamily: M, color: '#222', fontSize: 11, textAlign: 'center', padding: 32 }}>— equity curve / filters / table coming —</div>
 
       </main>
     </div>
