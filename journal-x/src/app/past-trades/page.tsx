@@ -12,6 +12,9 @@ export default function PastTradesPage() {
   const [period, setPeriod] = useState<string>('MAX');
   const [resultFilter, setResultFilter] = useState<string>('ALL');
   const [tickerSearch, setTickerSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const perPage = 6;
 
   const stats = useMemo(() => {
     const wins = trades.filter(t => t.result === 'W');
@@ -279,8 +282,141 @@ export default function PastTradesPage() {
           />
         </div>
 
-        {/* placeholder for next steps */}
-        <div style={{ fontFamily: M, color: '#222', fontSize: 11, textAlign: 'center', padding: 32 }}>— table coming —</div>
+        {/* TRADE TABLE */}
+        {(() => {
+          // Filter trades
+          let filtered = [...trades].sort((a, b) => b.date.localeCompare(a.date));
+          if (period !== 'MAX') {
+            const now = new Date();
+            const cutoff = new Date();
+            if (period === '1D') cutoff.setDate(now.getDate() - 1);
+            else if (period === '1W') cutoff.setDate(now.getDate() - 7);
+            else if (period === '1M') cutoff.setMonth(now.getMonth() - 1);
+            else if (period === 'QTR') cutoff.setMonth(now.getMonth() - 3);
+            else if (period === '1Y') cutoff.setFullYear(now.getFullYear() - 1);
+            const cs = cutoff.toISOString().split('T')[0];
+            filtered = filtered.filter(t => t.date >= cs);
+          }
+          if (resultFilter !== 'ALL') filtered = filtered.filter(t => t.result === resultFilter);
+          if (tickerSearch) filtered = filtered.filter(t => t.ticker.includes(tickerSearch));
+          const totalPages = Math.ceil(filtered.length / perPage);
+          const paged = filtered.slice(page * perPage, (page + 1) * perPage);
+
+          const cols = '80px 110px 130px 150px 64px 90px 90px 80px 90px 32px';
+          const thStyle = (text: string): React.CSSProperties => ({
+            fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em',
+            textTransform: 'uppercase', color: '#555', textAlign: text === 'P&L' || text === 'R:R' ? 'right' : 'left',
+          });
+
+          const fmtD = (d: string) => {
+            const dt = new Date(d + 'T12:00:00');
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          };
+
+          const resultBadge = (r: string) => {
+            const bg = r === 'W' ? '#00d4a0' : r === 'L' ? '#ff5555' : '#666';
+            return (
+              <span style={{
+                fontFamily: M, fontSize: 11, fontWeight: 700, color: '#0a0a0a',
+                background: bg, borderRadius: 4, padding: '2px 8px', display: 'inline-block',
+              }}>{r}</span>
+            );
+          };
+
+          const letterBadge = (ticker: string) => {
+            const colors = ['#e53e3e','#dd6b20','#38a169','#3182ce','#805ad5','#d53f8c'];
+            const c = colors[ticker.charCodeAt(0) % colors.length];
+            return (
+              <div style={{
+                width: 22, height: 22, borderRadius: 4, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', background: c + '33', border: `1px solid ${c}66`,
+                color: c, fontSize: 10, fontWeight: 700, fontFamily: M, flexShrink: 0,
+              }}>{ticker[0]}</div>
+            );
+          };
+
+          return (
+            <div style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 10, overflow: 'hidden' }}>
+              {/* Table header */}
+              <div style={{ display: 'grid', gridTemplateColumns: cols, padding: '10px 16px', borderBottom: '0.5px solid #1e1e1e' }}>
+                {['Date','Ticker','Instrument','Strategy','Result','Init Risk','Adj Risk','R:R','P&L',''].map(h => (
+                  <div key={h} style={thStyle(h)}>{h}</div>
+                ))}
+              </div>
+
+              {/* Table rows */}
+              {paged.map(trade => (
+                <div key={trade.id}>
+                  {/* Row */}
+                  <div
+                    onClick={() => setExpandedId(expandedId === trade.id ? null : trade.id)}
+                    style={{
+                      display: 'grid', gridTemplateColumns: cols, padding: '12px 16px',
+                      alignItems: 'center', borderBottom: '0.5px solid #151515',
+                      cursor: 'pointer', transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#151515'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <span style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{fmtD(trade.date)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {letterBadge(trade.ticker)}
+                      <span style={{ fontFamily: M, fontSize: 14, fontWeight: 700, color: '#fff' }}>{trade.ticker}</span>
+                    </div>
+                    <span style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{trade.instrument}</span>
+                    <span style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{trade.strategy}</span>
+                    <span>{resultBadge(trade.result)}</span>
+                    <span style={{ fontFamily: M, fontSize: 12, color: '#888' }}>${trade.initialRisk.toFixed(0)}</span>
+                    <span style={{ fontFamily: M, fontSize: 12, color: '#888' }}>${trade.adjustedRisk.toFixed(0)}</span>
+                    <span style={{ fontFamily: M, fontSize: 12, fontWeight: 600, color: trade.rr > 0 ? '#00d4a0' : '#555', textAlign: 'right' }}>
+                      {trade.rr > 0 ? `${trade.rr.toFixed(1)}R` : '—'}
+                    </span>
+                    <span style={{ fontFamily: M, fontSize: 12, fontWeight: 600, textAlign: 'right',
+                      color: trade.dollarPnl > 0 ? '#00d4a0' : trade.dollarPnl < 0 ? '#ff5555' : '#555',
+                    }}>
+                      {trade.dollarPnl > 0 ? '+' : ''}{trade.dollarPnl !== 0 ? `$${trade.dollarPnl.toFixed(0)}` : '—'}
+                    </span>
+                    <span style={{ fontFamily: M, fontSize: 14, color: '#555', textAlign: 'center',
+                      transform: expandedId === trade.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s',
+                    }}>&#8964;</span>
+                  </div>
+
+                  {/* Expanded detail — placeholder for step 5 */}
+                  {expandedId === trade.id && (
+                    <div style={{ padding: '16px', borderBottom: '0.5px solid #1e1e1e', background: '#0d0d0d',
+                      fontFamily: M, fontSize: 11, color: '#444' }}>
+                      Expanded detail panel coming in step 5...
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {paged.length === 0 && (
+                <div style={{ fontFamily: M, fontSize: 12, color: '#444', textAlign: 'center', padding: 40 }}>No trades match your filters.</div>
+              )}
+
+              {/* Pagination */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '0.5px solid #1e1e1e' }}>
+                <span style={{ fontFamily: M, fontSize: 12, color: '#555' }}>
+                  {filtered.length > 0 ? `${page * perPage + 1}–${Math.min((page + 1) * perPage, filtered.length)} of ${filtered.length} trades` : '0 trades'}
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                    style={{ fontFamily: M, fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
+                      padding: '6px 14px', background: '#1a1a1a', border: '0.5px solid #1e1e1e',
+                      borderRadius: 6, color: page === 0 ? '#333' : '#888', cursor: page === 0 ? 'default' : 'pointer',
+                    }}>Prev</button>
+                  <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                    style={{ fontFamily: M, fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
+                      padding: '6px 14px', background: '#1a1a1a', border: '0.5px solid #1e1e1e',
+                      borderRadius: 6, color: page >= totalPages - 1 ? '#333' : '#888', cursor: page >= totalPages - 1 ? 'default' : 'pointer',
+                    }}>Next</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       </main>
     </div>
