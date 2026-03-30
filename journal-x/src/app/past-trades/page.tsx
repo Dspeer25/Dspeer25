@@ -87,7 +87,7 @@ export default function PastTradesPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
           <div>
             <h1 style={{ fontFamily: H, fontSize: 30, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1 }}>Past Trades</h1>
-            <p style={{ fontFamily: M, fontSize: 12, color: '#555', marginTop: 8, letterSpacing: '0.02em' }}>Review, filter, and drill into every trade you&apos;ve logged.</p>
+            <p style={{ fontFamily: M, fontSize: 14, color: '#666', marginTop: 8, letterSpacing: '0.02em' }}>Review, filter, and drill into every trade you&apos;ve logged.</p>
           </div>
           {/* Watermark — stick man holding candlestick */}
           <div style={{ opacity: 0.2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
@@ -137,12 +137,12 @@ export default function PastTradesPage() {
           <div style={{ display: 'flex' }}>
             {/* Y-axis label */}
             <div style={{ width: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: M, fontSize: 8, color: '#333', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>Cumulative P&L ($)</span>
+              <span style={{ fontFamily: M, fontSize: 11, color: '#555', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>Cumulative P&L ($)</span>
             </div>
             {/* Y-axis ticks */}
             <div style={{ width: 52, display: 'flex', flexDirection: 'column-reverse', justifyContent: 'space-between', paddingBottom: 2, paddingTop: 2 }}>
               {yTicks.map(v => (
-                <span key={v} style={{ fontFamily: M, fontSize: 10, color: '#444', textAlign: 'right', lineHeight: 1 }}>${v.toLocaleString()}</span>
+                <span key={v} style={{ fontFamily: M, fontSize: 12, color: '#666', textAlign: 'right', lineHeight: 1 }}>${v.toLocaleString()}</span>
               ))}
             </div>
             {/* Chart SVG */}
@@ -224,11 +224,11 @@ export default function PastTradesPage() {
               {/* X-axis labels */}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4 }}>
                 {xLabels.map(d => (
-                  <span key={d} style={{ fontFamily: M, fontSize: 9, color: '#444' }}>{fmtDate(d)}</span>
+                  <span key={d} style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{fmtDate(d)}</span>
                 ))}
               </div>
               <div style={{ textAlign: 'center', marginTop: 2 }}>
-                <span style={{ fontFamily: M, fontSize: 8, color: '#333', letterSpacing: '0.05em' }}>Trade Date</span>
+                <span style={{ fontFamily: M, fontSize: 11, color: '#555', letterSpacing: '0.05em' }}>Trade Date</span>
               </div>
             </div>
           </div>
