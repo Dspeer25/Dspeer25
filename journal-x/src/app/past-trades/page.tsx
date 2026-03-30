@@ -306,7 +306,7 @@ export default function PastTradesPage() {
           const cols = '80px 110px 130px 150px 64px 90px 90px 80px 90px 32px';
           const thStyle = (text: string): React.CSSProperties => ({
             fontFamily: M, fontSize: 13, fontWeight: 500, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: '#888', textAlign: text === 'P&L' || text === 'R:R' ? 'right' : 'left',
+            textTransform: 'uppercase', color: '#aaa', textShadow: '0 0 8px rgba(180,180,180,0.4)', textAlign: text === 'P&L' || text === 'R:R' ? 'right' : 'left',
           });
 
           const fmtD = (d: string) => {
@@ -352,16 +352,16 @@ export default function PastTradesPage() {
                     onMouseEnter={e => { e.currentTarget.style.background = '#151515'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#888' }}>{fmtD(trade.date)}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{fmtD(trade.date)}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <TickerLogo ticker={trade.ticker} size={22} />
                       <span style={{ fontFamily: M, fontSize: 14, fontWeight: 700, color: '#fff' }}>{trade.ticker}</span>
                     </div>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#777' }}>{trade.instrument}</span>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#777' }}>{trade.strategy}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{trade.instrument}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{trade.strategy}</span>
                     <span>{resultBadge(trade.result)}</span>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#888' }}>${trade.initialRisk.toFixed(0)}</span>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#888' }}>${trade.adjustedRisk.toFixed(0)}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>${trade.initialRisk.toFixed(0)}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>${trade.adjustedRisk.toFixed(0)}</span>
                     <span style={{ fontFamily: M, fontSize: 12, fontWeight: 600, color: trade.rr > 0 ? '#00d4a0' : '#555', textAlign: 'right' }}>
                       {trade.rr > 0 ? `${trade.rr.toFixed(1)}R` : '—'}
                     </span>
@@ -536,7 +536,7 @@ export default function PastTradesPage() {
 
               {/* Pagination */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '0.5px solid #1e1e1e' }}>
-                <span style={{ fontFamily: M, fontSize: 13, color: '#666' }}>
+                <span style={{ fontFamily: M, fontSize: 13, color: '#888' }}>
                   {filtered.length > 0 ? `${page * perPage + 1}–${Math.min((page + 1) * perPage, filtered.length)} of ${filtered.length} trades` : '0 trades'}
                 </span>
                 <div style={{ display: 'flex', gap: 8 }}>
