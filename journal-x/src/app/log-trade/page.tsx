@@ -23,7 +23,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
         <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
       <div className="mt-[-2px] ml-[2px]">
-        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>
+        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#3a3d48' : '#bbb' }}>
           Journal
         </span>
         <span className="text-[11px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
@@ -201,11 +201,11 @@ export default function LogTradePage() {
   };
 
   // ── Style helpers ──
-  const labelCls = `block text-[12px] font-bold tracking-[0.2em] uppercase mb-2 ${light ? 'text-[#777]' : 'text-[#999]'}`;
+  const labelCls = `block text-[12px] font-bold tracking-[0.2em] uppercase mb-2 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`;
   const inputCls = `w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 ${
     light
-      ? 'bg-white/80 border border-[rgba(0,0,0,0.10)] text-[#1a1a1a] placeholder-[#bbb] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
-      : 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#eee] placeholder-[#666] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
+      ? 'bg-white/80 border border-[rgba(0,0,0,0.10)] text-[#1a1c2e] placeholder-[#bbb] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
+      : 'bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#eee] placeholder-[#8a8d98] focus:border-[#30C48B] focus:ring-1 focus:ring-[#30C48B]/20'
   }`;
   const glassPanelCls = light
     ? 'bg-white/60 border border-[rgba(0,0,0,0.06)] shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
@@ -214,11 +214,11 @@ export default function LogTradePage() {
   return (
     <div
       className="min-h-screen relative transition-colors duration-500"
-      style={light ? { background: '#f5f5f0', color: '#1a1a1a' } : {}}
+      style={light ? { background: '#f5f5f0', color: '#1a1c2e' } : {}}
     >
       {light && (
         <style>{`
-          body { background: #f5f5f0 !important; color: #1a1a1a !important; }
+          body { background: #f5f5f0 !important; color: #1a1c2e !important; }
           body::before { opacity: 0.04 !important; }
         `}</style>
       )}
@@ -228,13 +228,13 @@ export default function LogTradePage() {
         <JournalXLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
-            <Link href="/dashboard" className={`text-sm transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>
+            <Link href="/dashboard" className={`text-sm transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>
               Dashboard
             </Link>
           )}
           <button
             onClick={() => setLight(!light)}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#333]' : 'glass text-[#999] hover:text-white'}`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#3a3d48]' : 'glass text-[#8a8d98] hover:text-white'}`}
           >
             {light ? '\u{1F319}' : '\u{2600}\u{FE0F}'}
           </button>
@@ -250,7 +250,7 @@ export default function LogTradePage() {
             className={`text-[11px] font-bold tracking-[0.35em] uppercase transition-colors ${
               i === 0
                 ? 'text-[#30C48B]'
-                : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-[#ccc]'
+                : light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-[#e0e0e8]'
             }`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
           >
@@ -262,8 +262,8 @@ export default function LogTradePage() {
       {/* Main content */}
       <main className="relative z-10 max-w-4xl mx-auto px-8 pt-8 pb-24">
         <div className="mb-10">
-          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Log a Trade</h1>
-          <p className={`text-sm ${light ? 'text-[#888]' : 'text-[#999]'}`}>Record the bones of every trade. The stats calculate themselves.</p>
+          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>Log a Trade</h1>
+          <p className={`text-sm ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Record the bones of every trade. The stats calculate themselves.</p>
         </div>
 
         {saved && (
@@ -305,7 +305,7 @@ export default function LogTradePage() {
                       className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         form.tradeType === t
                           ? 'bg-[#30C48B] text-black'
-                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
+                          : light ? 'text-[#8a8d98] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'
                       }`}>
                       {t}
                     </button>
@@ -320,7 +320,7 @@ export default function LogTradePage() {
                       className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         form.direction === d
                           ? d === 'Long' ? 'bg-[#30C48B] text-black' : 'bg-[#f87171] text-white'
-                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
+                          : light ? 'text-[#8a8d98] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'
                       }`}>
                       {d}
                     </button>
@@ -335,7 +335,7 @@ export default function LogTradePage() {
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         form.confidence === c
                           ? c === 'High' ? 'bg-[#30C48B] text-black' : c === 'Med' ? 'bg-[#fbbf24] text-black' : 'bg-[#f87171] text-white'
-                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
+                          : light ? 'text-[#8a8d98] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'
                       }`}>
                       {c}
                     </button>
@@ -377,7 +377,7 @@ export default function LogTradePage() {
                       className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
                         form.result === r
                           ? r === 'W' ? 'bg-[#30C48B] text-black' : r === 'L' ? 'bg-[#f87171] text-white' : 'bg-[#fbbf24] text-black'
-                          : light ? 'text-[#999] hover:text-[#333]' : 'text-[#888] hover:text-white'
+                          : light ? 'text-[#8a8d98] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'
                       }`}>
                       {r === 'W' ? 'Win' : r === 'L' ? 'Loss' : 'B/E'}
                     </button>
@@ -409,7 +409,7 @@ export default function LogTradePage() {
               <CoachIcon light={light} />
               <div>
                 <h2 className="text-[18px] font-bold tracking-[0.3em] uppercase text-[#30C48B]">Trading Coach</h2>
-                <p className={`text-[12px] mt-0.5 ${light ? 'text-[#999]' : 'text-[#777]'}`}>
+                <p className={`text-[12px] mt-0.5 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>
                   Modeled after Mark Douglas &middot; Trading in the Zone
                 </p>
               </div>
@@ -428,8 +428,8 @@ export default function LogTradePage() {
                       msg.role === 'user'
                         ? 'bg-[#30C48B]/15 text-[#30C48B] rounded-br-md'
                         : light
-                          ? 'bg-white/80 text-[#444] border border-[rgba(0,0,0,0.06)] rounded-bl-md'
-                          : 'bg-[rgba(255,255,255,0.06)] text-[#ccc] border border-[rgba(255,255,255,0.06)] rounded-bl-md'
+                          ? 'bg-white/80 text-[#5a5d68] border border-[rgba(0,0,0,0.06)] rounded-bl-md'
+                          : 'bg-[rgba(255,255,255,0.06)] text-[#e0e0e8] border border-[rgba(255,255,255,0.06)] rounded-bl-md'
                     }`}>
                       {msg.role === 'coach' && (
                         <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#30C48B] block mb-1.5">Coach</span>
@@ -475,7 +475,7 @@ export default function LogTradePage() {
                 Send
               </button>
             </div>
-            <p className={`text-[12px] mt-3 ${light ? 'text-[#bbb]' : 'text-[#555]'}`}>
+            <p className={`text-[12px] mt-3 ${light ? 'text-[#bbb]' : 'text-[#5a5d68]'}`}>
               The coach analyzes your trade rationale against Mark Douglas&apos; principles. Your conversation is saved with the trade.
             </p>
           </div>
@@ -492,7 +492,7 @@ export default function LogTradePage() {
             </button>
           ) : (
             <div className={`${glassPanelCls} rounded-2xl p-8 text-center`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-              <p className={`text-sm mb-4 ${light ? 'text-[#777]' : 'text-[#bbb]'}`}>Sign up to start logging trades and tracking your performance.</p>
+              <p className={`text-sm mb-4 ${light ? 'text-[#8a8d98]' : 'text-[#bbb]'}`}>Sign up to start logging trades and tracking your performance.</p>
               <Link
                 href="/"
                 className="inline-block px-8 py-3 rounded-full font-medium text-sm bg-[#30C48B] hover:bg-[#28A876] text-black transition-all"
@@ -509,26 +509,26 @@ export default function LogTradePage() {
           <div className={`mt-6 ${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>P&L</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>P&L</div>
                 <div className={`text-xl font-light ${parseFloat(form.dollarPnl) >= 0 ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {parseFloat(form.dollarPnl) >= 0 ? '+' : ''}${form.dollarPnl || '0'}
                 </div>
               </div>
               <div>
-                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>R Multiple</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>R Multiple</div>
                 <div className={`text-xl font-light ${parseFloat(form.rr) >= 0 ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {parseFloat(form.rr) >= 0 ? '+' : ''}{form.rr || '0'}R
                 </div>
               </div>
               <div>
-                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Direction</div>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Direction</div>
                 <div className={`text-xl font-light ${form.direction === 'Long' ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>
                   {form.direction}
                 </div>
               </div>
               <div>
-                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Position</div>
-                <div className={`text-xl font-light ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>
+                <div className={`text-[12px] font-bold tracking-[0.2em] uppercase mb-1 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Position</div>
+                <div className={`text-xl font-light ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>
                   {form.positionSize} sh
                 </div>
               </div>
@@ -538,7 +538,7 @@ export default function LogTradePage() {
       </main>
 
       {/* Footer */}
-      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#8a8d98]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
     </div>

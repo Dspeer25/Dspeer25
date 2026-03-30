@@ -14,7 +14,7 @@ const KNOWN: Record<string, { bg: string; text: string; color?: string }> = {
   DIA:  { bg: '#1a2a4a', text: 'DIA' },
   VIX:  { bg: '#4a1a1a', text: 'VIX' },
   GLD:  { bg: '#3a3018', text: 'GLD', color: '#c9a84c' },
-  SLV:  { bg: '#2a2a2a', text: 'SLV', color: '#aaa' },
+  SLV:  { bg: '#2a2a2a', text: 'SLV', color: '#e0e0e8' },
   USO:  { bg: '#1a3a1a', text: 'USO' },
   BTC:  { bg: '#3a2510', text: '\u20BF', color: '#f7931a' },
   ETH:  { bg: '#1e2040', text: 'ETH', color: '#627eea' },
@@ -106,7 +106,7 @@ export default function TickerLogo({ ticker, size = SZ }: Props) {
     <div style={{
       width: size, height: size, borderRadius: BR,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: bg, color: '#aaa',
+      background: bg, color: '#e0e0e8',
       fontSize: 9, fontWeight: 700, fontFamily: M, flexShrink: 0,
     }}>
       {t[0]}

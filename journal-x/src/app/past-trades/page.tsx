@@ -76,10 +76,10 @@ export default function PastTradesPage() {
   };
 
   const cards = [
-    { label: 'Total Trades', value: String(stats.total),                                        color: '#ccc' },
+    { label: 'Total Trades', value: String(stats.total),                                        color: '#e0e0e8' },
     { label: 'Win Rate',     value: `${stats.wr}%`,                                             color: stats.wr >= 50 ? '#00d4a0' : '#ff5555' },
     { label: 'Total P&L',   value: `${stats.totalPnl >= 0 ? '+' : ''}$${stats.totalPnl.toLocaleString()}`, color: stats.totalPnl >= 0 ? '#00d4a0' : '#ff5555' },
-    { label: 'Avg R:R',     value: stats.avgRR,                                                 color: '#ccc' },
+    { label: 'Avg R:R',     value: stats.avgRR,                                                 color: '#e0e0e8' },
     { label: 'Avg Win',     value: `+$${stats.avgWin}`,                                         color: '#00d4a0' },
     { label: 'Avg Loss',    value: `-$${stats.avgLoss}`,                                        color: '#ff5555' },
     { label: 'Profit Factor', value: stats.pf,                                                  color: '#f5a623' },
@@ -87,31 +87,31 @@ export default function PastTradesPage() {
   ];
 
   return (
-    <div style={{ background: '#0a0a0a', minHeight: '100vh', color: '#ccc' }}>
+    <div style={{ background: '#0c0e17', minHeight: '100vh', color: '#e0e0e8' }}>
       <main style={{ maxWidth: 1120, margin: '0 auto', padding: '40px 32px' }}>
 
         {/* PAGE HEADER */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
           <div>
             <h1 style={{ fontFamily: H, fontSize: 30, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1 }}>Past Trades</h1>
-            <p style={{ fontFamily: M, fontSize: 14, color: '#777', marginTop: 8, letterSpacing: '0.02em' }}>Review, filter, and drill into every trade you&apos;ve logged.</p>
+            <p style={{ fontFamily: M, fontSize: 14, color: '#8a8d98', marginTop: 8, letterSpacing: '0.02em' }}>Review, filter, and drill into every trade you&apos;ve logged.</p>
           </div>
           {/* Watermark — stick man holding candlestick */}
           <div style={{ opacity: 0.2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             <svg width="36" height="36" viewBox="0 0 56 56" fill="none">
               {/* Stick man */}
-              <circle cx="18" cy="12" r="4.5" stroke="#aaa" strokeWidth="1.8" fill="none" />
-              <line x1="18" y1="16.5" x2="18" y2="30" stroke="#aaa" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="18" y1="21" x2="12" y2="27" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="18" y1="21" x2="32" y2="17" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="18" y1="30" x2="13" y2="40" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" />
-              <line x1="18" y1="30" x2="23" y2="40" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="18" cy="12" r="4.5" stroke="#e0e0e8" strokeWidth="1.8" fill="none" />
+              <line x1="18" y1="16.5" x2="18" y2="30" stroke="#e0e0e8" strokeWidth="1.8" strokeLinecap="round" />
+              <line x1="18" y1="21" x2="12" y2="27" stroke="#e0e0e8" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="18" y1="21" x2="32" y2="17" stroke="#e0e0e8" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="18" y1="30" x2="13" y2="40" stroke="#e0e0e8" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="18" y1="30" x2="23" y2="40" stroke="#e0e0e8" strokeWidth="1.5" strokeLinecap="round" />
               {/* Candlestick in hand */}
               <line x1="35" y1="6" x2="35" y2="11" stroke="#00d4a0" strokeWidth="1.2" strokeLinecap="round" />
               <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(0,212,160,0.35)" stroke="#00d4a0" strokeWidth="1" />
               <line x1="35" y1="25" x2="35" y2="32" stroke="#00d4a0" strokeWidth="1.2" strokeLinecap="round" />
             </svg>
-            <span style={{ fontFamily: H, fontSize: 10, fontWeight: 600, letterSpacing: '0.25em', color: '#aaa' }}>
+            <span style={{ fontFamily: H, fontSize: 10, fontWeight: 600, letterSpacing: '0.25em', color: '#e0e0e8' }}>
               JOURNAL <span style={{ color: '#00d4a0' }}>X</span>
             </span>
           </div>
@@ -120,23 +120,23 @@ export default function PastTradesPage() {
         {/* STAT CARDS — 8 across */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, minmax(0,1fr))', gap: 8, marginBottom: 20 }}>
           {cards.map(c => (
-            <div key={c.label} style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, padding: '11px 13px' }}>
-              <div style={{ fontFamily: M, fontSize: 12, fontWeight: 500, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#777', marginBottom: 7 }}>{c.label}</div>
+            <div key={c.label} style={{ background: '#141620', border: '0.5px solid #1e2030', borderRadius: 8, padding: '11px 13px' }}>
+              <div style={{ fontFamily: M, fontSize: 12, fontWeight: 500, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#8a8d98', marginBottom: 7 }}>{c.label}</div>
               <div style={{ fontFamily: M, fontSize: 17, fontWeight: 600, color: c.color }}>{c.value}</div>
             </div>
           ))}
         </div>
 
         {/* EQUITY CURVE */}
-        <div style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 10, padding: '16px 20px 12px', marginBottom: 20 }}>
+        <div style={{ background: '#141620', border: '0.5px solid #1e2030', borderRadius: 10, padding: '16px 20px 12px', marginBottom: 20 }}>
           {/* Header row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555' }}>Cumulative P&L</span>
+            <span style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#5a5d68' }}>Cumulative P&L</span>
             <div style={{ display: 'flex', gap: 24, fontFamily: M, fontSize: 11 }}>
-              <span><span style={{ color: '#555' }}>Start </span><span style={{ color: '#00d4a0' }}>$0</span></span>
-              <span><span style={{ color: '#555' }}>Current </span><span style={{ color: '#00d4a0' }}>+${curve.current.toLocaleString()}</span></span>
-              <span><span style={{ color: '#555' }}>Peak </span><span style={{ color: '#00d4a0' }}>+${curve.peak.toLocaleString()}</span></span>
-              <span><span style={{ color: '#555' }}>Max DD </span><span style={{ color: '#ff5555' }}>-${curve.maxDD.toLocaleString()}</span></span>
+              <span><span style={{ color: '#5a5d68' }}>Start </span><span style={{ color: '#00d4a0' }}>$0</span></span>
+              <span><span style={{ color: '#5a5d68' }}>Current </span><span style={{ color: '#00d4a0' }}>+${curve.current.toLocaleString()}</span></span>
+              <span><span style={{ color: '#5a5d68' }}>Peak </span><span style={{ color: '#00d4a0' }}>+${curve.peak.toLocaleString()}</span></span>
+              <span><span style={{ color: '#5a5d68' }}>Max DD </span><span style={{ color: '#ff5555' }}>-${curve.maxDD.toLocaleString()}</span></span>
             </div>
           </div>
 
@@ -144,12 +144,12 @@ export default function PastTradesPage() {
           <div style={{ display: 'flex' }}>
             {/* Y-axis label */}
             <div style={{ width: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: M, fontSize: 11, color: '#555', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>Cumulative P&L ($)</span>
+              <span style={{ fontFamily: M, fontSize: 11, color: '#5a5d68', writingMode: 'vertical-rl', transform: 'rotate(180deg)', letterSpacing: '0.05em' }}>Cumulative P&L ($)</span>
             </div>
             {/* Y-axis ticks */}
             <div style={{ width: 52, display: 'flex', flexDirection: 'column-reverse', justifyContent: 'space-between', paddingBottom: 2, paddingTop: 2 }}>
               {yTicks.map(v => (
-                <span key={v} style={{ fontFamily: M, fontSize: 12, color: '#666', textAlign: 'right', lineHeight: 1 }}>${v.toLocaleString()}</span>
+                <span key={v} style={{ fontFamily: M, fontSize: 12, color: '#8a8d98', textAlign: 'right', lineHeight: 1 }}>${v.toLocaleString()}</span>
               ))}
             </div>
             {/* Chart SVG */}
@@ -170,7 +170,7 @@ export default function PastTradesPage() {
                   {/* Grid lines */}
                   {yTicks.map((v, i) => {
                     const y = 175 - (v / yMax) * 170;
-                    return <line key={i} x1="0" y1={y} x2="1000" y2={y} stroke="#1a1a1a" strokeWidth="1" />;
+                    return <line key={i} x1="0" y1={y} x2="1000" y2={y} stroke="#1a1c2e" strokeWidth="1" />;
                   })}
                   {/* Gradient fill */}
                   <defs>
@@ -219,11 +219,11 @@ export default function PastTradesPage() {
                     position: 'absolute', top: 4,
                     left: `${(hoverIdx / (curve.pts.length - 1)) * 100}%`,
                     transform: 'translateX(-50%)',
-                    background: '#1a1a1a', border: '1px solid #00d4a0', borderRadius: 6,
+                    background: '#1a1c2e', border: '1px solid #00d4a0', borderRadius: 6,
                     padding: '4px 10px', fontFamily: M, fontSize: 11, whiteSpace: 'nowrap', pointerEvents: 'none',
                     zIndex: 10,
                   }}>
-                    <span style={{ color: '#888' }}>{fmtDate(curve.pts[hoverIdx].date)} </span>
+                    <span style={{ color: '#8a8d98' }}>{fmtDate(curve.pts[hoverIdx].date)} </span>
                     <span style={{ color: '#00d4a0', fontWeight: 600 }}>+${curve.pts[hoverIdx].value.toLocaleString()}</span>
                   </div>
                 )}
@@ -231,11 +231,11 @@ export default function PastTradesPage() {
               {/* X-axis labels */}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4 }}>
                 {xLabels.map(d => (
-                  <span key={d} style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{fmtDate(d)}</span>
+                  <span key={d} style={{ fontFamily: M, fontSize: 12, color: '#8a8d98' }}>{fmtDate(d)}</span>
                 ))}
               </div>
               <div style={{ textAlign: 'center', marginTop: 2 }}>
-                <span style={{ fontFamily: M, fontSize: 11, color: '#555', letterSpacing: '0.05em' }}>Trade Date</span>
+                <span style={{ fontFamily: M, fontSize: 11, color: '#5a5d68', letterSpacing: '0.05em' }}>Trade Date</span>
               </div>
             </div>
           </div>
@@ -244,27 +244,27 @@ export default function PastTradesPage() {
         {/* FILTER ROW */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 20 }}>
           {/* Period tabs */}
-          <div style={{ display: 'flex', gap: 0, background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, background: '#141620', border: '0.5px solid #1e2030', borderRadius: 8, overflow: 'hidden' }}>
             {['1D', '1W', '1M', 'QTR', '1Y', 'MAX'].map(p => (
               <button key={p} onClick={() => setPeriod(p)} style={{
                 fontFamily: M, fontSize: 12, fontWeight: 600, letterSpacing: '0.05em',
                 padding: '8px 16px', background: period === p ? '#00d4a0' : 'transparent',
-                color: period === p ? '#0a0a0a' : '#555', border: 'none', cursor: 'pointer',
+                color: period === p ? '#0c0e17' : '#5a5d68', border: 'none', cursor: 'pointer',
                 transition: 'all 0.15s',
               }}>{p}</button>
             ))}
           </div>
 
           {/* Divider */}
-          <div style={{ width: 1, height: 28, background: '#1e1e1e', margin: '0 16px' }} />
+          <div style={{ width: 1, height: 28, background: '#1e2030', margin: '0 16px' }} />
 
           {/* Result filter */}
-          <div style={{ display: 'flex', gap: 0, background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: 0, background: '#141620', border: '0.5px solid #1e2030', borderRadius: 8, overflow: 'hidden' }}>
             {['ALL', 'W', 'L', 'BE'].map(r => (
               <button key={r} onClick={() => setResultFilter(r)} style={{
                 fontFamily: M, fontSize: 12, fontWeight: 600, letterSpacing: '0.05em',
                 padding: '8px 16px', background: resultFilter === r ? '#00d4a0' : 'transparent',
-                color: resultFilter === r ? '#0a0a0a' : '#555', border: 'none', cursor: 'pointer',
+                color: resultFilter === r ? '#0c0e17' : '#5a5d68', border: 'none', cursor: 'pointer',
                 transition: 'all 0.15s',
               }}>{r}</button>
             ))}
@@ -277,8 +277,8 @@ export default function PastTradesPage() {
             placeholder="Search ticker..."
             style={{
               marginLeft: 'auto', fontFamily: M, fontSize: 12, padding: '8px 14px',
-              background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 8,
-              color: '#ccc', outline: 'none', width: 160,
+              background: '#141620', border: '0.5px solid #1e2030', borderRadius: 8,
+              color: '#e0e0e8', outline: 'none', width: 160,
             }}
           />
         </div>
@@ -306,7 +306,7 @@ export default function PastTradesPage() {
           const cols = '80px 110px 130px 150px 64px 90px 90px 80px 90px 32px';
           const thStyle = (text: string): React.CSSProperties => ({
             fontFamily: M, fontSize: 13, fontWeight: 500, letterSpacing: '0.08em',
-            textTransform: 'uppercase', color: '#aaa', textShadow: '0 0 8px rgba(180,180,180,0.4)', textAlign: text === 'P&L' || text === 'R:R' ? 'right' : 'left',
+            textTransform: 'uppercase', color: '#e0e0e8', textShadow: '0 0 8px rgba(180,180,180,0.4)', textAlign: text === 'P&L' || text === 'R:R' ? 'right' : 'left',
           });
 
           const fmtD = (d: string) => {
@@ -315,10 +315,10 @@ export default function PastTradesPage() {
           };
 
           const resultBadge = (r: string) => {
-            const bg = r === 'W' ? '#00d4a0' : r === 'L' ? '#ff5555' : '#666';
+            const bg = r === 'W' ? '#00d4a0' : r === 'L' ? '#ff5555' : '#8a8d98';
             return (
               <span style={{
-                fontFamily: M, fontSize: 11, fontWeight: 700, color: '#0a0a0a',
+                fontFamily: M, fontSize: 11, fontWeight: 700, color: '#0c0e17',
                 background: bg, borderRadius: 4, padding: '2px 8px', display: 'inline-block',
               }}>{r}</span>
             );
@@ -326,9 +326,9 @@ export default function PastTradesPage() {
 
 
           return (
-            <div style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ background: '#141620', border: '0.5px solid #1e2030', borderRadius: 10, overflow: 'hidden' }}>
               {/* Table header */}
-              <div style={{ display: 'grid', gridTemplateColumns: cols, padding: '10px 16px', borderBottom: '0.5px solid #1e1e1e' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: cols, padding: '10px 16px', borderBottom: '0.5px solid #1e2030' }}>
                 {['Date','Ticker','Instrument','Strategy','Result','Init Risk','Adj Risk','R:R','P&L',''].map(h => (
                   <div key={h} style={thStyle(h)}>{h}</div>
                 ))}
@@ -352,25 +352,25 @@ export default function PastTradesPage() {
                     onMouseEnter={e => { e.currentTarget.style.background = '#151515'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{fmtD(trade.date)}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#8a8d98', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{fmtD(trade.date)}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <TickerLogo ticker={trade.ticker} size={22} />
                       <span style={{ fontFamily: M, fontSize: 14, fontWeight: 700, color: '#fff' }}>{trade.ticker}</span>
                     </div>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{trade.instrument}</span>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{trade.strategy}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#8a8d98', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{trade.instrument}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#8a8d98', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>{trade.strategy}</span>
                     <span>{resultBadge(trade.result)}</span>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>${trade.initialRisk.toFixed(0)}</span>
-                    <span style={{ fontFamily: M, fontSize: 13, color: '#999', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>${trade.adjustedRisk.toFixed(0)}</span>
-                    <span style={{ fontFamily: M, fontSize: 12, fontWeight: 600, color: trade.rr > 0 ? '#00d4a0' : '#555', textAlign: 'right' }}>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#8a8d98', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>${trade.initialRisk.toFixed(0)}</span>
+                    <span style={{ fontFamily: M, fontSize: 13, color: '#8a8d98', textShadow: '0 0 6px rgba(150,150,150,0.3)' }}>${trade.adjustedRisk.toFixed(0)}</span>
+                    <span style={{ fontFamily: M, fontSize: 12, fontWeight: 600, color: trade.rr > 0 ? '#00d4a0' : '#5a5d68', textAlign: 'right' }}>
                       {trade.rr > 0 ? `${trade.rr.toFixed(1)}R` : '—'}
                     </span>
                     <span style={{ fontFamily: M, fontSize: 12, fontWeight: 600, textAlign: 'right',
-                      color: trade.dollarPnl > 0 ? '#00d4a0' : trade.dollarPnl < 0 ? '#ff5555' : '#555',
+                      color: trade.dollarPnl > 0 ? '#00d4a0' : trade.dollarPnl < 0 ? '#ff5555' : '#5a5d68',
                     }}>
                       {trade.dollarPnl > 0 ? '+' : ''}{trade.dollarPnl !== 0 ? `$${trade.dollarPnl.toFixed(0)}` : '—'}
                     </span>
-                    <span style={{ fontFamily: M, fontSize: 14, color: '#555', textAlign: 'center',
+                    <span style={{ fontFamily: M, fontSize: 14, color: '#5a5d68', textAlign: 'center',
                       transform: expandedId === trade.id ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform 0.2s',
                     }}>&#8964;</span>
@@ -378,11 +378,11 @@ export default function PastTradesPage() {
 
                   {/* Expanded detail panel */}
                   {expandedId === trade.id && (
-                    <div style={{ padding: '12px 16px 16px', borderBottom: '0.5px solid #1e1e1e', background: '#0d0d0d' }}>
+                    <div style={{ padding: '12px 16px 16px', borderBottom: '0.5px solid #1e2030', background: '#0e1019' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 1fr 1.6fr', gap: 10 }}>
                         {/* Col 1: Trade Chart */}
-                        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Trade Chart</div>
+                        <div style={{ background: '#141620', border: '0.5px solid #1a1c2e', borderRadius: 6, padding: '13px 14px' }}>
+                          <div style={{ fontFamily: M, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#5a5d68', marginBottom: 10 }}>Trade Chart</div>
                           <svg viewBox="0 0 200 100" style={{ width: '100%', height: 130, background: '#060606', borderRadius: 4, display: 'block' }}>
                             {/* 12 candlesticks */}
                             {[
@@ -416,14 +416,14 @@ export default function PastTradesPage() {
                             />
                           </svg>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.time}</span>
-                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.ticker} 1m</span>
-                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>—</span>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#5a5d68' }}>{trade.time}</span>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#5a5d68' }}>{trade.ticker} 1m</span>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#5a5d68' }}>—</span>
                           </div>
                         </div>
                         {/* Col 2: Trade Detail */}
-                        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Trade Detail</div>
+                        <div style={{ background: '#141620', border: '0.5px solid #1a1c2e', borderRadius: 6, padding: '13px 14px' }}>
+                          <div style={{ fontFamily: M, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#5a5d68', marginBottom: 10 }}>Trade Detail</div>
                           {[
                             { label: 'Entry', value: `$${trade.entryPrice.toFixed(2)}` },
                             { label: 'Exit', value: `$${trade.exitPrice.toFixed(2)}` },
@@ -432,7 +432,7 @@ export default function PastTradesPage() {
                             { label: 'Hold', value: '—' },
                           ].map((r, ri) => (
                             <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: ri < 4 ? '0.5px solid #161616' : 'none' }}>
-                              <span style={{ fontFamily: M, fontSize: 12, color: '#777' }}>{r.label}</span>
+                              <span style={{ fontFamily: M, fontSize: 12, color: '#8a8d98' }}>{r.label}</span>
                               <span style={{ fontFamily: M, fontSize: 13, fontWeight: 500, color: '#ddd' }}>{r.value}</span>
                             </div>
                           ))}
@@ -450,11 +450,11 @@ export default function PastTradesPage() {
                             { label: 'Revenge trade', value: isL && prevL ? 'Possible' : 'No', color: isL && prevL ? '#ffb347' : '#00ffbb' },
                           ];
                           return (
-                            <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                              <div style={{ fontFamily: M, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Psychology</div>
+                            <div style={{ background: '#141620', border: '0.5px solid #1a1c2e', borderRadius: 6, padding: '13px 14px' }}>
+                              <div style={{ fontFamily: M, fontSize: 11, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#5a5d68', marginBottom: 10 }}>Psychology</div>
                               {psych.map((r, ri) => (
                                 <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: ri < 4 ? '0.5px solid #161616' : 'none' }}>
-                                  <span style={{ fontFamily: M, fontSize: 12, color: '#777' }}>{r.label}</span>
+                                  <span style={{ fontFamily: M, fontSize: 12, color: '#8a8d98' }}>{r.label}</span>
                                   <span style={{ fontFamily: M, fontSize: 13, fontWeight: 600, color: r.color }}>{r.value}</span>
                                 </div>
                               ))}
@@ -531,24 +531,24 @@ export default function PastTradesPage() {
               })}
 
               {paged.length === 0 && (
-                <div style={{ fontFamily: M, fontSize: 12, color: '#444', textAlign: 'center', padding: 40 }}>No trades match your filters.</div>
+                <div style={{ fontFamily: M, fontSize: 12, color: '#5a5d68', textAlign: 'center', padding: 40 }}>No trades match your filters.</div>
               )}
 
               {/* Pagination */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '0.5px solid #1e1e1e' }}>
-                <span style={{ fontFamily: M, fontSize: 13, color: '#888' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderTop: '0.5px solid #1e2030' }}>
+                <span style={{ fontFamily: M, fontSize: 13, color: '#8a8d98' }}>
                   {filtered.length > 0 ? `${page * perPage + 1}–${Math.min((page + 1) * perPage, filtered.length)} of ${filtered.length} trades` : '0 trades'}
                 </span>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
                     style={{ fontFamily: M, fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
-                      padding: '6px 14px', background: '#1a1a1a', border: '0.5px solid #1e1e1e',
-                      borderRadius: 6, color: page === 0 ? '#333' : '#888', cursor: page === 0 ? 'default' : 'pointer',
+                      padding: '6px 14px', background: '#1a1c2e', border: '0.5px solid #1e2030',
+                      borderRadius: 6, color: page === 0 ? '#3a3d48' : '#8a8d98', cursor: page === 0 ? 'default' : 'pointer',
                     }}>Prev</button>
                   <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
                     style={{ fontFamily: M, fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
-                      padding: '6px 14px', background: '#1a1a1a', border: '0.5px solid #1e1e1e',
-                      borderRadius: 6, color: page >= totalPages - 1 ? '#333' : '#888', cursor: page >= totalPages - 1 ? 'default' : 'pointer',
+                      padding: '6px 14px', background: '#1a1c2e', border: '0.5px solid #1e2030',
+                      borderRadius: 6, color: page >= totalPages - 1 ? '#3a3d48' : '#8a8d98', cursor: page >= totalPages - 1 ? 'default' : 'pointer',
                     }}>Next</button>
                 </div>
               </div>

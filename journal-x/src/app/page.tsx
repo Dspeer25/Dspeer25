@@ -27,7 +27,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
         <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
       <div className="mt-[-2px] ml-[2px]">
-        <span className="text-[16px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>
+        <span className="text-[16px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#3a3d48' : '#bbb' }}>
           Journal
         </span>
         <span className="text-[16px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
@@ -107,10 +107,10 @@ function HowItWorksModal({ onSelectPlan, onClose, light = false }: { onSelectPla
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className={`absolute inset-0 backdrop-blur-md ${light ? 'bg-black/30' : 'bg-black/70'}`} onClick={onClose} />
       <div className={`relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in ${light ? '' : 'glass'}`} style={light ? modalBg : {}}>
-        <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-white'}`}>&#10005;</button>
+        <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#5a5d68] hover:text-white'}`}>&#10005;</button>
 
-        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>How Journal X Works</h2>
-        <p className={`text-center text-[15px] mb-12 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Three steps to trading with real accountability.</p>
+        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>How Journal X Works</h2>
+        <p className={`text-center text-[15px] mb-12 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Three steps to trading with real accountability.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12 items-start">
           {steps.map((s, i) => (
@@ -118,8 +118,8 @@ function HowItWorksModal({ onSelectPlan, onClose, light = false }: { onSelectPla
               <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-5 ${light ? '' : 'glass'}`} style={light ? stepCircle : {}}>
                 <span className="text-[#30C48B] font-bold text-lg">{s.num}</span>
               </div>
-              <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{s.title}</h3>
-              <p className={`text-[14px] leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>{s.desc}</p>
+              <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1c2e]' : ''}`}>{s.title}</h3>
+              <p className={`text-[14px] leading-relaxed ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>{s.desc}</p>
 
               {i < steps.length - 1 && (
                 <div className="hidden sm:flex absolute top-7 -right-5 items-center justify-center">
@@ -184,10 +184,10 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
       <div className={`absolute inset-0 backdrop-blur-md ${light ? 'bg-black/30' : 'bg-black/70'}`} onClick={onClose} />
 
       <div className={`relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in ${light ? '' : 'glass'}`} style={light ? modalBg : {}}>
-        <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-white'}`}>&#10005;</button>
+        <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#5a5d68] hover:text-white'}`}>&#10005;</button>
 
-        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Choose Your Plan</h2>
-        <p className={`text-center text-sm mb-10 ${light ? 'text-[#999]' : 'text-[#888]'}`}>One-time payment. Lifetime access. No subscriptions.</p>
+        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>Choose Your Plan</h2>
+        <p className={`text-center text-sm mb-10 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>One-time payment. Lifetime access. No subscriptions.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           {/* Essential */}
@@ -203,8 +203,8 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
               e.currentTarget.style.borderColor = light ? 'rgba(0,0,0,0.06)' : '';
             }}
           >
-            <div className="text-xs text-[#888] uppercase tracking-[0.2em] mb-2">Essential</div>
-            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$35</div>
+            <div className="text-xs text-[#8a8d98] uppercase tracking-[0.2em] mb-2">Essential</div>
+            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1c2e]' : ''}`}>$35</div>
             <div className="text-sm text-[#30C48B] mb-6">one-time payment</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
@@ -212,13 +212,13 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
                   {f.essential
                     ? <span className="text-[#30C48B] text-xs shrink-0">&#10003;</span>
                     : <span className="text-[#f87171]/40 text-xs shrink-0">&#10005;</span>}
-                  <span className={f.essential ? (light ? 'text-[#333]' : 'text-[#ddd]') : (light ? 'text-[#bbb] line-through' : 'text-[#555] line-through')}>{f.name}</span>
+                  <span className={f.essential ? (light ? 'text-[#3a3d48]' : 'text-[#ddd]') : (light ? 'text-[#bbb] line-through' : 'text-[#5a5d68] line-through')}>{f.name}</span>
                 </li>
               ))}
             </ul>
             <button
               onClick={() => handleCheckout('essential')}
-              className={`mt-7 w-full py-3 rounded-full font-medium text-sm transition-all ${light ? 'bg-[#eee] hover:bg-[#ddd] text-[#333]' : 'glass glass-hover'}`}
+              className={`mt-7 w-full py-3 rounded-full font-medium text-sm transition-all ${light ? 'bg-[#eee] hover:bg-[#ddd] text-[#3a3d48]' : 'glass glass-hover'}`}
             >
               Get Essential
             </button>
@@ -239,20 +239,20 @@ function PricingModal({ onClose, light = false }: { onClose: () => void; light?:
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#30C48B] to-transparent" />
             <div className="text-xs text-[#30C48B] uppercase tracking-[0.2em] mb-2 font-medium">Complete</div>
-            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1a1a]' : ''}`}>$75</div>
+            <div className={`text-4xl font-light mb-1 ${light ? 'text-[#1a1c2e]' : ''}`}>$75</div>
             <div className="text-sm text-[#30C48B] mb-6">one-time payment</div>
             <ul className="space-y-2.5 flex-1">
               {features.map((f) => (
                 <li key={`c-${f.name}`} className="flex items-center gap-2.5 text-sm">
                   <span className="text-[#30C48B] text-xs shrink-0">&#10003;</span>
-                  <span className={light ? 'text-[#333]' : 'text-[#ddd]'}>{f.name}</span>
+                  <span className={light ? 'text-[#3a3d48]' : 'text-[#ddd]'}>{f.name}</span>
                   {f.hasInfo && (
                     <span className="relative group/tip inline-flex">
-                      <span className={`w-4 h-4 rounded-full text-[9px] inline-flex items-center justify-center cursor-help ${light ? 'bg-[#e5e5e0] text-[#888]' : 'glass text-[#999]'}`}>?</span>
+                      <span className={`w-4 h-4 rounded-full text-[9px] inline-flex items-center justify-center cursor-help ${light ? 'bg-[#e5e5e0] text-[#8a8d98]' : 'glass text-[#8a8d98]'}`}>?</span>
                       <span
-                        className={`absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 rounded-xl p-4 text-xs leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal ${light ? 'bg-white text-[#666] shadow-lg border border-[rgba(0,0,0,0.08)]' : 'glass text-[#bbb]'}`}
+                        className={`absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-72 rounded-xl p-4 text-xs leading-relaxed z-[100] pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-200 whitespace-normal ${light ? 'bg-white text-[#8a8d98] shadow-lg border border-[rgba(0,0,0,0.08)]' : 'glass text-[#bbb]'}`}
                       >
-                        <strong className={`block mb-1 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>AI Accountability Coach</strong>
+                        <strong className={`block mb-1 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>AI Accountability Coach</strong>
                         Modeled after Mark Douglas&apos; trading psychology (&quot;Trading in the Zone&quot;). Has full access to your past stats, logged trades, and stated goals — holds you accountable in real time. When you break a rule, it asks why. Not punishment — reflection.
                       </span>
                     </span>
@@ -299,7 +299,7 @@ function CandlestickCTALight({ onClick }: { onClick: () => void }) {
             <div className="absolute top-0 left-0 right-0 h-1/3" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.5), transparent)' }} />
           </div>
           <div className="relative z-10 px-2">
-            <div className="text-[#999] text-[10px] tracking-[0.2em] mb-5">[start here]</div>
+            <div className="text-[#8a8d98] text-[10px] tracking-[0.2em] mb-5">[start here]</div>
             <div className="text-4xl sm:text-5xl font-medium mb-1 leading-none tracking-tight whitespace-nowrap text-[#222]">Start Your</div>
             <div className="text-4xl sm:text-5xl font-medium text-[#30C48B] leading-none tracking-tight">Journal</div>
           </div>
@@ -324,7 +324,7 @@ const coachSets = [
       { label: 'Pattern Detected:', text: 'Your last three trades show premature profit-taking vs. your stated targets. Want to review them?', color: '#30C48B' },
       { label: 'Pattern Detected:', text: 'You\'ve noted hesitation again despite committing to remove this habit. Let\'s explore what\'s behind it.', color: '#30C48B' },
       { label: 'Milestone Reached:', text: 'Weekly goal hit — only A+ pullbacks off the narrow MAs. Nice job.', color: '#30C48B' },
-      { label: 'Observation:', text: 'Win rate and R are nearly 2x higher before 12:30 PM EDT vs. afternoon trades.', color: '#ccc' },
+      { label: 'Observation:', text: 'Win rate and R are nearly 2x higher before 12:30 PM EDT vs. afternoon trades.', color: '#e0e0e8' },
     ],
     weeklyRating: 76,
     bars: [
@@ -337,9 +337,9 @@ const coachSets = [
   {
     insights: [
       { label: 'Pattern Detected:', text: 'You widened your stop 3x this week post-entry. Each led to a larger loss than planned.', color: '#30C48B' },
-      { label: 'Observation:', text: 'Breakout entries: 72% win rate. Reversals: 28%. Consider sizing down on reversals.', color: '#ccc' },
+      { label: 'Observation:', text: 'Breakout entries: 72% win rate. Reversals: 28%. Consider sizing down on reversals.', color: '#e0e0e8' },
       { label: 'Milestone Reached:', text: 'Three straight weeks within your max daily loss limit. Discipline up 11 points.', color: '#30C48B' },
-      { label: 'Pattern Detected:', text: 'You size up after winning streaks — data shows this leads to your largest drawdowns.', color: '#ccc' },
+      { label: 'Pattern Detected:', text: 'You size up after winning streaks — data shows this leads to your largest drawdowns.', color: '#e0e0e8' },
     ],
     weeklyRating: 71,
     bars: [
@@ -351,10 +351,10 @@ const coachSets = [
   },
   {
     insights: [
-      { label: 'Observation:', text: 'Your best R-multiples come within the first 30 min of your session. Performance drops after hour 3.', color: '#ccc' },
+      { label: 'Observation:', text: 'Your best R-multiples come within the first 30 min of your session. Performance drops after hour 3.', color: '#e0e0e8' },
       { label: 'Pattern Detected:', text: 'You\'ve revenge-traded twice this week after taking a loss. Both resulted in further drawdown.', color: '#30C48B' },
       { label: 'Milestone Reached:', text: 'You followed your exit rules on 9 of 10 trades this week. That\'s a personal best.', color: '#30C48B' },
-      { label: 'Observation:', text: 'Average R on planned trades: 2.4. Average R on impulse trades: -0.8. The data is clear.', color: '#ccc' },
+      { label: 'Observation:', text: 'Average R on planned trades: 2.4. Average R on impulse trades: -0.8. The data is clear.', color: '#e0e0e8' },
     ],
     weeklyRating: 82,
     bars: [
@@ -420,7 +420,7 @@ function CoachShowcase({ light }: { light: boolean }) {
           {/* Rotating insight lines — shorter text */}
           <div key={setIdx} className="space-y-2.5">
             {current.insights.map((ins, i) => (
-              <div key={i} className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#e0e0e0]'}`}
+              <div key={i} className={`text-[14px] leading-relaxed ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e0]'}`}
                 style={{ animation: `typeIn 0.6s ease-out ${i * 0.3}s both` }}>
                 <span className="font-bold" style={{ color: ins.color }}>{ins.label}</span> {ins.text}
                 <span className="text-[#30C48B] text-[11px] ml-1 opacity-70">(View trades)</span>
@@ -431,12 +431,12 @@ function CoachShowcase({ light }: { light: boolean }) {
           {/* Weekly Rating + rotating attribute bars */}
           <div className="mt-5 pt-3" style={{ borderTop: light ? '1px solid rgba(0,0,0,0.04)' : '1px solid rgba(48,196,139,0.10)' }}>
             <div className="flex items-center justify-between mb-2.5">
-              <span className={`text-[12px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#999]' : 'text-[#888]'}`}>Weekly Rating</span>
+              <span className={`text-[12px] font-bold tracking-[0.2em] uppercase ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Weekly Rating</span>
               <span className="text-[18px] font-bold text-[#30C48B]" style={{ textShadow: '0 0 12px rgba(48,196,139,0.5), 0 0 24px rgba(48,196,139,0.25)' }}>{current.weeklyRating}</span>
             </div>
             {current.bars.map((bar) => (
               <div key={bar.name} className="flex items-center gap-2 mb-1.5">
-                <span className={`text-[11px] font-bold tracking-wider uppercase w-[78px] ${light ? 'text-[#999]' : 'text-[#999]'}`}>{bar.name}</span>
+                <span className={`text-[11px] font-bold tracking-wider uppercase w-[78px] ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>{bar.name}</span>
                 <div className={`flex-1 h-1.5 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${bar.pct}%`, background: bar.color, boxShadow: `0 0 6px ${bar.color}66` }} />
                 </div>
@@ -474,12 +474,12 @@ export default function LandingPage() {
   return (
     <div
       className="min-h-screen relative transition-colors duration-500"
-      style={light ? { background: '#f5f5f0', color: '#1a1a1a' } : {}}
+      style={light ? { background: '#f5f5f0', color: '#1a1c2e' } : {}}
     >
       {/* Light mode overrides the body::before texture */}
       {light && (
         <style>{`
-          body { background: #f5f5f0 !important; color: #1a1a1a !important; }
+          body { background: #f5f5f0 !important; color: #1a1c2e !important; }
           body::before { opacity: 0.04 !important; }
         `}</style>
       )}
@@ -489,14 +489,14 @@ export default function LandingPage() {
         <JournalXLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
-            <Link href="/dashboard" className={`text-sm transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>
+            <Link href="/dashboard" className={`text-sm transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>
               Dashboard
             </Link>
           )}
           {/* Theme toggle */}
           <button
             onClick={() => setLight(!light)}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#333]' : 'glass text-[#999] hover:text-white'}`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#3a3d48]' : 'glass text-[#8a8d98] hover:text-white'}`}
             title={light ? 'Switch to dark' : 'Switch to light'}
           >
             {light ? '🌙' : '☀️'}
@@ -516,7 +516,7 @@ export default function LandingPage() {
           <Link
             key={item.label}
             href={item.href}
-            className={`text-[13px] font-bold tracking-[0.3em] uppercase transition-colors ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#888] hover:text-white'}`}
+            className={`text-[13px] font-bold tracking-[0.3em] uppercase transition-colors ${light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'}`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}
           >
             {item.label}
@@ -526,7 +526,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-3xl sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight mb-20 text-center leading-tight font-light ${light ? 'text-[#555]' : 'text-white'}`}>
+        <h2 className={`text-3xl sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight mb-20 text-center leading-tight font-light ${light ? 'text-[#5a5d68]' : 'text-white'}`}>
           AI-Powered Trading Journal<br />That Holds You Accountable
         </h2>
 
@@ -596,21 +596,21 @@ export default function LandingPage() {
         <CoachShowcase light={light} />
 
         <h1 className="relative z-10 text-5xl sm:text-6xl lg:text-7xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
-          <span className={light ? 'text-[#999]' : 'text-[#999]'}>Your trades. Your rules.</span><br />
-          <span className={`underline decoration-[#30C48B] decoration-2 underline-offset-8 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Real accountability.</span>
+          <span className={light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}>Your trades. Your rules.</span><br />
+          <span className={`underline decoration-[#30C48B] decoration-2 underline-offset-8 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>Real accountability.</span>
         </h1>
 
-        <p className={`relative z-10 text-lg max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#888]' : 'text-[#aaa]'}`}>
+        <p className={`relative z-10 text-lg max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#8a8d98]' : 'text-[#e0e0e8]'}`}>
           Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
-        <p className={`relative z-10 text-sm mt-16 ${light ? 'text-[#bbb]' : 'text-[#777]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
+        <p className={`relative z-10 text-sm mt-16 ${light ? 'text-[#bbb]' : 'text-[#8a8d98]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
       </section>
 
       {/* Features */}
       <section className="relative z-10 max-w-6xl mx-auto px-8 py-32">
-        <h2 className={`text-center text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Not just a journal. A trading coach.</h2>
-        <p className={`text-center text-base mb-20 max-w-lg mx-auto ${light ? 'text-[#999]' : 'text-[#aaa]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
+        <h2 className={`text-center text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>Not just a journal. A trading coach.</h2>
+        <p className={`text-center text-base mb-20 max-w-lg mx-auto ${light ? 'text-[#8a8d98]' : 'text-[#e0e0e8]'}`}>AI that knows your trading history, your goals, and your tendencies.</p>
 
         {/* ─── Trader Attribute Wheel Showcase (8 key spokes from demo data) ─── */}
         {(() => {
@@ -624,10 +624,10 @@ export default function LandingPage() {
             <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20 mb-28">
               <div className="relative flex-shrink-0">
                 <div className="text-center mb-4">
-                  <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${light ? 'text-[#999]' : 'text-[#777]'}`}>Trader Rating</div>
+                  <div className={`text-[10px] font-bold tracking-[0.3em] uppercase ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Trader Rating</div>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <span className="text-3xl font-light text-[#30C48B]">{ovr}</span>
-                    <span className={`text-sm font-medium ${light ? 'text-[#999]' : 'text-[#666]'}`}>/ 99</span>
+                    <span className={`text-sm font-medium ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>/ 99</span>
                     <span className="text-xs font-bold tracking-wider uppercase ml-2" style={{ color: gradeColor }}>{grade}</span>
                   </div>
                 </div>
@@ -637,10 +637,10 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="max-w-md text-center lg:text-left">
-                <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1a1a]' : 'text-[#ddd]'}`}>
+                <h3 className={`text-3xl sm:text-4xl font-light leading-snug tracking-tight mb-5 ${light ? 'text-[#1a1c2e]' : 'text-[#ddd]'}`}>
                   Understand your trading strengths and weaknesses from new perspectives
                 </h3>
-                <p className={`text-lg leading-relaxed ${light ? 'text-[#999]' : 'text-[#888]'}`}>
+                <p className={`text-lg leading-relaxed ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>
                   Your Trader Profile is built from real data and AI-driven observations — showing you exactly where you excel and where you need to grow.
                 </p>
               </div>
@@ -685,8 +685,8 @@ export default function LandingPage() {
               }}
             >
               <div className="text-sm text-[#30C48B] mb-4 font-medium">{f.num}.</div>
-              <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1a1a]' : ''}`}>{f.title}</h3>
-              <p className={`text-[15px] leading-relaxed ${light ? 'text-[#777]' : 'text-[#999]'}`}>{f.desc}</p>
+              <h3 className={`font-medium text-lg mb-2 ${light ? 'text-[#1a1c2e]' : ''}`}>{f.title}</h3>
+              <p className={`text-[15px] leading-relaxed ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -698,8 +698,8 @@ export default function LandingPage() {
           className={`rounded-3xl p-12 ${light ? '' : 'glass'}`}
           style={light ? { ...lightGlass } : {}}
         >
-          <h2 className={`text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Stop trading without accountability.</h2>
-          <p className={`mb-10 max-w-md mx-auto text-base leading-relaxed ${light ? 'text-[#888]' : 'text-[#888]'}`}>
+          <h2 className={`text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>Stop trading without accountability.</h2>
+          <p className={`mb-10 max-w-md mx-auto text-base leading-relaxed ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>
             The difference between profitable and unprofitable traders? Discipline. Journal X makes discipline automatic.
           </p>
           <button
@@ -712,7 +712,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className={`relative z-10 border-t py-10 text-center text-sm ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#555]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-sm ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#5a5d68]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 

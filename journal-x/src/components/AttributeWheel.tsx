@@ -96,7 +96,7 @@ export default function AttributeWheel({ attrs, light }: AttributeWheelProps) {
       })}
 
       {/* Center circle */}
-      <circle cx={cx} cy={cy} r={minRadius - 4} fill={light ? '#f0f0eb' : '#1a1a1a'} />
+      <circle cx={cx} cy={cy} r={minRadius - 4} fill={light ? '#f0f0eb' : '#1a1c2e'} />
       <circle cx={cx} cy={cy} r={minRadius - 4}
         fill="none"
         stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)'}
@@ -123,7 +123,7 @@ export default function AttributeWheel({ attrs, light }: AttributeWheelProps) {
             dominantBaseline="middle"
             className="text-[11px] font-bold uppercase"
             style={{
-              fill: light ? '#888' : '#888',
+              fill: light ? '#8a8d98' : '#8a8d98',
               letterSpacing: '0.08em',
               fontSize: '11px',
             }}

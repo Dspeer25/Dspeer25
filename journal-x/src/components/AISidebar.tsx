@@ -17,7 +17,7 @@ export default function AISidebar() {
           top: '50%',
           transform: 'translateY(-50%)',
           zIndex: 99999,
-          background: '#0a0a0a',
+          background: '#0c0e17',
           borderTop: '0.5px solid rgba(0,212,160,0.3)',
           borderLeft: '0.5px solid rgba(0,212,160,0.3)',
           borderBottom: '0.5px solid rgba(0,212,160,0.3)',
@@ -53,15 +53,15 @@ export default function AISidebar() {
         width: '320px',
         height: '100vh',
         zIndex: 99999,
-        background: '#0a0a0a',
-        borderLeft: '0.5px solid #1e1e1e',
+        background: '#0c0e17',
+        borderLeft: '0.5px solid #1e2030',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'DM Mono, monospace',
         overflowY: 'auto',
       }}
     >
-      <div style={{padding:'16px',borderBottom:'0.5px solid #1a1a1a',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+      <div style={{padding:'16px',borderBottom:'0.5px solid #1a1c2e',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <svg width="18" height="20" viewBox="0 0 20 22" fill="none">
             <circle cx="10" cy="4.5" r="3.2" stroke="#00d4a0" strokeWidth="1.3"/>
@@ -72,43 +72,43 @@ export default function AISidebar() {
           </svg>
           <span style={{fontSize:11,color:'#00d4a0',letterSpacing:'0.1em'}}>AI COACH — LIVE</span>
         </div>
-        <div onClick={close} style={{color:'#555',fontSize:20,cursor:'pointer',lineHeight:1,padding:'0 4px'}}>×</div>
+        <div onClick={close} style={{color:'#5a5d68',fontSize:20,cursor:'pointer',lineHeight:1,padding:'0 4px'}}>×</div>
       </div>
 
-      <div style={{padding:'12px 16px',borderBottom:'0.5px solid #1a1a1a',flexShrink:0}}>
+      <div style={{padding:'12px 16px',borderBottom:'0.5px solid #1a1c2e',flexShrink:0}}>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           {[
             {l:'WIN RATE',v:'61%',c:'#00d4a0'},
             {l:'TOTAL P&L',v:'+$2,937',c:'#00d4a0'},
-            {l:'AVG R:R',v:'1.27',c:'#aaa'},
+            {l:'AVG R:R',v:'1.27',c:'#e0e0e8'},
             {l:'EXP. VALUE',v:'+$163',c:'#00d4a0'},
           ].map(s => (
-            <div key={s.l} style={{background:'#111',border:'0.5px solid #1e1e1e',borderRadius:6,padding:'8px 10px'}}>
-              <div style={{fontSize:9,color:'#444',letterSpacing:'0.07em',marginBottom:4}}>{s.l}</div>
+            <div key={s.l} style={{background:'#141620',border:'0.5px solid #1e2030',borderRadius:6,padding:'8px 10px'}}>
+              <div style={{fontSize:9,color:'#5a5d68',letterSpacing:'0.07em',marginBottom:4}}>{s.l}</div>
               <div style={{fontSize:15,fontWeight:600,color:s.c}}>{s.v}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{padding:'12px 16px',borderBottom:'0.5px solid #1a1a1a',flexShrink:0}}>
-        <div style={{fontSize:10,color:'#333',letterSpacing:'0.08em',marginBottom:8}}>LATEST INSIGHT</div>
+      <div style={{padding:'12px 16px',borderBottom:'0.5px solid #1a1c2e',flexShrink:0}}>
+        <div style={{fontSize:10,color:'#3a3d48',letterSpacing:'0.08em',marginBottom:8}}>LATEST INSIGHT</div>
         <div style={{background:'#0c1812',border:'0.5px solid rgba(0,212,160,0.15)',borderRadius:6,padding:'10px 12px',fontSize:11,color:'#5a7a68',lineHeight:1.6}}>
           You have exited early on 4 of your last 6 winners. This has cost an estimated <span style={{color:'#00d4a0'}}>$240</span> in unrealized gains this month.
         </div>
       </div>
 
       <div style={{padding:'12px 16px 80px',flexGrow:1,overflowY:'auto'}}>
-        <div style={{fontSize:10,color:'#333',letterSpacing:'0.08em',marginBottom:10}}>CHAT WITH COACH</div>
+        <div style={{fontSize:10,color:'#3a3d48',letterSpacing:'0.08em',marginBottom:10}}>CHAT WITH COACH</div>
         <div style={{background:'#0c1812',border:'0.5px solid rgba(0,212,160,0.1)',borderRadius:'6px 6px 6px 0',padding:'10px 12px',fontSize:12,color:'#5a7a68',lineHeight:1.6}}>
           Hello. I have reviewed your last 18 trades. Your breakout setups are your edge at 71% win rate. Your biggest leak is mean reversion at 28% — consider removing it from your playbook.
         </div>
       </div>
 
-      <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'12px 16px',borderTop:'0.5px solid #1a1a1a',background:'#0a0a0a',display:'flex',gap:8}}>
+      <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'12px 16px',borderTop:'0.5px solid #1a1c2e',background:'#0c0e17',display:'flex',gap:8}}>
         <input
           placeholder="Ask your coach..."
-          style={{flex:1,background:'#111',border:'0.5px solid #1e1e1e',borderRadius:6,padding:'10px 12px',fontSize:12,color:'#aaa',fontFamily:'DM Mono,monospace',outline:'none'}}
+          style={{flex:1,background:'#141620',border:'0.5px solid #1e2030',borderRadius:6,padding:'10px 12px',fontSize:12,color:'#e0e0e8',fontFamily:'DM Mono,monospace',outline:'none'}}
         />
         <div style={{background:'rgba(0,212,160,0.1)',border:'0.5px solid rgba(0,212,160,0.3)',borderRadius:6,padding:'10px 14px',color:'#00d4a0',fontSize:12,cursor:'pointer'}}>Send</div>
       </div>

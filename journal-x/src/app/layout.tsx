@@ -14,8 +14,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       appearance={{
         variables: {
           colorPrimary: '#6366f1',
-          colorBackground: '#111119',
-          colorInputBackground: '#0c0c14',
+          colorBackground: '#0c0e17',
+          colorInputBackground: '#141620',
           colorInputText: '#f0f0f5',
           colorText: '#f0f0f5',
         }

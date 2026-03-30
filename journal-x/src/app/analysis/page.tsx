@@ -24,7 +24,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
         <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
       <div className="mt-[-2px] ml-[2px]">
-        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>Journal</span>
+        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#3a3d48' : '#bbb' }}>Journal</span>
         <span className="text-[11px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>X</span>
       </div>
     </Link>
@@ -161,11 +161,11 @@ export default function AnalysisPage() {
   return (
     <div
       className="min-h-screen relative transition-colors duration-500"
-      style={light ? { background: '#f5f5f0', color: '#1a1a1a' } : {}}
+      style={light ? { background: '#f5f5f0', color: '#1a1c2e' } : {}}
     >
       {light && (
         <style>{`
-          body { background: #f5f5f0 !important; color: #1a1a1a !important; }
+          body { background: #f5f5f0 !important; color: #1a1c2e !important; }
           body::before { opacity: 0.04 !important; }
         `}</style>
       )}
@@ -174,10 +174,10 @@ export default function AnalysisPage() {
         <JournalXLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
-            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>Dashboard</Link>
+            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>Dashboard</Link>
           )}
           <button onClick={() => setLight(!light)}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#333]' : 'glass text-[#999] hover:text-white'}`}>
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#3a3d48]' : 'glass text-[#8a8d98] hover:text-white'}`}>
             {light ? '\u{1F319}' : '\u{2600}\u{FE0F}'}
           </button>
         </div>
@@ -187,7 +187,7 @@ export default function AnalysisPage() {
         {navItems.map((item, i) => (
           <Link key={item} href={navPaths[i]}
             className={`text-[11px] font-bold tracking-[0.35em] uppercase transition-colors ${
-              i === 2 ? 'text-[#30C48B]' : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-[#ccc]'
+              i === 2 ? 'text-[#30C48B]' : light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-[#e0e0e8]'
             }`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
             {item}
@@ -197,8 +197,8 @@ export default function AnalysisPage() {
 
       <main className="relative z-10 max-w-6xl mx-auto px-8 pt-8 pb-24">
         <div className="mb-10">
-          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Analysis</h1>
-          <p className={`text-[14px] ${light ? 'text-[#888]' : 'text-[#999]'}`}>AI-driven insights from your trading data — patterns, tendencies, and edge.</p>
+          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>Analysis</h1>
+          <p className={`text-[14px] ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>AI-driven insights from your trading data — patterns, tendencies, and edge.</p>
         </div>
 
         {/* AI Observations — 2x2 glass cards with colored tags */}
@@ -209,7 +209,7 @@ export default function AnalysisPage() {
                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: obs.tagColor }} />
                 <span className="text-[11px] font-bold tracking-[0.15em] uppercase" style={{ color: obs.tagColor }}>{obs.tag}</span>
               </div>
-              <p className={`text-[14px] leading-relaxed mb-3 ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{obs.text}</p>
+              <p className={`text-[14px] leading-relaxed mb-3 ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>{obs.text}</p>
               <span className="text-[12px] font-medium text-[#30C48B] cursor-pointer hover:underline">{obs.linkText} &rarr;</span>
             </div>
           ))}
@@ -228,7 +228,7 @@ export default function AnalysisPage() {
                 const color = item.value >= 50 ? '#30C48B' : '#f87171';
                 return (
                   <g key={item.label}>
-                    <text x="0" y={y + 14} fill={light ? '#666' : '#bbb'} fontSize="11" fontWeight="500">{item.label}</text>
+                    <text x="0" y={y + 14} fill={light ? '#8a8d98' : '#bbb'} fontSize="11" fontWeight="500">{item.label}</text>
                     <rect x="85" y={y + 2} width={barW} height="14" rx="3" fill={color} opacity="0.8" />
                     <text x={85 + barW + 5} y={y + 14} fill={color} fontSize="11" fontWeight="bold">{item.value}%</text>
                   </g>
@@ -255,7 +255,7 @@ export default function AnalysisPage() {
                   <g key={item.label}>
                     <rect x={barX} y={barY} width={barWidth} height={barH} rx="4" fill={color} opacity="0.75" />
                     <text x={barX + barWidth / 2} y={item.value >= 0 ? barY - 5 : barY + barH + 13} textAnchor="middle" fill={color} fontSize="10" fontWeight="bold">{display}</text>
-                    <text x={barX + barWidth / 2} y="155" textAnchor="middle" fill={light ? '#999' : '#777'} fontSize="8">{item.label}</text>
+                    <text x={barX + barWidth / 2} y="155" textAnchor="middle" fill={light ? '#8a8d98' : '#8a8d98'} fontSize="8">{item.label}</text>
                   </g>
                 );
               })}
@@ -273,7 +273,7 @@ export default function AnalysisPage() {
                 { label: 'Win/Loss Ratio', value: stats.avgWinLoss, color: '#30C48B' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
-                  <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
+                  <span className={`text-[14px] ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>{item.label}</span>
                   <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
                 </div>
               ))}
@@ -292,7 +292,7 @@ export default function AnalysisPage() {
               ].map((item) => (
                 <div key={item.label} className={`rounded-xl p-3 text-center ${light ? 'bg-[rgba(0,0,0,0.02)]' : 'bg-[rgba(255,255,255,0.03)]'}`}>
                   <div className="text-2xl font-bold tabular-nums mb-1" style={{ color: item.color }}>{item.value}</div>
-                  <div className={`text-[11px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>{item.label}</div>
+                  <div className={`text-[11px] uppercase tracking-wider ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>{item.label}</div>
                 </div>
               ))}
             </div>
@@ -309,7 +309,7 @@ export default function AnalysisPage() {
                 { label: 'Expected Value', value: stats.expectedValue, color: stats.expectedValue.startsWith('+') ? '#30C48B' : '#f87171' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
-                  <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
+                  <span className={`text-[14px] ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>{item.label}</span>
                   <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
                 </div>
               ))}
@@ -327,7 +327,7 @@ export default function AnalysisPage() {
                 { label: 'Trend', value: 'Improving', color: '#30C48B' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
-                  <span className={`text-[14px] ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{item.label}</span>
+                  <span className={`text-[14px] ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>{item.label}</span>
                   <span className="text-[14px] font-bold tabular-nums" style={{ color: item.color }}>{item.value}</span>
                 </div>
               ))}
@@ -349,7 +349,7 @@ export default function AnalysisPage() {
             ].map((item) => (
               <div key={item.label} className={`rounded-xl p-4 text-center ${light ? 'bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'}`}>
                 <div className="text-xl font-bold tabular-nums mb-1" style={{ color: item.color }}>{item.value}</div>
-                <div className={`text-[11px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>{item.label}</div>
+                <div className={`text-[11px] uppercase tracking-wider ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>{item.label}</div>
               </div>
             ))}
           </div>
@@ -359,15 +359,15 @@ export default function AnalysisPage() {
         <div className={`${glassPanelCls} rounded-xl p-6 text-center`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <p className="text-[16px] mb-1">
             <span style={{ color: '#30C48B' }}>Analysis insights are generated from your real trading data by the AI coach.</span>{' '}
-            <span className={light ? 'text-[#999]' : 'text-[#888]'}>
+            <span className={light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}>
               Available with the Complete plan{' '}
-              <button onClick={() => setShowPricing(true)} className="underline underline-offset-2 transition-colors" style={{ color: light ? '#333' : '#fff', background: 'none', padding: 0, fontSize: '16px' }}>$75 one-time</button>.
+              <button onClick={() => setShowPricing(true)} className="underline underline-offset-2 transition-colors" style={{ color: light ? '#3a3d48' : '#fff', background: 'none', padding: 0, fontSize: '16px' }}>$75 one-time</button>.
             </span>
           </p>
         </div>
       </main>
 
-      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#8a8d98]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
 
@@ -375,13 +375,13 @@ export default function AnalysisPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 backdrop-blur-md bg-black/70" onClick={() => setShowPricing(false)} />
           <div className={`relative rounded-3xl p-10 sm:p-12 max-w-lg w-full animate-fade-in ${light ? 'bg-white/90 border border-[rgba(0,0,0,0.08)]' : 'glass'}`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
-            <button onClick={() => setShowPricing(false)} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#555] hover:text-white'}`}>&#10005;</button>
-            <h2 className={`text-2xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1a1a]' : ''}`}>Complete Plan</h2>
+            <button onClick={() => setShowPricing(false)} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#5a5d68] hover:text-white'}`}>&#10005;</button>
+            <h2 className={`text-2xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>Complete Plan</h2>
             <div className="text-center mb-4">
-              <span className={`text-4xl font-light ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>$75</span>
+              <span className={`text-4xl font-light ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>$75</span>
               <span className="text-sm text-[#30C48B] ml-2">one-time payment</span>
             </div>
-            <p className={`text-center text-[14px] mb-6 ${light ? 'text-[#999]' : 'text-[#888]'}`}>Lifetime access to AI coaching, analysis, and all features.</p>
+            <p className={`text-center text-[14px] mb-6 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Lifetime access to AI coaching, analysis, and all features.</p>
             <div className="text-center">
               <Link href="/sign-up?tier=complete" className="inline-block px-10 py-3 rounded-full font-medium text-base bg-[#30C48B] hover:bg-[#28A876] transition-all text-black" style={{ boxShadow: '0 0 30px rgba(48,196,139,0.15)' }}>Get Complete</Link>
             </div>

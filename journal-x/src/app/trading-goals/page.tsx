@@ -23,7 +23,7 @@ function JournalXLogo({ light = false }: { light?: boolean }) {
         <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
       <div className="mt-[-2px] ml-[2px]">
-        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#333' : '#bbb' }}>Journal</span>
+        <span className="text-[11px] font-bold tracking-[0.35em] uppercase" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif", color: light ? '#3a3d48' : '#bbb' }}>Journal</span>
         <span className="text-[11px] font-bold tracking-[0.35em] uppercase text-[#30C48B] ml-[2px]" style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>X</span>
       </div>
     </Link>
@@ -95,11 +95,11 @@ export default function TradingGoalsPage() {
   return (
     <div
       className="min-h-screen relative transition-colors duration-500"
-      style={light ? { background: '#f5f5f0', color: '#1a1a1a' } : {}}
+      style={light ? { background: '#f5f5f0', color: '#1a1c2e' } : {}}
     >
       {light && (
         <style>{`
-          body { background: #f5f5f0 !important; color: #1a1a1a !important; }
+          body { background: #f5f5f0 !important; color: #1a1c2e !important; }
           body::before { opacity: 0.04 !important; }
         `}</style>
       )}
@@ -108,10 +108,10 @@ export default function TradingGoalsPage() {
         <JournalXLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
-            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#666] hover:text-black' : 'text-[#999] hover:text-white'}`}>Dashboard</Link>
+            <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>Dashboard</Link>
           )}
           <button onClick={() => setLight(!light)}
-            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#333]' : 'glass text-[#999] hover:text-white'}`}>
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all ${light ? 'bg-[#222] text-white hover:bg-[#3a3d48]' : 'glass text-[#8a8d98] hover:text-white'}`}>
             {light ? '\u{1F319}' : '\u{2600}\u{FE0F}'}
           </button>
         </div>
@@ -121,7 +121,7 @@ export default function TradingGoalsPage() {
         {navItems.map((item, i) => (
           <Link key={item} href={navPaths[i]}
             className={`text-[11px] font-bold tracking-[0.35em] uppercase transition-colors ${
-              i === 3 ? 'text-[#30C48B]' : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-[#ccc]'
+              i === 3 ? 'text-[#30C48B]' : light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-[#e0e0e8]'
             }`}
             style={{ fontFamily: "'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" }}>
             {item}
@@ -131,22 +131,22 @@ export default function TradingGoalsPage() {
 
       <main className="relative z-10 max-w-5xl mx-auto px-8 pt-8 pb-24">
         <div className="mb-10">
-          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1a1a]' : 'text-white'}`}>Trading Goals</h1>
-          <p className={`text-[14px] ${light ? 'text-[#888]' : 'text-[#999]'}`}>Set intentions, track progress, and let the AI hold you accountable.</p>
+          <h1 className={`text-3xl font-light tracking-tight mb-2 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>Trading Goals</h1>
+          <p className={`text-[14px] ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Set intentions, track progress, and let the AI hold you accountable.</p>
         </div>
 
         {/* Week Selector */}
         <div className="flex items-center justify-center gap-6 mb-8">
           <button
             onClick={() => setWeekIdx(0)}
-            className={`text-[13px] font-medium transition-colors bg-transparent px-0 ${weekIdx === 0 ? 'text-[#30C48B]' : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'}`}
+            className={`text-[13px] font-medium transition-colors bg-transparent px-0 ${weekIdx === 0 ? 'text-[#30C48B]' : light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'}`}
           >
             &larr; {weeks[0].label}
           </button>
           <div className={`w-px h-5 ${light ? 'bg-[rgba(0,0,0,0.1)]' : 'bg-[rgba(255,255,255,0.1)]'}`} />
           <button
             onClick={() => setWeekIdx(1)}
-            className={`text-[13px] font-medium transition-colors bg-transparent px-0 ${weekIdx === 1 ? 'text-[#30C48B]' : light ? 'text-[#aaa] hover:text-[#333]' : 'text-[#666] hover:text-white'}`}
+            className={`text-[13px] font-medium transition-colors bg-transparent px-0 ${weekIdx === 1 ? 'text-[#30C48B]' : light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#8a8d98] hover:text-white'}`}
           >
             {weeks[1].label} &rarr;
           </button>
@@ -159,7 +159,7 @@ export default function TradingGoalsPage() {
             {currentWeek.goals.map((g, i) => (
               <div key={`${weekIdx}-${i}`} className={`${glassPanelCls} rounded-2xl p-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
                 <div className="flex items-start justify-between mb-4">
-                  <span className={`text-[16px] font-bold leading-snug flex-1 mr-3 ${light ? 'text-[#333]' : 'text-[#eee]'}`}>{g.goal}</span>
+                  <span className={`text-[16px] font-bold leading-snug flex-1 mr-3 ${light ? 'text-[#3a3d48]' : 'text-[#eee]'}`}>{g.goal}</span>
                   <span
                     className="text-[13px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shrink-0"
                     style={{
@@ -174,7 +174,7 @@ export default function TradingGoalsPage() {
                 <div className={`w-full h-3 rounded-full ${light ? 'bg-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.06)]'}`}>
                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${g.progress}%`, background: statusColor(g.status), boxShadow: `0 0 8px ${statusColor(g.status)}44` }} />
                 </div>
-                <div className={`text-[12px] mt-2 text-right ${light ? 'text-[#aaa]' : 'text-[#666]'}`}>{g.progress}%</div>
+                <div className={`text-[12px] mt-2 text-right ${light ? 'text-[#e0e0e8]' : 'text-[#8a8d98]'}`}>{g.progress}%</div>
               </div>
             ))}
           </div>
@@ -186,15 +186,15 @@ export default function TradingGoalsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {monthlyGoals.map((g, i) => (
               <div key={i} className={`rounded-xl p-5 ${light ? 'bg-[rgba(0,0,0,0.02)] border border-[rgba(0,0,0,0.04)]' : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'}`}>
-                <p className={`text-[16px] mb-3 ${light ? 'text-[#333]' : 'text-[#ddd]'}`}>{g.goal}</p>
+                <p className={`text-[16px] mb-3 ${light ? 'text-[#3a3d48]' : 'text-[#ddd]'}`}>{g.goal}</p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className={`text-[12px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>Current: </span>
+                    <span className={`text-[12px] uppercase tracking-wider ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Current: </span>
                     <span className={`text-[16px] font-bold ${g.met ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>{g.current}</span>
                   </div>
                   <div>
-                    <span className={`text-[12px] uppercase tracking-wider ${light ? 'text-[#999]' : 'text-[#777]'}`}>Target: </span>
-                    <span className={`text-[16px] font-medium ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>{g.target}</span>
+                    <span className={`text-[12px] uppercase tracking-wider ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Target: </span>
+                    <span className={`text-[16px] font-medium ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>{g.target}</span>
                   </div>
                   <span className={`text-[16px] font-bold ${g.met ? 'text-[#30C48B]' : 'text-[#f87171]'}`}>{g.met ? '\u2713' : '\u2717'}</span>
                 </div>
@@ -209,13 +209,13 @@ export default function TradingGoalsPage() {
             <div className="w-2 h-2 rounded-full bg-[#30C48B] animate-pulse" />
             <span className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#30C48B]">Coach Note — {currentWeek.label}</span>
           </div>
-          <p className={`text-[14px] leading-relaxed ${light ? 'text-[#555]' : 'text-[#ccc]'}`}>
+          <p className={`text-[14px] leading-relaxed ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>
             {currentWeek.coachNote}
           </p>
         </div>
       </main>
 
-      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#666]'}`}>
+      <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#8a8d98]'}`}>
         Journal X — The first AI-powered accountability journal for traders.
       </footer>
     </div>
