@@ -372,11 +372,31 @@ export default function PastTradesPage() {
                     }}>&#8964;</span>
                   </div>
 
-                  {/* Expanded detail — placeholder for step 5 */}
+                  {/* Expanded detail panel */}
                   {expandedId === trade.id && (
-                    <div style={{ padding: '16px', borderBottom: '0.5px solid #1e1e1e', background: '#0d0d0d',
-                      fontFamily: M, fontSize: 11, color: '#444' }}>
-                      Expanded detail panel coming in step 5...
+                    <div style={{ padding: '12px 16px 16px', borderBottom: '0.5px solid #1e1e1e', background: '#0d0d0d' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 1fr 1.6fr', gap: 10 }}>
+                        {/* Col 1: Trade Chart */}
+                        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Trade Chart</div>
+                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
+                        </div>
+                        {/* Col 2: Trade Detail */}
+                        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Trade Detail</div>
+                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
+                        </div>
+                        {/* Col 3: Psychology */}
+                        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Psychology</div>
+                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
+                        </div>
+                        {/* Col 4: Coach Observation */}
+                        <div style={{ background: '#0c1812', border: '0.5px solid rgba(0,212,160,0.15)', borderRadius: 6, padding: '13px 14px' }}>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Coach Observation</div>
+                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
