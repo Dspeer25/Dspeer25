@@ -38,13 +38,13 @@ export default function AISidebar() {
     <>
       <style>{`@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(1.5)}} @keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}} .dp{animation:blink 1s infinite} .dp:nth-child(2){animation-delay:.2s} .dp:nth-child(3){animation-delay:.4s}`}</style>
       {!isOpen && (
-        <button onClick={() => setIsOpen(true)} style={{position:'fixed',right:0,top:'50%',transform:'translateY(-50%)',zIndex:9999,background:'#0a0a0a',border:'0.5px solid rgba(0,212,160,0.3)',borderRight:'none',borderRadius:'8px 0 0 8px',padding:'14px 10px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
+        <button onClick={(e) => { e.stopPropagation(); setIsOpen(true); }} style={{position:'fixed',right:0,top:'50%',transform:'translateY(-50%)',zIndex:999999,background:'#0a0a0a',border:'0.5px solid rgba(0,212,160,0.3)',borderRight:'none',borderRadius:'8px 0 0 8px',padding:'14px 10px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
           <div style={{width:8,height:8,borderRadius:'50%',background:'#00d4a0',animation:'pulse 1.5s infinite'}}/>
           <S size={22}/>
         </button>
       )}
       {isOpen && (
-        <div style={{position:'fixed',right:0,top:0,height:'100vh',width:320,zIndex:9999,background:'#0a0a0a',borderLeft:'0.5px solid #1e1e1e',display:'flex',flexDirection:'column',fontFamily:'DM Mono,monospace'}}>
+        <div onClick={(e) => e.stopPropagation()} style={{position:'fixed',right:0,top:0,height:'100vh',width:320,zIndex:999999,background:'#0a0a0a',borderLeft:'0.5px solid #1e1e1e',display:'flex',flexDirection:'column',fontFamily:'DM Mono,monospace'}}>
           <div style={{padding:'16px',borderBottom:'0.5px solid #1a1a1a',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               <S size={18}/>
