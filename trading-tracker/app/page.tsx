@@ -2053,12 +2053,11 @@ function GrowthSimulatorTab() {
         </div>
         <div className="flex flex-col gap-1">
           {(() => {
-            const weeklyGross = tradesPerWeek * riskFrac * startBal * (winRate / 100 * (rr + 1) - 1);
-            const netPL = weeklyGross - weeklyWithdraw;
-            const color = netPL >= 0 ? "text-emerald-400" : "text-red-400";
+            const grossWeekly = expectDollar * tradesPerWeek;
+            const color = grossWeekly >= 0 ? "text-emerald-400" : "text-red-400";
             return <>
-              <span className="text-xs text-slate-400 uppercase tracking-wide">Est. net P/L (week)</span>
-              <span className={`text-lg font-semibold ${color}`}>{netPL >= 0 ? "+" : ""}{fmtD(netPL)}</span>
+              <span className="text-xs text-slate-400 uppercase tracking-wide">Est. Gross P/L (week)</span>
+              <span className={`text-lg font-semibold ${color}`}>{grossWeekly >= 0 ? "+" : ""}{fmtD(grossWeekly)}</span>
               <div className="w-full h-[18px]" />
             </>;
           })()}
