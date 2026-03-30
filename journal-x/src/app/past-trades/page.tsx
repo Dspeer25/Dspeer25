@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { Trade } from '@/lib/types';
 import { demoTrades } from '@/lib/demoData';
+import TickerLogo from '@/components/TickerLogo';
 
 const M = "'DM Mono', monospace";
 const H = "'Syne', sans-serif";
@@ -323,17 +324,6 @@ export default function PastTradesPage() {
             );
           };
 
-          const letterBadge = (ticker: string) => {
-            const colors = ['#e53e3e','#dd6b20','#38a169','#3182ce','#805ad5','#d53f8c'];
-            const c = colors[ticker.charCodeAt(0) % colors.length];
-            return (
-              <div style={{
-                width: 22, height: 22, borderRadius: 4, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', background: c + '33', border: `1px solid ${c}66`,
-                color: c, fontSize: 10, fontWeight: 700, fontFamily: M, flexShrink: 0,
-              }}>{ticker[0]}</div>
-            );
-          };
 
           return (
             <div style={{ background: '#111', border: '0.5px solid #1e1e1e', borderRadius: 10, overflow: 'hidden' }}>
@@ -360,7 +350,7 @@ export default function PastTradesPage() {
                   >
                     <span style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{fmtD(trade.date)}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {letterBadge(trade.ticker)}
+                      <TickerLogo ticker={trade.ticker} size={22} />
                       <span style={{ fontFamily: M, fontSize: 14, fontWeight: 700, color: '#fff' }}>{trade.ticker}</span>
                     </div>
                     <span style={{ fontFamily: M, fontSize: 12, color: '#666' }}>{trade.instrument}</span>
