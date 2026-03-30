@@ -383,11 +383,38 @@ export default function PastTradesPage() {
                         {/* Col 1: Trade Chart */}
                         <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
                           <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#444', marginBottom: 10 }}>Trade Chart</div>
-                          <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/CandleStick_chart_2.PNG/320px-CandleStick_chart_2.PNG"
-                            alt="Chart"
-                            style={{ width: '100%', height: 130, objectFit: 'cover', borderRadius: 4 }}
-                          />
+                          <svg viewBox="0 0 200 100" style={{ width: '100%', height: 130, background: '#060606', borderRadius: 4, display: 'block' }}>
+                            {/* 12 candlesticks */}
+                            {[
+                              { x: 10, o: 62, c: 45, h: 38, l: 68, up: false },
+                              { x: 26, o: 45, c: 38, h: 30, l: 50, up: true },
+                              { x: 42, o: 40, c: 52, h: 35, l: 58, up: false },
+                              { x: 58, o: 50, c: 42, h: 35, l: 55, up: true },
+                              { x: 74, o: 42, c: 35, h: 28, l: 48, up: true },
+                              { x: 90, o: 36, c: 45, h: 30, l: 50, up: false },
+                              { x: 106, o: 44, c: 38, h: 32, l: 48, up: true },
+                              { x: 122, o: 38, c: 30, h: 24, l: 42, up: true },
+                              { x: 138, o: 32, c: 40, h: 26, l: 45, up: false },
+                              { x: 154, o: 38, c: 28, h: 22, l: 42, up: true },
+                              { x: 170, o: 30, c: 38, h: 24, l: 42, up: false },
+                              { x: 186, o: 36, c: 28, h: 20, l: 40, up: true },
+                            ].map((c, i) => {
+                              const color = c.up ? '#00d4a0' : '#ff5555';
+                              const top = Math.min(c.o, c.c);
+                              const bot = Math.max(c.o, c.c);
+                              return (
+                                <g key={i} opacity="0.8">
+                                  <line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={color} strokeWidth="1" />
+                                  <rect x={c.x - 4} y={top} width="8" height={Math.max(bot - top, 1)} fill={color} rx="0.5" />
+                                </g>
+                              );
+                            })}
+                            {/* Moving average polyline */}
+                            <polyline
+                              points="10,55 26,48 42,50 58,46 74,40 90,43 106,40 122,35 138,37 154,32 170,34 186,30"
+                              fill="none" stroke="#3182ce" strokeWidth="1" opacity="0.5"
+                            />
+                          </svg>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
                             <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.time}</span>
                             <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.ticker} 1m</span>
