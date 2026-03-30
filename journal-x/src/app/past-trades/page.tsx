@@ -335,7 +335,11 @@ export default function PastTradesPage() {
               </div>
 
               {/* Table rows */}
-              {paged.map(trade => (
+              {paged.map((trade, pi) => {
+                // Index in full filtered array for prev-trade check
+                const fi = page * perPage + pi;
+                const prevTrade = fi > 0 ? filtered[fi - 1] : null;
+                return (
                 <div key={trade.id}>
                   {/* Row */}
                   <div
@@ -378,29 +382,124 @@ export default function PastTradesPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 1fr 1.6fr', gap: 10 }}>
                         {/* Col 1: Trade Chart */}
                         <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Trade Chart</div>
-                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Trade Chart</div>
+                          <div style={{ background: '#0a0a0a', border: '0.5px solid #1e1e1e', borderRadius: 4, height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>Screenshot</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.time}</span>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.ticker} 1m</span>
+                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>—</span>
+                          </div>
                         </div>
                         {/* Col 2: Trade Detail */}
                         <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Trade Detail</div>
-                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Trade Detail</div>
+                          {[
+                            { label: 'Entry', value: `$${trade.entryPrice.toFixed(2)}` },
+                            { label: 'Exit', value: `$${trade.exitPrice.toFixed(2)}` },
+                            { label: 'Size', value: `${trade.positionSize} contracts` },
+                            { label: 'Time', value: trade.time },
+                            { label: 'Hold', value: '—' },
+                          ].map((r, ri) => (
+                            <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: ri < 4 ? '0.5px solid #161616' : 'none' }}>
+                              <span style={{ fontFamily: M, fontSize: 11, color: '#555' }}>{r.label}</span>
+                              <span style={{ fontFamily: M, fontSize: 13, fontWeight: 500, color: '#aaa' }}>{r.value}</span>
+                            </div>
+                          ))}
                         </div>
                         {/* Col 3: Psychology */}
-                        <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Psychology</div>
-                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
-                        </div>
+                        {(() => {
+                          const isW = trade.result === 'W';
+                          const isL = trade.result === 'L';
+                          const prevL = prevTrade?.result === 'L';
+                          const psych = [
+                            { label: 'Confidence', value: isW && trade.rr > 1.5 ? 'High' : isW ? 'Med' : 'Low', color: isW && trade.rr > 1.5 ? '#00d4a0' : isW ? '#aaa' : '#ff5555' },
+                            { label: 'Plan followed', value: isL && trade.rr === 0 ? 'No' : 'Yes', color: isL && trade.rr === 0 ? '#ff5555' : '#00d4a0' },
+                            { label: 'Emotional state', value: isW ? 'Calm' : isL ? 'Frustrated' : 'Neutral', color: isL ? '#ff5555' : '#aaa' },
+                            { label: 'Early exit', value: isW && trade.rr < 1.2 ? 'Yes' : 'No', color: isW && trade.rr < 1.2 ? '#f5a623' : '#00d4a0' },
+                            { label: 'Revenge trade', value: isL && prevL ? 'Possible' : 'No', color: isL && prevL ? '#f5a623' : '#00d4a0' },
+                          ];
+                          return (
+                            <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
+                              <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Psychology</div>
+                              {psych.map((r, ri) => (
+                                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: ri < 4 ? '0.5px solid #161616' : 'none' }}>
+                                  <span style={{ fontFamily: M, fontSize: 11, color: '#555' }}>{r.label}</span>
+                                  <span style={{ fontFamily: M, fontSize: 13, fontWeight: 600, color: r.color }}>{r.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                         {/* Col 4: Coach Observation */}
-                        <div style={{ background: '#0c1812', border: '0.5px solid rgba(0,212,160,0.15)', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#383838', marginBottom: 10 }}>Coach Observation</div>
-                          <div style={{ fontFamily: M, fontSize: 11, color: '#333' }}>—</div>
-                        </div>
+                        {(() => {
+                          const rr = trade.rr;
+                          const s = trade.strategy;
+                          const tk = trade.ticker;
+                          const inst = trade.instrument;
+                          const adj = `$${trade.adjustedRisk.toFixed(0)}`;
+                          let text: Array<{ t: string; h?: boolean }> = [];
+                          if (trade.result === 'W' && rr > 2.0) {
+                            text = [
+                              { t: `Strong execution on the ` }, { t: s, h: true }, { t: ` setup — you held to ` }, { t: `${rr.toFixed(1)}R`, h: true },
+                              { t: ` which is above your avg. This is the discipline that compounds. Note the ` }, { t: inst, h: true },
+                              { t: ` timing aligned with your best-performing session window.` },
+                            ];
+                          } else if (trade.result === 'W' && rr >= 1.2) {
+                            text = [
+                              { t: `Solid ` }, { t: s, h: true }, { t: ` entry. You captured ` }, { t: `${rr.toFixed(1)}R`, h: true },
+                              { t: ` on this trade. Early exit pattern detected — your target was likely higher. Over time, cutting winners short is the primary drag on your expected value.` },
+                            ];
+                          } else if (trade.result === 'W') {
+                            text = [
+                              { t: `You won this trade but left money on the table. ` }, { t: `${rr.toFixed(1)}R`, h: true },
+                              { t: ` is below your 1.27 avg. Review whether you exited on a plan or out of fear — this pattern has cost you an estimated ` },
+                              { t: `$180`, h: true }, { t: ` this month.` },
+                            ];
+                          } else if (trade.result === 'L') {
+                            text = [
+                              { t: `The ` }, { t: s, h: true }, { t: ` setup on ` }, { t: tk, h: true },
+                              { t: ` didn't work this session. Your adj risk of ` }, { t: adj, h: true },
+                              { t: ` was within plan. Focus: was the entry valid by your rules? A loss on a valid setup is execution — a loss on an invalid setup is a mistake.` },
+                            ];
+                          } else {
+                            text = [
+                              { t: `Breakeven on this ` }, { t: tk, h: true },
+                              { t: ` trade. You protected capital — that's discipline. Review whether the exit was planned or reactive. Planned breakevens build consistency. Reactive ones often indicate hesitation.` },
+                            ];
+                          }
+                          return (
+                            <div style={{ background: '#0c1812', border: '0.5px solid rgba(0,212,160,0.15)', borderRadius: 6, padding: '13px 14px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                                <svg width="18" height="18" viewBox="0 0 56 56" fill="none" style={{ flexShrink: 0 }}>
+                                  <circle cx="18" cy="12" r="4.5" stroke="#00d4a0" strokeWidth="1.8" fill="none" />
+                                  <line x1="18" y1="16.5" x2="18" y2="30" stroke="#00d4a0" strokeWidth="1.8" strokeLinecap="round" />
+                                  <line x1="18" y1="21" x2="12" y2="27" stroke="#00d4a0" strokeWidth="1.5" strokeLinecap="round" />
+                                  <line x1="18" y1="21" x2="32" y2="17" stroke="#00d4a0" strokeWidth="1.5" strokeLinecap="round" />
+                                  <line x1="18" y1="30" x2="13" y2="40" stroke="#00d4a0" strokeWidth="1.5" strokeLinecap="round" />
+                                  <line x1="18" y1="30" x2="23" y2="40" stroke="#00d4a0" strokeWidth="1.5" strokeLinecap="round" />
+                                  <line x1="35" y1="6" x2="35" y2="11" stroke="#00d4a0" strokeWidth="1.2" strokeLinecap="round" />
+                                  <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(0,212,160,0.25)" stroke="#00d4a0" strokeWidth="1" />
+                                  <line x1="35" y1="25" x2="35" y2="32" stroke="#00d4a0" strokeWidth="1.2" strokeLinecap="round" />
+                                </svg>
+                                <span style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#00d4a0', opacity: 0.75 }}>Coach Observation</span>
+                              </div>
+                              <p style={{ fontFamily: M, fontSize: 12, color: '#4e7060', lineHeight: 1.7, margin: 0 }}>
+                                {text.map((part, i) => part.h
+                                  ? <span key={i} style={{ color: '#00d4a0' }}>{part.t}</span>
+                                  : <span key={i}>{part.t}</span>
+                                )}
+                              </p>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
 
               {paged.length === 0 && (
                 <div style={{ fontFamily: M, fontSize: 12, color: '#444', textAlign: 'center', padding: 40 }}>No trades match your filters.</div>
