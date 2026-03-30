@@ -382,10 +382,12 @@ export default function PastTradesPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 1fr 1.6fr', gap: 10 }}>
                         {/* Col 1: Trade Chart */}
                         <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Trade Chart</div>
-                          <div style={{ background: '#0a0a0a', border: '0.5px solid #1e1e1e', borderRadius: 4, height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>Screenshot</span>
-                          </div>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#444', marginBottom: 10 }}>Trade Chart</div>
+                          <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/CandleStick_chart_2.PNG/320px-CandleStick_chart_2.PNG"
+                            alt="Chart"
+                            style={{ width: '100%', height: 130, objectFit: 'cover', borderRadius: 4 }}
+                          />
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
                             <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.time}</span>
                             <span style={{ fontFamily: M, fontSize: 11, color: '#444' }}>{trade.ticker} 1m</span>
@@ -394,7 +396,7 @@ export default function PastTradesPage() {
                         </div>
                         {/* Col 2: Trade Detail */}
                         <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Trade Detail</div>
+                          <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#444', marginBottom: 10 }}>Trade Detail</div>
                           {[
                             { label: 'Entry', value: `$${trade.entryPrice.toFixed(2)}` },
                             { label: 'Exit', value: `$${trade.exitPrice.toFixed(2)}` },
@@ -403,8 +405,8 @@ export default function PastTradesPage() {
                             { label: 'Hold', value: '—' },
                           ].map((r, ri) => (
                             <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: ri < 4 ? '0.5px solid #161616' : 'none' }}>
-                              <span style={{ fontFamily: M, fontSize: 11, color: '#555' }}>{r.label}</span>
-                              <span style={{ fontFamily: M, fontSize: 13, fontWeight: 500, color: '#aaa' }}>{r.value}</span>
+                              <span style={{ fontFamily: M, fontSize: 11, color: '#666' }}>{r.label}</span>
+                              <span style={{ fontFamily: M, fontSize: 13, fontWeight: 500, color: '#bbb' }}>{r.value}</span>
                             </div>
                           ))}
                         </div>
@@ -422,10 +424,10 @@ export default function PastTradesPage() {
                           ];
                           return (
                             <div style={{ background: '#111', border: '0.5px solid #1a1a1a', borderRadius: 6, padding: '13px 14px' }}>
-                              <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555', marginBottom: 10 }}>Psychology</div>
+                              <div style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#444', marginBottom: 10 }}>Psychology</div>
                               {psych.map((r, ri) => (
                                 <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: ri < 4 ? '0.5px solid #161616' : 'none' }}>
-                                  <span style={{ fontFamily: M, fontSize: 11, color: '#555' }}>{r.label}</span>
+                                  <span style={{ fontFamily: M, fontSize: 11, color: '#666' }}>{r.label}</span>
                                   <span style={{ fontFamily: M, fontSize: 13, fontWeight: 600, color: r.color }}>{r.value}</span>
                                 </div>
                               ))}
@@ -485,7 +487,7 @@ export default function PastTradesPage() {
                                 </svg>
                                 <span style={{ fontFamily: M, fontSize: 10, fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#00d4a0', opacity: 0.75 }}>Coach Observation</span>
                               </div>
-                              <p style={{ fontFamily: M, fontSize: 12, color: '#4e7060', lineHeight: 1.7, margin: 0 }}>
+                              <p style={{ fontFamily: M, fontSize: 12, color: '#6a9a7a', lineHeight: 1.7, margin: 0, textShadow: '0 0 12px rgba(0, 212, 160, 0.15)' }}>
                                 {text.map((part, i) => part.h
                                   ? <span key={i} style={{ color: '#00d4a0' }}>{part.t}</span>
                                   : <span key={i}>{part.t}</span>
