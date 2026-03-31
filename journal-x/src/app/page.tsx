@@ -456,6 +456,7 @@ export default function LandingPage() {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [light, setLight] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const openPricingFromSteps = () => {
     setShowHowItWorks(false);
@@ -692,6 +693,43 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="relative z-10 max-w-3xl mx-auto px-8 py-24">
+        <h2 className="text-center mb-10" style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, color: light ? '#1a1c2e' : '#e0e0e8', fontWeight: 600 }}>
+          Frequently Asked Questions
+        </h2>
+        {[
+          { q: 'What is Journal X?', a: "Journal X is an AI-powered trading journal that tracks your trades and coaches your psychology. Unlike traditional journals, our AI coach analyzes your behavioral patterns and holds you accountable to your own rules." },
+          { q: 'How is the AI coach different from other trading tools?', a: "Most tools flag generic patterns. Journal X's coach is trained in Mark Douglas's Trading in the Zone methodology and references your actual trade history — not generic advice. It knows when you revenge trade, cut winners early, or break your own rules." },
+          { q: 'What does it cost?', a: 'Journal X is a one-time purchase. No monthly subscriptions, no recurring fees. Pay once, use it forever. Updates included.' },
+          { q: 'Can I try it before buying?', a: 'Yes. The demo lets you explore every feature with sample data before you pay anything. No credit card required.' },
+          { q: 'What brokers are supported?', a: 'You can manually log trades from any broker. Automated broker sync via API is coming in a future update for major brokers including Tastytrade, Interactive Brokers, and Tradier.' },
+          { q: 'Is my trading data private?', a: 'Your data is stored securely and never shared with anyone. We don\u2019t sell data, run ads, or share your information with third parties.' },
+          { q: 'What trading styles does it support?', a: 'Journal X works for day traders, swing traders, and options traders. The AI coach adapts to your specific style, setups, and rules.' },
+          { q: 'How do I get started?', a: 'Click Get Started, explore the free demo, and when you\u2019re ready, purchase to unlock your personalized AI coach with your real trade data.' },
+        ].map((faq, i) => (
+          <div
+            key={i}
+            onClick={() => setOpenFaq(openFaq === i ? null : i)}
+            style={{
+              background: light ? 'rgba(255,255,255,0.6)' : '#141620',
+              border: light ? '1px solid rgba(0,0,0,0.08)' : '1px solid #1e2030',
+              borderRadius: 8, marginBottom: 10, padding: '18px 20px', cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, color: light ? '#1a1c2e' : '#e0e0e8', fontWeight: 500 }}>{faq.q}</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 18, color: '#8a8d98', transition: 'transform 0.2s', transform: openFaq === i ? 'rotate(45deg)' : 'none', flexShrink: 0, marginLeft: 16 }}>+</span>
+            </div>
+            {openFaq === i && (
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: light ? '#5a5d68' : '#8a8d98', lineHeight: 1.7, paddingTop: 12, borderTop: light ? '1px solid rgba(0,0,0,0.06)' : '1px solid #1e2030', marginTop: 12 }}>
+                {faq.a}
+              </div>
+            )}
+          </div>
+        ))}
+      </section>
+
       {/* Bottom CTA */}
       <section className="relative z-10 max-w-3xl mx-auto px-8 py-24 text-center">
         <div
@@ -712,8 +750,70 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className={`relative z-10 border-t py-10 text-center text-sm ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#5a5d68]'}`}>
-        Journal X — The first AI-powered accountability journal for traders.
+      <footer className="relative z-10" style={{ background: '#080a12', borderTop: '1px solid #1e2030', padding: '60px 0 30px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 40 }}>
+            {/* Col 1 — Logo */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <svg width="28" height="28" viewBox="0 0 56 56" fill="none">
+                  <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" fill="none"/>
+                  <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
+                  <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1"/>
+                  <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#e0e0e8', letterSpacing: '0.15em', fontWeight: 600 }}>JOURNAL X</span>
+              </div>
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#5a5d68', lineHeight: 1.6, marginTop: 12 }}>
+                The first AI-powered accountability journal for traders.
+              </p>
+            </div>
+
+            {/* Col 2 — Product */}
+            <div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#8a8d98', letterSpacing: '0.08em', marginBottom: 16, fontWeight: 500 }}>PRODUCT</div>
+              {['Features', 'Pricing', 'Demo', 'Changelog'].map(link => (
+                <div key={link} style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#5a5d68', marginBottom: 10, cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.color = '#00d4a0'; }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.color = '#5a5d68'; }}
+                >{link}</div>
+              ))}
+            </div>
+
+            {/* Col 3 — Support */}
+            <div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#8a8d98', letterSpacing: '0.08em', marginBottom: 16, fontWeight: 500 }}>SUPPORT</div>
+              {['FAQ', 'Contact', 'Privacy Policy', 'Terms of Service'].map(link => (
+                <div key={link} style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#5a5d68', marginBottom: 10, cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.color = '#00d4a0'; }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.color = '#5a5d68'; }}
+                >{link}</div>
+              ))}
+            </div>
+
+            {/* Col 4 — Connect */}
+            <div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#8a8d98', letterSpacing: '0.08em', marginBottom: 16, fontWeight: 500 }}>CONNECT</div>
+              {['Twitter/X', 'Discord', 'Email'].map(link => (
+                <div key={link} style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#5a5d68', marginBottom: 10, cursor: 'pointer' }}
+                  onMouseEnter={e => { (e.target as HTMLElement).style.color = '#00d4a0'; }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.color = '#5a5d68'; }}
+                >{link}</div>
+              ))}
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#00d4a0', marginTop: 20 }}>One-time purchase — $99</div>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div style={{ borderTop: '1px solid #1e2030', marginTop: 40, paddingTop: 20, textAlign: 'center' }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#3a3d48' }}>© 2026 Journal X. All rights reserved.</span>
+          </div>
+        </div>
       </footer>
 
       {showHowItWorks && <HowItWorksModal onSelectPlan={openPricingFromSteps} onClose={() => setShowHowItWorks(false)} light={light} />}
