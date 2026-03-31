@@ -25,12 +25,16 @@ export default function AISidebar() {
         }}
       >
         <div style={{width:7,height:7,borderRadius:'50%',background:'#00d4a0',boxShadow:'0 0 8px rgba(0,212,160,0.6)'}}/>
-        <svg width="22" height="24" viewBox="0 0 20 22" fill="none">
-          <circle cx="10" cy="4.5" r="3.2" stroke="#00d4a0" strokeWidth="1.3"/>
-          <line x1="10" y1="7.7" x2="10" y2="15.5" stroke="#00d4a0" strokeWidth="1.3"/>
-          <line x1="5" y1="11" x2="15" y2="11" stroke="#00d4a0" strokeWidth="1.3"/>
-          <line x1="10" y1="15.5" x2="6.5" y2="21" stroke="#00d4a0" strokeWidth="1.3"/>
-          <line x1="10" y1="15.5" x2="13.5" y2="21" stroke="#00d4a0" strokeWidth="1.3"/>
+        <svg width="28" height="28" viewBox="0 0 56 56" fill="none">
+          <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" fill="none"/>
+          <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round"/>
+          <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+          <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
+          <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1"/>
+          <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
         </svg>
       </div>
     )
@@ -48,12 +52,16 @@ export default function AISidebar() {
       {/* Header */}
       <div style={{padding:'18px 16px',borderBottom:'1px solid #1e2030',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <svg width="20" height="22" viewBox="0 0 20 22" fill="none">
-            <circle cx="10" cy="4.5" r="3.2" stroke="#00d4a0" strokeWidth="1.3"/>
-            <line x1="10" y1="7.7" x2="10" y2="15.5" stroke="#00d4a0" strokeWidth="1.3"/>
-            <line x1="5" y1="11" x2="15" y2="11" stroke="#00d4a0" strokeWidth="1.3"/>
-            <line x1="10" y1="15.5" x2="6.5" y2="21" stroke="#00d4a0" strokeWidth="1.3"/>
-            <line x1="10" y1="15.5" x2="13.5" y2="21" stroke="#00d4a0" strokeWidth="1.3"/>
+          <svg width="24" height="24" viewBox="0 0 56 56" fill="none">
+            <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" fill="none"/>
+            <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round"/>
+            <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+            <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
+            <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1"/>
+            <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
           </svg>
           <span style={{fontSize:13,color:'#00d4a0',letterSpacing:'0.1em',fontWeight:600}}>AI COACH — LIVE</span>
           <div style={{width:7,height:7,borderRadius:'50%',background:'#00d4a0',boxShadow:'0 0 8px rgba(0,212,160,0.6)'}}/>
@@ -83,12 +91,16 @@ export default function AISidebar() {
         <div style={{fontSize:12,color:'#8a8d98',letterSpacing:'0.08em',marginBottom:10,fontWeight:500}}>LATEST INSIGHT</div>
         <div style={{background:'#0f1a1a',border:'1px solid rgba(0,212,160,0.2)',borderRadius:8,padding:'12px 14px'}}>
           <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-            <svg width="14" height="16" viewBox="0 0 20 22" fill="none">
-              <circle cx="10" cy="4.5" r="3.2" stroke="#00d4a0" strokeWidth="1.3"/>
-              <line x1="10" y1="7.7" x2="10" y2="15.5" stroke="#00d4a0" strokeWidth="1.3"/>
-              <line x1="5" y1="11" x2="15" y2="11" stroke="#00d4a0" strokeWidth="1.3"/>
-              <line x1="10" y1="15.5" x2="6.5" y2="21" stroke="#00d4a0" strokeWidth="1.3"/>
-              <line x1="10" y1="15.5" x2="13.5" y2="21" stroke="#00d4a0" strokeWidth="1.3"/>
+            <svg width="16" height="16" viewBox="0 0 56 56" fill="none">
+              <circle cx="18" cy="12" r="4.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" fill="none"/>
+              <line x1="18" y1="16.5" x2="18" y2="30" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="18" y1="21" x2="12" y2="27" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="18" y1="21" x2="32" y2="17" stroke="rgba(255,255,255,0.65)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="18" y1="30" x2="13" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="18" y1="30" x2="23" y2="40" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="35" y1="6" x2="35" y2="11" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
+              <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1"/>
+              <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
             <span style={{fontSize:11,color:'#00d4a0',fontWeight:600}}>COACH</span>
           </div>
