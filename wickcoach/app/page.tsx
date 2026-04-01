@@ -174,6 +174,63 @@ export default function WickCoachFull() {
         </div>
       </section>
 
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section style={{ padding: "100px 48px", maxWidth: 680, margin: "0 auto" }}>
+        <div style={{ fontSize: 18, color: teal, letterSpacing: "0.18em", marginBottom: 14, fontWeight: 700, fontFamily: fm }}>HOW IT WORKS</div>
+        <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.35, marginBottom: 14, color: "#e8e8f0" }}>It&apos;s not just a trade log. It&apos;s a mirror.</h2>
+        <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, marginBottom: 36, fontFamily: fm }}>Log a trade, write what you felt, and watch the AI connect the dots.</p>
+
+        <div style={{ background: "#0a0b10", border: "2px solid #1e1e28", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 40px rgba(0,0,0,0.3)" }}>
+          {/* Window chrome */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 16px", borderBottom: "1px solid #1a1b22", background: "#0e0f14" }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff5555", opacity: 0.6 }} />
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#c9a84c", opacity: 0.6 }} />
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: teal, opacity: 0.6 }} />
+            <span style={{ fontSize: 13, color: "#6a6d78", marginLeft: 8, lineHeight: 1.6 }}>WickCoach &mdash; Trade Log</span>
+          </div>
+
+          {/* Trade row */}
+          <div style={{ display: "flex", flexDirection: "column", padding: "14px 16px", gap: 8, borderBottom: "1px solid #1a1b22" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm }}>Dec 18</span>
+              <div style={{ width: 28, height: 28, borderRadius: 5, background: "#555", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0 }}>AAPL</div>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#e0e0e8", fontFamily: fm }}>AAPL</span>
+              <span style={{ fontSize: 15, color: "#d0d0d8", fontWeight: 600, fontFamily: fm }}>Opening range breakout</span>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3, background: "rgba(0,212,160,0.12)", color: teal, fontFamily: fm }}>W</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: teal, fontFamily: fm }}>+$225</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 14, color: "#6a7078", fontStyle: "italic", fontWeight: 300, lineHeight: 1.6, fontFamily: fm }}>&ldquo;Waited for full confirmation on the 5. Patient entry, let the candle close before committing. Felt calm and focused.&rdquo;</div>
+          </div>
+
+          {/* AI Observation */}
+          <div style={{ padding: "18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <Logo size={20} />
+              <span style={{ fontSize: 15, color: teal, letterSpacing: "0.1em", fontWeight: 700, fontFamily: fm }}>AI OBSERVATION</span>
+            </div>
+            <div style={{ background: "#111a18", border: "1px solid rgba(0,212,160,0.15)", borderRadius: 10, padding: "16px 18px", marginBottom: 14 }}>
+              <div style={{ fontSize: 15, color: "#b8d0c4", lineHeight: 1.8, fontFamily: fm }}>
+                This is what it looks like when you trade your plan, Dylan. You wrote &lsquo;patient&rsquo; and &lsquo;calm&rsquo; &mdash; those words appear on 85% of your winning days. When you wait for the 5-minute confirmation, the data backs you up:
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              {[
+                { label: "WIN RATE", value: "78%" },
+                { label: "AVG R:R", value: "1.8R" },
+                { label: "EXP. VALUE", value: "+$186" },
+              ].map(s => (
+                <div key={s.label} style={{ flex: 1, background: "#13141a", border: "1px solid #1e1e28", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: "#8a8d98", marginBottom: 4, fontWeight: 600, fontFamily: fm }}>{s.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: teal, fontFamily: fm }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ 90/10 SECTION ═══ */}
       <section style={{ padding: "120px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
         <div style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, color: "#e8e8f0", lineHeight: 1.4, marginBottom: 36 }}>
