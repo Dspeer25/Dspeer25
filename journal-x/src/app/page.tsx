@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { demoTrades, computeAttributes, getCoachObservations } from '@/lib/demoData';
 import AttributeWheel from '@/components/AttributeWheel';
 
-/* ── Logo — stick man holding candlestick with "JOURNAL X" below ── */
-function JournalXLogo({ light = false }: { light?: boolean }) {
+/* ── Logo — stick man holding candlestick with "WICKCOACH" below ── */
+function WickCoachLogo({ light = false }: { light?: boolean }) {
   const manColor = light ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)';
   const manColorLight = light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.65)';
   const manColorLeg = light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.55)';
@@ -109,7 +109,7 @@ function HowItWorksModal({ onSelectPlan, onClose, light = false }: { onSelectPla
       <div className={`relative rounded-3xl p-10 sm:p-12 max-w-3xl w-full animate-fade-in ${light ? '' : 'glass'}`} style={light ? modalBg : {}}>
         <button onClick={onClose} className={`absolute top-5 right-6 text-lg transition-colors bg-transparent ${light ? 'text-[#e0e0e8] hover:text-[#3a3d48]' : 'text-[#5a5d68] hover:text-white'}`}>&#10005;</button>
 
-        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>How Journal X Works</h2>
+        <h2 className={`text-3xl font-light text-center mb-3 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>How WickCoach Works</h2>
         <p className={`text-center text-[15px] mb-12 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>Three steps to trading with real accountability.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12 items-start">
@@ -487,7 +487,7 @@ export default function LandingPage() {
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <JournalXLogo light={light} />
+        <WickCoachLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
             <Link href="/dashboard" className={`text-sm transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>
@@ -602,7 +602,7 @@ export default function LandingPage() {
         </h1>
 
         <p className={`relative z-10 text-lg max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#8a8d98]' : 'text-[#e0e0e8]'}`}>
-          Journal X doesn&apos;t just track your trades — it holds you to the goals you set.
+          WickCoach doesn&apos;t just track your trades — it holds you to the goals you set.
         </p>
 
         <p className={`relative z-10 text-sm mt-16 ${light ? 'text-[#bbb]' : 'text-[#8a8d98]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
@@ -695,17 +695,17 @@ export default function LandingPage() {
 
       {/* FAQ */}
       <section className="relative z-10 max-w-3xl mx-auto px-8 py-24">
-        <h2 className="text-center mb-10" style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, color: light ? '#1a1c2e' : '#e0e0e8', fontWeight: 600 }}>
+        <h2 className="text-center mb-10" style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 32, color: light ? '#1a1c2e' : '#e0e0e8', fontWeight: 600 }}>
           Frequently Asked Questions
         </h2>
         {[
-          { q: 'What is Journal X?', a: "Journal X is an AI-powered trading journal that tracks your trades and coaches your psychology. Unlike traditional journals, our AI coach analyzes your behavioral patterns and holds you accountable to your own rules." },
-          { q: 'How is the AI coach different from other trading tools?', a: "Most tools flag generic patterns. Journal X's coach is trained in Mark Douglas's Trading in the Zone methodology and references your actual trade history — not generic advice. It knows when you revenge trade, cut winners early, or break your own rules." },
-          { q: 'What does it cost?', a: 'Journal X is a one-time purchase. No monthly subscriptions, no recurring fees. Pay once, use it forever. Updates included.' },
+          { q: 'What is WickCoach?', a: "WickCoach is an AI-powered trading journal that tracks your trades and coaches your psychology. Unlike traditional journals, our AI coach analyzes your behavioral patterns and holds you accountable to your own rules." },
+          { q: 'How is the AI coach different from other trading tools?', a: "Most tools flag generic patterns. WickCoach's coach is trained in Mark Douglas's Trading in the Zone methodology and references your actual trade history — not generic advice. It knows when you revenge trade, cut winners early, or break your own rules." },
+          { q: 'What does it cost?', a: 'WickCoach is a one-time purchase. No monthly subscriptions, no recurring fees. Pay once, use it forever. Updates included.' },
           { q: 'Can I try it before buying?', a: 'Yes. The demo lets you explore every feature with sample data before you pay anything. No credit card required.' },
           { q: 'What brokers are supported?', a: 'You can manually log trades from any broker. Automated broker sync via API is coming in a future update for major brokers including Tastytrade, Interactive Brokers, and Tradier.' },
           { q: 'Is my trading data private?', a: 'Your data is stored securely and never shared with anyone. We don\u2019t sell data, run ads, or share your information with third parties.' },
-          { q: 'What trading styles does it support?', a: 'Journal X works for day traders, swing traders, and options traders. The AI coach adapts to your specific style, setups, and rules.' },
+          { q: 'What trading styles does it support?', a: 'WickCoach works for day traders, swing traders, and options traders. The AI coach adapts to your specific style, setups, and rules.' },
           { q: 'How do I get started?', a: 'Click Get Started, explore the free demo, and when you\u2019re ready, purchase to unlock your personalized AI coach with your real trade data.' },
         ].map((faq, i) => (
           <div
@@ -738,7 +738,7 @@ export default function LandingPage() {
         >
           <h2 className={`text-4xl font-light mb-5 tracking-tight ${light ? 'text-[#1a1c2e]' : ''}`}>Stop trading without accountability.</h2>
           <p className={`mb-10 max-w-md mx-auto text-base leading-relaxed ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>
-            The difference between profitable and unprofitable traders? Discipline. Journal X makes discipline automatic.
+            The difference between profitable and unprofitable traders? Discipline. WickCoach makes discipline automatic.
           </p>
           <button
             onClick={() => setShowHowItWorks(true)}
@@ -767,7 +767,7 @@ export default function LandingPage() {
                   <rect x="32" y="11" width="6" height="14" rx="1.5" fill="rgba(48,196,139,0.35)" stroke="#30C48B" strokeWidth="1"/>
                   <line x1="35" y1="25" x2="35" y2="32" stroke="#30C48B" strokeWidth="1.2" strokeLinecap="round"/>
                 </svg>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, color: '#e0e0e8', letterSpacing: '0.15em', fontWeight: 600 }}>JOURNAL X</span>
+                <span style={{ fontFamily: "'Chakra Petch', sans-serif", fontSize: 14, color: '#e0e0e8', letterSpacing: '0.15em', fontWeight: 600 }}>WICKCOACH</span>
               </div>
               <p style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: '#5a5d68', lineHeight: 1.6, marginTop: 12 }}>
                 The first AI-powered accountability journal for traders.
@@ -811,7 +811,7 @@ export default function LandingPage() {
 
           {/* Copyright */}
           <div style={{ borderTop: '1px solid #1e2030', marginTop: 40, paddingTop: 20, textAlign: 'center' }}>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#3a3d48' }}>© 2026 Journal X. All rights reserved.</span>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: '#3a3d48' }}>© 2026 WickCoach. All rights reserved.</span>
           </div>
         </div>
       </footer>

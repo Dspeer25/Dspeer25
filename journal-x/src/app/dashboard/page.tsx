@@ -66,7 +66,7 @@ export default function Dashboard() {
         </div>
 
         <div className="text-center max-w-2xl animate-fade-in relative z-10 px-6">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-3">Unlock Journal X</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-3">Unlock WickCoach</h2>
           <p className="text-[#8b8b9e] mb-14 max-w-md mx-auto">Choose your path. One-time payment. Lifetime access.</p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -83,7 +83,7 @@ export default function Dashboard() {
             >
               <div className={`orb w-52 h-52 rounded-full flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-500 ${selectedTier === 'full' ? 'animate-pulse-glow scale-105' : 'group-hover:scale-[1.03]'}`}>
                 <div className="text-[10px] text-[#8b8b9e] uppercase tracking-[0.2em] mb-2">Complete</div>
-                <div className="text-lg font-bold mb-0.5">Journal X</div>
+                <div className="text-lg font-bold mb-0.5">WickCoach</div>
                 <div className="text-lg font-bold text-[#6366f1]">+ AI Coach</div>
                 <div className="w-8 h-[1px] bg-[rgba(255,255,255,0.1)] my-2.5" />
                 <div className="text-[10px] text-[#55556a] uppercase tracking-[0.12em]">Lifetime Access</div>
@@ -107,7 +107,7 @@ export default function Dashboard() {
             >
               <div className={`glass w-44 h-44 rounded-full flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-500 ${selectedTier === 'journal' ? 'animate-pulse-glow scale-105' : 'group-hover:scale-[1.03]'}`}>
                 <div className="text-[10px] text-[#8b8b9e] uppercase tracking-[0.2em] mb-2">Essential</div>
-                <div className="text-lg font-bold mb-0.5">Journal X</div>
+                <div className="text-lg font-bold mb-0.5">WickCoach</div>
                 <div className="w-8 h-[1px] bg-[rgba(255,255,255,0.1)] my-2.5" />
                 <div className="text-[10px] text-[#55556a] uppercase tracking-[0.12em]">Lifetime Access</div>
               </div>

@@ -6,7 +6,7 @@ import { demoTrades } from '@/lib/demoData';
 import TickerLogo from '@/components/TickerLogo';
 
 const M = "'DM Mono', monospace";
-const H = "'Syne', sans-serif";
+const H = "'Chakra Petch', sans-serif";
 
 export default function PastTradesPage() {
   const [trades] = useState<Trade[]>(() => demoTrades);

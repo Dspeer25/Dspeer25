@@ -75,7 +75,7 @@ export default function AiChat() {
               <span className="text-[#6366f1] text-xs">{'\u2726'}</span>
             </div>
             <div>
-              <div className="text-sm font-semibold">Journal X AI</div>
+              <div className="text-sm font-semibold">WickCoach AI</div>
               <div className="text-[10px] text-[#55556a]">Knows your trades, goals, and rules</div>
             </div>
           </div>

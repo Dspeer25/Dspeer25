@@ -6,7 +6,7 @@ import { useAuth } from '@clerk/nextjs';
 import { demoTrades } from '@/lib/demoData';
 
 /* ── Logo ── */
-function JournalXLogo({ light = false }: { light?: boolean }) {
+function WickCoachLogo({ light = false }: { light?: boolean }) {
   const c = light ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)';
   const cl = light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.65)';
   const leg = light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.55)';
@@ -171,7 +171,7 @@ export default function AnalysisPage() {
       )}
 
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <JournalXLogo light={light} />
+        <WickCoachLogo light={light} />
         <div className="flex items-center gap-5">
           {isSignedIn && (
             <Link href="/dashboard" className={`text-[14px] transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>Dashboard</Link>
@@ -368,7 +368,7 @@ export default function AnalysisPage() {
       </main>
 
       <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#8a8d98]'}`}>
-        Journal X — The first AI-powered accountability journal for traders.
+        WickCoach — The first AI-powered accountability journal for traders.
       </footer>
 
       {showPricing && (

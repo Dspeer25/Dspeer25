@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 /* ── Logo ── */
-function JournalXLogo({ light = false }: { light?: boolean }) {
+function WickCoachLogo({ light = false }: { light?: boolean }) {
   const c = light ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.75)';
   const cl = light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.65)';
   const leg = light ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.55)';
@@ -58,7 +58,7 @@ export default function AboutPage() {
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <JournalXLogo light={light} />
+        <WickCoachLogo light={light} />
         <div className="flex items-center gap-5">
           <Link href="/" className={`text-[14px] transition-colors ${light ? 'text-[#8a8d98] hover:text-black' : 'text-[#8a8d98] hover:text-white'}`}>
             Home
@@ -71,7 +71,7 @@ export default function AboutPage() {
       </nav>
 
       <main className="relative z-10 max-w-3xl mx-auto px-8 pt-12 pb-24">
-        <h1 className={`text-4xl font-light tracking-tight mb-4 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>About Journal X</h1>
+        <h1 className={`text-4xl font-light tracking-tight mb-4 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>About WickCoach</h1>
         <p className={`text-[14px] mb-12 ${light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}`}>The first AI-powered accountability journal built for traders.</p>
 
         <div className={`${glassPanelCls} rounded-2xl p-8 mb-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
@@ -82,7 +82,7 @@ export default function AboutPage() {
             They journal for a week, then stop.
           </p>
           <p className={`text-[14px] leading-relaxed mb-4 ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>
-            Journal X was built to solve this problem. It&apos;s not just a place to log trades — it&apos;s an AI-powered
+            WickCoach was built to solve this problem. It&apos;s not just a place to log trades — it&apos;s an AI-powered
             accountability system that watches your behavior, detects patterns, and holds you to the standards
             you set for yourself.
           </p>
@@ -115,7 +115,7 @@ export default function AboutPage() {
         <div className={`${glassPanelCls} rounded-2xl p-8 mb-6`} style={light ? { backdropFilter: 'blur(40px)' } : {}}>
           <h2 className="text-[18px] font-medium mb-4 text-[#30C48B]">Pricing</h2>
           <p className={`text-[14px] leading-relaxed mb-4 ${light ? 'text-[#5a5d68]' : 'text-[#e0e0e8]'}`}>
-            Journal X is a one-time purchase. No subscriptions. No recurring fees. Pay once, use it forever.
+            WickCoach is a one-time purchase. No subscriptions. No recurring fees. Pay once, use it forever.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className={`rounded-xl p-5 text-center ${light ? 'bg-[rgba(0,0,0,0.02)]' : 'bg-[rgba(255,255,255,0.03)]'}`}>
@@ -143,7 +143,7 @@ export default function AboutPage() {
       </main>
 
       <footer className={`relative z-10 border-t py-10 text-center text-[14px] ${light ? 'border-[rgba(0,0,0,0.06)] text-[#bbb]' : 'border-[rgba(255,255,255,0.06)] text-[#8a8d98]'}`}>
-        Journal X — The first AI-powered accountability journal for traders.
+        WickCoach — The first AI-powered accountability journal for traders.
       </footer>
     </div>
   );

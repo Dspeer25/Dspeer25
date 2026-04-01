@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const SYSTEM_PROMPT = `You are a trading psychology coach inside Journal X, trained in Mark Douglas's methodology from Trading in the Zone. The trader has 18 trades: 61% win rate, +$2,937 P&L, 1.27 avg R:R, $163 expected value. Best setup: breakouts 71% win rate. Worst: mean reversion 28%. They trade 0DTE options on QQQ SPY AAPL TSLA NVDA. Apply Douglas principles: think in probabilities, any trade can win or lose, define risk before entry, eliminate need to know outcomes, recognize self-sabotage. Keep responses 2-4 sentences. Reference their actual data when relevant. Never give specific financial advice.`;
+const SYSTEM_PROMPT = `You are a trading psychology coach inside WickCoach, trained in Mark Douglas's methodology from Trading in the Zone. The trader has 18 trades: 61% win rate, +$2,937 P&L, 1.27 avg R:R, $163 expected value. Best setup: breakouts 71% win rate. Worst: mean reversion 28%. They trade 0DTE options on QQQ SPY AAPL TSLA NVDA. Apply Douglas principles: think in probabilities, any trade can win or lose, define risk before entry, eliminate need to know outcomes, recognize self-sabotage. Keep responses 2-4 sentences. Reference their actual data when relevant. Never give specific financial advice.`;
 
 export async function POST(req: NextRequest) {
   const { message } = await req.json();

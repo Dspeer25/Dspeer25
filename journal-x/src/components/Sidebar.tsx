@@ -28,7 +28,7 @@ export default function Sidebar({
           <div className="w-7 h-7 rounded-lg bg-[#6366f1]/15 border border-[#6366f1]/25 flex items-center justify-center shrink-0">
             <span className="text-[#6366f1] text-[10px] font-black">X</span>
           </div>
-          <span className="text-sm font-semibold tracking-tight hidden lg:block">Journal X</span>
+          <span className="text-sm font-semibold tracking-tight hidden lg:block">WickCoach</span>
         </div>
       </div>
       <nav className="flex-1 py-2 overflow-y-auto">

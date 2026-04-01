@@ -54,7 +54,7 @@ export default function Onboarding() {
             <div className="orb w-32 h-32 rounded-full mx-auto mb-8 flex items-center justify-center animate-pulse-glow">
               <span className="text-3xl font-black text-[#6366f1]/60">X</span>
             </div>
-            <h1 className="text-3xl font-bold mb-3">Welcome to Journal X</h1>
+            <h1 className="text-3xl font-bold mb-3">Welcome to WickCoach</h1>
             <p className="text-[#8b8b9e] mb-8 max-w-sm mx-auto">Before you start, let&apos;s set up your profile so the AI knows who you are as a trader.</p>
             <button onClick={() => setStep('profile')} className="px-8 py-3 bg-[#6366f1] hover:bg-[#5558e6] rounded-xl font-medium transition-all">
               Let&apos;s Go
@@ -132,7 +132,7 @@ export default function Onboarding() {
             <div>
               <label className="block text-xs text-[#8b8b9e] mb-1.5">Max Daily Loss ($)</label>
               <input type="number" value={form.maxDailyLoss} onChange={(e) => update('maxDailyLoss', e.target.value)} placeholder="500" className="w-full" />
-              <p className="text-xs text-[#55556a] mt-1">Hit this limit and Journal X locks trading for the day.</p>
+              <p className="text-xs text-[#55556a] mt-1">Hit this limit and WickCoach locks trading for the day.</p>
             </div>
             <button onClick={() => setStep('intro')} className="w-full py-3 bg-[#6366f1] hover:bg-[#5558e6] rounded-xl font-medium transition-all">
               Continue
@@ -156,7 +156,7 @@ export default function Onboarding() {
             />
             <button onClick={finish} disabled={!form.personalNote}
               className="w-full py-3 bg-[#6366f1] hover:bg-[#5558e6] disabled:opacity-30 rounded-xl font-medium transition-all">
-              Launch Journal X
+              Launch WickCoach
             </button>
           </div>
         )}
