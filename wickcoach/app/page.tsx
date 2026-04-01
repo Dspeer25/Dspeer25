@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Lock, Eye, ShieldCheck } from "lucide-react";
 
 const fm = "'DM Mono', monospace";
@@ -411,6 +411,7 @@ export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [heroVis, setHeroVis] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("Log a Trade");
 
   useEffect(() => {
     const t = setTimeout(() => setHeroVis(true), 300);
@@ -418,6 +419,293 @@ export default function WickCoachFull() {
   }, []);
 
   const tabs = ["Log a Trade", "Past Trades", "Analysis", "Trading Goals", "Trader Profile"];
+
+  function LogATradeContent() {
+    const [ticker, setTicker] = useState('');
+    const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
+    const [strategyType, setStrategyType] = useState('0DTE Call');
+    const [customStrategy, setCustomStrategy] = useState('');
+    const [direction, setDirection] = useState('LONG');
+    const [contracts, setContracts] = useState('');
+    const [entryPrice, setEntryPrice] = useState('');
+    const [exitPrice, setExitPrice] = useState('');
+    const [pl, setPl] = useState('');
+    const [plManualOverride, setPlManualOverride] = useState(false);
+    const [journal, setJournal] = useState('');
+    const [submitHover, setSubmitHover] = useState(false);
+
+    // Auto-calc P/L
+    React.useEffect(() => {
+      if (!plManualOverride && entryPrice && exitPrice && contracts) {
+        const calc = (parseFloat(exitPrice) - parseFloat(entryPrice)) * parseInt(contracts) * 100;
+        setPl(calc.toFixed(2));
+      }
+    }, [entryPrice, exitPrice, contracts, plManualOverride]);
+
+    // Reset override when inputs change
+    React.useEffect(() => {
+      setPlManualOverride(false);
+    }, [entryPrice, exitPrice, contracts]);
+
+    const inputStyle = {
+      background: '#13141a',
+      border: '1px solid #1a1b22',
+      borderRadius: 8,
+      padding: '12px 14px',
+      color: '#ffffff',
+      fontFamily: 'DM Mono',
+      fontSize: 14,
+      width: '100%',
+      outline: 'none',
+      boxSizing: 'border-box' as const,
+    };
+
+    const labelStyle = {
+      color: '#6b7280',
+      fontFamily: 'DM Mono',
+      fontSize: 12,
+      marginBottom: 6,
+      display: 'block' as const,
+    };
+
+    const sectionLabel = {
+      color: '#00d4a0',
+      fontFamily: 'DM Mono',
+      fontSize: 11,
+      textTransform: 'uppercase' as const,
+      letterSpacing: 2,
+      marginBottom: 20,
+    };
+
+    const strategyOptions = [
+      '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp',
+      'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread',
+      'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call', 'Custom'
+    ];
+
+    const guidedPrompts = [
+      'What was your mindset going in?',
+      'Did you follow your rules?',
+      'What would you do differently?',
+    ];
+
+    const handlePromptClick = (prompt: string) => {
+      setJournal(prev => prev + (prev ? '\n\n' : '') + '**' + prompt + '**\n');
+    };
+
+    const handleSubmit = () => {
+      alert('Trade logged!');
+      setTicker('');
+      setTradeDate(new Date().toISOString().split('T')[0]);
+      setStrategyType('0DTE Call');
+      setCustomStrategy('');
+      setDirection('LONG');
+      setContracts('');
+      setEntryPrice('');
+      setExitPrice('');
+      setPl('');
+      setPlManualOverride(false);
+      setJournal('');
+    };
+
+    const plNum = parseFloat(pl);
+    const plColor = plNum > 0 ? '#00d4a0' : plNum < 0 ? '#ef4444' : '#ffffff';
+
+    return (
+      <>
+        {/* TRADE DETAILS */}
+        <div style={sectionLabel}>TRADE DETAILS</div>
+
+        <label style={labelStyle}>Ticker</label>
+        <input
+          style={inputStyle}
+          placeholder="e.g. QQQ, SPY, TSLA"
+          value={ticker}
+          onChange={(e) => setTicker(e.target.value.toUpperCase())}
+        />
+        <div style={{ height: 16 }} />
+
+        <label style={labelStyle}>Date</label>
+        <input
+          type="date"
+          style={{ ...inputStyle, colorScheme: 'dark' }}
+          value={tradeDate}
+          onChange={(e) => setTradeDate(e.target.value)}
+        />
+        <div style={{ height: 16 }} />
+
+        <label style={labelStyle}>Strategy Type</label>
+        <select
+          style={{ ...inputStyle, cursor: 'pointer' }}
+          value={strategyType}
+          onChange={(e) => setStrategyType(e.target.value)}
+        >
+          {strategyOptions.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        {strategyType === 'Custom' && (
+          <>
+            <div style={{ height: 8 }} />
+            <input
+              style={inputStyle}
+              placeholder="Enter custom strategy"
+              value={customStrategy}
+              onChange={(e) => setCustomStrategy(e.target.value)}
+            />
+          </>
+        )}
+        <div style={{ height: 16 }} />
+
+        <label style={labelStyle}>Direction</label>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {['LONG', 'SHORT'].map(dir => (
+            <button
+              key={dir}
+              onClick={() => setDirection(dir)}
+              style={{
+                flex: 1,
+                background: direction === dir ? 'rgba(0,212,160,0.15)' : '#13141a',
+                border: direction === dir ? '1px solid #00d4a0' : '1px solid #1a1b22',
+                color: direction === dir ? '#00d4a0' : '#6b7280',
+                borderRadius: 8,
+                padding: '10px 0',
+                fontFamily: 'DM Mono',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                letterSpacing: 1,
+              }}
+            >
+              {dir}
+            </button>
+          ))}
+        </div>
+        <div style={{ height: 16 }} />
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Contracts</label>
+            <input
+              type="number"
+              style={inputStyle}
+              placeholder="# of contracts"
+              min={1}
+              value={contracts}
+              onChange={(e) => setContracts(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>P/L</label>
+            <input
+              type="number"
+              step={0.01}
+              style={{ ...inputStyle, color: plColor }}
+              placeholder="Auto or manual"
+              value={pl}
+              onChange={(e) => { setPl(e.target.value); setPlManualOverride(true); }}
+            />
+          </div>
+        </div>
+        <div style={{ height: 16 }} />
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Entry Price</label>
+            <input
+              type="number"
+              step={0.01}
+              style={inputStyle}
+              placeholder="$0.00"
+              value={entryPrice}
+              onChange={(e) => setEntryPrice(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Exit Price</label>
+            <input
+              type="number"
+              step={0.01}
+              style={inputStyle}
+              placeholder="$0.00"
+              value={exitPrice}
+              onChange={(e) => setExitPrice(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* JOURNAL ENTRY */}
+        <div style={{ ...sectionLabel, marginTop: 48 }}>JOURNAL ENTRY</div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+          {guidedPrompts.map(prompt => (
+            <button
+              key={prompt}
+              onClick={() => handlePromptClick(prompt)}
+              style={{
+                background: '#1a1b22',
+                border: '1px solid #1a1b22',
+                borderRadius: 20,
+                padding: '8px 16px',
+                color: '#6b7280',
+                fontFamily: 'DM Mono',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          style={{
+            ...inputStyle,
+            minHeight: 160,
+            resize: 'vertical',
+            lineHeight: '1.7',
+          }}
+          placeholder="Write about this trade... What did you feel? What did you notice?"
+          value={journal}
+          onChange={(e) => setJournal(e.target.value)}
+        />
+
+        {/* SUBMIT */}
+        <button
+          onClick={handleSubmit}
+          onMouseEnter={() => setSubmitHover(true)}
+          onMouseLeave={() => setSubmitHover(false)}
+          style={{
+            marginTop: 32,
+            background: '#00d4a0',
+            color: '#0e0f14',
+            fontFamily: 'Chakra Petch',
+            fontSize: 16,
+            fontWeight: 700,
+            padding: '14px 0',
+            borderRadius: 10,
+            border: 'none',
+            cursor: 'pointer',
+            width: '100%',
+            letterSpacing: 1,
+            filter: submitHover ? 'brightness(1.1)' : 'none',
+          }}
+        >
+          Log Trade
+        </button>
+
+        <p style={{
+          color: '#4b5563',
+          fontFamily: 'DM Mono',
+          fontSize: 12,
+          textAlign: 'center',
+          marginTop: 12,
+        }}>
+          Your data stays on your device. Always.
+        </p>
+      </>
+    );
+  }
 
   const privacyCards = [
     { icon: <Eye size={22} color={teal} />, title: "Your trades stay yours", text: "All data stored locally in your browser. Nothing leaves your machine." },
@@ -468,10 +756,22 @@ export default function WickCoachFull() {
         </div>
         <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
           {tabs.map(t => (
-            <span key={t} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
+            <span key={t} onClick={() => setActiveTab(t)} style={{ fontSize: 14, color: activeTab === t ? teal : teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: activeTab === t ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.05)", border: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
           ))}
         </div>
       </nav>
+
+      {/* ===== TAB CONTENT AREA ===== */}
+      <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
+        {activeTab === 'Log a Trade' && (
+          <LogATradeContent />
+        )}
+        {activeTab !== 'Log a Trade' && (
+          <div style={{ textAlign: 'center', paddingTop: 80 }}>
+            <p style={{ color: '#4b5563', fontFamily: 'DM Mono', fontSize: 16 }}>Coming soon</p>
+          </div>
+        )}
+      </div>
 
       {/* ═══ HERO ═══ */}
       <section style={{ position: "relative", minHeight: 520, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "60px 48px 100px", maxWidth: 1200, margin: "0 auto", overflow: "visible" }}>
