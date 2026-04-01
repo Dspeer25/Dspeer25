@@ -343,6 +343,10 @@ export default function WickCoachFull() {
         @keyframes cursorClick { 0% { opacity: 0; transform: translate(40px,-30px) } 15% { opacity: 1; transform: translate(40px,-30px) } 40% { opacity: 1; transform: translate(0,0) } 55% { opacity: 1; transform: translate(0,0) } 62% { opacity: 1; transform: translate(0,4px) } 70% { opacity: 1; transform: translate(0,0) } 85% { opacity: 1; transform: translate(0,0) } 100% { opacity: 0; transform: translate(0,0) } }
         @keyframes citedPulse { 0%, 100% { box-shadow: 0 0 8px rgba(0,212,160,0.15); border-color: rgba(0,212,160,0.2) } 50% { box-shadow: 0 0 25px rgba(0,212,160,0.4); border-color: rgba(0,212,160,0.5) } }
         @keyframes pulseGlow { 0%, 100% { opacity: 0.35 } 50% { opacity: 0.7 } }
+        @keyframes rayPulse0 { 0%, 100% { opacity: 0.03 } 50% { opacity: 0.08 } }
+        @keyframes rayPulse1 { 0%, 100% { opacity: 0.04 } 50% { opacity: 0.09 } }
+        @keyframes rayPulse2 { 0%, 100% { opacity: 0.025 } 50% { opacity: 0.07 } }
+        @keyframes rayPulse3 { 0%, 100% { opacity: 0.035 } 50% { opacity: 0.085 } }
         * { box-sizing: border-box; margin: 0; padding: 0 }
         *::-webkit-scrollbar { display: none }
         * { -ms-overflow-style: none; scrollbar-width: none }
@@ -365,11 +369,41 @@ export default function WickCoachFull() {
 
       {/* ═══ HERO ═══ */}
       <section style={{ position: "relative", minHeight: 520, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "60px 48px 100px", maxWidth: 1200, margin: "0 auto", overflow: "visible" }}>
-        {/* Candlestick background */}
+        {/* Candlestick background + rays */}
         <div style={{ position: "absolute", left: "26%", top: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }}>
+          {/* Large circular radial glow — 800px diameter */}
+          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 800, height: 800, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,212,160,0.06) 0%, rgba(0,212,160,0.025) 30%, transparent 65%)", animation: "pulseGlow 5s ease infinite" }} />
+          {/* Organic glow shapes */}
           <div style={{ position: "absolute", left: "48%", top: "45%", transform: "translate(-50%,-50%) rotate(-8deg)", width: 220, height: 550, borderRadius: "45% 55% 50% 50%", background: "radial-gradient(ellipse at 40% 50%, rgba(0,255,200,0.07) 0%, transparent 70%)", animation: "pulseGlow 3.5s ease infinite" }} />
           <div style={{ position: "absolute", left: "53%", top: "52%", transform: "translate(-50%,-50%) rotate(12deg)", width: 350, height: 650, borderRadius: "55% 45% 48% 52%", background: "radial-gradient(ellipse at 55% 45%, rgba(0,212,160,0.045) 0%, transparent 65%)", animation: "pulseGlow 4.5s ease 0.8s infinite" }} />
           <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 120, height: 360, borderRadius: "40% 60% 55% 45%", background: "radial-gradient(ellipse, rgba(0,255,210,0.12) 0%, transparent 65%)", animation: "pulseGlow 3s ease 1.2s infinite" }} />
+          {/* Radiating rays SVG */}
+          <svg width="900" height="900" viewBox="0 0 900 900" style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", zIndex: 0 }}>
+            <defs>
+              <filter id="rayBlur"><feGaussianBlur stdDeviation="6" /></filter>
+              <linearGradient id="ray0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00ffc8" stopOpacity="0.08" /><stop offset="100%" stopColor="#00ffc8" stopOpacity="0" /></linearGradient>
+              <linearGradient id="ray1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#00ffc8" stopOpacity="0.07" /><stop offset="100%" stopColor="#00ffc8" stopOpacity="0" /></linearGradient>
+              <linearGradient id="ray2" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stopColor="#00ffc8" stopOpacity="0.06" /><stop offset="100%" stopColor="#00ffc8" stopOpacity="0" /></linearGradient>
+              <linearGradient id="rayR" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#00ffb8" stopOpacity="0.08" /><stop offset="100%" stopColor="#00ffb8" stopOpacity="0" /></linearGradient>
+            </defs>
+            {/* Ray 1 — up-right, long */}
+            <polygon points="450,450 445,440 620,80 625,85" fill="url(#ray0)" filter="url(#rayBlur)" style={{ animation: "rayPulse0 4s ease infinite" }} />
+            {/* Ray 2 — right, medium */}
+            <polygon points="450,450 455,443 820,340 818,348" fill="url(#ray1)" filter="url(#rayBlur)" style={{ animation: "rayPulse1 4s ease 0.6s infinite" }} />
+            {/* Ray 3 — down-right, long */}
+            <polygon points="450,450 458,452 750,720 744,725" fill="url(#rayR)" filter="url(#rayBlur)" style={{ animation: "rayPulse2 4s ease 1.2s infinite" }} />
+            {/* Ray 4 — up-left, medium */}
+            <polygon points="450,450 448,442 250,120 244,126" fill="url(#ray0)" filter="url(#rayBlur)" style={{ animation: "rayPulse3 4s ease 1.8s infinite" }} />
+            {/* Ray 5 — left, short */}
+            <polygon points="450,450 445,445 140,380 142,388" fill="url(#ray1)" filter="url(#rayBlur)" style={{ animation: "rayPulse0 4s ease 2.4s infinite" }} />
+            {/* Ray 6 — down-left */}
+            <polygon points="450,450 444,455 200,710 208,714" fill="url(#rayR)" filter="url(#rayBlur)" style={{ animation: "rayPulse1 4s ease 3s infinite" }} />
+            {/* Ray 7 — steep up */}
+            <polygon points="450,450 447,442 420,60 426,62" fill="url(#ray2)" filter="url(#rayBlur)" style={{ animation: "rayPulse2 4s ease 0.9s infinite" }} />
+            {/* Ray 8 — steep down */}
+            <polygon points="450,450 453,458 480,840 474,838" fill="url(#ray2)" filter="url(#rayBlur)" style={{ animation: "rayPulse3 4s ease 2.1s infinite" }} />
+          </svg>
+          {/* Candlestick SVG */}
           <svg width="160" height="650" viewBox="0 0 160 650" style={{ position: "relative", zIndex: 0 }}>
             <defs>
               <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#00ffb8" stopOpacity="0.3" /><stop offset="30%" stopColor="#00d4a0" stopOpacity="0.38" /><stop offset="70%" stopColor="#00d4a0" stopOpacity="0.28" /><stop offset="100%" stopColor="#009a74" stopOpacity="0.18" /></linearGradient>
