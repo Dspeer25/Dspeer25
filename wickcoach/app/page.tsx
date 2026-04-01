@@ -421,10 +421,12 @@ export default function WickCoachFull() {
 
   const tabs = ["Log a Trade", "Past Trades", "Analysis", "Trading Goals", "Trader Profile"];
 
-  function LogATradeContent() {
+  function LogATradeContent({ setActiveTab: setTab }: { setActiveTab: (tab: string) => void }) {
     const [ticker, setTicker] = useState('');
     const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
+    const [positionType, setPositionType] = useState<'SHARES' | 'DERIVATIVES'>('DERIVATIVES');
     const [strategyType, setStrategyType] = useState('0DTE Call');
+    const [strategyInputMode, setStrategyInputMode] = useState<'select' | 'text'>('select');
     const [customStrategy, setCustomStrategy] = useState('');
     const [direction, setDirection] = useState('LONG');
     const [contracts, setContracts] = useState('');
@@ -433,28 +435,40 @@ export default function WickCoachFull() {
     const [pl, setPl] = useState('');
     const [plManualOverride, setPlManualOverride] = useState(false);
     const [journal, setJournal] = useState('');
+    const [screenshot, setScreenshot] = useState<string | null>(null);
     const [submitHover, setSubmitHover] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [uploadHover, setUploadHover] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-calc P/L
     React.useEffect(() => {
       if (!plManualOverride && entryPrice && exitPrice && contracts) {
-        const calc = (parseFloat(exitPrice) - parseFloat(entryPrice)) * parseInt(contracts) * 100;
+        const multiplier = positionType === 'SHARES' ? 1 : 100;
+        const calc = (parseFloat(exitPrice) - parseFloat(entryPrice)) * parseInt(contracts) * multiplier;
         setPl(calc.toFixed(2));
       }
-    }, [entryPrice, exitPrice, contracts, plManualOverride]);
+    }, [entryPrice, exitPrice, contracts, plManualOverride, positionType]);
 
-    // Reset override when inputs change
     React.useEffect(() => {
       setPlManualOverride(false);
     }, [entryPrice, exitPrice, contracts]);
 
+    const resetForm = () => {
+      setTicker(''); setTradeDate(new Date().toISOString().split('T')[0]);
+      setPositionType('DERIVATIVES'); setStrategyType('0DTE Call');
+      setStrategyInputMode('select'); setCustomStrategy('');
+      setDirection('LONG'); setContracts(''); setEntryPrice('');
+      setExitPrice(''); setPl(''); setPlManualOverride(false);
+      setJournal(''); setScreenshot(null); setSubmitted(false);
+    };
+
     const inputStyle = {
-      background: '#13141a',
-      border: '1px solid #1a1b22',
+      background: '#0e0f14',
+      border: '1px solid #2a2b35',
       borderRadius: 8,
       padding: '12px 14px',
       color: '#ffffff',
-      fontFamily: 'DM Mono',
+      fontFamily: "'DM Mono', monospace",
       fontSize: 14,
       width: '100%',
       outline: 'none',
@@ -463,149 +477,107 @@ export default function WickCoachFull() {
 
     const labelStyle = {
       color: '#6b7280',
-      fontFamily: 'DM Mono',
+      fontFamily: "'DM Mono', monospace",
       fontSize: 12,
       marginBottom: 6,
       display: 'block' as const,
     };
 
-    const sectionLabel = {
+    const sectionLabelStyle = {
       color: '#00d4a0',
-      fontFamily: 'DM Mono',
-      fontSize: 11,
+      fontFamily: "'DM Mono', monospace",
+      fontSize: 18,
+      fontWeight: 700,
       textTransform: 'uppercase' as const,
       letterSpacing: 2,
-      marginBottom: 20,
+      marginBottom: 24,
+      textDecoration: 'underline' as const,
+      textUnderlineOffset: '6px',
+      textDecorationColor: '#00d4a0',
     };
 
     const strategyOptions = [
       '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp',
       'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread',
-      'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call', 'Custom'
+      'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call',
     ];
 
-    const guidedPrompts = [
-      'What was your mindset going in?',
-      'Did you follow your rules?',
-      'What would you do differently?',
-    ];
-
-    const handlePromptClick = (prompt: string) => {
-      setJournal(prev => prev + (prev ? '\n\n' : '') + '**' + prompt + '**\n');
-    };
-
-    const handleSubmit = () => {
-      alert('Trade logged!');
-      setTicker('');
-      setTradeDate(new Date().toISOString().split('T')[0]);
-      setStrategyType('0DTE Call');
-      setCustomStrategy('');
-      setDirection('LONG');
-      setContracts('');
-      setEntryPrice('');
-      setExitPrice('');
-      setPl('');
-      setPlManualOverride(false);
-      setJournal('');
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => setScreenshot(ev.target?.result as string);
+      reader.readAsDataURL(file);
     };
 
     const plNum = parseFloat(pl);
     const plColor = plNum > 0 ? '#00d4a0' : plNum < 0 ? '#ef4444' : '#ffffff';
 
+    if (submitted) {
+      return (
+        <div style={{ textAlign: 'center', paddingTop: 80, paddingBottom: 80 }}>
+          <div style={{ fontSize: 48, marginBottom: 16, color: '#00d4a0' }}>{"\u2713"}</div>
+          <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", color: '#ffffff', fontSize: 28, fontWeight: 700, marginBottom: 12 }}>Trade Logged</h2>
+          <p style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 14, lineHeight: '1.6', marginBottom: 32 }}>Your trade has been saved and is ready for AI analysis.</p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button onClick={() => setTab('Past Trades')} style={{ background: '#13141a', border: '1px solid #00d4a0', borderRadius: 8, padding: '12px 24px', color: '#00d4a0', fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>View in Past Trades</button>
+            <button onClick={() => setTab('Analysis')} style={{ background: '#13141a', border: '1px solid #00d4a0', borderRadius: 8, padding: '12px 24px', color: '#00d4a0', fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>View in Analysis</button>
+          </div>
+          <p onClick={resetForm} style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 13, marginTop: 24, cursor: 'pointer' }}>+ Log another trade</p>
+        </div>
+      );
+    }
+
     return (
       <>
-        {/* TRADE DETAILS */}
-        <div style={sectionLabel}>TRADE DETAILS</div>
+        <div style={sectionLabelStyle}>TRADE DETAILS</div>
 
         <label style={labelStyle}>Ticker</label>
-        <input
-          style={inputStyle}
-          placeholder="e.g. QQQ, SPY, TSLA"
-          value={ticker}
-          onChange={(e) => setTicker(e.target.value.toUpperCase())}
-        />
+        <input style={inputStyle} placeholder="e.g. QQQ, SPY, TSLA" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
         <div style={{ height: 16 }} />
 
         <label style={labelStyle}>Date</label>
-        <input
-          type="date"
-          style={{ ...inputStyle, colorScheme: 'dark' }}
-          value={tradeDate}
-          onChange={(e) => setTradeDate(e.target.value)}
-        />
+        <input type="date" style={{ ...inputStyle, colorScheme: 'dark' }} value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
         <div style={{ height: 16 }} />
 
-        <label style={labelStyle}>Strategy Type</label>
-        <select
-          style={{ ...inputStyle, cursor: 'pointer' }}
-          value={strategyType}
-          onChange={(e) => setStrategyType(e.target.value)}
-        >
-          {strategyOptions.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
+        <label style={labelStyle}>Position Type</label>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {(['SHARES', 'DERIVATIVES'] as const).map(pt => (
+            <button key={pt} onClick={() => setPositionType(pt)} style={{ flex: 1, background: positionType === pt ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: positionType === pt ? '1px solid #00d4a0' : '1px solid #2a2b35', color: positionType === pt ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{pt}</button>
           ))}
-        </select>
-        {strategyType === 'Custom' && (
-          <>
-            <div style={{ height: 8 }} />
-            <input
-              style={inputStyle}
-              placeholder="Enter custom strategy"
-              value={customStrategy}
-              onChange={(e) => setCustomStrategy(e.target.value)}
-            />
-          </>
-        )}
+        </div>
         <div style={{ height: 16 }} />
+
+        {positionType === 'DERIVATIVES' && (<>
+          <label style={labelStyle}>Strategy Type</label>
+          {strategyInputMode === 'select' ? (<>
+            <select style={{ ...inputStyle, cursor: 'pointer' }} value={strategyType} onChange={(e) => setStrategyType(e.target.value)}>
+              {strategyOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+            <div onClick={() => setStrategyInputMode('text')} style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 11, cursor: 'pointer', marginTop: 6 }}>Or type your own</div>
+          </>) : (<>
+            <input style={inputStyle} placeholder="Type your strategy" value={customStrategy} onChange={(e) => setCustomStrategy(e.target.value)} />
+            <div onClick={() => setStrategyInputMode('select')} style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 11, cursor: 'pointer', marginTop: 6 }}>Choose from list</div>
+          </>)}
+          <div style={{ height: 16 }} />
+        </>)}
 
         <label style={labelStyle}>Direction</label>
         <div style={{ display: 'flex', gap: 10 }}>
           {['LONG', 'SHORT'].map(dir => (
-            <button
-              key={dir}
-              onClick={() => setDirection(dir)}
-              style={{
-                flex: 1,
-                background: direction === dir ? 'rgba(0,212,160,0.15)' : '#13141a',
-                border: direction === dir ? '1px solid #00d4a0' : '1px solid #1a1b22',
-                color: direction === dir ? '#00d4a0' : '#6b7280',
-                borderRadius: 8,
-                padding: '10px 0',
-                fontFamily: 'DM Mono',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                letterSpacing: 1,
-              }}
-            >
-              {dir}
-            </button>
+            <button key={dir} onClick={() => setDirection(dir)} style={{ flex: 1, background: direction === dir ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: direction === dir ? '1px solid #00d4a0' : '1px solid #2a2b35', color: direction === dir ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{dir}</button>
           ))}
         </div>
         <div style={{ height: 16 }} />
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Contracts</label>
-            <input
-              type="number"
-              style={inputStyle}
-              placeholder="# of contracts"
-              min={1}
-              value={contracts}
-              onChange={(e) => setContracts(e.target.value)}
-            />
+            <label style={labelStyle}>{positionType === 'SHARES' ? 'Shares' : 'Contracts'}</label>
+            <input type="number" style={inputStyle} placeholder={positionType === 'SHARES' ? '# of shares' : '# of contracts'} min={1} value={contracts} onChange={(e) => setContracts(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>P/L</label>
-            <input
-              type="number"
-              step={0.01}
-              style={{ ...inputStyle, color: plColor }}
-              placeholder="Auto or manual"
-              value={pl}
-              onChange={(e) => { setPl(e.target.value); setPlManualOverride(true); }}
-            />
+            <input type="number" step={0.01} style={{ ...inputStyle, color: plColor }} placeholder="Auto or manual" value={pl} onChange={(e) => { setPl(e.target.value); setPlManualOverride(true); }} />
           </div>
         </div>
         <div style={{ height: 16 }} />
@@ -613,97 +585,40 @@ export default function WickCoachFull() {
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Entry Price</label>
-            <input
-              type="number"
-              step={0.01}
-              style={inputStyle}
-              placeholder="$0.00"
-              value={entryPrice}
-              onChange={(e) => setEntryPrice(e.target.value)}
-            />
+            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Exit Price</label>
-            <input
-              type="number"
-              step={0.01}
-              style={inputStyle}
-              placeholder="$0.00"
-              value={exitPrice}
-              onChange={(e) => setExitPrice(e.target.value)}
-            />
+            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} />
           </div>
         </div>
 
-        {/* JOURNAL ENTRY */}
-        <div style={{ ...sectionLabel, marginTop: 48 }}>JOURNAL ENTRY</div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-          {guidedPrompts.map(prompt => (
-            <button
-              key={prompt}
-              onClick={() => handlePromptClick(prompt)}
-              style={{
-                background: '#1a1b22',
-                border: '1px solid #1a1b22',
-                borderRadius: 20,
-                padding: '8px 16px',
-                color: '#6b7280',
-                fontFamily: 'DM Mono',
-                fontSize: 12,
-                cursor: 'pointer',
-              }}
-            >
-              {prompt}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 24, marginTop: 48 }}>
+          <div style={{ flex: 1 }}>
+            <div style={sectionLabelStyle}>JOURNAL ENTRY</div>
+            <textarea style={{ ...inputStyle, minHeight: 200, resize: 'vertical', lineHeight: '1.7' }} placeholder="Share your brief approach on this trade for the WickCoach AI to analyze..." value={journal} onChange={(e) => setJournal(e.target.value)} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={sectionLabelStyle}>SCREENSHOT</div>
+            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+            {!screenshot ? (
+              <div onClick={() => fileInputRef.current?.click()} onMouseEnter={() => setUploadHover(true)} onMouseLeave={() => setUploadHover(false)} style={{ width: '100%', minHeight: 200, border: `2px dashed ${uploadHover ? '#00d4a0' : '#2a2b35'}`, borderRadius: 12, background: '#0e0f14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', transition: 'border-color 0.2s' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                <span style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 13 }}>Drop an image here</span>
+                <span style={{ color: '#00d4a0', fontFamily: "'DM Mono', monospace", fontSize: 12, cursor: 'pointer' }}>or click to browse</span>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', width: '100%', minHeight: 200, borderRadius: 12, overflow: 'hidden', border: '1px solid #2a2b35' }}>
+                <img src={screenshot} alt="Screenshot" style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 8 }} />
+                <div onClick={() => { setScreenshot(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>{"\u2715"}</div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <textarea
-          style={{
-            ...inputStyle,
-            minHeight: 160,
-            resize: 'vertical',
-            lineHeight: '1.7',
-          }}
-          placeholder="Write about this trade... What did you feel? What did you notice?"
-          value={journal}
-          onChange={(e) => setJournal(e.target.value)}
-        />
+        <button onClick={() => setSubmitted(true)} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0e0f14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '14px 0', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>Log Trade</button>
 
-        {/* SUBMIT */}
-        <button
-          onClick={handleSubmit}
-          onMouseEnter={() => setSubmitHover(true)}
-          onMouseLeave={() => setSubmitHover(false)}
-          style={{
-            marginTop: 32,
-            background: '#00d4a0',
-            color: '#0e0f14',
-            fontFamily: 'Chakra Petch',
-            fontSize: 16,
-            fontWeight: 700,
-            padding: '14px 0',
-            borderRadius: 10,
-            border: 'none',
-            cursor: 'pointer',
-            width: '100%',
-            letterSpacing: 1,
-            filter: submitHover ? 'brightness(1.1)' : 'none',
-          }}
-        >
-          Log Trade
-        </button>
-
-        <p style={{
-          color: '#4b5563',
-          fontFamily: 'DM Mono',
-          fontSize: 12,
-          textAlign: 'center',
-          marginTop: 12,
-        }}>
-          Your data stays on your device. Always.
-        </p>
+        <p style={{ color: '#4b5563', fontFamily: "'DM Mono', monospace", fontSize: 12, textAlign: 'center', marginTop: 12 }}>Your data stays on your device. Always.</p>
       </>
     );
   }
@@ -767,7 +682,7 @@ export default function WickCoachFull() {
         </nav>
         <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
           {activeTab === 'Log a Trade' && (
-            <LogATradeContent />
+            <LogATradeContent setActiveTab={setActiveTab} />
           )}
           {activeTab !== 'Log a Trade' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}>
