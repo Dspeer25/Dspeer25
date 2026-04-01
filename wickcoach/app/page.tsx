@@ -412,6 +412,7 @@ export default function WickCoachFull() {
   const [heroVis, setHeroVis] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("Log a Trade");
+  const [view, setView] = useState<'home' | 'app'>('home');
 
   useEffect(() => {
     const t = setTimeout(() => setHeroVis(true), 300);
@@ -749,6 +750,36 @@ export default function WickCoachFull() {
         ::selection { background: rgba(0,212,160,0.2); color: #fff }
       `}</style>
 
+      {/* ═══ APP VIEW ═══ */}
+      {view === 'app' && (<>
+        <div style={{ padding: "12px 24px" }}>
+          <span onClick={() => setView('home')} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
+        </div>
+        <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible" }}>
+          <div style={{ marginBottom: 20 }}>
+            <Logo size={34} showText />
+          </div>
+          <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
+            {tabs.map(t => (
+              <span key={t} onClick={() => setActiveTab(t)} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: activeTab === t ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.05)", border: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5 }}>{t}</span>
+            ))}
+          </div>
+        </nav>
+        <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
+          {activeTab === 'Log a Trade' && (
+            <LogATradeContent />
+          )}
+          {activeTab !== 'Log a Trade' && (
+            <div style={{ textAlign: 'center', paddingTop: 80 }}>
+              <p style={{ color: '#4b5563', fontFamily: 'DM Mono', fontSize: 16 }}>Coming soon</p>
+            </div>
+          )}
+        </div>
+      </>)}
+
+      {/* ═══ HOME VIEW ═══ */}
+      {view === 'home' && (<>
+
       {/* ═══ NAV ═══ */}
       <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible" }}>
         <div style={{ marginBottom: 20 }}>
@@ -756,22 +787,10 @@ export default function WickCoachFull() {
         </div>
         <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
           {tabs.map(t => (
-            <span key={t} onClick={() => setActiveTab(t)} style={{ fontSize: 14, color: activeTab === t ? teal : teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: activeTab === t ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.05)", border: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
+            <span key={t} onClick={() => setView('app')} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
           ))}
         </div>
       </nav>
-
-      {/* ===== TAB CONTENT AREA ===== */}
-      <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
-        {activeTab === 'Log a Trade' && (
-          <LogATradeContent />
-        )}
-        {activeTab !== 'Log a Trade' && (
-          <div style={{ textAlign: 'center', paddingTop: 80 }}>
-            <p style={{ color: '#4b5563', fontFamily: 'DM Mono', fontSize: 16 }}>Coming soon</p>
-          </div>
-        )}
-      </div>
 
       {/* ═══ HERO ═══ */}
       <section style={{ position: "relative", minHeight: 520, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "60px 48px 100px", maxWidth: 1200, margin: "0 auto", overflow: "visible" }}>
@@ -848,8 +867,8 @@ export default function WickCoachFull() {
               <span style={{ fontSize: 14, color: "#8a9a92", fontFamily: fm }}>Connects to all major brokers</span>
             </div>
           </div>
-          <div onClick={() => setTabGlow(true)} style={{ background: teal, color: "#0a0a0f", padding: "15px 32px", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: fm, display: "inline-block", boxShadow: "0 0 20px rgba(0,212,160,0.3)", opacity: heroVis ? 1 : 0, transition: "all 0.7s ease 0.35s" }}>
-            Explore the Tabs
+          <div onClick={() => setView('app')} style={{ background: teal, color: "#0a0a0f", padding: "15px 32px", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: fd, display: "inline-block", boxShadow: "0 0 20px rgba(0,212,160,0.3)", opacity: heroVis ? 1 : 0, transition: "all 0.7s ease 0.35s" }}>
+            Launch App
           </div>
         </div>
         <div style={{ position: "relative", zIndex: 1, opacity: heroVis ? 1 : 0, transform: heroVis ? "translateY(0)" : "translateY(20px)", transition: "all 0.7s ease 0.25s" }}>
@@ -972,6 +991,8 @@ export default function WickCoachFull() {
           <div style={{ fontSize: 11, color: "#3a3d48", fontFamily: fm }}>&copy; 2026 WickCoach. All rights reserved.</div>
         </div>
       </footer>
+
+      </>)}
     </div>
   );
 }
