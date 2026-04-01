@@ -1894,10 +1894,9 @@ function GrowthSimulatorTab() {
   const avgLoss      = r;
   const expectDollar = wr * avgWin - (1 - wr) * avgLoss;
   const expectR      = wr * rr - (1 - wr);
-  const tpm          = Math.round(tradesPerWeek * 4.33);
-  const grossMonthly = expectDollar * tpm;
-  const netWeekly    = (grossMonthly - monthlyWithdraw) / 4.33;
+  const grossMonthly = expectDollar * tradesPerWeek * 4.33;
   const weeklyWithdraw = monthlyWithdraw / 4.33;
+  const netWeekly    = expectDollar * tradesPerWeek - weeklyWithdraw;
   const capKicksBal  = riskCap / riskFrac;
 
   // Simulation state
@@ -2085,7 +2084,7 @@ function GrowthSimulatorTab() {
           {
             label: "Total withdrawn",
             main: fmtD(totalWithdrawn),
-            sub: null,
+            sub: `over ${chartMonths} months`,
           },
           {
             label: "Avg win / trade",
