@@ -419,7 +419,7 @@ export default function WickCoachFull() {
     return () => clearTimeout(t);
   }, []);
 
-  const tabs = ["Log a Trade", "Past Trades", "Analysis", "Trading Goals", "Trader Profile"];
+  const tabs = ["Log a Trade", "Past Trades", "Trading Goals", "Analysis", "Trader Profile"];
 
   function LogATradeContent({ setActiveTab: setTab }: { setActiveTab: (tab: string) => void }) {
     const [ticker, setTicker] = useState('');
@@ -436,6 +436,8 @@ export default function WickCoachFull() {
     const [plManualOverride, setPlManualOverride] = useState(false);
     const [journal, setJournal] = useState('');
     const [screenshot, setScreenshot] = useState<string | null>(null);
+    const [risk, setRisk] = useState('');
+    const [riskReward, setRiskReward] = useState('\u2014');
     const [submitHover, setSubmitHover] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [uploadHover, setUploadHover] = useState(false);
@@ -470,6 +472,17 @@ export default function WickCoachFull() {
       setPlManualOverride(false);
     }, [entryPrice, exitPrice, contracts]);
 
+    React.useEffect(() => {
+      const plNum = parseFloat(pl);
+      const riskNum = parseFloat(risk);
+      if (plNum > 0 && riskNum > 0) {
+        const ratio = plNum / riskNum;
+        setRiskReward(`1 : ${ratio.toFixed(1)}`);
+      } else {
+        setRiskReward('\u2014');
+      }
+    }, [pl, risk]);
+
     const resetForm = () => {
       setTicker(''); setTradeDate(new Date().toISOString().split('T')[0]);
       setPositionType('DERIVATIVES'); setStrategyType('0DTE Call');
@@ -477,6 +490,7 @@ export default function WickCoachFull() {
       setDirection('LONG'); setContracts(''); setEntryPrice('');
       setExitPrice(''); setPl(''); setPlManualOverride(false);
       setJournal(''); setScreenshot(null); setSubmitted(false);
+      setRisk(''); setRiskReward('\u2014');
     };
 
     const inputStyle = {
@@ -614,6 +628,19 @@ export default function WickCoachFull() {
           </div>
         </div>
 
+        <div style={{ height: 16 }} />
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Risk ($)</label>
+            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={risk} onChange={(e) => setRisk(e.target.value)} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Risk : Reward</label>
+            <input readOnly style={{ ...inputStyle, fontWeight: 700, color: riskReward === '\u2014' ? '#6b7280' : '#00d4a0', background: '#0a0b0f', cursor: 'default' }} value={riskReward} />
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: 24, marginTop: 48 }}>
           <div style={{ flex: 1 }}>
             <div style={sectionLabelStyle}>JOURNAL ENTRY</div>
@@ -692,7 +719,7 @@ export default function WickCoachFull() {
           <span onClick={() => setView('home')} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible" }}>
-          <div style={{ marginBottom: 20 }}>
+          <div onClick={() => setView('home')} style={{ marginBottom: 20, cursor: 'pointer' }}>
             <Logo size={34} showText />
           </div>
           <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
