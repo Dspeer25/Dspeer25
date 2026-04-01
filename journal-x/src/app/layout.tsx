@@ -4,7 +4,7 @@ import AISidebar from '@/components/AISidebar';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WickCoach — AI-Powered Trading Accountability",
+  title: "WickCoach — AI Trading Psychology Journal",
   description: "The first interactive trading journal that holds you accountable. AI coaching, goal tracking, and real performance analysis.",
 };
 
