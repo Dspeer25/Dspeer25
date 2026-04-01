@@ -13,6 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-full flex flex-col bg-[#212121] text-[#e2e8f0]">
         {children}
       </body>
