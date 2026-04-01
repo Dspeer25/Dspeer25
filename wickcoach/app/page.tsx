@@ -84,52 +84,24 @@ function FAQ({ q, a, open, onClick }: { q: string; a: string; open: boolean; onC
 
 const tickerColors: Record<string, string> = { QQQ: "#7b3fe4", TSLA: "#cc0000", SPY: "#1a4a8a", NVDA: "#76b900", AAPL: "#555", META: "#0668E1", AMZN: "#ff9900" };
 
-// Cache loaded logo URLs globally so badges don't flash text on re-render
-const logoCache: Record<string, string | null> = {};
-function useTickerLogo(ticker: string) {
-  const [url, setUrl] = useState<string | null>(logoCache[ticker] ?? null);
-  const [tried, setTried] = useState(ticker in logoCache);
-  useEffect(() => {
-    if (tried) return;
-    let cancelled = false;
-    const sources = [
-      `https://financialmodelingprep.com/image-stock/${ticker}.png`,
-      `/logos/${ticker}.png`,
-    ];
-    let found = false;
-    let pending = sources.length;
-    // Try all sources, use the first one that loads
-    sources.forEach((src, i) => {
-      const img = new Image();
-      img.onload = () => {
-        if (!cancelled && !found) {
-          found = true;
-          logoCache[ticker] = src;
-          setUrl(src);
-          setTried(true);
-        }
-      };
-      img.onerror = () => {
-        pending--;
-        if (pending === 0 && !found && !cancelled) {
-          logoCache[ticker] = null;
-          setTried(true);
-        }
-      };
-      img.src = src;
-    });
-    return () => { cancelled = true; };
-  }, [ticker, tried]);
-  return { url, loading: !tried };
-}
-
 const TBadge = ({ ticker }: { ticker: string }) => {
-  const { url, loading } = useTickerLogo(ticker);
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const logoUrl = `https://financialmodelingprep.com/image-stock/${ticker}.png`;
   return (
     <div style={{ width: 28, height: 28, borderRadius: 5, background: tickerColors[ticker] || "#2a2a34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0, overflow: "hidden" }}>
-      {url ? (
-        <img src={url} alt={ticker} width={20} height={20} style={{ objectFit: "contain" }} />
-      ) : loading ? null : ticker.slice(0, 4)}
+      {!failed && (
+        <img
+          src={logoUrl}
+          alt={ticker}
+          width={20}
+          height={20}
+          style={{ objectFit: "contain", display: loaded ? "block" : "none" }}
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      )}
+      {(failed || !loaded) && <span style={{ fontSize: 9 }}>{ticker.slice(0, 4)}</span>}
     </div>
   );
 };
