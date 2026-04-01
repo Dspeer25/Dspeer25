@@ -83,9 +83,16 @@ function FAQ({ q, a, open, onClick }: { q: string; a: string; open: boolean; onC
 }
 
 const tickerColors: Record<string, string> = { QQQ: "#7b3fe4", TSLA: "#cc0000", SPY: "#1a4a8a", NVDA: "#76b900", AAPL: "#555", META: "#0668E1", AMZN: "#ff9900" };
-const TBadge = ({ ticker }: { ticker: string }) => (
-  <div style={{ width: 28, height: 28, borderRadius: 5, background: tickerColors[ticker] || "#2a2a34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0 }}>{ticker.slice(0, 4)}</div>
-);
+const TBadge = ({ ticker }: { ticker: string }) => {
+  const [imgErr, setImgErr] = useState(false);
+  return (
+    <div style={{ width: 28, height: 28, borderRadius: 5, background: tickerColors[ticker] || "#2a2a34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0, overflow: "hidden" }}>
+      {!imgErr ? (
+        <img src={`/logos/${ticker}.png`} alt={ticker} width={20} height={20} style={{ objectFit: "contain" }} onError={() => setImgErr(true)} />
+      ) : ticker.slice(0, 4)}
+    </div>
+  );
+};
 
 function LiveDemo() {
   const tradeSets = [
@@ -317,6 +324,7 @@ export default function WickCoachFull() {
         @keyframes particle { 0% { opacity: 0; transform: scale(0) } 30% { opacity: 0.7; transform: scale(1) } 70% { opacity: 0.3 } 100% { opacity: 0; transform: translateY(-15px) } }
         @keyframes cursorClick { 0% { opacity: 0; transform: translate(40px,-30px) } 15% { opacity: 1; transform: translate(40px,-30px) } 40% { opacity: 1; transform: translate(0,0) } 55% { opacity: 1; transform: translate(0,0) } 62% { opacity: 1; transform: translate(0,4px) } 70% { opacity: 1; transform: translate(0,0) } 85% { opacity: 1; transform: translate(0,0) } 100% { opacity: 0; transform: translate(0,0) } }
         @keyframes citedPulse { 0%, 100% { box-shadow: 0 0 8px rgba(0,212,160,0.15); border-color: rgba(0,212,160,0.2) } 50% { box-shadow: 0 0 25px rgba(0,212,160,0.4); border-color: rgba(0,212,160,0.5) } }
+        @keyframes pulseGlow { 0%, 100% { opacity: 0.35 } 50% { opacity: 0.7 } }
         * { box-sizing: border-box; margin: 0; padding: 0 }
         *::-webkit-scrollbar { display: none }
         * { -ms-overflow-style: none; scrollbar-width: none }
@@ -339,6 +347,29 @@ export default function WickCoachFull() {
 
       {/* ═══ HERO ═══ */}
       <section style={{ position: "relative", minHeight: 520, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "60px 48px 100px", maxWidth: 1200, margin: "0 auto", overflow: "visible" }}>
+        {/* Candlestick background */}
+        <div style={{ position: "absolute", left: "26%", top: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }}>
+          <div style={{ position: "absolute", left: "48%", top: "45%", transform: "translate(-50%,-50%) rotate(-8deg)", width: 220, height: 550, borderRadius: "45% 55% 50% 50%", background: "radial-gradient(ellipse at 40% 50%, rgba(0,255,200,0.07) 0%, transparent 70%)", animation: "pulseGlow 3.5s ease infinite" }} />
+          <div style={{ position: "absolute", left: "53%", top: "52%", transform: "translate(-50%,-50%) rotate(12deg)", width: 350, height: 650, borderRadius: "55% 45% 48% 52%", background: "radial-gradient(ellipse at 55% 45%, rgba(0,212,160,0.045) 0%, transparent 65%)", animation: "pulseGlow 4.5s ease 0.8s infinite" }} />
+          <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: 120, height: 360, borderRadius: "40% 60% 55% 45%", background: "radial-gradient(ellipse, rgba(0,255,210,0.12) 0%, transparent 65%)", animation: "pulseGlow 3s ease 1.2s infinite" }} />
+          <svg width="160" height="650" viewBox="0 0 160 650" style={{ position: "relative", zIndex: 0 }}>
+            <defs>
+              <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#00ffb8" stopOpacity="0.3" /><stop offset="30%" stopColor="#00d4a0" stopOpacity="0.38" /><stop offset="70%" stopColor="#00d4a0" stopOpacity="0.28" /><stop offset="100%" stopColor="#009a74" stopOpacity="0.18" /></linearGradient>
+              <linearGradient id="cH" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#00ffcc" stopOpacity="0.18" /><stop offset="40%" stopColor="#00ffcc" stopOpacity="0.05" /><stop offset="100%" stopColor="transparent" stopOpacity="0" /></linearGradient>
+              <filter id="wg"><feGaussianBlur stdDeviation="8" /></filter>
+              <filter id="pg"><feGaussianBlur stdDeviation="18" /></filter>
+            </defs>
+            <rect x="20" y="145" width="120" height="340" rx="8" fill="#00d4a0" opacity="0.05" filter="url(#pg)" />
+            <rect x="30" y="155" width="100" height="320" rx="4" fill="url(#cg)" style={{ animation: "pulseGlow 3s ease infinite" }} />
+            <rect x="32" y="158" width="40" height="314" rx="3" fill="url(#cH)" />
+            <line x1="80" y1="25" x2="80" y2="155" stroke="#00d4a0" strokeWidth="4" opacity="0.3" />
+            <line x1="80" y1="25" x2="80" y2="155" stroke="#00ffb8" strokeWidth="2" opacity="0.12" />
+            <line x1="80" y1="25" x2="80" y2="155" stroke="#00d4a0" strokeWidth="16" opacity="0.04" filter="url(#wg)" />
+            <line x1="80" y1="475" x2="80" y2="625" stroke="#00d4a0" strokeWidth="4" opacity="0.3" />
+            <line x1="80" y1="475" x2="80" y2="625" stroke="#00ffb8" strokeWidth="2" opacity="0.12" />
+            <line x1="80" y1="475" x2="80" y2="625" stroke="#00d4a0" strokeWidth="16" opacity="0.04" filter="url(#wg)" />
+          </svg>
+        </div>
         <div style={{ position: "relative", zIndex: 1, maxWidth: 500, opacity: heroVis ? 1 : 0, transform: heroVis ? "translateY(0)" : "translateY(20px)", transition: "all 0.7s ease" }}>
           <h1 style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.35, fontFamily: fd, color: "#e8e8f0", marginBottom: 28 }}>
             The first trading journal smart enough to read what you wrote and{" "}
