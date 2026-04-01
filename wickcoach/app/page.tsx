@@ -85,10 +85,11 @@ function FAQ({ q, a, open, onClick }: { q: string; a: string; open: boolean; onC
 const tickerColors: Record<string, string> = { QQQ: "#7b3fe4", TSLA: "#cc0000", SPY: "#1a4a8a", NVDA: "#76b900", AAPL: "#555", META: "#0668E1", AMZN: "#ff9900" };
 const TBadge = ({ ticker }: { ticker: string }) => {
   const [imgErr, setImgErr] = useState(false);
+  const logoUrl = `https://financialmodelingprep.com/image-stock/${ticker}.png`;
   return (
     <div style={{ width: 28, height: 28, borderRadius: 5, background: tickerColors[ticker] || "#2a2a34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0, overflow: "hidden" }}>
       {!imgErr ? (
-        <img src={`/logos/${ticker}.png`} alt={ticker} width={20} height={20} style={{ objectFit: "contain" }} onError={() => setImgErr(true)} />
+        <img src={logoUrl} alt={ticker} width={20} height={20} style={{ objectFit: "contain" }} onError={() => setImgErr(true)} />
       ) : ticker.slice(0, 4)}
     </div>
   );
