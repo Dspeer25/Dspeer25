@@ -302,27 +302,29 @@ function LiveDemo() {
 }
 
 function RadarSection() {
-  const profiles = [
-    { name: "Week 4", scores: [80, 52, 71, 85, 58], obs: [
-      "You followed your strategy on 78% of trades \u2014 up from 64%. The 22% deviation all came after 11 AM when you wrote about feeling 'antsy.'",
-      "Words like 'rushed' and 'unsure' appeared 3x more than last week, correlating with your 4 largest losses.",
-      "Clean entries \u2014 sizing consistent, stops placed correctly. The issue is what happens after. You moved stops on 2 trades, both became your worst losses.",
-      "Risk rules held on 4 of 5 days. The one breach was Tuesday \u2014 that single decision cost you $380.",
-      "You cut 3 winners early. Your avg exit was 0.9R where setups typically run to 1.6R. That's $180 left on the table.",
+  type Trade = { ticker: string; dir: "CALLS" | "PUTS"; pnl: string; date: string };
+  type AxisData = { trades: Trade[]; coach: string };
+  const profiles: { name: string; scores: number[]; data: AxisData[] }[] = [
+    { name: "Week 2", scores: [65, 70, 82, 60, 45], data: [
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "+$220", date: "Mon Mar 9" }, { ticker: "QQQ", dir: "PUTS", pnl: "-$185", date: "Tue Mar 10" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$410", date: "Tue Mar 10" }], coach: "Two trades on Tuesday after a clean Monday. The second entry wasn't a setup \u2014 it was you trying to make back what you just lost." },
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$380", date: "Wed Mar 11" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$290", date: "Thu Mar 12" }], coach: "Wednesday proved you can read the tape. Thursday proved the last trade still owns your next decision. The win didn't change your beliefs \u2014 and that's the real problem." },
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$510", date: "Mon Mar 9" }, { ticker: "QQQ", dir: "CALLS", pnl: "+$175", date: "Wed Mar 11" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$90", date: "Fri Mar 13" }], coach: "Clean entries all week. You waited for your levels and took what the market gave you. This is what trusting the process looks like." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$620", date: "Thu Mar 12" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$340", date: "Fri Mar 13" }], coach: "Thursday's position was double your normal size. You weren't managing risk \u2014 you were expressing an opinion. The market doesn't care about your opinion." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$150", date: "Mon Mar 9" }, { ticker: "QQQ", dir: "PUTS", pnl: "-$200", date: "Tue Mar 10" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$175", date: "Wed Mar 11" }], coach: "Three early entries in three days. The setups were there \u2014 20 minutes later. Waiting isn't doing nothing. Waiting IS the trade." },
     ]},
-    { name: "Week 3", scores: [65, 70, 82, 60, 45], obs: [
-      "Strategy adherence dropped to 65%. You journaled about 'seeing setups everywhere' \u2014 that precedes your lowest-quality trading days.",
-      "Self-awareness was high \u2014 writing 'I know I shouldn't take this' before 3 trades. Awareness is there but follow-through isn't.",
-      "Execution was your strongest area. When you did take setups, they were clean. The problem is selection, not mechanics.",
-      "You broke daily max loss twice. Both times you wrote about 'making it back.' That phrase precedes every major drawdown.",
-      "7 trades before 9:30 AM on Wednesday. Your pre-9:30 win rate is 22% vs 68% after 10 AM.",
+    { name: "Week 3", scores: [80, 52, 71, 85, 58], data: [
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$290", date: "Mon Mar 16" }, { ticker: "QQQ", dir: "CALLS", pnl: "+$185", date: "Wed Mar 18" }], coach: "Only two trades all week and both were in your playbook. That restraint isn't boring \u2014 it's the edge." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$430", date: "Tue Mar 17" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$280", date: "Tue Mar 17" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$150", date: "Fri Mar 20" }], coach: "Tuesday you traded twice in 10 minutes. That's not analysis \u2014 that's anxiety with a buy button. Friday was better, but one calm day doesn't erase the pattern." },
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$340", date: "Mon Mar 16" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$190", date: "Thu Mar 19" }], coach: "Monday's entry was textbook. Thursday you chased the move by 2 minutes and it cost you. Your edge exists at your price, not at your impulse." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "+$275", date: "Wed Mar 18" }, { ticker: "QQQ", dir: "PUTS", pnl: "-$120", date: "Fri Mar 20" }], coach: "Stop losses honored every day this week. The Friday loss was small because you did what you said you'd do. That's the whole game." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$210", date: "Tue Mar 17" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$440", date: "Wed Mar 18" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$95", date: "Thu Mar 19" }], coach: "Wednesday you waited 40 minutes for your level and got paid. Tuesday and Thursday you didn't. You already know what works \u2014 the question is whether you'll let yourself do it." },
     ]},
-    { name: "Week 2", scores: [90, 78, 88, 92, 75], obs: [
-      "Your best discipline week on record. Every trade matched criteria. Your journal tone was calm \u2014 'patient' appeared 6 times.",
-      "Solid but not perfect. You wrote about 'feeling like I should trade more' on Thursday. You didn't act on it \u2014 that's progress.",
-      "Excellent execution. Entries precise, stops respected, 4 of 5 winners held to target. This is what trusting your system looks like.",
-      "Near-perfect risk management. Every position at 1%, no stop adjustments, no averaging down. This version of you compounds.",
-      "Still your lowest score. One extra trade Friday that didn't meet criteria. Friday overtrading has appeared 3 weeks in a row.",
+    { name: "Week 4", scores: [90, 78, 88, 92, 75], data: [
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$510", date: "Mon Mar 23" }, { ticker: "QQQ", dir: "CALLS", pnl: "+$330", date: "Wed Mar 25" }], coach: "Two trades. Both setups. Both managed. This is the version of you that makes money consistently. Remember what this week felt like." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$180", date: "Tue Mar 24" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$420", date: "Thu Mar 26" }], coach: "Tuesday's loss didn't bleed into Wednesday. You sat out, reset, and came back Thursday with a clear head. That's growth \u2014 not the P/L, but the space between the trades." },
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$390", date: "Mon Mar 23" }, { ticker: "QQQ", dir: "CALLS", pnl: "+$270", date: "Wed Mar 25" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$185", date: "Fri Mar 27" }], coach: "Three entries, all within 30 seconds of your planned level. You're not reacting anymore \u2014 you're executing. There's a difference." },
+      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$140", date: "Tue Mar 24" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$420", date: "Thu Mar 26" }], coach: "Smallest loss of the month on Tuesday. Not because the market was kind \u2014 because you sized correctly and honored your stop. Risk management isn't a rule. It's a belief." },
+      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$510", date: "Mon Mar 23" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$95", date: "Thu Mar 26" }], coach: "Monday you waited 35 minutes past the open. Thursday you jumped in 5 minutes early. Progress isn't perfection \u2014 but notice the ratio is shifting." },
     ]},
   ];
   const attrs = ["DISCIPLINE", "PSYCHOLOGY", "EXECUTION", "RISK MGMT", "PATIENCE"];
@@ -339,7 +341,7 @@ function RadarSection() {
     <section style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
       <div style={{ fontSize: 13, color: teal, letterSpacing: "0.18em", marginBottom: 14, fontWeight: 600, fontFamily: fm }}>YOUR TRADING NARRATIVE</div>
       <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.35, marginBottom: 16, color: "#e8e8f0" }}>Every trade is part of a bigger story.<br />The AI helps you read it.</h2>
-      <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, marginBottom: 30, fontFamily: fm }}>Click any attribute to see what the AI found.</p>
+      <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, marginBottom: 30, fontFamily: fm }}>Click any score to see the trades behind it.</p>
       <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 30 }}>
         {profiles.map((p, i) => (
           <div key={i} onClick={() => { setPi(i); setAa(null); }} style={{ padding: "10px 20px", borderRadius: 8, cursor: "pointer", fontFamily: fm, fontSize: 13, fontWeight: 600, background: pi === i ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.03)", border: `1px solid ${pi === i ? "rgba(0,212,160,0.3)" : "#1a1b22"}`, color: pi === i ? teal : "#6a6d78" }}>{p.name}</div>
@@ -347,20 +349,15 @@ function RadarSection() {
       </div>
       <div style={{ position: "relative", width: 400, height: 400, margin: "0 auto" }}>
         <svg width="400" height="400" viewBox="0 0 400 400">
-          {/* Grid lines */}
           <polygon points={mkPath([100, 100, 100, 100, 100])} fill="none" stroke="#1a1b22" strokeWidth="1" />
           <polygon points={mkPath([66, 66, 66, 66, 66])} fill="none" stroke="#151620" strokeWidth="0.5" />
           <polygon points={mkPath([33, 33, 33, 33, 33])} fill="none" stroke="#121318" strokeWidth="0.5" />
-          {/* Axis lines */}
           {ang.map((_, i) => { const p = gp(i, 100); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#1a1b22" strokeWidth="0.5" />; })}
-          {/* Score shape */}
           <polygon points={mkPath(pr.scores)} fill="rgba(0,212,160,0.1)" stroke={teal} strokeWidth="2" style={{ filter: "drop-shadow(0 0 15px rgba(0,212,160,0.15))", transition: "all 0.8s ease" }} />
-          {/* Score dots */}
           {pr.scores.map((s, i) => { const p = gp(i, s); return (
             <circle key={i} cx={p.x} cy={p.y} r={aa === i ? 8 : 6} fill={attrC[i]} stroke="#0e0f14" strokeWidth="2.5" style={{ cursor: "pointer", filter: aa === i ? `drop-shadow(0 0 12px ${attrC[i]}80)` : "none", transition: "all 0.3s" }} onClick={() => setAa(aa === i ? null : i)} />
           ); })}
         </svg>
-        {/* Labels at each vertex */}
         {attrs.map((a, i) => {
           const lp = gp(i, 125);
           return (
@@ -371,15 +368,28 @@ function RadarSection() {
           );
         })}
       </div>
-      {/* Observation card */}
+      {/* Default hint */}
+      {aa === null && (
+        <div style={{ fontSize: 13, color: "#4b5563", fontFamily: fm, marginTop: 20 }}>Click any score to see the trades behind it</div>
+      )}
+      {/* Trade citation card */}
       {aa !== null && (
-        <div style={{ maxWidth: 580, margin: "20px auto 0", textAlign: "left", background: "#111a18", border: "1px solid rgba(0,212,160,0.12)", borderRadius: 12, padding: "20px 24px", animation: "fadeUp 0.3s ease" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <Logo size={18} />
-            <span style={{ fontSize: 13, color: teal, letterSpacing: "0.08em", fontWeight: 600, fontFamily: fm }}>WICKCOACH &mdash; {attrs[aa]}</span>
-            <div style={{ marginLeft: "auto", fontSize: 20, fontWeight: 800, color: attrC[aa], fontFamily: fm }}>{pr.scores[aa]}</div>
-          </div>
-          <div style={{ fontSize: 15, color: "#b8d0c4", lineHeight: 1.8, fontFamily: fm }}>{pr.obs[aa]}</div>
+        <div key={`${pi}-${aa}`} style={{ maxWidth: 600, margin: "20px auto 0", textAlign: "left", background: "#13141a", border: "1px solid #1a1b22", borderRadius: 12, padding: "24px", animation: "fadeUp 0.3s ease" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: teal, fontFamily: fm, marginBottom: 16 }}>{attrs[aa]} &mdash; {pr.scores[aa]}</div>
+          {pr.data[aa].trades.map((t, i) => {
+            const isPos = t.pnl.startsWith("+");
+            const isCalls = t.dir === "CALLS";
+            const isLast = i === pr.data[aa].trades.length - 1;
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: isLast ? "none" : "1px solid #1a1b22" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: fm }}>{t.ticker}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, fontFamily: fm, padding: "3px 8px", borderRadius: 4, background: isCalls ? "rgba(0,212,160,0.1)" : "rgba(239,68,68,0.1)", color: isCalls ? teal : "#ef4444" }}>{t.dir}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, fontFamily: fm, color: isPos ? teal : "#ef4444" }}>{t.pnl}</span>
+                <span style={{ fontSize: 13, color: "#6b7280", fontFamily: fm, marginLeft: "auto" }}>{t.date}</span>
+              </div>
+            );
+          })}
+          <div style={{ marginTop: 16, fontSize: 13, color: "#9ca3af", fontFamily: fm, fontStyle: "italic", lineHeight: 1.7 }}>{pr.data[aa].coach}</div>
         </div>
       )}
     </section>
