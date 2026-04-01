@@ -440,6 +440,23 @@ export default function WickCoachFull() {
     const [submitted, setSubmitted] = useState(false);
     const [uploadHover, setUploadHover] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [startTime] = useState(Date.now());
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [finalTime, setFinalTime] = useState(0);
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    React.useEffect(() => {
+      intervalRef.current = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+      return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    }, [startTime]);
+
+    const formatTime = (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
     React.useEffect(() => {
       if (!plManualOverride && entryPrice && exitPrice && contracts) {
@@ -476,9 +493,9 @@ export default function WickCoachFull() {
     };
 
     const labelStyle = {
-      color: '#6b7280',
+      color: '#c9cdd4',
       fontFamily: "'DM Mono', monospace",
-      fontSize: 12,
+      fontSize: 14,
       marginBottom: 6,
       display: 'block' as const,
     };
@@ -517,6 +534,10 @@ export default function WickCoachFull() {
       return (
         <div style={{ textAlign: 'center', paddingTop: 80, paddingBottom: 80 }}>
           <div style={{ fontSize: 48, marginBottom: 16, color: '#00d4a0' }}>{"\u2713"}</div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 20, padding: '8px 20px', marginBottom: 20 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d4a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, color: '#00d4a0', fontWeight: 700 }}>Logged in {formatTime(finalTime)}</span>
+          </div>
           <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", color: '#ffffff', fontSize: 28, fontWeight: 700, marginBottom: 12 }}>Trade Logged</h2>
           <p style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 14, lineHeight: '1.6', marginBottom: 32 }}>Your trade has been saved and is ready for AI analysis.</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
@@ -616,7 +637,7 @@ export default function WickCoachFull() {
           </div>
         </div>
 
-        <button onClick={() => setSubmitted(true)} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0e0f14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '14px 0', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>Log Trade</button>
+        <button onClick={() => { setFinalTime(elapsedTime); if (intervalRef.current) clearInterval(intervalRef.current); setSubmitted(true); }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0e0f14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '14px 0', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>Log Trade</button>
 
         <p style={{ color: '#4b5563', fontFamily: "'DM Mono', monospace", fontSize: 12, textAlign: 'center', marginTop: 12 }}>Your data stays on your device. Always.</p>
       </>
