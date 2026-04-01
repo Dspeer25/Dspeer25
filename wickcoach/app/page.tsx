@@ -302,30 +302,35 @@ function LiveDemo() {
 }
 
 function RadarSection() {
-  type Trade = { ticker: string; dir: "CALLS" | "PUTS"; pnl: string; date: string };
+  type Trade = { ticker: string; strat: string; pill: "green" | "red" | "yellow"; pnl: string; date: string };
   type AxisData = { trades: Trade[]; coach: string };
-  const tickerDomains: Record<string, string> = { QQQ: "invesco.com", SPY: "ssga.com", AAPL: "apple.com", NVDA: "nvidia.com", TSLA: "tesla.com", AMZN: "amazon.com", META: "meta.com" };
+  const tickerDomains: Record<string, string> = { QQQ: "invesco.com", SPY: "ssga.com", AAPL: "apple.com", NVDA: "nvidia.com", TSLA: "tesla.com", AMZN: "amazon.com", META: "meta.com", MSFT: "microsoft.com", GOOG: "google.com", AMD: "amd.com" };
+  const pillStyles = {
+    green: { background: "rgba(0,212,160,0.1)", color: teal },
+    red: { background: "rgba(239,68,68,0.1)", color: "#ef4444" },
+    yellow: { background: "rgba(234,179,8,0.1)", color: "#eab308" },
+  };
   const profiles: { name: string; scores: number[]; data: AxisData[] }[] = [
-    { name: "Week 1", scores: [65, 70, 82, 60, 45], data: [
-      { trades: [{ ticker: "SPY", dir: "CALLS", pnl: "+$310", date: "Mar 3" }, { ticker: "TSLA", dir: "PUTS", pnl: "-$270", date: "Mar 5" }, { ticker: "TSLA", dir: "CALLS", pnl: "-$390", date: "Mar 5" }], coach: "The SPY entry Tuesday was in your playbook. But two TSLA trades on the same day \u2014 the second one was you chasing the first loss. Discipline isn't about the rules you follow on green days. It's about the rules you keep on red ones." },
-      { trades: [{ ticker: "NVDA", dir: "PUTS", pnl: "+$440", date: "Mar 4" }, { ticker: "QQQ", dir: "CALLS", pnl: "-$185", date: "Mar 6" }], coach: "NVDA was a clean read \u2014 you trusted your thesis and let it work. Friday you second-guessed yourself into a QQQ call that wasn't in the plan. The win didn't build confidence. It built pressure to win again." },
-      { trades: [{ ticker: "AAPL", dir: "PUTS", pnl: "+$290", date: "Mar 3" }, { ticker: "SPY", dir: "CALLS", pnl: "+$175", date: "Mar 5" }, { ticker: "META", dir: "PUTS", pnl: "+$120", date: "Mar 7" }], coach: "Three entries at your pre-marked levels. No chasing, no adjusting the plan mid-candle. This is what it looks like when you let the trade come to you." },
-      { trades: [{ ticker: "TSLA", dir: "CALLS", pnl: "-$580", date: "Mar 4" }, { ticker: "AMZN", dir: "CALLS", pnl: "-$340", date: "Mar 6" }], coach: "TSLA was 3x your normal size. AMZN was 2x. When you size up without a plan, you're not trading \u2014 you're gambling with a charting app open." },
-      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "-$140", date: "Mar 3" }, { ticker: "NVDA", dir: "PUTS", pnl: "-$195", date: "Mar 4" }, { ticker: "SPY", dir: "CALLS", pnl: "-$160", date: "Mar 6" }], coach: "All three entries were 15\u201320 minutes early. The levels you picked were right \u2014 your timing said you didn't trust them. Waiting isn't passive. It's the hardest part of the trade." },
+    { name: "Week 1", scores: [58, 72, 84, 45, 40], data: [
+      { trades: [{ ticker: "TSLA", strat: "0DTE Call", pill: "green", pnl: "+$310", date: "Feb 19" }, { ticker: "NVDA", strat: "Call Scalp", pill: "green", pnl: "-$270", date: "Feb 21" }, { ticker: "TSLA", strat: "0DTE Put", pill: "red", pnl: "-$445", date: "Feb 21" }], coach: "You wrote that the TSLA win on Wednesday \u2018felt easy.\u2019 Then Friday you took two unplanned trades back to back. In your journal you said you \u2018just had a feeling\u2019 on that NVDA scalp \u2014 that\u2019s the word you use every time you break a rule. When a trade feels easy, that\u2019s when your discipline is most at risk." },
+      { trades: [{ ticker: "AAPL", strat: "Put Debit Spread", pill: "red", pnl: "+$185", date: "Feb 18" }, { ticker: "SPY", strat: "0DTE Call", pill: "green", pnl: "-$320", date: "Feb 20" }], coach: "Your AAPL entry was methodical \u2014 you even wrote out your thesis before entering. But your SPY entry Thursday has no notes at all. Reading these entries back to back, the pattern is clear: when you journal the plan first, you trade better. When you skip it, you\u2019re trading from emotion." },
+      { trades: [{ ticker: "QQQ", strat: "0DTE Put", pill: "red", pnl: "+$490", date: "Feb 18" }, { ticker: "META", strat: "Put Scalp", pill: "red", pnl: "+$175", date: "Feb 20" }, { ticker: "AMD", strat: "Call Debit Spread", pill: "green", pnl: "+$220", date: "Feb 21" }], coach: "Three entries, all within a candle of your marked level. You wrote \u2018I waited for it to come to me\u2019 on the QQQ trade \u2014 and that exact patience showed up again on META and AMD. This is your A-game. The question is whether you notice what\u2019s different about these days." },
+      { trades: [{ ticker: "TSLA", strat: "0DTE Call", pill: "green", pnl: "-$680", date: "Feb 20" }, { ticker: "AMZN", strat: "Naked Put", pill: "red", pnl: "-$410", date: "Feb 21" }], coach: "You wrote that the TSLA position \u2018got away from you.\u2019 It didn\u2019t. You sized it at 3x your normal and didn\u2019t set a stop. The AMZN naked put the next day was the same pattern. In both entries you describe feeling like you needed to \u2018make it back.\u2019 That urge is the thing to manage, not the position." },
+      { trades: [{ ticker: "SPY", strat: "Call Scalp", pill: "green", pnl: "-$145", date: "Feb 18" }, { ticker: "QQQ", strat: "0DTE Call", pill: "green", pnl: "-$190", date: "Feb 19" }, { ticker: "NVDA", strat: "0DTE Put", pill: "red", pnl: "-$165", date: "Feb 21" }], coach: "All three entries happened in the first 8 minutes of the session. You wrote \u2018I couldn\u2019t just sit there\u2019 on Tuesday. That sentence is in four of your entries this week. Sitting there IS the trade. Your levels were right every time \u2014 your timing said you didn\u2019t trust them." },
     ]},
-    { name: "Week 2", scores: [80, 52, 71, 85, 58], data: [
-      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$350", date: "Mar 11" }, { ticker: "AAPL", dir: "CALLS", pnl: "+$210", date: "Mar 13" }], coach: "Two trades all week, both from your watchlist. You saw TSLA moving Thursday and didn't touch it. That restraint is the edge most traders never develop." },
-      { trades: [{ ticker: "NVDA", dir: "CALLS", pnl: "-$420", date: "Mar 10" }, { ticker: "NVDA", dir: "PUTS", pnl: "-$230", date: "Mar 10" }, { ticker: "SPY", dir: "PUTS", pnl: "+$180", date: "Mar 14" }], coach: "Two NVDA trades in one session \u2014 a call then a put. You weren't reading the market anymore, you were arguing with it. Friday's SPY win doesn't erase the pattern." },
-      { trades: [{ ticker: "META", dir: "PUTS", pnl: "+$380", date: "Mar 11" }, { ticker: "TSLA", dir: "CALLS", pnl: "-$165", date: "Mar 13" }], coach: "META entry was textbook \u2014 you waited for the breakdown and got in clean. TSLA you chased by 2 candles. You already know the difference. The question is whether you'll act on it." },
-      { trades: [{ ticker: "QQQ", dir: "CALLS", pnl: "+$275", date: "Mar 12" }, { ticker: "AMZN", dir: "PUTS", pnl: "-$130", date: "Mar 14" }], coach: "Stop honored on AMZN without hesitation. QQQ sized at your standard. The small loss Friday is proof the system works \u2014 you just have to keep letting it." },
-      { trades: [{ ticker: "SPY", dir: "CALLS", pnl: "-$205", date: "Mar 10" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$490", date: "Mar 12" }, { ticker: "AAPL", dir: "CALLS", pnl: "-$110", date: "Mar 14" }], coach: "Wednesday you waited 40 minutes past open and caught the move of the week. Monday and Friday you didn't wait 10. You know what works \u2014 the question is whether you'll tolerate the boredom." },
+    { name: "Week 2", scores: [81, 48, 65, 88, 70], data: [
+      { trades: [{ ticker: "SPY", strat: "0DTE Put", pill: "red", pnl: "+$380", date: "Mar 4" }, { ticker: "GOOG", strat: "Call Debit Spread", pill: "green", pnl: "+$195", date: "Mar 6" }], coach: "Two trades, both pre-planned the night before. You wrote \u2018I stuck to the list today\u2019 on both entries. That\u2019s a different person than Week 1. The interesting thing is you don\u2019t sound excited about it \u2014 and that\u2019s exactly right. Discipline is supposed to feel boring." },
+      { trades: [{ ticker: "NVDA", strat: "0DTE Call", pill: "green", pnl: "-$390", date: "Mar 3" }, { ticker: "NVDA", strat: "0DTE Put", pill: "red", pnl: "-$245", date: "Mar 3" }, { ticker: "AAPL", strat: "Put Scalp", pill: "red", pnl: "+$160", date: "Mar 7" }], coach: "Two NVDA trades in one session \u2014 a call then a put. Your journal entry says \u2018I know it\u2019s going to reverse.\u2019 You said that twice, in opposite directions, in the same hour. That\u2019s not conviction. That\u2019s an argument with the market you needed to win." },
+      { trades: [{ ticker: "META", strat: "0DTE Put", pill: "red", pnl: "+$340", date: "Mar 4" }, { ticker: "TSLA", strat: "Call Scalp", pill: "green", pnl: "-$210", date: "Mar 5" }, { ticker: "SPY", strat: "0DTE Call", pill: "green", pnl: "-$175", date: "Mar 7" }], coach: "META was clean \u2014 you noted your exact entry price the night before and hit it. TSLA you wrote \u2018I saw it moving and jumped in.\u2019 That one sentence is the difference between your winning and losing trades this week." },
+      { trades: [{ ticker: "QQQ", strat: "0DTE Call", pill: "green", pnl: "+$275", date: "Mar 5" }, { ticker: "AMZN", strat: "Put Debit Spread", pill: "red", pnl: "-$115", date: "Mar 7" }], coach: "AMZN loss was your smallest of the month. You wrote \u2018stop hit, moving on\u2019 \u2014 four words, no drama. Compare that to the paragraphs you write when you hold through a stop. The length of your journal entry after a loss tells you everything about whether you managed the risk." },
+      { trades: [{ ticker: "QQQ", strat: "0DTE Put", pill: "red", pnl: "+$520", date: "Mar 4" }, { ticker: "AMD", strat: "0DTE Call", pill: "green", pnl: "-$105", date: "Mar 6" }, { ticker: "MSFT", strat: "Call Debit Spread", pill: "green", pnl: "+$190", date: "Mar 7" }], coach: "Your QQQ entry says \u2018waited 40 min past open.\u2019 Your AMD entry says \u2018got in early, knew it immediately.\u2019 You\u2019re writing the coaching yourself at this point. The gap between knowing and doing is the only gap left." },
     ]},
-    { name: "Week 3", scores: [90, 78, 88, 92, 75], data: [
-      { trades: [{ ticker: "SPY", dir: "PUTS", pnl: "+$460", date: "Mar 18" }, { ticker: "NVDA", dir: "CALLS", pnl: "+$310", date: "Mar 20" }], coach: "Two setups. Two trades. No noise in between. This is the version of you that compounds. Remember what this week felt like when the next drawdown hits." },
-      { trades: [{ ticker: "AAPL", dir: "CALLS", pnl: "-$155", date: "Mar 17" }, { ticker: "QQQ", dir: "PUTS", pnl: "+$380", date: "Mar 19" }], coach: "Monday's loss didn't follow you into Tuesday. You sat out, reset, and came back Wednesday clear. That space between trades is where the growth is \u2014 not the P/L." },
-      { trades: [{ ticker: "TSLA", dir: "PUTS", pnl: "+$410", date: "Mar 17" }, { ticker: "SPY", dir: "CALLS", pnl: "+$245", date: "Mar 19" }, { ticker: "META", dir: "PUTS", pnl: "+$195", date: "Mar 21" }], coach: "Three entries within seconds of your planned level. No adjusting, no flinching. You're not reacting to the market anymore \u2014 you're executing against a plan. That's a different game." },
-      { trades: [{ ticker: "AMZN", dir: "CALLS", pnl: "-$120", date: "Mar 18" }, { ticker: "NVDA", dir: "PUTS", pnl: "+$390", date: "Mar 20" }], coach: "Smallest loss of the month on AMZN. Not because the trade worked out \u2014 because you sized it right and cut it fast. Risk management isn't a rule you follow. It's a belief you hold." },
-      { trades: [{ ticker: "QQQ", dir: "PUTS", pnl: "+$530", date: "Mar 18" }, { ticker: "TSLA", dir: "CALLS", pnl: "-$85", date: "Mar 21" }], coach: "Tuesday you waited 35 minutes past open for your level and caught a 5x move. Friday you jumped in 5 minutes early and gave back a third of it. The ratio is shifting \u2014 but notice where the money is." },
+    { name: "Week 3", scores: [93, 85, 90, 91, 78], data: [
+      { trades: [{ ticker: "SPY", strat: "0DTE Put", pill: "red", pnl: "+$510", date: "Mar 12" }, { ticker: "NVDA", strat: "Call Debit Spread", pill: "green", pnl: "+$340", date: "Mar 14" }], coach: "You wrote \u2018TSLA was screaming but it wasn\u2019t on my list.\u2019 That sentence alone is worth more than both these wins. Two trades, both planned, both managed. Your journal this week reads like a different trader than four weeks ago." },
+      { trades: [{ ticker: "AAPL", strat: "0DTE Call", pill: "green", pnl: "-$130", date: "Mar 11" }, { ticker: "QQQ", strat: "0DTE Put", pill: "red", pnl: "+$445", date: "Mar 13" }], coach: "Monday\u2019s loss didn\u2019t show up in Tuesday\u2019s journal at all. Not suppressed \u2014 just processed and released. You wrote \u2018bad trade, good process\u2019 and moved on. Three weeks ago a loss like that would have produced a full page of frustration. That\u2019s the shift." },
+      { trades: [{ ticker: "TSLA", strat: "Put Scalp", pill: "red", pnl: "+$380", date: "Mar 11" }, { ticker: "SPY", strat: "0DTE Call", pill: "green", pnl: "+$290", date: "Mar 13" }, { ticker: "META", strat: "Iron Condor", pill: "yellow", pnl: "+$165", date: "Mar 14" }], coach: "Three entries at your pre-marked levels. Your META iron condor notes say \u2018set it up last night, executed the plan, walked away.\u2019 That\u2019s nine words describing a trade that would have taken you 200 words and three adjustments a month ago. You\u2019re getting quieter. That\u2019s good." },
+      { trades: [{ ticker: "AMZN", strat: "0DTE Call", pill: "green", pnl: "-$95", date: "Mar 12" }, { ticker: "GOOG", strat: "Put Debit Spread", pill: "red", pnl: "+$355", date: "Mar 14" }], coach: "You wrote \u2018smallest size of the month, didn\u2019t need to be a hero.\u2019 That\u2019s a belief shift, not just a behavior change. AMZN was a loss and you described it as \u2018clean.\u2019 When losses feel clean, your risk management has become identity, not just rules." },
+      { trades: [{ ticker: "QQQ", strat: "0DTE Put", pill: "red", pnl: "+$580", date: "Mar 12" }, { ticker: "TSLA", strat: "0DTE Call", pill: "green", pnl: "-$75", date: "Mar 14" }], coach: "Tuesday: waited 35 minutes, caught the move of the week. Friday: jumped in 5 minutes early, gave back a small piece. You wrote \u2018I knew I was early.\u2019 Progress isn\u2019t perfection. But notice \u2014 you\u2019re catching yourself in the act now. That awareness didn\u2019t exist in Week 1." },
     ]},
   ];
   const attrs = ["DISCIPLINE", "PSYCHOLOGY", "EXECUTION", "RISK MGMT", "PATIENCE"];
@@ -337,13 +342,6 @@ function RadarSection() {
   const ang = attrs.map((_, i) => (i * 2 * Math.PI) / 5 - Math.PI / 2);
   const gp = (i: number, pct: number) => ({ x: cx + mR * (pct / 100) * Math.cos(ang[i]), y: cy + mR * (pct / 100) * Math.sin(ang[i]) });
   const mkPath = (pcts: number[]) => pcts.map((p, i) => gp(i, p)).map(p => `${p.x},${p.y}`).join(" ");
-
-  const TickerLogo = ({ ticker }: { ticker: string }) => {
-    const [err, setErr] = useState(false);
-    const domain = tickerDomains[ticker];
-    if (!domain || err) return null;
-    return <img src={`https://logo.clearbit.com/${domain}?size=48`} alt={ticker} width={24} height={24} style={{ borderRadius: "50%", marginRight: 8, verticalAlign: "middle", flexShrink: 0 }} onError={() => setErr(true)} />;
-  };
 
   return (
     <section style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
@@ -384,13 +382,13 @@ function RadarSection() {
           <div style={{ fontSize: 14, fontWeight: 700, color: teal, fontFamily: fm, marginBottom: 16 }}>{attrs[aa]} &mdash; {pr.scores[aa]}</div>
           {pr.data[aa].trades.map((t, i) => {
             const isPos = t.pnl.startsWith("+");
-            const isCalls = t.dir === "CALLS";
+            const ps = pillStyles[t.pill];
             const isLast = i === pr.data[aa].trades.length - 1;
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: isLast ? "none" : "1px solid #1a1b22" }}>
-                <TickerLogo ticker={t.ticker} />
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: isLast ? "none" : "1px solid #1a1b22" }}>
+                <img src={`https://logo.clearbit.com/${tickerDomains[t.ticker]}?size=48`} alt={t.ticker} style={{ width: 22, height: 22, borderRadius: "50%", marginRight: 8, verticalAlign: "middle", background: "#1a1b22", objectFit: "cover" as const, flexShrink: 0 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: fm }}>{t.ticker}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: fm, padding: "4px 10px", borderRadius: 6, background: isCalls ? "rgba(0,212,160,0.1)" : "rgba(239,68,68,0.1)", color: isCalls ? teal : "#ef4444" }}>{t.dir}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, fontFamily: fm, padding: "3px 8px", borderRadius: 6, letterSpacing: "0.5px", whiteSpace: "nowrap" as const, background: ps.background, color: ps.color }}>{t.strat}</span>
                 <span style={{ fontSize: 14, fontWeight: 700, fontFamily: fm, color: isPos ? teal : "#ef4444" }}>{t.pnl}</span>
                 <span style={{ fontSize: 13, color: "#6b7280", fontFamily: fm, marginLeft: "auto" }}>{t.date}</span>
               </div>
@@ -566,6 +564,8 @@ export default function WickCoachFull() {
 
       <LiveDemo />
 
+      <RadarSection />
+
       {/* ═══ 90/10 SECTION ═══ */}
       <section style={{ padding: "120px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
         <div style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, color: "#e8e8f0", lineHeight: 1.4, marginBottom: 36 }}>
@@ -580,8 +580,6 @@ export default function WickCoachFull() {
           <span style={{ color: teal, fontWeight: 600 }}>actually increase your confidence</span> at the screen.
         </div>
       </section>
-
-      <RadarSection />
 
       {/* ═══ PRIVACY + DATA UPLOAD ═══ */}
       <section style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
