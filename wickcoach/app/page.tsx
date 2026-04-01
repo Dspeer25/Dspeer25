@@ -85,23 +85,29 @@ function FAQ({ q, a, open, onClick }: { q: string; a: string; open: boolean; onC
 const tickerColors: Record<string, string> = { QQQ: "#7b3fe4", TSLA: "#cc0000", SPY: "#1a4a8a", NVDA: "#76b900", AAPL: "#555", META: "#0668E1", AMZN: "#ff9900" };
 
 const TBadge = ({ ticker }: { ticker: string }) => {
+  const [srcIdx, setSrcIdx] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const logoUrl = `https://financialmodelingprep.com/image-stock/${ticker}.png`;
+  const sources = [
+    `https://financialmodelingprep.com/image-stock/${ticker}.png`,
+    `https://assets.parqet.com/logos/symbol/${ticker}?format=png`,
+    `https://storage.googleapis.com/iex/api/logos/${ticker}.png`,
+  ];
+  const allFailed = srcIdx >= sources.length;
   return (
     <div style={{ width: 28, height: 28, borderRadius: 5, background: tickerColors[ticker] || "#2a2a34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0, overflow: "hidden" }}>
-      {!failed && (
+      {!allFailed && (
         <img
-          src={logoUrl}
+          key={srcIdx}
+          src={sources[srcIdx]}
           alt={ticker}
           width={20}
           height={20}
           style={{ objectFit: "contain", display: loaded ? "block" : "none" }}
           onLoad={() => setLoaded(true)}
-          onError={() => setFailed(true)}
+          onError={() => { setLoaded(false); setSrcIdx(i => i + 1); }}
         />
       )}
-      {(failed || !loaded) && <span style={{ fontSize: 9 }}>{ticker.slice(0, 4)}</span>}
+      {(allFailed || !loaded) && <span style={{ fontSize: 9 }}>{ticker.slice(0, 4)}</span>}
     </div>
   );
 };
