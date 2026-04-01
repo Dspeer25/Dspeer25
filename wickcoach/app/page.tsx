@@ -301,6 +301,91 @@ function LiveDemo() {
   );
 }
 
+function RadarSection() {
+  const profiles = [
+    { name: "Week 4", scores: [80, 52, 71, 85, 58], obs: [
+      "You followed your strategy on 78% of trades \u2014 up from 64%. The 22% deviation all came after 11 AM when you wrote about feeling 'antsy.'",
+      "Words like 'rushed' and 'unsure' appeared 3x more than last week, correlating with your 4 largest losses.",
+      "Clean entries \u2014 sizing consistent, stops placed correctly. The issue is what happens after. You moved stops on 2 trades, both became your worst losses.",
+      "Risk rules held on 4 of 5 days. The one breach was Tuesday \u2014 that single decision cost you $380.",
+      "You cut 3 winners early. Your avg exit was 0.9R where setups typically run to 1.6R. That's $180 left on the table.",
+    ]},
+    { name: "Week 3", scores: [65, 70, 82, 60, 45], obs: [
+      "Strategy adherence dropped to 65%. You journaled about 'seeing setups everywhere' \u2014 that precedes your lowest-quality trading days.",
+      "Self-awareness was high \u2014 writing 'I know I shouldn't take this' before 3 trades. Awareness is there but follow-through isn't.",
+      "Execution was your strongest area. When you did take setups, they were clean. The problem is selection, not mechanics.",
+      "You broke daily max loss twice. Both times you wrote about 'making it back.' That phrase precedes every major drawdown.",
+      "7 trades before 9:30 AM on Wednesday. Your pre-9:30 win rate is 22% vs 68% after 10 AM.",
+    ]},
+    { name: "Week 2", scores: [90, 78, 88, 92, 75], obs: [
+      "Your best discipline week on record. Every trade matched criteria. Your journal tone was calm \u2014 'patient' appeared 6 times.",
+      "Solid but not perfect. You wrote about 'feeling like I should trade more' on Thursday. You didn't act on it \u2014 that's progress.",
+      "Excellent execution. Entries precise, stops respected, 4 of 5 winners held to target. This is what trusting your system looks like.",
+      "Near-perfect risk management. Every position at 1%, no stop adjustments, no averaging down. This version of you compounds.",
+      "Still your lowest score. One extra trade Friday that didn't meet criteria. Friday overtrading has appeared 3 weeks in a row.",
+    ]},
+  ];
+  const attrs = ["DISCIPLINE", "PSYCHOLOGY", "EXECUTION", "RISK MGMT", "PATIENCE"];
+  const attrC = [teal, "#c9a84c", "#4a9eff", teal, "#c9a84c"];
+  const [pi, setPi] = useState(0);
+  const [aa, setAa] = useState<number | null>(null);
+  const pr = profiles[pi];
+  const cx = 200, cy = 185, mR = 140;
+  const ang = attrs.map((_, i) => (i * 2 * Math.PI) / 5 - Math.PI / 2);
+  const gp = (i: number, pct: number) => ({ x: cx + mR * (pct / 100) * Math.cos(ang[i]), y: cy + mR * (pct / 100) * Math.sin(ang[i]) });
+  const mkPath = (pcts: number[]) => pcts.map((p, i) => gp(i, p)).map(p => `${p.x},${p.y}`).join(" ");
+
+  return (
+    <section style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+      <div style={{ fontSize: 13, color: teal, letterSpacing: "0.18em", marginBottom: 14, fontWeight: 600, fontFamily: fm }}>YOUR TRADING NARRATIVE</div>
+      <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.35, marginBottom: 16, color: "#e8e8f0" }}>Every trade is part of a bigger story.<br />The AI helps you read it.</h2>
+      <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, marginBottom: 30, fontFamily: fm }}>Click any attribute to see what the AI found.</p>
+      <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 30 }}>
+        {profiles.map((p, i) => (
+          <div key={i} onClick={() => { setPi(i); setAa(null); }} style={{ padding: "10px 20px", borderRadius: 8, cursor: "pointer", fontFamily: fm, fontSize: 13, fontWeight: 600, background: pi === i ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.03)", border: `1px solid ${pi === i ? "rgba(0,212,160,0.3)" : "#1a1b22"}`, color: pi === i ? teal : "#6a6d78" }}>{p.name}</div>
+        ))}
+      </div>
+      <div style={{ position: "relative", width: 400, height: 400, margin: "0 auto" }}>
+        <svg width="400" height="400" viewBox="0 0 400 400">
+          {/* Grid lines */}
+          <polygon points={mkPath([100, 100, 100, 100, 100])} fill="none" stroke="#1a1b22" strokeWidth="1" />
+          <polygon points={mkPath([66, 66, 66, 66, 66])} fill="none" stroke="#151620" strokeWidth="0.5" />
+          <polygon points={mkPath([33, 33, 33, 33, 33])} fill="none" stroke="#121318" strokeWidth="0.5" />
+          {/* Axis lines */}
+          {ang.map((_, i) => { const p = gp(i, 100); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#1a1b22" strokeWidth="0.5" />; })}
+          {/* Score shape */}
+          <polygon points={mkPath(pr.scores)} fill="rgba(0,212,160,0.1)" stroke={teal} strokeWidth="2" style={{ filter: "drop-shadow(0 0 15px rgba(0,212,160,0.15))", transition: "all 0.8s ease" }} />
+          {/* Score dots */}
+          {pr.scores.map((s, i) => { const p = gp(i, s); return (
+            <circle key={i} cx={p.x} cy={p.y} r={aa === i ? 8 : 6} fill={attrC[i]} stroke="#0e0f14" strokeWidth="2.5" style={{ cursor: "pointer", filter: aa === i ? `drop-shadow(0 0 12px ${attrC[i]}80)` : "none", transition: "all 0.3s" }} onClick={() => setAa(aa === i ? null : i)} />
+          ); })}
+        </svg>
+        {/* Labels at each vertex */}
+        {attrs.map((a, i) => {
+          const lp = gp(i, 125);
+          return (
+            <div key={i} onClick={() => setAa(aa === i ? null : i)} style={{ position: "absolute", left: lp.x, top: lp.y, transform: "translate(-50%,-50%)", textAlign: "center", cursor: "pointer" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: aa === i ? attrC[i] : "#e0e0e8", fontFamily: fm, transition: "color 0.3s" }}>{pr.scores[i]}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: aa === i ? attrC[i] : "#8a8d98", fontFamily: fm, letterSpacing: "0.05em", transition: "color 0.3s" }}>{a}</div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Observation card */}
+      {aa !== null && (
+        <div style={{ maxWidth: 580, margin: "20px auto 0", textAlign: "left", background: "#111a18", border: "1px solid rgba(0,212,160,0.12)", borderRadius: 12, padding: "20px 24px", animation: "fadeUp 0.3s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Logo size={18} />
+            <span style={{ fontSize: 13, color: teal, letterSpacing: "0.08em", fontWeight: 600, fontFamily: fm }}>WICKCOACH &mdash; {attrs[aa]}</span>
+            <div style={{ marginLeft: "auto", fontSize: 20, fontWeight: 800, color: attrC[aa], fontFamily: fm }}>{pr.scores[aa]}</div>
+          </div>
+          <div style={{ fontSize: 15, color: "#b8d0c4", lineHeight: 1.8, fontFamily: fm }}>{pr.obs[aa]}</div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [heroVis, setHeroVis] = useState(false);
@@ -472,6 +557,8 @@ export default function WickCoachFull() {
           <span style={{ color: teal, fontWeight: 600 }}>actually increase your confidence</span> at the screen.
         </div>
       </section>
+
+      <RadarSection />
 
       {/* ═══ PRIVACY + DATA UPLOAD ═══ */}
       <section style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
