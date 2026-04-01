@@ -82,6 +82,200 @@ function FAQ({ q, a, open, onClick }: { q: string; a: string; open: boolean; onC
   );
 }
 
+const tickerColors: Record<string, string> = { QQQ: "#7b3fe4", TSLA: "#cc0000", SPY: "#1a4a8a", NVDA: "#76b900", AAPL: "#555", META: "#0668E1", AMZN: "#ff9900" };
+const TBadge = ({ ticker }: { ticker: string }) => (
+  <div style={{ width: 28, height: 28, borderRadius: 5, background: tickerColors[ticker] || "#2a2a34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0 }}>{ticker.slice(0, 4)}</div>
+);
+
+function LiveDemo() {
+  const tradeSets = [
+    { date: "Dec 15", ticker: "TSLA", strat: "Color change off 20ma", result: "L", pnl: "-$405", note: "Felt like this could be closer to the MAs on the larger frames and was stopped out before the move happened", ai: "Way to log it, Dylan. I noticed that on most of your losing trades this month, you describe the same thing \u2014 that your larger timeframes were wider than usual. When you write this way, your stats tell a clear story:", stats: [{ l: "WIN RATE", v: "28%", c: "#ff5555" }, { l: "AVG R:R", v: "0.6R", c: "#ff5555" }, { l: "EXP. VALUE", v: "-$112", c: "#ff5555" }], cited: [{ date: "Dec 12", ticker: "SPY", strat: "Breakout long", result: "L", pnl: "-$310", note: "Larger frames were stretched. Took it anyway." }, { date: "Dec 8", ticker: "QQQ", strat: "VWAP reclaim", result: "L", pnl: "-$187", note: "MAs wider than I like but location was there." }, { date: "Dec 3", ticker: "NVDA", strat: "Mean reversion", result: "L", pnl: "-$420", note: "Frames too wide. Should have waited for them to tighten." }] },
+    { date: "Dec 18", ticker: "AAPL", strat: "Opening range breakout", result: "W", pnl: "+$225", note: "Waited for full confirmation on the 5. Patient entry, let the candle close before committing. Felt calm and focused.", ai: "This is what it looks like when you trade your plan, Dylan. You wrote 'patient' and 'calm' \u2014 those words appear on 85% of your winning days. When you wait for the 5-minute confirmation, the data backs you up:", stats: [{ l: "WIN RATE", v: "78%", c: teal }, { l: "AVG R:R", v: "1.8R", c: teal }, { l: "EXP. VALUE", v: "+$186", c: teal }], cited: [{ date: "Dec 16", ticker: "TSLA", strat: "5-min breakout", result: "W", pnl: "+$162", note: "Waited for confirmation. Clean entry." }, { date: "Dec 14", ticker: "META", strat: "VWAP reclaim", result: "W", pnl: "+$340", note: "Patient. Let the setup come to me." }, { date: "Dec 11", ticker: "NVDA", strat: "Opening range", result: "W", pnl: "+$195", note: "Stuck to plan. Calm and focused all session." }] },
+    { date: "Dec 22", ticker: "SPY", strat: "Gap fill reversal", result: "L", pnl: "-$580", note: "Took 4 trades in 20 minutes. Was down early and kept trying to make it back. Broke my max loss rule and doubled down.", ai: "Dylan, this is the pattern that costs you the most. You wrote about taking 4 trades in 20 minutes \u2014 that's revenge trading. Every time you journal about 'making it back,' the outcome is the same:", stats: [{ l: "WIN RATE", v: "12%", c: "#ff5555" }, { l: "AVG LOSS", v: "-$490", c: "#ff5555" }, { l: "RULE BREAK", v: "100%", c: "#ff5555" }], cited: [{ date: "Dec 19", ticker: "QQQ", strat: "Scalp revenge", result: "L", pnl: "-$340", note: "Kept adding. Should have stopped at max loss." }, { date: "Dec 10", ticker: "TSLA", strat: "Revenge entry", result: "L", pnl: "-$620", note: "4 min after last loss. No setup. Just emotion." }, { date: "Dec 5", ticker: "SPY", strat: "Doubled down", result: "L", pnl: "-$510", note: "Broke risk rules trying to get it back." }] },
+  ];
+
+  const [run, setRun] = useState(0);
+  const [p, setP] = useState(0);
+  const [nc, setNc] = useState(0);
+  const [ac, setAc] = useState(0);
+  const [ti, setTi] = useState(0);
+  const [showCited, setShowCited] = useState(false);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const trade = tradeSets[run % tradeSets.length];
+  const thinks = ["Scanning journal language...", "Cross-referencing trade data...", "Comparing to weekly goals...", "Finding patterns..."];
+  const isW = trade.result === "W";
+
+  const startAnim = () => {
+    timers.current.forEach(clearTimeout);
+    setP(0); setNc(0); setAc(0); setTi(0); setShowCited(false);
+    timers.current = [
+      setTimeout(() => setP(1), 600),
+      setTimeout(() => setP(2), 1400),
+      setTimeout(() => setP(3), 2200),
+      setTimeout(() => setP(4), 6000),
+      setTimeout(() => setP(5), 6800),
+      setTimeout(() => setP(6), 8000),
+      setTimeout(() => setP(7), 10000),
+      setTimeout(() => setP(8), 12500),
+    ];
+  };
+
+  useEffect(() => { startAnim(); return () => timers.current.forEach(clearTimeout); }, [run]);
+
+  useEffect(() => {
+    if (p !== 3) return;
+    let i = 0;
+    const iv = setInterval(() => { i++; setNc(i); if (i >= trade.note.length) clearInterval(iv); }, 25);
+    return () => clearInterval(iv);
+  }, [p, run]);
+
+  useEffect(() => {
+    if (p !== 8) return;
+    let i = 0;
+    const iv = setInterval(() => { i += 2; setAc(i); if (i >= trade.ai.length) clearInterval(iv); }, 16);
+    return () => clearInterval(iv);
+  }, [p, run]);
+
+  useEffect(() => {
+    if (p !== 7) return;
+    const iv = setInterval(() => setTi(v => (v + 1) % thinks.length), 550);
+    return () => clearInterval(iv);
+  }, [p]);
+
+  return (
+    <section style={{ padding: "100px 48px", maxWidth: 680, margin: "0 auto" }}>
+      <div style={{ fontSize: 18, color: teal, letterSpacing: "0.18em", marginBottom: 14, fontWeight: 700, fontFamily: fm }}>HOW IT WORKS</div>
+      <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.35, marginBottom: 14, color: "#e8e8f0" }}>It&apos;s not just a trade log. It&apos;s a mirror.</h2>
+      <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, marginBottom: 36, fontFamily: fm }}>Watch a trade get logged, analyzed, and coached &mdash; live.</p>
+
+      <div style={{ background: "#0a0b10", border: "2px solid #1e1e28", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 40px rgba(0,0,0,0.3)", paddingBottom: 2 }}>
+        {/* Window chrome */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 16px", borderBottom: "1px solid #1a1b22", background: "#0e0f14", overflow: "visible" }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff5555", opacity: 0.6 }} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#c9a84c", opacity: 0.6 }} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: teal, opacity: 0.6 }} />
+          <span style={{ fontSize: 13, color: "#6a6d78", marginLeft: 8, lineHeight: 1.6, paddingBottom: 2 }}>WickCoach &mdash; Trade Log</span>
+          <div onClick={() => { if (p >= 8 || p === 0) setRun(r => r + 1); }} style={{ marginLeft: "auto", padding: "6px 16px", borderRadius: 5, fontSize: 12, fontWeight: 600, fontFamily: fm, background: p >= 8 ? teal : (p >= 1 && p < 5) ? teal : "rgba(0,212,160,0.1)", color: (p >= 8 || (p >= 1 && p < 5)) ? "#0a0a0f" : teal, cursor: p >= 8 ? "pointer" : "default", boxShadow: (p === 1 || p >= 8) ? "0 0 14px rgba(0,212,160,0.5)" : "none" }}>{p >= 8 ? "See Another" : "+ Log a Trade"}</div>
+        </div>
+
+        {/* Trade form phase */}
+        {p >= 1 && p < 5 && (
+          <div style={{ padding: "16px", borderBottom: "2px solid #1a1b22", background: "#11121a", animation: "fadeUp 0.3s ease" }}>
+            <div style={{ fontSize: 12, color: "#8a8d98", letterSpacing: "0.08em", marginBottom: 10, fontWeight: 600, fontFamily: fm }}>NEW TRADE</div>
+            <div style={{ display: "grid", gridTemplateColumns: "80px 80px 1fr 55px 75px", gap: 8, marginBottom: 12 }}>
+              {[
+                { l: "DATE", v: p >= 2 ? trade.date : "" },
+                { l: "TICKER", v: p >= 2 ? trade.ticker : "" },
+                { l: "STRATEGY", v: p >= 2 ? trade.strat : "" },
+                { l: "RESULT", v: p >= 2 ? trade.result : "", c: isW ? teal : "#ff5555" },
+                { l: "P&L", v: p >= 2 ? trade.pnl : "", c: isW ? teal : "#ff5555" },
+              ].map(f => (
+                <div key={f.l} style={{ background: "#0e0f14", borderRadius: 6, padding: "8px 10px", border: `1px solid ${f.v ? "rgba(0,212,160,0.15)" : "#1a1b22"}` }}>
+                  <div style={{ fontSize: 10, color: "#6a6d78", marginBottom: 3, fontFamily: fm }}>{f.l}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: f.c || (f.v ? "#e0e0e8" : "#2a2a34"), fontFamily: fm }}>{f.v || "\u2014"}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: "#0e0f14", borderRadius: 6, padding: "10px 12px", border: `1px solid ${nc > 0 ? "rgba(0,212,160,0.12)" : "#1a1b22"}` }}>
+              <div style={{ fontSize: 10, color: "#6a6d78", marginBottom: 4, fontFamily: fm }}>JOURNAL NOTE</div>
+              <div style={{ fontSize: 15, color: "#c0c4d0", lineHeight: 1.65, fontFamily: fm }}>{trade.note.slice(0, nc)}{p === 3 && nc < trade.note.length && <span style={{ color: teal, animation: "blink 0.6s infinite" }}>|</span>}</div>
+            </div>
+            {p >= 4 && (
+              <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end", position: "relative" }}>
+                <div style={{ padding: "8px 20px", borderRadius: 5, fontSize: 13, fontWeight: 700, background: teal, color: "#0a0a0f", fontFamily: fm, boxShadow: "0 0 14px rgba(0,212,160,0.5)" }}>Submit</div>
+                <svg style={{ position: "absolute", right: 20, top: 2, width: 24, height: 28, zIndex: 5, animation: "cursorClick 2s ease", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} viewBox="0 0 24 28" fill="none">
+                  <path d="M2 2L2 22L8 16L14 26L18 24L12 14L20 14L2 2Z" fill={teal} stroke="#0a0a0f" strokeWidth="1.5" />
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Submitted trade row */}
+        {p >= 5 && (
+          <div style={{ position: "relative" }}>
+            {p === 6 && (
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 3 }}>
+                {Array.from({ length: 15 }, (_, i) => (
+                  <div key={i} style={{ position: "absolute", left: `${5 + Math.random() * 90}%`, top: `${Math.random() * 100}%`, width: 2 + Math.random() * 3, height: 2 + Math.random() * 3, borderRadius: "50%", background: teal, opacity: 0, animation: `particle 1.8s ease ${Math.random() * 1.5}s infinite` }} />
+                ))}
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", padding: "14px 16px", gap: 8, position: "relative", overflow: "hidden", background: p === 6 ? "rgba(0,212,160,0.04)" : "transparent", borderBottom: "1px solid #1a1b22", animation: p === 5 ? "fadeUp 0.4s ease" : "none" }}>
+              {p === 6 && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, transparent, rgba(0,212,160,0.12), rgba(0,212,160,0.22), rgba(0,212,160,0.12), transparent)", animation: "scanAcross 1.5s ease infinite", pointerEvents: "none", zIndex: 2 }} />}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm }}>{trade.date}</span>
+                <TBadge ticker={trade.ticker} />
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#e0e0e8", fontFamily: fm }}>{trade.ticker}</span>
+                <span style={{ fontSize: 15, color: "#d0d0d8", fontWeight: 600, fontFamily: fm }}>{trade.strat}</span>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3, background: isW ? "rgba(0,212,160,0.12)" : "rgba(255,85,85,0.12)", color: isW ? teal : "#ff5555", fontFamily: fm }}>{trade.result}</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: isW ? teal : "#ff5555", fontFamily: fm }}>{trade.pnl}</span>
+                </div>
+              </div>
+              <div style={{ fontSize: 14, color: "#6a7078", fontStyle: "italic", fontWeight: 300, lineHeight: 1.6, fontFamily: fm }}>&ldquo;{trade.note}&rdquo;</div>
+            </div>
+          </div>
+        )}
+
+        {/* Thinking phase */}
+        {p === 7 && (
+          <div style={{ textAlign: "center", padding: "24px", animation: "fadeUp 0.4s ease" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 12 }}>
+              {[0, 1, 2].map(i => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: teal, animation: `pulse 1s ease ${i * 0.2}s infinite` }} />)}
+            </div>
+            <div style={{ fontSize: 15, color: teal, fontFamily: fm, fontWeight: 500 }}>{thinks[ti]}</div>
+          </div>
+        )}
+
+        {/* AI observation */}
+        {p >= 8 && (
+          <div style={{ padding: "18px", animation: "fadeUp 0.4s ease" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <Logo size={20} />
+              <span style={{ fontSize: 15, color: teal, letterSpacing: "0.1em", fontWeight: 700, fontFamily: fm }}>AI OBSERVATION</span>
+            </div>
+            <div style={{ background: "#111a18", border: "1px solid rgba(0,212,160,0.15)", borderRadius: 10, padding: "16px 18px", marginBottom: 14 }}>
+              <div style={{ fontSize: 15, color: "#b8d0c4", lineHeight: 1.8, fontFamily: fm }}>{trade.ai.slice(0, ac)}{ac < trade.ai.length && <span style={{ color: teal, animation: "blink 0.6s infinite" }}>|</span>}</div>
+            </div>
+            {ac >= trade.ai.length && (<>
+              <div style={{ display: "flex", gap: 12, marginBottom: 14, animation: "fadeUp 0.4s ease" }}>
+                {trade.stats.map(s => (
+                  <div key={s.l} style={{ flex: 1, background: "#13141a", border: "1px solid #1e1e28", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#8a8d98", marginBottom: 4, fontWeight: 600, fontFamily: fm }}>{s.l}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: s.c, fontFamily: fm }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+              {!showCited && <div onClick={() => setShowCited(true)} style={{ textAlign: "center", padding: "14px", borderRadius: 8, border: "1px solid rgba(0,212,160,0.3)", background: "rgba(0,212,160,0.06)", cursor: "pointer", fontSize: 15, color: teal, fontWeight: 600, fontFamily: fm, animation: "citedPulse 2s ease infinite" }}>Click to see what trades the AI cited</div>}
+              {showCited && (
+                <div style={{ animation: "fadeUp 0.4s ease" }}>
+                  <div style={{ fontSize: 12, color: "#6a6d78", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 10, marginTop: 4, fontFamily: fm }}>CITED TRADES</div>
+                  {trade.cited.map((ct, i) => (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", marginBottom: 6, background: "#13141a", border: `1px solid ${ct.result === "W" ? "rgba(0,212,160,0.1)" : "rgba(255,85,85,0.1)"}`, borderRadius: 8, animation: `fadeUp 0.3s ease ${i * 0.1}s both` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm }}>{ct.date}</span>
+                        <TBadge ticker={ct.ticker} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#e0e0e8", fontFamily: fm }}>{ct.ticker}</span>
+                        <span style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm }}>{ct.strat}</span>
+                        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 3, background: ct.result === "W" ? "rgba(0,212,160,0.12)" : "rgba(255,85,85,0.12)", color: ct.result === "W" ? teal : "#ff5555", fontFamily: fm }}>{ct.result}</span>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: ct.result === "W" ? teal : "#ff5555", fontFamily: fm }}>{ct.pnl}</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 14, color: "#8a9098", fontStyle: "italic", lineHeight: 1.5, fontFamily: fm }}>&ldquo;{ct.note}&rdquo;</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [heroVis, setHeroVis] = useState(false);
@@ -118,6 +312,11 @@ export default function WickCoachFull() {
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1) } 50% { opacity: 0.3; transform: scale(1.3) } }
         @keyframes tickerScroll { 0% { transform: translateY(0) } 100% { transform: translateY(-50%) } }
         @keyframes tabPulse { 0%, 100% { box-shadow: 0 0 6px rgba(0,212,160,0.1); border-color: rgba(0,212,160,0.12) } 50% { box-shadow: 0 0 24px rgba(0,212,160,0.45); border-color: rgba(0,212,160,0.4) } }
+        @keyframes blink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
+        @keyframes scanAcross { 0% { transform: translateX(-100%) } 100% { transform: translateX(100%) } }
+        @keyframes particle { 0% { opacity: 0; transform: scale(0) } 30% { opacity: 0.7; transform: scale(1) } 70% { opacity: 0.3 } 100% { opacity: 0; transform: translateY(-15px) } }
+        @keyframes cursorClick { 0% { opacity: 0; transform: translate(40px,-30px) } 15% { opacity: 1; transform: translate(40px,-30px) } 40% { opacity: 1; transform: translate(0,0) } 55% { opacity: 1; transform: translate(0,0) } 62% { opacity: 1; transform: translate(0,4px) } 70% { opacity: 1; transform: translate(0,0) } 85% { opacity: 1; transform: translate(0,0) } 100% { opacity: 0; transform: translate(0,0) } }
+        @keyframes citedPulse { 0%, 100% { box-shadow: 0 0 8px rgba(0,212,160,0.15); border-color: rgba(0,212,160,0.2) } 50% { box-shadow: 0 0 25px rgba(0,212,160,0.4); border-color: rgba(0,212,160,0.5) } }
         * { box-sizing: border-box; margin: 0; padding: 0 }
         *::-webkit-scrollbar { display: none }
         * { -ms-overflow-style: none; scrollbar-width: none }
@@ -174,62 +373,7 @@ export default function WickCoachFull() {
         </div>
       </section>
 
-      {/* ═══ HOW IT WORKS ═══ */}
-      <section style={{ padding: "100px 48px", maxWidth: 680, margin: "0 auto" }}>
-        <div style={{ fontSize: 18, color: teal, letterSpacing: "0.18em", marginBottom: 14, fontWeight: 700, fontFamily: fm }}>HOW IT WORKS</div>
-        <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.35, marginBottom: 14, color: "#e8e8f0" }}>It&apos;s not just a trade log. It&apos;s a mirror.</h2>
-        <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, marginBottom: 36, fontFamily: fm }}>Log a trade, write what you felt, and watch the AI connect the dots.</p>
-
-        <div style={{ background: "#0a0b10", border: "2px solid #1e1e28", borderRadius: 14, overflow: "hidden", boxShadow: "0 4px 40px rgba(0,0,0,0.3)" }}>
-          {/* Window chrome */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "14px 16px", borderBottom: "1px solid #1a1b22", background: "#0e0f14" }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff5555", opacity: 0.6 }} />
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#c9a84c", opacity: 0.6 }} />
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: teal, opacity: 0.6 }} />
-            <span style={{ fontSize: 13, color: "#6a6d78", marginLeft: 8, lineHeight: 1.6 }}>WickCoach &mdash; Trade Log</span>
-          </div>
-
-          {/* Trade row */}
-          <div style={{ display: "flex", flexDirection: "column", padding: "14px 16px", gap: 8, borderBottom: "1px solid #1a1b22" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm }}>Dec 18</span>
-              <div style={{ width: 28, height: 28, borderRadius: 5, background: "#555", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", fontFamily: fm, flexShrink: 0 }}>AAPL</div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#e0e0e8", fontFamily: fm }}>AAPL</span>
-              <span style={{ fontSize: 15, color: "#d0d0d8", fontWeight: 600, fontFamily: fm }}>Opening range breakout</span>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 3, background: "rgba(0,212,160,0.12)", color: teal, fontFamily: fm }}>W</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: teal, fontFamily: fm }}>+$225</span>
-              </div>
-            </div>
-            <div style={{ fontSize: 14, color: "#6a7078", fontStyle: "italic", fontWeight: 300, lineHeight: 1.6, fontFamily: fm }}>&ldquo;Waited for full confirmation on the 5. Patient entry, let the candle close before committing. Felt calm and focused.&rdquo;</div>
-          </div>
-
-          {/* AI Observation */}
-          <div style={{ padding: "18px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <Logo size={20} />
-              <span style={{ fontSize: 15, color: teal, letterSpacing: "0.1em", fontWeight: 700, fontFamily: fm }}>AI OBSERVATION</span>
-            </div>
-            <div style={{ background: "#111a18", border: "1px solid rgba(0,212,160,0.15)", borderRadius: 10, padding: "16px 18px", marginBottom: 14 }}>
-              <div style={{ fontSize: 15, color: "#b8d0c4", lineHeight: 1.8, fontFamily: fm }}>
-                This is what it looks like when you trade your plan, Dylan. You wrote &lsquo;patient&rsquo; and &lsquo;calm&rsquo; &mdash; those words appear on 85% of your winning days. When you wait for the 5-minute confirmation, the data backs you up:
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              {[
-                { label: "WIN RATE", value: "78%" },
-                { label: "AVG R:R", value: "1.8R" },
-                { label: "EXP. VALUE", value: "+$186" },
-              ].map(s => (
-                <div key={s.label} style={{ flex: 1, background: "#13141a", border: "1px solid #1e1e28", borderRadius: 8, padding: "12px", textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#8a8d98", marginBottom: 4, fontWeight: 600, fontFamily: fm }}>{s.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: teal, fontFamily: fm }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <LiveDemo />
 
       {/* ═══ 90/10 SECTION ═══ */}
       <section style={{ padding: "120px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
