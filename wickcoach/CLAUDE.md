@@ -43,3 +43,12 @@ Essential $35 (no AI), Complete $99 (with AI). Both one-time payments.
 3. Analysis — AI chat + stats
 4. Trading Goals — weekly goal tracking
 5. Trader Profile — radar chart + history
+
+## Known Issues & Patterns
+
+### Tab wiring pattern
+When adding tab-based navigation, ALWAYS verify:
+1. Tab buttons have onClick handlers that set the SAME state variable the content section reads
+2. The content conditional rendering block exists in the JSX and is placed BELOW the tab bar in the component tree
+3. State variable names match EXACTLY between the onClick setter and the conditional check (string comparison — watch for casing and spacing)
+Never assume existing buttons are wired to state. Always trace the click handler to the render logic.
