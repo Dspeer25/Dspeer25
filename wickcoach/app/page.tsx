@@ -782,6 +782,8 @@ export default function WickCoachFull() {
                 <line x1="350" y1="262" x2="374" y2="310" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </div>
+            {/* Animated logo video */}
+            <video autoPlay loop muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: 0.25, zIndex: 0, pointerEvents: 'none' }} />
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you reviewed yourself?</h1>
             {/* Subtitle */}
