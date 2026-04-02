@@ -141,7 +141,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
   };
 
   return (
-    <div style={{ display: 'flex', gap: 20, padding: 0 }}>
+    <div style={{ display: 'flex', gap: 20, padding: 0, height: '100%', overflow: 'hidden' }}>
       {/* LEFT COLUMN */}
       <div style={{ flex: '0 0 58%', position: 'relative', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -180,7 +180,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
         ))}
       </div>
       {/* RIGHT COLUMN */}
-      <div style={{ flex: '0 0 38%' }}>
+      <div className="goals-right-col" style={{ flex: '0 0 38%', maxHeight: '100%', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: aiAnimating ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
           <Logo size={16} />
           <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
@@ -284,6 +284,10 @@ function MockTradingGoals() {
         0%, 100% { opacity: 0.2; }
         50% { opacity: 1; }
       }
+      .goals-right-col { scrollbar-width: thin; scrollbar-color: #00d4a0 #1a1b22; }
+      .goals-right-col::-webkit-scrollbar { width: 4px; }
+      .goals-right-col::-webkit-scrollbar-track { background: #1a1b22; border-radius: 2px; }
+      .goals-right-col::-webkit-scrollbar-thumb { background: #00d4a0; border-radius: 2px; }
     `}</style>
     {/* Refresh button */}
     <div
@@ -831,16 +835,22 @@ export default function WickCoachFull() {
               </div>
               {/* Chin with WickCoach logo */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 6 }}>
-                <svg width="18" height="22" viewBox="0 0 20 24" fill="none">
-                  <circle cx="8" cy="4" r="2.8" stroke="#6b7280" strokeWidth="1.2" fill="none" />
-                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#6b7280" strokeWidth="1.2" />
-                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#6b7280" strokeWidth="1.2" />
-                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#6b7280" strokeWidth="1.2" />
-                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#6b7280" strokeWidth="1.2" />
-                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#6b7280" strokeWidth="1.2" />
-                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#6b7280" strokeWidth="0.8" />
-                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#6b7280" opacity="0.9" />
-                </svg>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="23" height="28" viewBox="0 0 20 24" fill="none">
+                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#00d4a0" strokeWidth="0.8" />
+                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#00d4a0" opacity="0.9" />
+                  </svg>
+                  <span style={{ fontSize: 22, letterSpacing: '0.12em', fontWeight: 700, fontFamily: fd }}>
+                    <span style={{ color: '#d0d0d8' }}>WICK</span>
+                    <span style={{ color: '#00d4a0' }}>COACH</span>
+                  </span>
+                </div>
               </div>
             </div>
             {/* Stand neck */}
