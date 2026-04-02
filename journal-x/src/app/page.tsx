@@ -526,86 +526,29 @@ export default function LandingPage() {
       </div>
 
       {/* Hero */}
-      <section className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-8">
-        <h2 className={`text-3xl sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight mb-20 text-center leading-tight font-light ${light ? 'text-[#5a5d68]' : 'text-white'}`}>
-          AI-Powered Trading Journal<br />That Holds You Accountable
-        </h2>
-
-        {/* THE CANDLESTICK CTA */}
-        {light
-          ? <CandlestickCTALight onClick={() => setShowHowItWorks(true)} />
-          : <CandlestickCTA onClick={() => setShowHowItWorks(true)} />
-        }
-
-        {/* Moving averages — neon Tron-style glow */}
-        <div className="absolute inset-0 pointer-events-none z-[5] overflow-hidden">
-          <svg className="w-full h-full" viewBox="0 0 1440 900" preserveAspectRatio="none" fill="none">
-            <defs>
-              <filter id="glow20" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="8" result="blur1" />
-                <feGaussianBlur stdDeviation="3" in="SourceGraphic" result="blur2" />
-                <feMerge><feMergeNode in="blur1" /><feMergeNode in="blur2" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-              <filter id="glow200" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="6" result="blur1" />
-                <feGaussianBlur stdDeviation="2" in="SourceGraphic" result="blur2" />
-                <feMerge><feMergeNode in="blur1" /><feMergeNode in="blur2" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-            </defs>
-            {/* 20SMA bloom layer — soft background glow */}
-            <path
-              d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
-              stroke={light ? 'rgba(80,160,240,0.12)' : 'rgba(100,200,255,0.20)'}
-              strokeWidth="8"
-              strokeLinecap="round"
-              fill="none"
-              filter="url(#glow20)"
-              style={{ filter: 'blur(4px) brightness(1.8)' }}
-            />
-            {/* 20SMA — neon cyan-blue */}
-            <path
-              d="M-50 820 C60 800 100 780 180 750 C240 730 280 700 340 680 C400 660 430 640 480 610 C530 580 560 570 620 540 C680 510 700 490 760 460 C820 430 850 420 920 380 C990 340 1020 330 1080 300 C1140 270 1180 250 1240 220 C1300 190 1340 170 1400 140 C1440 120 1470 100 1520 70"
-              stroke={light ? 'rgba(80,160,240,0.30)' : 'rgba(100,200,255,0.55)'}
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              fill="none"
-              filter="url(#glow20)"
-            />
-            {/* 200SMA bloom layer — soft background glow */}
-            <path
-              d="M-50 760 C200 740 400 700 600 640 C800 580 1000 480 1200 360 C1350 280 1450 220 1520 180"
-              stroke={light ? 'rgba(220,80,80,0.10)' : 'rgba(255,120,80,0.15)'}
-              strokeWidth="7"
-              strokeLinecap="round"
-              fill="none"
-              filter="url(#glow200)"
-              style={{ filter: 'blur(4px) brightness(1.8)' }}
-            />
-            {/* 200SMA — neon warm red-orange */}
-            <path
-              d="M-50 760 C200 740 400 700 600 640 C800 580 1000 480 1200 360 C1350 280 1450 220 1520 180"
-              stroke={light ? 'rgba(220,80,80,0.22)' : 'rgba(255,120,80,0.40)'}
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-              filter="url(#glow200)"
-            />
+      <section style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '90vh', padding: '0 32px', overflow: 'hidden' }}>
+        {/* Glowing candlestick behind text */}
+        <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
+          {/* Wide ambient glow */}
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 400, background: '#00d4a0', borderRadius: '50%', filter: 'blur(120px)', opacity: 0.1 }} />
+          {/* Candle body glow */}
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 60, height: 140, background: '#00d4a0', borderRadius: 4, filter: 'blur(60px)', opacity: 0.25 }} />
+          {/* Candlestick SVG */}
+          <svg width="60" height="300" viewBox="0 0 60 300" fill="none" style={{ display: 'block' }}>
+            <line x1="30" y1="0" x2="30" y2="300" stroke="#00d4a0" strokeWidth="2" />
+            <rect x="0" y="80" width="60" height="140" rx="4" fill="#00d4a0" opacity="0.35" />
           </svg>
         </div>
 
-        {/* ─── AI Coach Showcase — rotating insights ─── */}
-        <CoachShowcase light={light} />
-
-        <h1 className="relative z-10 text-5xl sm:text-6xl lg:text-7xl font-light leading-[1.15] mb-6 tracking-tight text-center max-w-3xl">
-          <span className={light ? 'text-[#8a8d98]' : 'text-[#8a8d98]'}>Your trades. Your rules.</span><br />
-          <span className={`underline decoration-[#30C48B] decoration-2 underline-offset-8 ${light ? 'text-[#1a1c2e]' : 'text-white'}`}>Real accountability.</span>
+        {/* Heading */}
+        <h1 style={{ position: 'relative', zIndex: 1, fontFamily: "'Chakra Petch', sans-serif", fontWeight: 700, color: '#ffffff', fontSize: 44, textAlign: 'center', maxWidth: 800, lineHeight: 1.2, margin: '0 auto' }}>
+          You&apos;ve reviewed a thousand charts. When&apos;s the last time you reviewed yourself?
         </h1>
 
-        <p className={`relative z-10 text-lg max-w-lg mx-auto leading-relaxed text-center ${light ? 'text-[#8a8d98]' : 'text-[#e0e0e8]'}`}>
-          WickCoach doesn&apos;t just track your trades — it holds you to the goals you set.
+        {/* Subtitle */}
+        <p style={{ position: 'relative', zIndex: 1, fontFamily: "'DM Mono', monospace", color: '#9ca3af', fontSize: 15, textAlign: 'center', maxWidth: 600, lineHeight: 1.7, marginTop: 24 }}>
+          The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.
         </p>
-
-        <p className={`relative z-10 text-sm mt-16 ${light ? 'text-[#bbb]' : 'text-[#8a8d98]'}`}>One-time payment &middot; Full access forever &middot; No subscriptions</p>
       </section>
 
       {/* Features */}
