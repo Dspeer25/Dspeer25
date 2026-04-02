@@ -812,11 +812,11 @@ export default function WickCoachFull() {
           {/* iMac frame */}
           <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 20px' }}>
             {/* Monitor */}
-            <div style={{ background: 'linear-gradient(180deg, #2c2d33 0%, #222328 4%, #1c1d22 100%)', borderRadius: '18px 18px 2px 2px', padding: '10px 10px 28px 10px', position: 'relative', boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5)' }}>
+            <div style={{ background: 'linear-gradient(180deg, #38393f 0%, #2c2d33 4%, #232428 100%)', borderRadius: '18px 18px 2px 2px', padding: '10px 10px 28px 10px', position: 'relative', boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5)' }}>
               {/* Camera dot */}
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#0e0f14', border: '1px solid #3a3b45', margin: '2px auto 6px' }} />
               {/* Screen bezel */}
-              <div style={{ background: '#000000', borderRadius: 6, padding: 3, position: 'relative' }}>
+              <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
                 <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', minHeight: 420, padding: 32 }}>
                   {activeCategory === 0 && <MockLogATrade />}
@@ -831,15 +831,15 @@ export default function WickCoachFull() {
               </div>
               {/* Chin with WickCoach logo */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 6 }}>
-                <svg width="12" height="14" viewBox="0 0 20 24" fill="none">
-                  <circle cx="8" cy="4" r="2.8" stroke="#3a3b45" strokeWidth="1.2" fill="none" />
-                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#3a3b45" strokeWidth="1.2" />
-                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#3a3b45" strokeWidth="1.2" />
-                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#3a3b45" strokeWidth="1.2" />
-                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#3a3b45" strokeWidth="1.2" />
-                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#3a3b45" strokeWidth="1.2" />
-                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#3a3b45" strokeWidth="0.8" />
-                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#3a3b45" opacity="0.9" />
+                <svg width="18" height="22" viewBox="0 0 20 24" fill="none">
+                  <circle cx="8" cy="4" r="2.8" stroke="#6b7280" strokeWidth="1.2" fill="none" />
+                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#6b7280" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#6b7280" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#6b7280" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#6b7280" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#6b7280" strokeWidth="1.2" />
+                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#6b7280" strokeWidth="0.8" />
+                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#6b7280" opacity="0.9" />
                 </svg>
               </div>
             </div>
