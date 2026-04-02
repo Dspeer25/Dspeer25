@@ -809,32 +809,52 @@ export default function WickCoachFull() {
               );
             })}
           </div>
-          {/* Laptop frame */}
-          <div style={{ maxWidth: 920, margin: '0 auto', padding: '0 20px' }}>
-            {/* Screen bezel */}
-            <div style={{ background: '#0a0b0f', borderRadius: '12px 12px 0 0', border: '2px solid #2a2b35', borderBottom: 'none', padding: 3, position: 'relative' }}>
-              {/* Camera notch */}
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1a1b22', margin: '6px auto 4px' }} />
-              {/* Screen content */}
-              <div style={{ background: '#0e0f14', borderRadius: 8, overflow: 'hidden', minHeight: 420, padding: 32 }}>
-                {activeCategory === 0 && <MockLogATrade />}
-                {activeCategory === 1 && <MockPastTrades />}
-                {activeCategory === 2 && <MockTradingGoals />}
-                {activeCategory === 3 && <MockAnalysis />}
-                {activeCategory === 4 && <MockTraderProfile />}
-                {activeCategory === 5 && <MockPositionSizer />}
-                {activeCategory === 6 && <MockGrowthSimulator />}
-                {activeCategory === 7 && <MockTradeTimeline />}
+          {/* iMac frame */}
+          <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 20px' }}>
+            {/* Monitor */}
+            <div style={{ background: 'linear-gradient(180deg, #2c2d33 0%, #222328 4%, #1c1d22 100%)', borderRadius: '18px 18px 2px 2px', padding: '10px 10px 28px 10px', position: 'relative', boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5)' }}>
+              {/* Camera dot */}
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#0e0f14', border: '1px solid #3a3b45', margin: '2px auto 6px' }} />
+              {/* Screen bezel */}
+              <div style={{ background: '#000000', borderRadius: 6, padding: 3, position: 'relative' }}>
+                {/* Screen content */}
+                <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', minHeight: 420, padding: 32 }}>
+                  {activeCategory === 0 && <MockLogATrade />}
+                  {activeCategory === 1 && <MockPastTrades />}
+                  {activeCategory === 2 && <MockTradingGoals />}
+                  {activeCategory === 3 && <MockAnalysis />}
+                  {activeCategory === 4 && <MockTraderProfile />}
+                  {activeCategory === 5 && <MockPositionSizer />}
+                  {activeCategory === 6 && <MockGrowthSimulator />}
+                  {activeCategory === 7 && <MockTradeTimeline />}
+                </div>
+              </div>
+              {/* Chin with WickCoach logo */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 6 }}>
+                <svg width="12" height="14" viewBox="0 0 20 24" fill="none">
+                  <circle cx="8" cy="4" r="2.8" stroke="#3a3b45" strokeWidth="1.2" fill="none" />
+                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#3a3b45" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#3a3b45" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#3a3b45" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#3a3b45" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#3a3b45" strokeWidth="1.2" />
+                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#3a3b45" strokeWidth="0.8" />
+                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#3a3b45" opacity="0.9" />
+                </svg>
               </div>
             </div>
-            {/* Laptop base */}
-            <div style={{ background: 'linear-gradient(180deg, #2a2b35 0%, #1a1b22 100%)', height: 18, borderRadius: '0 0 4px 4px', position: 'relative', margin: '0 40px' }}>
-              <div style={{ width: 80, height: 4, borderRadius: 2, background: '#3a3b45', position: 'absolute', top: 7, left: '50%', transform: 'translateX(-50%)' }} />
+            {/* Stand neck */}
+            <div style={{ width: 100, height: 50, margin: '0 auto', background: 'linear-gradient(180deg, #222328 0%, #1a1b20 40%, #28292f 100%)', clipPath: 'polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            </div>
+            {/* Stand base */}
+            <div style={{ width: 180, height: 10, margin: '0 auto', background: 'linear-gradient(180deg, #28292f 0%, #1c1d22 100%)', borderRadius: '0 0 50% 50% / 0 0 100% 100%', boxShadow: '0 2px 10px rgba(0,0,0,0.4)', position: 'relative' }}>
+              <div style={{ position: 'absolute', left: '10%', right: '10%', top: 0, height: 1, background: 'rgba(255,255,255,0.08)' }} />
             </div>
             {/* Surface shadow */}
-            <div style={{ height: 6, background: 'linear-gradient(180deg, rgba(26,27,34,0.6), transparent)', borderRadius: '0 0 50% 50%', margin: '0 20px' }} />
-            {/* Reflection glow */}
-            <div style={{ width: '60%', height: 40, margin: '0 auto', background: 'radial-gradient(ellipse, rgba(0,212,160,0.06) 0%, transparent 70%)', filter: 'blur(10px)', marginTop: -10, pointerEvents: 'none' }} />
+            <div style={{ width: '50%', height: 20, margin: '4px auto 0', background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%)', pointerEvents: 'none' }} />
+            {/* Teal glow reflection */}
+            <div style={{ width: '40%', height: 30, margin: '-15px auto 0', background: 'radial-gradient(ellipse, rgba(0,212,160,0.04) 0%, transparent 70%)', filter: 'blur(8px)', pointerEvents: 'none' }} />
           </div>
 
           {/* CTA */}
