@@ -96,30 +96,40 @@ function MockPastTrades() {
 }
 
 function MockTradingGoals() {
-  const fullText = "Three goals noted. The 3-trade limit tests your discipline when you\u2019re hot. The 15-min rule tests your patience when the market is loud. The journaling window tests your honesty with yourself. I\u2019ll flag conflicts between these goals and your actual entries this week.";
+  const bullets = [
+    { marker: '\u2022 ', text: "3-trade limit \u2014 Clear rule, easy to track. I\u2019ll flag any day you log a 4th trade and pull up what you wrote in your journal right before that entry." },
+    { marker: '\u2022 ', text: "15-min wait after open \u2014 I need to understand this better. Are you avoiding the first-candle chop, or are you giving yourself time to assess direction? The difference matters for how I evaluate your early entries." },
+    { marker: '\u2022 ', text: "Journal within 10 minutes \u2014 This is the hardest one to measure honestly. I\u2019ll track the timestamp gap between your trade close and your journal entry. If the gap grows, we\u2019ll talk about why." },
+  ];
+  const fullText = bullets.map(b => b.marker + b.text).join('\n');
   const [displayedText, setDisplayedText] = useState('');
   const [showFollowUp, setShowFollowUp] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const [answer, setAnswer] = useState('');
 
   React.useEffect(() => {
     let i = 0;
     let typingTimer: ReturnType<typeof setInterval>;
     const delayTimer = setTimeout(() => {
+      setIsTyping(true);
       typingTimer = setInterval(() => {
         if (i < fullText.length) {
           setDisplayedText(fullText.slice(0, i + 1));
           i++;
         } else {
           clearInterval(typingTimer);
+          setIsTyping(false);
           setTimeout(() => setShowFollowUp(true), 500);
         }
-      }, 25);
+      }, 18);
     }, 4000);
     return () => {
       clearTimeout(delayTimer);
       if (typingTimer) clearInterval(typingTimer);
     };
   }, []);
+
+  const renderedBullets = displayedText.split('\n');
 
   return (<div style={{ display: 'flex', gap: 24, minHeight: 380, padding: 0 }}>
     <style>{`
@@ -133,17 +143,25 @@ function MockTradingGoals() {
         0%, 100% { opacity: 1; }
         50% { opacity: 0; }
       }
+      @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0.5); }
+        50% { opacity: 1; transform: scale(1.3); }
+      }
+      @keyframes aiPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
     `}</style>
     {/* LEFT COLUMN */}
     <div style={{ flex: '0 0 58%', position: 'relative', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontFamily: fd, color: '#fff', fontSize: 16, fontWeight: 700 }}>Trader Stated Goals</span>
+        <span style={{ fontFamily: fd, color: '#fff', fontSize: 20, fontWeight: 700 }}>Trader Stated Goals</span>
         <div style={{ display: 'flex', gap: 6 }}>
           <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: 'rgba(0,212,160,0.15)', border: '1px solid #00d4a0', color: '#00d4a0' }}>Week</span>
           <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: '#1a1b22', border: '1px solid #1a1b22', color: '#6b7280' }}>Month</span>
         </div>
       </div>
-      <div style={{ fontFamily: fm, color: '#6b7280', fontSize: 12, marginTop: 12, marginBottom: 16 }}>Week of Mar 17 &ndash; Mar 21</div>
+      <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 14, marginTop: 10, marginBottom: 18 }}>Week of Mar 17 &ndash; Mar 21</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Goal 1 — completed */}
         <div style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
@@ -172,23 +190,34 @@ function MockTradingGoals() {
       </div>
       {/* Scan line */}
       <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />
+      {/* Sparkles */}
+      <div style={{ position: 'absolute', left: '12%', top: '22%', width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0s', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: '45%', top: '38%', width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0.4s', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: '78%', top: '28%', width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0.8s', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: '30%', top: '58%', width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '1.2s', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: '65%', top: '72%', width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '1.6s', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: '88%', top: '52%', width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '2s', pointerEvents: 'none' }} />
     </div>
     {/* RIGHT COLUMN */}
     <div style={{ flex: '0 0 38%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: isTyping ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
         <Logo size={16} />
         <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
       </div>
       <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120 }}>
-        <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 12, lineHeight: '1.65', fontStyle: 'italic' }}>
-          {displayedText}
+        <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 12, lineHeight: '1.7', fontStyle: 'italic' }}>
+          {renderedBullets.map((line, idx) => (
+            <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
+              {line.startsWith('\u2022') ? <><span style={{ color: '#00d4a0' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
+            </div>
+          ))}
           {displayedText.length < fullText.length && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
         </div>
       </div>
       {showFollowUp && (
         <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14, opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.5s ease' }}>
           <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
-          <div style={{ fontFamily: fm, color: '#9ca3af', fontSize: 12, lineHeight: '1.6' }}>
+          <div style={{ fontFamily: fm, color: '#c9cdd4', fontSize: 13, lineHeight: '1.6' }}>
             On the 15-minute rule &mdash; are you avoiding first-candle volatility, or giving yourself time to read the open before reacting? This changes what I watch for in your journal.
           </div>
           <input
@@ -197,7 +226,7 @@ function MockTradingGoals() {
             onChange={(e) => setAnswer(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') setAnswer(''); }}
             placeholder="Type your answer..."
-            style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '10px 12px', color: '#ffffff', fontSize: 12, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
+            style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '10px 12px', color: '#ffffff', fontSize: 13, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
             onFocus={(e) => { e.currentTarget.style.borderColor = '#00d4a0'; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = '#232430'; }}
           />
@@ -716,9 +745,7 @@ export default function WickCoachFull() {
             })}
           </div>
           <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 16, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(19,20,26,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: fm, fontSize: 12, color: '#6b7280' }}>wickcoach.app</span>
-            </div>
+            <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }} />
             <div style={{ padding: 32, minHeight: 420 }}>
               {activeCategory === 0 && <MockLogATrade />}
               {activeCategory === 1 && <MockPastTrades />}
@@ -733,8 +760,8 @@ export default function WickCoachFull() {
 
           {/* CTA */}
           <div style={{ textAlign: 'center', marginTop: 48 }}>
-            <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 18, fontWeight: 700, padding: '16px 48px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Try It Free &rarr;</button>
-            <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, marginTop: 12 }}>$99 one-time. No subscription. No data collection.</p>
+            <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 18, fontWeight: 700, padding: '16px 48px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Sign Up &rarr;</button>
+            <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, marginTop: 12 }}>One-time payment. No subscription. No data collection.</p>
           </div>
         </div>
       </section>
