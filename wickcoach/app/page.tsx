@@ -809,18 +809,32 @@ export default function WickCoachFull() {
               );
             })}
           </div>
-          <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 16, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(19,20,26,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }} />
-            <div style={{ padding: 32, minHeight: 420 }}>
-              {activeCategory === 0 && <MockLogATrade />}
-              {activeCategory === 1 && <MockPastTrades />}
-              {activeCategory === 2 && <MockTradingGoals />}
-              {activeCategory === 3 && <MockAnalysis />}
-              {activeCategory === 4 && <MockTraderProfile />}
-              {activeCategory === 5 && <MockPositionSizer />}
-              {activeCategory === 6 && <MockGrowthSimulator />}
-              {activeCategory === 7 && <MockTradeTimeline />}
+          {/* Laptop frame */}
+          <div style={{ maxWidth: 920, margin: '0 auto', padding: '0 20px' }}>
+            {/* Screen bezel */}
+            <div style={{ background: '#0a0b0f', borderRadius: '12px 12px 0 0', border: '2px solid #2a2b35', borderBottom: 'none', padding: 3, position: 'relative' }}>
+              {/* Camera notch */}
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1a1b22', margin: '6px auto 4px' }} />
+              {/* Screen content */}
+              <div style={{ background: '#0e0f14', borderRadius: 8, overflow: 'hidden', minHeight: 420, padding: 32 }}>
+                {activeCategory === 0 && <MockLogATrade />}
+                {activeCategory === 1 && <MockPastTrades />}
+                {activeCategory === 2 && <MockTradingGoals />}
+                {activeCategory === 3 && <MockAnalysis />}
+                {activeCategory === 4 && <MockTraderProfile />}
+                {activeCategory === 5 && <MockPositionSizer />}
+                {activeCategory === 6 && <MockGrowthSimulator />}
+                {activeCategory === 7 && <MockTradeTimeline />}
+              </div>
             </div>
+            {/* Laptop base */}
+            <div style={{ background: 'linear-gradient(180deg, #2a2b35 0%, #1a1b22 100%)', height: 18, borderRadius: '0 0 4px 4px', position: 'relative', margin: '0 40px' }}>
+              <div style={{ width: 80, height: 4, borderRadius: 2, background: '#3a3b45', position: 'absolute', top: 7, left: '50%', transform: 'translateX(-50%)' }} />
+            </div>
+            {/* Surface shadow */}
+            <div style={{ height: 6, background: 'linear-gradient(180deg, rgba(26,27,34,0.6), transparent)', borderRadius: '0 0 50% 50%', margin: '0 20px' }} />
+            {/* Reflection glow */}
+            <div style={{ width: '60%', height: 40, margin: '0 auto', background: 'radial-gradient(ellipse, rgba(0,212,160,0.06) 0%, transparent 70%)', filter: 'blur(10px)', marginTop: -10, pointerEvents: 'none' }} />
           </div>
 
           {/* CTA */}
