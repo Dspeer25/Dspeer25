@@ -523,64 +523,82 @@ export default function WickCoachFull() {
             <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
               {/* Subtle ambient glow */}
               <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 500, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.05) 0%, transparent 60%)', filter: 'blur(60px)' }} />
-              {/* Candlestick chart SVG — neon mist candles + glowing 20SMA */}
+              {/* Neon sign candlestick chart + glowing 20SMA */}
               <svg width="520" height="420" viewBox="0 0 520 420" fill="none" style={{ display: 'block' }}>
                 <defs>
-                  <filter id="cglo"><feGaussianBlur stdDeviation="8" /></filter>
-                  <filter id="cmist"><feGaussianBlur stdDeviation="14" /></filter>
-                  <filter id="smaglo"><feGaussianBlur stdDeviation="8" /></filter>
-                  <filter id="smabig"><feGaussianBlur stdDeviation="16" /></filter>
+                  <filter id="neon"><feGaussianBlur stdDeviation="4" /></filter>
+                  <filter id="neon2"><feGaussianBlur stdDeviation="8" /></filter>
+                  <filter id="neon3"><feGaussianBlur stdDeviation="16" /></filter>
+                  <filter id="smaglo"><feGaussianBlur stdDeviation="6" /></filter>
+                  <filter id="smabig"><feGaussianBlur stdDeviation="14" /></filter>
                 </defs>
 
-                {/* ══ 20SMA — behind candles, glowing thick curve through body zone ══ */}
-                <path d="M-30 220 C10 205, 35 185, 55 175 C85 160, 105 195, 125 200 C150 206, 175 140, 197 130 C220 120, 248 180, 270 190 C295 200, 320 155, 340 145 C365 135, 410 170, 550 160" stroke="rgba(80,160,255,0.08)" strokeWidth="28" strokeLinecap="round" fill="none" filter="url(#smabig)" />
-                <path d="M-30 220 C10 205, 35 185, 55 175 C85 160, 105 195, 125 200 C150 206, 175 140, 197 130 C220 120, 248 180, 270 190 C295 200, 320 155, 340 145 C365 135, 410 170, 550 160" stroke="rgba(80,170,255,0.18)" strokeWidth="10" strokeLinecap="round" fill="none" filter="url(#smaglo)" />
-                <path d="M-30 220 C10 205, 35 185, 55 175 C85 160, 105 195, 125 200 C150 206, 175 140, 197 130 C220 120, 248 180, 270 190 C295 200, 320 155, 340 145 C365 135, 410 170, 550 160" stroke="rgba(100,190,255,0.5)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                {/* ══ 20SMA — glowing curve through candle bodies ══ */}
+                <path d="M-30 220 C10 205, 35 185, 55 175 C85 160, 105 195, 125 200 C150 206, 175 140, 197 130 C220 120, 248 180, 270 190 C295 200, 320 155, 340 145 C365 135, 410 170, 550 160" stroke="rgba(80,160,255,0.06)" strokeWidth="36" strokeLinecap="round" fill="none" filter="url(#smabig)" />
+                <path d="M-30 220 C10 205, 35 185, 55 175 C85 160, 105 195, 125 200 C150 206, 175 140, 197 130 C220 120, 248 180, 270 190 C295 200, 320 155, 340 145 C365 135, 410 170, 550 160" stroke="rgba(80,170,255,0.2)" strokeWidth="8" strokeLinecap="round" fill="none" filter="url(#smaglo)" />
+                <path d="M-30 220 C10 205, 35 185, 55 175 C85 160, 105 195, 125 200 C150 206, 175 140, 197 130 C220 120, 248 180, 270 190 C295 200, 320 155, 340 145 C365 135, 410 170, 550 160" stroke="rgba(100,190,255,0.55)" strokeWidth="2.5" strokeLinecap="round" fill="none" />
 
-                {/* ══ Candle 1: GREEN — medium bullish ══ */}
-                <rect x="30" y="100" width="50" height="120" rx="3" fill="#00d4a0" opacity="0.15" filter="url(#cmist)" />
-                <rect x="30" y="100" width="50" height="120" rx="3" fill="#00d4a0" opacity="0.08" filter="url(#cglo)" />
-                <line x1="55" y1="60" x2="55" y2="100" stroke="#00d4a0" strokeWidth="2" opacity="0.4" strokeLinecap="round" />
-                <rect x="30" y="100" width="50" height="120" rx="3" fill="#00d4a0" opacity="0.25" />
-                <rect x="30" y="100" width="50" height="120" rx="3" fill="none" stroke="#00ffcc" strokeWidth="0.8" opacity="0.35" />
-                <rect x="32" y="102" width="14" height="116" rx="2" fill="rgba(0,255,200,0.06)" />
-                <line x1="55" y1="220" x2="55" y2="310" stroke="#00d4a0" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
+                {/* ══ Candle 1: GREEN neon ══ */}
+                {/* Outer bloom */}
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="none" stroke="#00d4a0" strokeWidth="6" opacity="0.06" filter="url(#neon3)" />
+                {/* Mid glow */}
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="none" stroke="#00ffcc" strokeWidth="4" opacity="0.12" filter="url(#neon2)" />
+                {/* Inner glow */}
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="none" stroke="#00ffcc" strokeWidth="3" opacity="0.25" filter="url(#neon)" />
+                {/* Faint fill */}
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="#00d4a0" opacity="0.06" />
+                {/* Sharp neon edge */}
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.5" opacity="0.7" />
+                {/* Top wick */}
+                <line x1="55" y1="60" x2="55" y2="100" stroke="#00d4a0" strokeWidth="6" opacity="0.1" filter="url(#neon2)" />
+                <line x1="55" y1="60" x2="55" y2="100" stroke="#00ffcc" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+                {/* Bottom wick */}
+                <line x1="55" y1="220" x2="55" y2="310" stroke="#00d4a0" strokeWidth="6" opacity="0.1" filter="url(#neon2)" />
+                <line x1="55" y1="220" x2="55" y2="310" stroke="#00ffcc" strokeWidth="1.5" opacity="0.55" strokeLinecap="round" />
 
-                {/* ══ Candle 2: RED — small bearish ══ */}
-                <rect x="100" y="155" width="50" height="75" rx="3" fill="#ff5555" opacity="0.12" filter="url(#cmist)" />
-                <rect x="100" y="155" width="50" height="75" rx="3" fill="#ff5555" opacity="0.06" filter="url(#cglo)" />
-                <line x1="125" y1="110" x2="125" y2="155" stroke="#ff5555" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
-                <rect x="100" y="155" width="50" height="75" rx="3" fill="#ff5555" opacity="0.22" />
-                <rect x="100" y="155" width="50" height="75" rx="3" fill="none" stroke="#ff7777" strokeWidth="0.8" opacity="0.3" />
-                <rect x="102" y="157" width="14" height="71" rx="2" fill="rgba(255,100,100,0.05)" />
-                <line x1="125" y1="230" x2="125" y2="270" stroke="#ff5555" strokeWidth="2" opacity="0.3" strokeLinecap="round" />
+                {/* ══ Candle 2: RED neon ══ */}
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="none" stroke="#ff5555" strokeWidth="6" opacity="0.05" filter="url(#neon3)" />
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="none" stroke="#ff6666" strokeWidth="4" opacity="0.1" filter="url(#neon2)" />
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="none" stroke="#ff6666" strokeWidth="3" opacity="0.2" filter="url(#neon)" />
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="#ff5555" opacity="0.04" />
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="none" stroke="#ff6666" strokeWidth="1.5" opacity="0.6" />
+                <line x1="125" y1="110" x2="125" y2="155" stroke="#ff5555" strokeWidth="6" opacity="0.08" filter="url(#neon2)" />
+                <line x1="125" y1="110" x2="125" y2="155" stroke="#ff6666" strokeWidth="1.5" opacity="0.5" strokeLinecap="round" />
+                <line x1="125" y1="230" x2="125" y2="270" stroke="#ff5555" strokeWidth="6" opacity="0.07" filter="url(#neon2)" />
+                <line x1="125" y1="230" x2="125" y2="270" stroke="#ff6666" strokeWidth="1.5" opacity="0.45" strokeLinecap="round" />
 
-                {/* ══ Candle 3: GREEN — tall bullish (biggest) ══ */}
-                <rect x="170" y="50" width="55" height="200" rx="3" fill="#00d4a0" opacity="0.18" filter="url(#cmist)" />
-                <rect x="170" y="50" width="55" height="200" rx="3" fill="#00d4a0" opacity="0.1" filter="url(#cglo)" />
-                <line x1="197" y1="18" x2="197" y2="50" stroke="#00d4a0" strokeWidth="2.5" opacity="0.45" strokeLinecap="round" />
-                <rect x="170" y="50" width="55" height="200" rx="3" fill="#00d4a0" opacity="0.28" />
-                <rect x="170" y="50" width="55" height="200" rx="3" fill="none" stroke="#00ffcc" strokeWidth="0.8" opacity="0.4" />
-                <rect x="172" y="52" width="16" height="196" rx="2" fill="rgba(0,255,200,0.07)" />
-                <line x1="197" y1="250" x2="197" y2="350" stroke="#00d4a0" strokeWidth="2.5" opacity="0.4" strokeLinecap="round" />
+                {/* ══ Candle 3: GREEN neon — tallest ══ */}
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="none" stroke="#00d4a0" strokeWidth="8" opacity="0.07" filter="url(#neon3)" />
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.14" filter="url(#neon2)" />
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="none" stroke="#00ffcc" strokeWidth="3" opacity="0.28" filter="url(#neon)" />
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="#00d4a0" opacity="0.07" />
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.8" opacity="0.75" />
+                <line x1="197" y1="18" x2="197" y2="50" stroke="#00d4a0" strokeWidth="8" opacity="0.1" filter="url(#neon2)" />
+                <line x1="197" y1="18" x2="197" y2="50" stroke="#00ffcc" strokeWidth="1.8" opacity="0.65" strokeLinecap="round" />
+                <line x1="197" y1="250" x2="197" y2="350" stroke="#00d4a0" strokeWidth="8" opacity="0.1" filter="url(#neon2)" />
+                <line x1="197" y1="250" x2="197" y2="350" stroke="#00ffcc" strokeWidth="1.8" opacity="0.6" strokeLinecap="round" />
 
-                {/* ══ Candle 4: RED — medium bearish ══ */}
-                <rect x="245" y="130" width="50" height="95" rx="3" fill="#ff5555" opacity="0.12" filter="url(#cmist)" />
-                <rect x="245" y="130" width="50" height="95" rx="3" fill="#ff5555" opacity="0.06" filter="url(#cglo)" />
-                <line x1="270" y1="85" x2="270" y2="130" stroke="#ff5555" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
-                <rect x="245" y="130" width="50" height="95" rx="3" fill="#ff5555" opacity="0.22" />
-                <rect x="245" y="130" width="50" height="95" rx="3" fill="none" stroke="#ff7777" strokeWidth="0.8" opacity="0.3" />
-                <rect x="247" y="132" width="14" height="91" rx="2" fill="rgba(255,100,100,0.05)" />
-                <line x1="270" y1="225" x2="270" y2="258" stroke="#ff5555" strokeWidth="2" opacity="0.28" strokeLinecap="round" />
+                {/* ══ Candle 4: RED neon ══ */}
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="none" stroke="#ff5555" strokeWidth="6" opacity="0.05" filter="url(#neon3)" />
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="none" stroke="#ff6666" strokeWidth="4" opacity="0.1" filter="url(#neon2)" />
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="none" stroke="#ff6666" strokeWidth="3" opacity="0.2" filter="url(#neon)" />
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="#ff5555" opacity="0.04" />
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="none" stroke="#ff6666" strokeWidth="1.5" opacity="0.6" />
+                <line x1="270" y1="85" x2="270" y2="130" stroke="#ff5555" strokeWidth="6" opacity="0.08" filter="url(#neon2)" />
+                <line x1="270" y1="85" x2="270" y2="130" stroke="#ff6666" strokeWidth="1.5" opacity="0.5" strokeLinecap="round" />
+                <line x1="270" y1="225" x2="270" y2="258" stroke="#ff5555" strokeWidth="6" opacity="0.06" filter="url(#neon2)" />
+                <line x1="270" y1="225" x2="270" y2="258" stroke="#ff6666" strokeWidth="1.5" opacity="0.4" strokeLinecap="round" />
 
-                {/* ══ Candle 5: GREEN — bullish recovery ══ */}
-                <rect x="315" y="80" width="50" height="130" rx="3" fill="#00d4a0" opacity="0.15" filter="url(#cmist)" />
-                <rect x="315" y="80" width="50" height="130" rx="3" fill="#00d4a0" opacity="0.08" filter="url(#cglo)" />
-                <line x1="340" y1="48" x2="340" y2="80" stroke="#00d4a0" strokeWidth="2" opacity="0.4" strokeLinecap="round" />
-                <rect x="315" y="80" width="50" height="130" rx="3" fill="#00d4a0" opacity="0.25" />
-                <rect x="315" y="80" width="50" height="130" rx="3" fill="none" stroke="#00ffcc" strokeWidth="0.8" opacity="0.35" />
-                <rect x="317" y="82" width="14" height="126" rx="2" fill="rgba(0,255,200,0.06)" />
-                <line x1="340" y1="210" x2="340" y2="325" stroke="#00d4a0" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
+                {/* ══ Candle 5: GREEN neon ══ */}
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="none" stroke="#00d4a0" strokeWidth="6" opacity="0.06" filter="url(#neon3)" />
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="none" stroke="#00ffcc" strokeWidth="4" opacity="0.12" filter="url(#neon2)" />
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="none" stroke="#00ffcc" strokeWidth="3" opacity="0.25" filter="url(#neon)" />
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="#00d4a0" opacity="0.06" />
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.5" opacity="0.7" />
+                <line x1="340" y1="48" x2="340" y2="80" stroke="#00d4a0" strokeWidth="6" opacity="0.1" filter="url(#neon2)" />
+                <line x1="340" y1="48" x2="340" y2="80" stroke="#00ffcc" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+                <line x1="340" y1="210" x2="340" y2="325" stroke="#00d4a0" strokeWidth="6" opacity="0.1" filter="url(#neon2)" />
+                <line x1="340" y1="210" x2="340" y2="325" stroke="#00ffcc" strokeWidth="1.5" opacity="0.55" strokeLinecap="round" />
               </svg>
             </div>
             {/* Heading */}
