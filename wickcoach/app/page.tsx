@@ -523,91 +523,90 @@ export default function WickCoachFull() {
             <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
               {/* Subtle ambient glow */}
               <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.06) 0%, transparent 60%)', filter: 'blur(60px)' }} />
-              <svg width="420" height="520" viewBox="0 0 420 520" fill="none" style={{ display: 'block' }}>
+              <svg width="380" height="480" viewBox="0 0 380 480" fill="none" style={{ display: 'block' }}>
                 <defs>
                   <filter id="neon"><feGaussianBlur stdDeviation="4" /></filter>
                   <filter id="neon2"><feGaussianBlur stdDeviation="10" /></filter>
                   <filter id="neon3"><feGaussianBlur stdDeviation="20" /></filter>
                 </defs>
 
-                {/* ══ Strings from hand to candles ══ */}
-                <line x1="228" y1="310" x2="145" y2="205" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="228" y1="310" x2="195" y2="175" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="228" y1="310" x2="240" y2="145" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="228" y1="310" x2="285" y2="160" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="228" y1="310" x2="330" y2="120" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="228" y1="310" x2="365" y2="80" stroke="#5a5d68" strokeWidth="1" opacity="0.35" />
+                {/* ══ Strings from hand (230,288) to bottom of each candle ══ */}
+                <line x1="230" y1="288" x2="130" y2="238" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
+                <line x1="230" y1="288" x2="178" y2="228" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
+                <line x1="230" y1="288" x2="228" y2="208" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
+                <line x1="230" y1="288" x2="272" y2="218" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
+                <line x1="230" y1="288" x2="310" y2="198" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
+                <line x1="230" y1="288" x2="348" y2="178" stroke="#5a5d68" strokeWidth="1" opacity="0.35" />
 
-                {/* ══ Candle 1 (GREEN) — bottom-left, smallest ══ */}
-                <rect x="125" y="145" width="40" height="60" rx="3" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
-                <rect x="125" y="145" width="40" height="60" rx="3" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
-                <rect x="125" y="145" width="40" height="60" rx="3" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="125" y="145" width="40" height="60" rx="3" fill="#00d4a0" opacity="0.02" />
-                <rect x="125" y="145" width="40" height="60" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
-                <line x1="145" y1="125" x2="145" y2="145" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
-                <line x1="145" y1="125" x2="145" y2="145" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
+                {/* ══ Candle 1 (GREEN) — left, lowest ══ */}
+                <rect x="110" y="175" width="40" height="63" rx="14" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
+                <rect x="110" y="175" width="40" height="63" rx="14" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
+                <rect x="110" y="175" width="40" height="63" rx="14" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
+                <rect x="110" y="175" width="40" height="63" rx="14" fill="#00d4a0" opacity="0.02" />
+                <rect x="110" y="175" width="40" height="63" rx="14" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <line x1="130" y1="158" x2="130" y2="175" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
+                <line x1="130" y1="158" x2="130" y2="175" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
 
                 {/* ══ Candle 2 (RED) ══ */}
-                <rect x="175" y="120" width="40" height="55" rx="3" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
-                <rect x="175" y="120" width="40" height="55" rx="3" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
-                <rect x="175" y="120" width="40" height="55" rx="3" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
-                <rect x="175" y="120" width="40" height="55" rx="3" fill="#ff5555" opacity="0.015" />
-                <rect x="175" y="120" width="40" height="55" rx="3" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
-                <line x1="195" y1="105" x2="195" y2="120" stroke="#ff5555" strokeWidth="10" opacity="0.18" filter="url(#neon2)" />
-                <line x1="195" y1="105" x2="195" y2="120" stroke="#ff6666" strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
+                <rect x="158" y="168" width="40" height="60" rx="14" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
+                <rect x="158" y="168" width="40" height="60" rx="14" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
+                <rect x="158" y="168" width="40" height="60" rx="14" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
+                <rect x="158" y="168" width="40" height="60" rx="14" fill="#ff5555" opacity="0.015" />
+                <rect x="158" y="168" width="40" height="60" rx="14" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
+                <line x1="178" y1="152" x2="178" y2="168" stroke="#ff5555" strokeWidth="10" opacity="0.18" filter="url(#neon2)" />
+                <line x1="178" y1="152" x2="178" y2="168" stroke="#ff6666" strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
 
-                {/* ══ Candle 3 (GREEN) — tall center ══ */}
-                <rect x="220" y="60" width="42" height="85" rx="3" fill="none" stroke="#00d4a0" strokeWidth="16" opacity="0.16" filter="url(#neon3)" />
-                <rect x="220" y="60" width="42" height="85" rx="3" fill="none" stroke="#00ffcc" strokeWidth="10" opacity="0.27" filter="url(#neon2)" />
-                <rect x="220" y="60" width="42" height="85" rx="3" fill="none" stroke="#00ffcc" strokeWidth="5.5" opacity="0.4" filter="url(#neon)" />
-                <rect x="220" y="60" width="42" height="85" rx="3" fill="#00d4a0" opacity="0.02" />
-                <rect x="220" y="60" width="42" height="85" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.4" opacity="0.42" />
-                <line x1="241" y1="38" x2="241" y2="60" stroke="#00d4a0" strokeWidth="12" opacity="0.22" filter="url(#neon2)" />
-                <line x1="241" y1="38" x2="241" y2="60" stroke="#00ffcc" strokeWidth="1.4" opacity="0.36" strokeLinecap="round" />
+                {/* ══ Candle 3 (GREEN) — center, tallest ══ */}
+                <rect x="207" y="130" width="42" height="78" rx="15" fill="none" stroke="#00d4a0" strokeWidth="16" opacity="0.16" filter="url(#neon3)" />
+                <rect x="207" y="130" width="42" height="78" rx="15" fill="none" stroke="#00ffcc" strokeWidth="10" opacity="0.27" filter="url(#neon2)" />
+                <rect x="207" y="130" width="42" height="78" rx="15" fill="none" stroke="#00ffcc" strokeWidth="5.5" opacity="0.4" filter="url(#neon)" />
+                <rect x="207" y="130" width="42" height="78" rx="15" fill="#00d4a0" opacity="0.02" />
+                <rect x="207" y="130" width="42" height="78" rx="15" fill="none" stroke="#00ffcc" strokeWidth="1.4" opacity="0.42" />
+                <line x1="228" y1="110" x2="228" y2="130" stroke="#00d4a0" strokeWidth="12" opacity="0.22" filter="url(#neon2)" />
+                <line x1="228" y1="110" x2="228" y2="130" stroke="#00ffcc" strokeWidth="1.4" opacity="0.36" strokeLinecap="round" />
 
                 {/* ══ Candle 4 (GREEN) ══ */}
-                <rect x="268" y="95" width="38" height="65" rx="3" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
-                <rect x="268" y="95" width="38" height="65" rx="3" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
-                <rect x="268" y="95" width="38" height="65" rx="3" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="268" y="95" width="38" height="65" rx="3" fill="#00d4a0" opacity="0.02" />
-                <rect x="268" y="95" width="38" height="65" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
-                <line x1="287" y1="75" x2="287" y2="95" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
-                <line x1="287" y1="75" x2="287" y2="95" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
+                <rect x="253" y="155" width="38" height="63" rx="13" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
+                <rect x="253" y="155" width="38" height="63" rx="13" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
+                <rect x="253" y="155" width="38" height="63" rx="13" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
+                <rect x="253" y="155" width="38" height="63" rx="13" fill="#00d4a0" opacity="0.02" />
+                <rect x="253" y="155" width="38" height="63" rx="13" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <line x1="272" y1="138" x2="272" y2="155" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
+                <line x1="272" y1="138" x2="272" y2="155" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
 
-                {/* ══ Candle 5 (RED) — smaller ══ */}
-                <rect x="312" y="65" width="36" height="55" rx="3" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
-                <rect x="312" y="65" width="36" height="55" rx="3" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
-                <rect x="312" y="65" width="36" height="55" rx="3" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
-                <rect x="312" y="65" width="36" height="55" rx="3" fill="#ff5555" opacity="0.015" />
-                <rect x="312" y="65" width="36" height="55" rx="3" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
-                <line x1="330" y1="48" x2="330" y2="65" stroke="#ff5555" strokeWidth="10" opacity="0.18" filter="url(#neon2)" />
-                <line x1="330" y1="48" x2="330" y2="65" stroke="#ff6666" strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
+                {/* ══ Candle 5 (RED) ══ */}
+                <rect x="293" y="140" width="36" height="58" rx="12" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
+                <rect x="293" y="140" width="36" height="58" rx="12" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
+                <rect x="293" y="140" width="36" height="58" rx="12" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
+                <rect x="293" y="140" width="36" height="58" rx="12" fill="#ff5555" opacity="0.015" />
+                <rect x="293" y="140" width="36" height="58" rx="12" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
+                <line x1="311" y1="124" x2="311" y2="140" stroke="#ff5555" strokeWidth="10" opacity="0.18" filter="url(#neon2)" />
+                <line x1="311" y1="124" x2="311" y2="140" stroke="#ff6666" strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
 
-                {/* ══ Candle 6 (GREEN) — highest, top-right ══ */}
-                <rect x="348" y="18" width="35" height="62" rx="3" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
-                <rect x="348" y="18" width="35" height="62" rx="3" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
-                <rect x="348" y="18" width="35" height="62" rx="3" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="348" y="18" width="35" height="62" rx="3" fill="#00d4a0" opacity="0.02" />
-                <rect x="348" y="18" width="35" height="62" rx="3" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
-                <line x1="365" y1="4" x2="365" y2="18" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
-                <line x1="365" y1="4" x2="365" y2="18" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
+                {/* ══ Candle 6 (GREEN) — top-right ══ */}
+                <rect x="330" y="115" width="36" height="63" rx="12" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
+                <rect x="330" y="115" width="36" height="63" rx="12" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
+                <rect x="330" y="115" width="36" height="63" rx="12" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
+                <rect x="330" y="115" width="36" height="63" rx="12" fill="#00d4a0" opacity="0.02" />
+                <rect x="330" y="115" width="36" height="63" rx="12" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <line x1="348" y1="98" x2="348" y2="115" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
+                <line x1="348" y1="98" x2="348" y2="115" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
 
-                {/* ══ Stick figure — floating, right arm reaching up to strings ══ */}
+                {/* ══ Stick figure — same proportions as logo, scaled up ══ */}
+                {/* Logo: head cx=8 r=2.8, body 6.8→15, arms from 9.5, legs from 15→21 */}
+                {/* Scale: ~7x, centered at x=190 */}
                 {/* Head */}
-                <circle cx="200" cy="330" r="16" stroke="#7a7d88" strokeWidth="3" fill="none" />
+                <circle cx="190" cy="316" r="18" stroke="#7a7d88" strokeWidth="3" fill="none" />
                 {/* Body */}
-                <line x1="200" y1="346" x2="200" y2="400" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
-                {/* Left arm — relaxed, angled down */}
-                <line x1="200" y1="360" x2="170" y2="388" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
-                {/* Right arm — reaching up to hold strings */}
-                <line x1="200" y1="355" x2="228" y2="310" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
-                {/* Left leg — dangling slightly back */}
-                <line x1="200" y1="400" x2="182" y2="445" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
-                {/* Right leg — dangling slightly forward */}
-                <line x1="200" y1="400" x2="215" y2="448" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
-                {/* Feet — small kicks */}
-                <line x1="182" y1="445" x2="176" y2="450" stroke="#7a7d88" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="215" y1="448" x2="222" y2="450" stroke="#7a7d88" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="190" y1="334" x2="190" y2="390" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
+                {/* Left arm — angled down-left like logo (8,9.5)→(3,13) */}
+                <line x1="190" y1="352" x2="155" y2="376" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
+                {/* Right arm — reaching up-right like logo (8,9.5)→(14.5,6) to hold strings */}
+                <line x1="190" y1="352" x2="230" y2="288" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
+                {/* Left leg — like logo (8,15)→(4.5,21) */}
+                <line x1="190" y1="390" x2="166" y2="432" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
+                {/* Right leg — like logo (8,15)→(11.5,21) */}
+                <line x1="190" y1="390" x2="214" y2="432" stroke="#7a7d88" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </div>
             {/* Heading */}
