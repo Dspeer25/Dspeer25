@@ -102,13 +102,8 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
   const [isTyping, setIsTyping] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [answer, setAnswer] = useState('');
-  const rightColRef = useRef<HTMLDivElement>(null);
 
   const fullText = goalSet.aiBullets;
-
-  React.useEffect(() => {
-    rightColRef.current?.scrollTo({ top: rightColRef.current.scrollHeight, behavior: 'smooth' });
-  }, [displayedText, isThinking, showFollowUp]);
 
   React.useEffect(() => {
     let i = 0;
@@ -185,7 +180,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
         ))}
       </div>
       {/* RIGHT COLUMN */}
-      <div ref={rightColRef} className="goals-right-col" style={{ flex: '0 0 38%', maxHeight: '100%', overflowY: 'auto' }}>
+      <div style={{ flex: '0 0 38%', transform: showFollowUp ? 'translateY(-120px)' : 'translateY(0)', transition: 'transform 0.8s ease' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: aiAnimating ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
           <Logo size={16} />
           <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
@@ -289,8 +284,6 @@ function MockTradingGoals() {
         0%, 100% { opacity: 0.2; }
         50% { opacity: 1; }
       }
-      .goals-right-col { scrollbar-width: none; -ms-overflow-style: none; }
-      .goals-right-col::-webkit-scrollbar { display: none; }
     `}</style>
     {/* Refresh button */}
     <div
