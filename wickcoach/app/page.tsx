@@ -519,64 +519,66 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
-            {/* Glass candlestick — offset right, radiating green mist */}
-            <div style={{ position: 'absolute', right: '8%', top: '50%', transform: 'translateY(-50%)', zIndex: 0, pointerEvents: 'none' }}>
-              {/* Outermost mist ring — pulsing */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 500, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.06) 0%, rgba(0,212,160,0.02) 40%, transparent 70%)', filter: 'blur(40px)' }} />
-              {/* Wide ambient glow */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 350, height: 450, background: 'radial-gradient(ellipse, rgba(0,212,160,0.12) 0%, rgba(0,255,180,0.04) 50%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }} />
-              {/* Core candle glow — intense */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 120, height: 220, background: 'linear-gradient(180deg, rgba(0,255,180,0.3) 0%, rgba(0,212,160,0.2) 50%, rgba(0,212,160,0.1) 100%)', borderRadius: 12, filter: 'blur(50px)' }} />
-              {/* Inner hot glow */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 60, height: 160, background: 'rgba(0,255,200,0.2)', borderRadius: 8, filter: 'blur(25px)' }} />
-              {/* Glass candlestick SVG */}
-              <svg width="100" height="380" viewBox="0 0 100 380" fill="none" style={{ display: 'block', position: 'relative' }}>
+            {/* Bullish glass candlestick — right of text, intense glow */}
+            <div style={{ position: 'absolute', right: '12%', top: '50%', transform: 'translateY(-50%)', zIndex: 0, pointerEvents: 'none' }}>
+              {/* Outermost mist — huge soft green fog */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 700, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.1) 0%, rgba(0,212,160,0.04) 35%, transparent 65%)', filter: 'blur(60px)' }} />
+              {/* Mid glow ring */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 400, height: 500, background: 'radial-gradient(ellipse, rgba(0,255,180,0.18) 0%, rgba(0,212,160,0.06) 45%, transparent 70%)', borderRadius: '50%', filter: 'blur(70px)' }} />
+              {/* Core body glow — bright */}
+              <div style={{ position: 'absolute', left: '50%', top: '45%', transform: 'translate(-50%, -50%)', width: 160, height: 260, background: 'linear-gradient(180deg, rgba(0,255,200,0.4) 0%, rgba(0,212,160,0.25) 50%, rgba(0,212,160,0.15) 100%)', borderRadius: 16, filter: 'blur(45px)' }} />
+              {/* Inner hot center */}
+              <div style={{ position: 'absolute', left: '50%', top: '42%', transform: 'translate(-50%, -50%)', width: 80, height: 180, background: 'rgba(0,255,210,0.3)', borderRadius: 10, filter: 'blur(20px)' }} />
+              {/* Glass candlestick SVG — bullish: small top wick, large bottom wick */}
+              <svg width="120" height="420" viewBox="0 0 120 420" fill="none" style={{ display: 'block', position: 'relative' }}>
                 <defs>
-                  <linearGradient id="candleBody" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#00ffcc" stopOpacity="0.25" />
-                    <stop offset="30%" stopColor="#00d4a0" stopOpacity="0.18" />
-                    <stop offset="70%" stopColor="#00d4a0" stopOpacity="0.12" />
-                    <stop offset="100%" stopColor="#009a74" stopOpacity="0.08" />
+                  <linearGradient id="cbody" x1="0" y1="0" x2="0.8" y2="1">
+                    <stop offset="0%" stopColor="#00ffcc" stopOpacity="0.35" />
+                    <stop offset="25%" stopColor="#00e8b0" stopOpacity="0.28" />
+                    <stop offset="60%" stopColor="#00d4a0" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#00b888" stopOpacity="0.12" />
                   </linearGradient>
-                  <linearGradient id="candleSheen" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#00ffcc" stopOpacity="0.2" />
-                    <stop offset="30%" stopColor="#00ffcc" stopOpacity="0.05" />
+                  <linearGradient id="csheen" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#00ffdd" stopOpacity="0.25" />
+                    <stop offset="35%" stopColor="#00ffcc" stopOpacity="0.06" />
                     <stop offset="100%" stopColor="transparent" stopOpacity="0" />
                   </linearGradient>
-                  <linearGradient id="wickGrad" x1="0.5" y1="0" x2="0.5" y2="1">
-                    <stop offset="0%" stopColor="#00d4a0" stopOpacity="0.1" />
-                    <stop offset="50%" stopColor="#00d4a0" stopOpacity="0.4" />
+                  <linearGradient id="wtop" x1="0.5" y1="0" x2="0.5" y2="1">
+                    <stop offset="0%" stopColor="#00d4a0" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="#00d4a0" stopOpacity="0.5" />
+                  </linearGradient>
+                  <linearGradient id="wbot" x1="0.5" y1="0" x2="0.5" y2="1">
+                    <stop offset="0%" stopColor="#00d4a0" stopOpacity="0.5" />
                     <stop offset="100%" stopColor="#00d4a0" stopOpacity="0.1" />
                   </linearGradient>
-                  <filter id="wickGlow">
-                    <feGaussianBlur stdDeviation="4" />
-                  </filter>
+                  <filter id="wglo"><feGaussianBlur stdDeviation="5" /></filter>
+                  <filter id="bglo"><feGaussianBlur stdDeviation="12" /></filter>
                 </defs>
-                {/* Upper wick glow */}
-                <line x1="50" y1="10" x2="50" y2="100" stroke="#00d4a0" strokeWidth="12" opacity="0.08" filter="url(#wickGlow)" />
-                {/* Upper wick */}
-                <line x1="50" y1="10" x2="50" y2="100" stroke="url(#wickGrad)" strokeWidth="2.5" strokeLinecap="round" />
-                {/* Body — glass filled rectangle */}
-                <rect x="10" y="100" width="80" height="180" rx="6" fill="url(#candleBody)" />
-                {/* Body border — subtle glass edge */}
-                <rect x="10" y="100" width="80" height="180" rx="6" fill="none" stroke="rgba(0,212,160,0.2)" strokeWidth="1" />
-                {/* Glass sheen — left highlight */}
-                <rect x="12" y="102" width="30" height="176" rx="5" fill="url(#candleSheen)" />
-                {/* Top highlight strip */}
-                <rect x="12" y="100" width="76" height="24" rx="6" fill="rgba(0,255,200,0.08)" />
-                {/* Horizontal scan lines for glass texture */}
-                <line x1="14" y1="120" x2="86" y2="120" stroke="#00ffcc" strokeWidth="0.4" opacity="0.12" />
-                <line x1="14" y1="140" x2="86" y2="140" stroke="#00ffcc" strokeWidth="0.4" opacity="0.1" />
-                <line x1="14" y1="160" x2="86" y2="160" stroke="#00ffcc" strokeWidth="0.4" opacity="0.08" />
-                <line x1="14" y1="180" x2="86" y2="180" stroke="#00ffcc" strokeWidth="0.4" opacity="0.1" />
-                <line x1="14" y1="200" x2="86" y2="200" stroke="#00ffcc" strokeWidth="0.4" opacity="0.12" />
-                <line x1="14" y1="220" x2="86" y2="220" stroke="#00ffcc" strokeWidth="0.4" opacity="0.08" />
-                <line x1="14" y1="240" x2="86" y2="240" stroke="#00ffcc" strokeWidth="0.4" opacity="0.1" />
-                <line x1="14" y1="260" x2="86" y2="260" stroke="#00ffcc" strokeWidth="0.4" opacity="0.06" />
-                {/* Lower wick glow */}
-                <line x1="50" y1="280" x2="50" y2="370" stroke="#00d4a0" strokeWidth="12" opacity="0.08" filter="url(#wickGlow)" />
-                {/* Lower wick */}
-                <line x1="50" y1="280" x2="50" y2="370" stroke="url(#wickGrad)" strokeWidth="2.5" strokeLinecap="round" />
+                {/* Body background glow layer */}
+                <rect x="10" y="60" width="100" height="200" rx="10" fill="#00d4a0" opacity="0.12" filter="url(#bglo)" />
+                {/* Short top wick — bullish (body near high) */}
+                <line x1="60" y1="30" x2="60" y2="60" stroke="#00d4a0" strokeWidth="14" opacity="0.1" filter="url(#wglo)" />
+                <line x1="60" y1="30" x2="60" y2="60" stroke="url(#wtop)" strokeWidth="3" strokeLinecap="round" />
+                {/* Body — large glass rectangle */}
+                <rect x="10" y="60" width="100" height="200" rx="8" fill="url(#cbody)" />
+                <rect x="10" y="60" width="100" height="200" rx="8" fill="none" stroke="rgba(0,255,200,0.25)" strokeWidth="1" />
+                {/* Glass sheen — left edge highlight */}
+                <rect x="13" y="63" width="35" height="194" rx="6" fill="url(#csheen)" />
+                {/* Top bright strip */}
+                <rect x="13" y="60" width="94" height="28" rx="8" fill="rgba(0,255,210,0.1)" />
+                {/* Glass scan lines */}
+                <line x1="16" y1="85" x2="104" y2="85" stroke="#00ffcc" strokeWidth="0.5" opacity="0.15" />
+                <line x1="16" y1="105" x2="104" y2="105" stroke="#00ffcc" strokeWidth="0.5" opacity="0.12" />
+                <line x1="16" y1="125" x2="104" y2="125" stroke="#00ffcc" strokeWidth="0.5" opacity="0.1" />
+                <line x1="16" y1="145" x2="104" y2="145" stroke="#00ffcc" strokeWidth="0.5" opacity="0.13" />
+                <line x1="16" y1="165" x2="104" y2="165" stroke="#00ffcc" strokeWidth="0.5" opacity="0.1" />
+                <line x1="16" y1="185" x2="104" y2="185" stroke="#00ffcc" strokeWidth="0.5" opacity="0.14" />
+                <line x1="16" y1="205" x2="104" y2="205" stroke="#00ffcc" strokeWidth="0.5" opacity="0.1" />
+                <line x1="16" y1="225" x2="104" y2="225" stroke="#00ffcc" strokeWidth="0.5" opacity="0.12" />
+                <line x1="16" y1="245" x2="104" y2="245" stroke="#00ffcc" strokeWidth="0.5" opacity="0.08" />
+                {/* Long bottom wick — bullish (wick rejection) */}
+                <line x1="60" y1="260" x2="60" y2="400" stroke="#00d4a0" strokeWidth="18" opacity="0.1" filter="url(#wglo)" />
+                <line x1="60" y1="260" x2="60" y2="400" stroke="url(#wbot)" strokeWidth="3" strokeLinecap="round" />
               </svg>
             </div>
             {/* Heading */}
