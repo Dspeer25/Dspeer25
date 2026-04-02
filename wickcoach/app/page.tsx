@@ -76,11 +76,34 @@ const CLogo = ({ t }: { t: string }) => <img src={`https://logo.clearbit.com/${c
 
 function MockLogATrade() {
   const is = { background: "#0e0f14", border: "1px solid #2a2b35", borderRadius: 8, padding: "10px 12px", color: "#fff", fontFamily: fm, fontSize: 13, width: "100%" };
+  const [flyIn, setFlyIn] = useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setFlyIn(true), 6000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const vals: { text: string; from: string; delay: number; color?: string; weight?: number }[] = [
+    { text: "NVDA", from: "translateX(-200px)", delay: 0 },
+    { text: "0DTE Call", from: "translateX(200px)", delay: 100 },
+    { text: "LONG", from: "translateX(-200px)", delay: 200, color: teal },
+    { text: "+$870.00", from: "translateX(200px)", delay: 300, color: teal, weight: 700 },
+    { text: "$482.50", from: "translateY(200px)", delay: 400 },
+    { text: "$491.20", from: "translateY(-200px)", delay: 500 },
+  ];
+
+  const flyStyle = (i: number): React.CSSProperties => ({
+    display: 'inline-block',
+    opacity: flyIn ? 1 : 0,
+    transform: flyIn ? 'translate(0)' : vals[i].from,
+    transition: `all 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${vals[i].delay}ms`,
+  });
+
   return (<div>
     <div style={{ color: teal, fontFamily: fm, fontSize: 11, textTransform: "uppercase" as const, letterSpacing: 2, marginBottom: 16 }}>TRADE DETAILS</div>
-    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Ticker</div><div style={{ ...is }}>NVDA</div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Strategy</div><div style={{ ...is }}>0DTE Call</div></div></div>
-    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Direction</div><div style={{ ...is, color: teal }}>LONG</div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>P/L</div><div style={{ ...is, color: teal, fontWeight: 700 }}>+$870.00</div></div></div>
-    <div style={{ display: "flex", gap: 12, marginBottom: 16 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Entry</div><div style={{ ...is }}>$482.50</div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Exit</div><div style={{ ...is }}>$491.20</div></div></div>
+    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Ticker</div><div style={{ ...is }}><span style={flyStyle(0)}>{vals[0].text}</span></div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Strategy</div><div style={{ ...is }}><span style={flyStyle(1)}>{vals[1].text}</span></div></div></div>
+    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Direction</div><div style={{ ...is, color: teal }}><span style={flyStyle(2)}>{vals[2].text}</span></div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>P/L</div><div style={{ ...is, color: teal, fontWeight: 700 }}><span style={flyStyle(3)}>{vals[3].text}</span></div></div></div>
+    <div style={{ display: "flex", gap: 12, marginBottom: 16 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Entry</div><div style={{ ...is }}><span style={flyStyle(4)}>{vals[4].text}</span></div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Exit</div><div style={{ ...is }}><span style={flyStyle(5)}>{vals[5].text}</span></div></div></div>
     <div style={{ color: teal, fontFamily: fm, fontSize: 11, textTransform: "uppercase" as const, letterSpacing: 2, marginBottom: 8 }}>JOURNAL</div>
     <div style={{ ...is, minHeight: 60, color: "#9ca3af", lineHeight: 1.6 }}>Waited for the VWAP reclaim at 10:15. Felt confident in the setup...</div>
     <div style={{ background: teal, color: "#0e0f14", fontFamily: fd, fontWeight: 700, padding: "12px 0", borderRadius: 8, textAlign: "center", marginTop: 16, fontSize: 15 }}>Log Trade</div>
