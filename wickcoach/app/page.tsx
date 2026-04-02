@@ -529,58 +529,58 @@ export default function WickCoachFull() {
                 </defs>
 
                 {/* ══ Strings from hand (395,148) to bottom of each candle ══ */}
-                <line x1="395" y1="148" x2="200" y2="100" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="395" y1="148" x2="270" y2="85" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="395" y1="148" x2="345" y2="75" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="395" y1="148" x2="410" y2="80" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="395" y1="148" x2="475" y2="65" stroke="#5a5d68" strokeWidth="1" opacity="0.4" />
-                <line x1="395" y1="148" x2="540" y2="50" stroke="#5a5d68" strokeWidth="1" opacity="0.35" />
+                <line x1="395" y1="148" x2="201" y2="100" stroke="#7a7d88" strokeWidth="1.2" opacity="0.5" />
+                <line x1="395" y1="148" x2="269" y2="85" stroke="#7a7d88" strokeWidth="1.2" opacity="0.5" />
+                <line x1="395" y1="148" x2="345" y2="76" stroke="#7a7d88" strokeWidth="1.2" opacity="0.5" />
+                <line x1="395" y1="148" x2="410" y2="80" stroke="#7a7d88" strokeWidth="1.2" opacity="0.5" />
+                <line x1="395" y1="148" x2="475" y2="66" stroke="#7a7d88" strokeWidth="1.2" opacity="0.5" />
+                <line x1="395" y1="148" x2="540" y2="50" stroke="#7a7d88" strokeWidth="1.2" opacity="0.45" />
 
                 {/* ══ Candle 1 (GREEN) — far left ══ */}
-                <rect x="180" y="32" width="42" height="68" rx="14" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
-                <rect x="180" y="32" width="42" height="68" rx="14" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
-                <rect x="180" y="32" width="42" height="68" rx="14" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="180" y="32" width="42" height="68" rx="14" fill="#00d4a0" opacity="0.02" />
-                <rect x="180" y="32" width="42" height="68" rx="14" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
+                <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
+                <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
+                <rect x="180" y="32" width="42" height="68" rx="21" fill="#00d4a0" opacity="0.02" />
+                <rect x="180" y="32" width="42" height="68" rx="21" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
                 <line x1="201" y1="14" x2="201" y2="32" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
                 <line x1="201" y1="14" x2="201" y2="32" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
 
                 {/* ══ Candle 2 (RED) ══ */}
-                <rect x="248" y="22" width="42" height="63" rx="14" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
-                <rect x="248" y="22" width="42" height="63" rx="14" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
-                <rect x="248" y="22" width="42" height="63" rx="14" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
-                <rect x="248" y="22" width="42" height="63" rx="14" fill="#ff5555" opacity="0.015" />
-                <rect x="248" y="22" width="42" height="63" rx="14" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
+                <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
+                <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
+                <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
+                <rect x="248" y="22" width="42" height="63" rx="21" fill="#ff5555" opacity="0.015" />
+                <rect x="248" y="22" width="42" height="63" rx="21" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
                 <line x1="269" y1="6" x2="269" y2="22" stroke="#ff5555" strokeWidth="10" opacity="0.18" filter="url(#neon2)" />
                 <line x1="269" y1="6" x2="269" y2="22" stroke="#ff6666" strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
 
                 {/* ══ Candle 3 (GREEN) — center-left, tallest ══ */}
-                <rect x="322" y="4" width="46" height="72" rx="16" fill="none" stroke="#00d4a0" strokeWidth="16" opacity="0.16" filter="url(#neon3)" />
-                <rect x="322" y="4" width="46" height="72" rx="16" fill="none" stroke="#00ffcc" strokeWidth="10" opacity="0.27" filter="url(#neon2)" />
-                <rect x="322" y="4" width="46" height="72" rx="16" fill="none" stroke="#00ffcc" strokeWidth="5.5" opacity="0.4" filter="url(#neon)" />
-                <rect x="322" y="4" width="46" height="72" rx="16" fill="#00d4a0" opacity="0.02" />
-                <rect x="322" y="4" width="46" height="72" rx="16" fill="none" stroke="#00ffcc" strokeWidth="1.4" opacity="0.42" />
+                <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00d4a0" strokeWidth="16" opacity="0.16" filter="url(#neon3)" />
+                <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00ffcc" strokeWidth="10" opacity="0.27" filter="url(#neon2)" />
+                <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00ffcc" strokeWidth="5.5" opacity="0.4" filter="url(#neon)" />
+                <rect x="322" y="4" width="46" height="72" rx="23" fill="#00d4a0" opacity="0.02" />
+                <rect x="322" y="4" width="46" height="72" rx="23" fill="none" stroke="#00ffcc" strokeWidth="1.4" opacity="0.42" />
 
                 {/* ══ Candle 4 (GREEN) — center-right ══ */}
-                <rect x="390" y="14" width="40" height="66" rx="14" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
-                <rect x="390" y="14" width="40" height="66" rx="14" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
-                <rect x="390" y="14" width="40" height="66" rx="14" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="390" y="14" width="40" height="66" rx="14" fill="#00d4a0" opacity="0.02" />
-                <rect x="390" y="14" width="40" height="66" rx="14" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
+                <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
+                <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
+                <rect x="390" y="14" width="40" height="66" rx="20" fill="#00d4a0" opacity="0.02" />
+                <rect x="390" y="14" width="40" height="66" rx="20" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
 
                 {/* ══ Candle 5 (RED) ══ */}
-                <rect x="455" y="4" width="40" height="62" rx="14" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
-                <rect x="455" y="4" width="40" height="62" rx="14" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
-                <rect x="455" y="4" width="40" height="62" rx="14" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
-                <rect x="455" y="4" width="40" height="62" rx="14" fill="#ff5555" opacity="0.015" />
-                <rect x="455" y="4" width="40" height="62" rx="14" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
+                <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
+                <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
+                <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
+                <rect x="455" y="4" width="40" height="62" rx="20" fill="#ff5555" opacity="0.015" />
+                <rect x="455" y="4" width="40" height="62" rx="20" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
 
                 {/* ══ Candle 6 (GREEN) — far right, highest ══ */}
-                <rect x="520" y="0" width="40" height="50" rx="14" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
-                <rect x="520" y="0" width="40" height="50" rx="14" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
-                <rect x="520" y="0" width="40" height="50" rx="14" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="520" y="0" width="40" height="50" rx="14" fill="#00d4a0" opacity="0.02" />
-                <rect x="520" y="0" width="40" height="50" rx="14" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
+                <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
+                <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
+                <rect x="520" y="0" width="40" height="50" rx="20" fill="#00d4a0" opacity="0.02" />
+                <rect x="520" y="0" width="40" height="50" rx="20" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
 
                 {/* ══ Stick figure — logo proportions scaled up ══ */}
                 {/* Head */}
