@@ -519,16 +519,64 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
-            {/* Glowing candlestick behind text */}
-            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
+            {/* Glass candlestick — offset right, radiating green mist */}
+            <div style={{ position: 'absolute', right: '8%', top: '50%', transform: 'translateY(-50%)', zIndex: 0, pointerEvents: 'none' }}>
+              {/* Outermost mist ring — pulsing */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 500, height: 600, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.06) 0%, rgba(0,212,160,0.02) 40%, transparent 70%)', filter: 'blur(40px)' }} />
               {/* Wide ambient glow */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 400, background: '#00d4a0', borderRadius: '50%', filter: 'blur(120px)', opacity: 0.1 }} />
-              {/* Candle body glow */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 60, height: 140, background: '#00d4a0', borderRadius: 4, filter: 'blur(60px)', opacity: 0.25 }} />
-              {/* Candlestick SVG */}
-              <svg width="60" height="300" viewBox="0 0 60 300" fill="none" style={{ display: 'block' }}>
-                <line x1="30" y1="0" x2="30" y2="300" stroke="#00d4a0" strokeWidth="2" />
-                <rect x="0" y="80" width="60" height="140" rx="4" fill="#00d4a0" opacity="0.35" />
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 350, height: 450, background: 'radial-gradient(ellipse, rgba(0,212,160,0.12) 0%, rgba(0,255,180,0.04) 50%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }} />
+              {/* Core candle glow — intense */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 120, height: 220, background: 'linear-gradient(180deg, rgba(0,255,180,0.3) 0%, rgba(0,212,160,0.2) 50%, rgba(0,212,160,0.1) 100%)', borderRadius: 12, filter: 'blur(50px)' }} />
+              {/* Inner hot glow */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 60, height: 160, background: 'rgba(0,255,200,0.2)', borderRadius: 8, filter: 'blur(25px)' }} />
+              {/* Glass candlestick SVG */}
+              <svg width="100" height="380" viewBox="0 0 100 380" fill="none" style={{ display: 'block', position: 'relative' }}>
+                <defs>
+                  <linearGradient id="candleBody" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#00ffcc" stopOpacity="0.25" />
+                    <stop offset="30%" stopColor="#00d4a0" stopOpacity="0.18" />
+                    <stop offset="70%" stopColor="#00d4a0" stopOpacity="0.12" />
+                    <stop offset="100%" stopColor="#009a74" stopOpacity="0.08" />
+                  </linearGradient>
+                  <linearGradient id="candleSheen" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#00ffcc" stopOpacity="0.2" />
+                    <stop offset="30%" stopColor="#00ffcc" stopOpacity="0.05" />
+                    <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+                  </linearGradient>
+                  <linearGradient id="wickGrad" x1="0.5" y1="0" x2="0.5" y2="1">
+                    <stop offset="0%" stopColor="#00d4a0" stopOpacity="0.1" />
+                    <stop offset="50%" stopColor="#00d4a0" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#00d4a0" stopOpacity="0.1" />
+                  </linearGradient>
+                  <filter id="wickGlow">
+                    <feGaussianBlur stdDeviation="4" />
+                  </filter>
+                </defs>
+                {/* Upper wick glow */}
+                <line x1="50" y1="10" x2="50" y2="100" stroke="#00d4a0" strokeWidth="12" opacity="0.08" filter="url(#wickGlow)" />
+                {/* Upper wick */}
+                <line x1="50" y1="10" x2="50" y2="100" stroke="url(#wickGrad)" strokeWidth="2.5" strokeLinecap="round" />
+                {/* Body — glass filled rectangle */}
+                <rect x="10" y="100" width="80" height="180" rx="6" fill="url(#candleBody)" />
+                {/* Body border — subtle glass edge */}
+                <rect x="10" y="100" width="80" height="180" rx="6" fill="none" stroke="rgba(0,212,160,0.2)" strokeWidth="1" />
+                {/* Glass sheen — left highlight */}
+                <rect x="12" y="102" width="30" height="176" rx="5" fill="url(#candleSheen)" />
+                {/* Top highlight strip */}
+                <rect x="12" y="100" width="76" height="24" rx="6" fill="rgba(0,255,200,0.08)" />
+                {/* Horizontal scan lines for glass texture */}
+                <line x1="14" y1="120" x2="86" y2="120" stroke="#00ffcc" strokeWidth="0.4" opacity="0.12" />
+                <line x1="14" y1="140" x2="86" y2="140" stroke="#00ffcc" strokeWidth="0.4" opacity="0.1" />
+                <line x1="14" y1="160" x2="86" y2="160" stroke="#00ffcc" strokeWidth="0.4" opacity="0.08" />
+                <line x1="14" y1="180" x2="86" y2="180" stroke="#00ffcc" strokeWidth="0.4" opacity="0.1" />
+                <line x1="14" y1="200" x2="86" y2="200" stroke="#00ffcc" strokeWidth="0.4" opacity="0.12" />
+                <line x1="14" y1="220" x2="86" y2="220" stroke="#00ffcc" strokeWidth="0.4" opacity="0.08" />
+                <line x1="14" y1="240" x2="86" y2="240" stroke="#00ffcc" strokeWidth="0.4" opacity="0.1" />
+                <line x1="14" y1="260" x2="86" y2="260" stroke="#00ffcc" strokeWidth="0.4" opacity="0.06" />
+                {/* Lower wick glow */}
+                <line x1="50" y1="280" x2="50" y2="370" stroke="#00d4a0" strokeWidth="12" opacity="0.08" filter="url(#wickGlow)" />
+                {/* Lower wick */}
+                <line x1="50" y1="280" x2="50" y2="370" stroke="url(#wickGrad)" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             </div>
             {/* Heading */}
