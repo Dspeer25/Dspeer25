@@ -96,11 +96,85 @@ function MockPastTrades() {
 }
 
 function MockTradingGoals() {
-  const goals = [{ text: "Max 3 trades per day", done: true, color: teal }, { text: "Wait 15 min after open before first entry", done: false, color: "#eab308" }, { text: "Journal every trade within 10 minutes", done: false, color: "#6b7280" }];
-  return (<div>
-    <div style={{ color: "#fff", fontFamily: fd, fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Week of Mar 17 &ndash; Mar 21</div>
-    {goals.map((g, i) => (<div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "#0e0f14", border: "1px solid #1a1b22", borderRadius: 10, marginBottom: 10 }}><div style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${g.color}`, background: g.done ? g.color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#0e0f14" }}>{g.done ? "\u2713" : ""}</div><span style={{ color: "#d0d0d8", fontFamily: fm, fontSize: 14 }}>{g.text}</span></div>))}
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 20, padding: "14px 16px", background: "rgba(0,212,160,0.04)", border: "1px solid rgba(0,212,160,0.1)", borderRadius: 10 }}><Logo size={16} /><span style={{ color: "#9ca3af", fontFamily: fm, fontSize: 13, fontStyle: "italic" }}>You hit 2 of 3 goals this week. The 15-minute rule is where your biggest edge is hiding.</span></div>
+  return (<div style={{ display: 'flex', gap: 24, height: '100%', minHeight: 380 }}>
+    <style>{`
+      @keyframes scanLine {
+        0% { top: 8%; opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { top: 88%; opacity: 0; }
+      }
+      @keyframes sparkle {
+        0%, 100% { opacity: 0.2; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.2); }
+      }
+    `}</style>
+    {/* LEFT COLUMN */}
+    <div style={{ flex: '0 0 58%', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <span style={{ fontFamily: fd, color: '#fff', fontSize: 16, fontWeight: 700 }}>Trader Stated Goals</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: 'rgba(0,212,160,0.15)', border: '1px solid #00d4a0', color: '#00d4a0' }}>Week</span>
+          <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: '#1a1b22', border: '1px solid #1a1b22', color: '#6b7280' }}>Month</span>
+        </div>
+      </div>
+      <div style={{ fontFamily: fm, color: '#6b7280', fontSize: 12, marginTop: 12, marginBottom: 16 }}>Week of Mar 17 &ndash; Mar 21</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Goal 1 — completed */}
+        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="10" cy="10" r="9" fill="#00d4a0" /><path d="M6 10l3 3 5-6" stroke="#0e0f14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+          <div>
+            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13 }}>Limit to 3 trades per day &mdash; no exceptions</div>
+            <div style={{ fontFamily: fm, color: '#00d4a0', fontSize: 11, marginTop: 4 }}>Hit 5/5 days this week</div>
+          </div>
+        </div>
+        {/* Goal 2 — in progress */}
+        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="10" cy="10" r="8.5" fill="none" stroke="#eab308" strokeWidth="1.5" /></svg>
+          <div>
+            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13 }}>Wait minimum 15 minutes after market open before first entry</div>
+            <div style={{ fontFamily: fm, color: '#eab308', fontSize: 11, marginTop: 4 }}>Hit 3/5 days &mdash; missed Monday and Thursday</div>
+          </div>
+        </div>
+        {/* Goal 3 — not started */}
+        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="10" cy="10" r="8.5" fill="none" stroke="#6b7280" strokeWidth="1.5" /></svg>
+          <div>
+            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13 }}>Journal every trade within 10 minutes of closing the position</div>
+            <div style={{ fontFamily: fm, color: '#ef4444', fontSize: 11, marginTop: 4 }}>0/5 days &mdash; no entries within window</div>
+          </div>
+        </div>
+      </div>
+      {/* Scan line */}
+      <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.3), 0 0 60px rgba(0,212,160,0.1)', animation: 'scanLine 3s ease-in-out infinite' }} />
+      {/* Sparkle dots */}
+      <div style={{ position: 'absolute', left: '20%', top: '30%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0s' }} />
+      <div style={{ position: 'absolute', left: '55%', top: '50%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0.7s' }} />
+      <div style={{ position: 'absolute', left: '80%', top: '40%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '1.4s' }} />
+      <div style={{ position: 'absolute', left: '35%', top: '70%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0.3s' }} />
+    </div>
+    {/* RIGHT COLUMN */}
+    <div style={{ flex: '0 0 38%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <Logo size={16} />
+        <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
+      </div>
+      <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12 }}>
+        <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 12, lineHeight: '1.65', fontStyle: 'italic' }}>
+          I&apos;ve noted your three goals for this week. The 3-trade limit is about discipline under pressure. The 15-minute rule is about patience with your edge. The journaling window is about accountability to yourself &mdash; not to me.<br /><br />
+          I&apos;ll be tracking your entries against all three. When you log trades this week, I&apos;ll flag moments where your behavior aligns or conflicts with these commitments.
+        </div>
+      </div>
+      <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14 }}>
+        <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
+        <div style={{ fontFamily: fm, color: '#9ca3af', fontSize: 12, lineHeight: '1.6' }}>
+          On the 15-minute rule &mdash; is this about avoiding the first candle volatility, or is it more about giving yourself time to read the open before reacting? The answer changes what I look for in your entries.
+        </div>
+        <div style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '8px 12px', marginTop: 10 }}>
+          <span style={{ fontFamily: fm, fontSize: 11, color: '#6b7280' }}>Type your answer...</span>
+        </div>
+      </div>
+    </div>
   </div>);
 }
 
@@ -624,12 +698,9 @@ export default function WickCoachFull() {
               );
             })}
           </div>
-          <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(19,20,26,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
+          <div style={{ maxWidth: 900, margin: '0 auto', borderRadius: 16, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(19,20,26,0.8)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1)', overflow: 'hidden', position: 'relative' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }} />
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#eab308' }} />
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#22c55e' }} />
-              <span style={{ marginLeft: 12, fontFamily: fm, fontSize: 12, color: '#6b7280' }}>wickcoach.app</span>
+              <span style={{ fontFamily: fm, fontSize: 12, color: '#6b7280' }}>wickcoach.app</span>
             </div>
             <div style={{ padding: 32, minHeight: 420 }}>
               {activeCategory === 0 && <MockLogATrade />}
