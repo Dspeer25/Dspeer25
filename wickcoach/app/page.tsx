@@ -518,10 +518,23 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <p style={{ color: teal, fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 3, marginBottom: 16 }}>EVERYTHING YOU NEED</p>
-            <h1 style={{ fontFamily: fd, color: '#ffffff', fontSize: 48, fontWeight: 700, lineHeight: 1.2, marginBottom: 16 }}>The trading journal that<br />coaches you back</h1>
-            <p style={{ color: '#9ca3af', fontFamily: fm, fontSize: 15, maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>AI-powered psychology coaching, trade logging, goal tracking, and analysis tools &mdash; all in one place.</p>
+          <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
+            {/* Glowing candlestick behind text */}
+            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
+              {/* Wide ambient glow */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 400, background: '#00d4a0', borderRadius: '50%', filter: 'blur(120px)', opacity: 0.1 }} />
+              {/* Candle body glow */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 60, height: 140, background: '#00d4a0', borderRadius: 4, filter: 'blur(60px)', opacity: 0.25 }} />
+              {/* Candlestick SVG */}
+              <svg width="60" height="300" viewBox="0 0 60 300" fill="none" style={{ display: 'block' }}>
+                <line x1="30" y1="0" x2="30" y2="300" stroke="#00d4a0" strokeWidth="2" />
+                <rect x="0" y="80" width="60" height="140" rx="4" fill="#00d4a0" opacity="0.35" />
+              </svg>
+            </div>
+            {/* Heading */}
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you reviewed yourself?</h1>
+            {/* Subtitle */}
+            <p style={{ position: 'relative', zIndex: 1, color: '#9ca3af', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24 }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
