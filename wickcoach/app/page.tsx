@@ -519,99 +519,60 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
-            {/* Mini chart — 5 candles (green/red) behind text */}
+            {/* Candlestick chart behind text */}
             <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
-              {/* Ambient glow behind entire chart */}
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 500, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.07) 0%, rgba(0,212,160,0.02) 40%, transparent 65%)', filter: 'blur(50px)' }} />
-              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 350, height: 400, background: 'radial-gradient(ellipse, rgba(0,255,180,0.1) 0%, transparent 60%)', borderRadius: '50%', filter: 'blur(60px)' }} />
-              {/* 5-candle mini chart SVG + 20SMA */}
-              <svg width="340" height="400" viewBox="0 0 340 400" fill="none" style={{ display: 'block' }}>
+              {/* Subtle ambient glow */}
+              <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 700, height: 500, borderRadius: '50%', background: 'radial-gradient(ellipse, rgba(0,212,160,0.05) 0%, transparent 60%)', filter: 'blur(60px)' }} />
+              {/* Candlestick chart SVG — solid candles + 20SMA */}
+              <svg width="520" height="420" viewBox="0 0 520 420" fill="none" style={{ display: 'block' }}>
                 <defs>
-                  <linearGradient id="gbody" x1="0" y1="0" x2="0.6" y2="1">
-                    <stop offset="0%" stopColor="#00ffcc" stopOpacity="0.4" />
-                    <stop offset="30%" stopColor="#00e8b0" stopOpacity="0.3" />
-                    <stop offset="70%" stopColor="#00d4a0" stopOpacity="0.22" />
-                    <stop offset="100%" stopColor="#00b888" stopOpacity="0.12" />
-                  </linearGradient>
-                  <linearGradient id="rbody" x1="0" y1="0" x2="0.6" y2="1">
-                    <stop offset="0%" stopColor="#ff7777" stopOpacity="0.38" />
-                    <stop offset="30%" stopColor="#ff5555" stopOpacity="0.28" />
-                    <stop offset="70%" stopColor="#ee4444" stopOpacity="0.18" />
-                    <stop offset="100%" stopColor="#cc3333" stopOpacity="0.1" />
-                  </linearGradient>
-                  <linearGradient id="gsheen" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#00ffee" stopOpacity="0.28" />
-                    <stop offset="30%" stopColor="#00ffcc" stopOpacity="0.08" />
-                    <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                  </linearGradient>
-                  <linearGradient id="rsheen" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#ff9999" stopOpacity="0.22" />
-                    <stop offset="30%" stopColor="#ff6666" stopOpacity="0.06" />
-                    <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-                  </linearGradient>
-                  <filter id="wg"><feGaussianBlur stdDeviation="4" /></filter>
-                  <filter id="bg"><feGaussianBlur stdDeviation="10" /></filter>
-                  <filter id="smag"><feGaussianBlur stdDeviation="3" /></filter>
+                  <filter id="cglo"><feGaussianBlur stdDeviation="6" /></filter>
+                  <filter id="smaglo"><feGaussianBlur stdDeviation="5" /></filter>
                 </defs>
 
-                {/* ══ Candle 1: GREEN — bullish, body higher up ══ */}
-                <rect x="10" y="75" width="46" height="130" rx="6" fill="#00d4a0" opacity="0.12" filter="url(#bg)" />
-                <line x1="33" y1="42" x2="33" y2="75" stroke="#00d4a0" strokeWidth="8" opacity="0.08" filter="url(#wg)" />
-                <line x1="33" y1="42" x2="33" y2="75" stroke="#00d4a0" strokeWidth="2.5" opacity="0.55" strokeLinecap="round" />
-                <rect x="10" y="75" width="46" height="130" rx="5" fill="url(#gbody)" />
-                <rect x="10" y="75" width="46" height="130" rx="5" fill="none" stroke="rgba(0,255,200,0.25)" strokeWidth="1" />
-                <rect x="13" y="78" width="18" height="124" rx="4" fill="url(#gsheen)" />
-                <rect x="13" y="75" width="40" height="18" rx="5" fill="rgba(0,255,220,0.1)" />
-                <line x1="33" y1="205" x2="33" y2="300" stroke="#00d4a0" strokeWidth="8" opacity="0.08" filter="url(#wg)" />
-                <line x1="33" y1="205" x2="33" y2="300" stroke="#00d4a0" strokeWidth="2.5" opacity="0.5" strokeLinecap="round" />
+                {/* ══ Candle 1: GREEN — medium bullish ══ */}
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="#00d4a0" opacity="0.06" filter="url(#cglo)" />
+                <line x1="55" y1="60" x2="55" y2="100" stroke="#00d4a0" strokeWidth="2" opacity="0.6" strokeLinecap="round" />
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="#00d4a0" opacity="0.55" />
+                <rect x="30" y="100" width="50" height="120" rx="3" fill="none" stroke="#00ffcc" strokeWidth="0.5" opacity="0.3" />
+                <rect x="32" y="102" width="16" height="116" rx="2" fill="rgba(255,255,255,0.06)" />
+                <line x1="55" y1="220" x2="55" y2="310" stroke="#00d4a0" strokeWidth="2" opacity="0.55" strokeLinecap="round" />
 
-                {/* ══ Candle 2: RED — bearish, body dropped lower ══ */}
-                <rect x="72" y="150" width="46" height="85" rx="6" fill="#ff5555" opacity="0.1" filter="url(#bg)" />
-                <line x1="95" y1="95" x2="95" y2="150" stroke="#ff5555" strokeWidth="8" opacity="0.07" filter="url(#wg)" />
-                <line x1="95" y1="95" x2="95" y2="150" stroke="#ff5555" strokeWidth="2.5" opacity="0.5" strokeLinecap="round" />
-                <rect x="72" y="150" width="46" height="85" rx="5" fill="url(#rbody)" />
-                <rect x="72" y="150" width="46" height="85" rx="5" fill="none" stroke="rgba(255,120,120,0.22)" strokeWidth="1" />
-                <rect x="75" y="153" width="18" height="79" rx="4" fill="url(#rsheen)" />
-                <rect x="75" y="150" width="40" height="14" rx="5" fill="rgba(255,140,140,0.08)" />
-                <line x1="95" y1="235" x2="95" y2="280" stroke="#ff5555" strokeWidth="8" opacity="0.06" filter="url(#wg)" />
-                <line x1="95" y1="235" x2="95" y2="280" stroke="#ff5555" strokeWidth="2" opacity="0.4" strokeLinecap="round" />
+                {/* ══ Candle 2: RED — small bearish ══ */}
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="#ff5555" opacity="0.05" filter="url(#cglo)" />
+                <line x1="125" y1="110" x2="125" y2="155" stroke="#ff5555" strokeWidth="2" opacity="0.55" strokeLinecap="round" />
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="#cc3333" opacity="0.5" />
+                <rect x="100" y="155" width="50" height="75" rx="3" fill="none" stroke="#ff7777" strokeWidth="0.5" opacity="0.25" />
+                <rect x="102" y="157" width="16" height="71" rx="2" fill="rgba(255,255,255,0.05)" />
+                <line x1="125" y1="230" x2="125" y2="270" stroke="#ff5555" strokeWidth="2" opacity="0.5" strokeLinecap="round" />
 
-                {/* ══ Candle 3: GREEN — big bullish (center, tallest, highest) ══ */}
-                <rect x="134" y="40" width="52" height="190" rx="6" fill="#00d4a0" opacity="0.14" filter="url(#bg)" />
-                <line x1="160" y1="12" x2="160" y2="40" stroke="#00d4a0" strokeWidth="10" opacity="0.1" filter="url(#wg)" />
-                <line x1="160" y1="12" x2="160" y2="40" stroke="#00d4a0" strokeWidth="3" opacity="0.6" strokeLinecap="round" />
-                <rect x="134" y="40" width="52" height="190" rx="5" fill="url(#gbody)" />
-                <rect x="134" y="40" width="52" height="190" rx="5" fill="none" stroke="rgba(0,255,200,0.28)" strokeWidth="1" />
-                <rect x="137" y="43" width="20" height="184" rx="4" fill="url(#gsheen)" />
-                <rect x="137" y="40" width="46" height="22" rx="5" fill="rgba(0,255,220,0.12)" />
-                <line x1="160" y1="230" x2="160" y2="345" stroke="#00d4a0" strokeWidth="10" opacity="0.1" filter="url(#wg)" />
-                <line x1="160" y1="230" x2="160" y2="345" stroke="#00d4a0" strokeWidth="3" opacity="0.55" strokeLinecap="round" />
+                {/* ══ Candle 3: GREEN — tall bullish (biggest) ══ */}
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="#00d4a0" opacity="0.08" filter="url(#cglo)" />
+                <line x1="197" y1="18" x2="197" y2="50" stroke="#00d4a0" strokeWidth="2.5" opacity="0.65" strokeLinecap="round" />
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="#00d4a0" opacity="0.6" />
+                <rect x="170" y="50" width="55" height="200" rx="3" fill="none" stroke="#00ffcc" strokeWidth="0.5" opacity="0.35" />
+                <rect x="172" y="52" width="18" height="196" rx="2" fill="rgba(255,255,255,0.07)" />
+                <line x1="197" y1="250" x2="197" y2="350" stroke="#00d4a0" strokeWidth="2.5" opacity="0.6" strokeLinecap="round" />
 
-                {/* ══ Candle 4: RED — bearish, body mid-height ══ */}
-                <rect x="202" y="120" width="46" height="105" rx="6" fill="#ff5555" opacity="0.1" filter="url(#bg)" />
-                <line x1="225" y1="75" x2="225" y2="120" stroke="#ff5555" strokeWidth="8" opacity="0.07" filter="url(#wg)" />
-                <line x1="225" y1="75" x2="225" y2="120" stroke="#ff5555" strokeWidth="2.5" opacity="0.5" strokeLinecap="round" />
-                <rect x="202" y="120" width="46" height="105" rx="5" fill="url(#rbody)" />
-                <rect x="202" y="120" width="46" height="105" rx="5" fill="none" stroke="rgba(255,120,120,0.22)" strokeWidth="1" />
-                <rect x="205" y="123" width="18" height="99" rx="4" fill="url(#rsheen)" />
-                <rect x="205" y="120" width="40" height="14" rx="5" fill="rgba(255,140,140,0.08)" />
-                <line x1="225" y1="225" x2="225" y2="265" stroke="#ff5555" strokeWidth="8" opacity="0.06" filter="url(#wg)" />
-                <line x1="225" y1="225" x2="225" y2="265" stroke="#ff5555" strokeWidth="2" opacity="0.38" strokeLinecap="round" />
+                {/* ══ Candle 4: RED — medium bearish ══ */}
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="#ff5555" opacity="0.05" filter="url(#cglo)" />
+                <line x1="270" y1="85" x2="270" y2="130" stroke="#ff5555" strokeWidth="2" opacity="0.55" strokeLinecap="round" />
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="#cc3333" opacity="0.5" />
+                <rect x="245" y="130" width="50" height="95" rx="3" fill="none" stroke="#ff7777" strokeWidth="0.5" opacity="0.25" />
+                <rect x="247" y="132" width="16" height="91" rx="2" fill="rgba(255,255,255,0.05)" />
+                <line x1="270" y1="225" x2="270" y2="258" stroke="#ff5555" strokeWidth="2" opacity="0.45" strokeLinecap="round" />
 
-                {/* ══ Candle 5: GREEN — bullish, body slightly lower ══ */}
-                <rect x="264" y="85" width="46" height="115" rx="6" fill="#00d4a0" opacity="0.12" filter="url(#bg)" />
-                <line x1="287" y1="52" x2="287" y2="85" stroke="#00d4a0" strokeWidth="8" opacity="0.08" filter="url(#wg)" />
-                <line x1="287" y1="52" x2="287" y2="85" stroke="#00d4a0" strokeWidth="2.5" opacity="0.55" strokeLinecap="round" />
-                <rect x="264" y="85" width="46" height="115" rx="5" fill="url(#gbody)" />
-                <rect x="264" y="85" width="46" height="115" rx="5" fill="none" stroke="rgba(0,255,200,0.25)" strokeWidth="1" />
-                <rect x="267" y="88" width="18" height="109" rx="4" fill="url(#gsheen)" />
-                <rect x="267" y="85" width="40" height="16" rx="5" fill="rgba(0,255,220,0.1)" />
-                <line x1="287" y1="200" x2="287" y2="320" stroke="#00d4a0" strokeWidth="8" opacity="0.08" filter="url(#wg)" />
-                <line x1="287" y1="200" x2="287" y2="320" stroke="#00d4a0" strokeWidth="2.5" opacity="0.5" strokeLinecap="round" />
+                {/* ══ Candle 5: GREEN — bullish recovery ══ */}
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="#00d4a0" opacity="0.06" filter="url(#cglo)" />
+                <line x1="340" y1="48" x2="340" y2="80" stroke="#00d4a0" strokeWidth="2" opacity="0.6" strokeLinecap="round" />
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="#00d4a0" opacity="0.55" />
+                <rect x="315" y="80" width="50" height="130" rx="3" fill="none" stroke="#00ffcc" strokeWidth="0.5" opacity="0.3" />
+                <rect x="317" y="82" width="16" height="126" rx="2" fill="rgba(255,255,255,0.06)" />
+                <line x1="340" y1="210" x2="340" y2="325" stroke="#00d4a0" strokeWidth="2" opacity="0.55" strokeLinecap="round" />
 
-                {/* ══ 20SMA — subtle light blue moving average curve ══ */}
-                <path d="M33 310 C55 295, 75 285, 95 280 C115 275, 135 330, 160 345 C185 355, 205 270, 225 265 C245 260, 267 310, 287 320" stroke="rgba(100,180,255,0.25)" strokeWidth="6" strokeLinecap="round" fill="none" filter="url(#smag)" />
-                <path d="M33 310 C55 295, 75 285, 95 280 C115 275, 135 330, 160 345 C185 355, 205 270, 225 265 C245 260, 267 310, 287 320" stroke="rgba(100,180,255,0.45)" strokeWidth="2" strokeLinecap="round" fill="none" />
+                {/* ══ 20SMA — smooth light blue flowing curve ══ */}
+                <path d="M-20 330 C20 318, 40 305, 55 298 C80 285, 100 275, 125 270 C155 262, 175 340, 197 350 C220 358, 245 268, 270 258 C295 248, 315 315, 340 325 C365 335, 400 310, 540 290" stroke="rgba(100,180,255,0.15)" strokeWidth="8" strokeLinecap="round" fill="none" filter="url(#smaglo)" />
+                <path d="M-20 330 C20 318, 40 305, 55 298 C80 285, 100 275, 125 270 C155 262, 175 340, 197 350 C220 358, 245 268, 270 258 C295 248, 315 315, 340 325 C365 335, 400 310, 540 290" stroke="rgba(100,180,255,0.4)" strokeWidth="2" strokeLinecap="round" fill="none" />
               </svg>
             </div>
             {/* Heading */}
