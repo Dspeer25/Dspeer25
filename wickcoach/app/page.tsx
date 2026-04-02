@@ -540,8 +540,8 @@ export default function WickCoachFull() {
                 <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
                 <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
                 <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="180" y="32" width="42" height="68" rx="21" fill="#00d4a0" opacity="0.02" />
-                <rect x="180" y="32" width="42" height="68" rx="21" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <ellipse cx="201" cy="66" rx="21" ry="34" fill="#00d4a0" opacity="0.02" />
+                <ellipse cx="201" cy="66" rx="21" ry="34" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
                 <line x1="201" y1="14" x2="201" y2="32" stroke="#00d4a0" strokeWidth="10" opacity="0.2" filter="url(#neon2)" />
                 <line x1="201" y1="14" x2="201" y2="32" stroke="#00ffcc" strokeWidth="1.2" opacity="0.35" strokeLinecap="round" />
 
@@ -549,8 +549,8 @@ export default function WickCoachFull() {
                 <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
                 <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
                 <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
-                <rect x="248" y="22" width="42" height="63" rx="21" fill="#ff5555" opacity="0.015" />
-                <rect x="248" y="22" width="42" height="63" rx="21" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
+                <ellipse cx="269" cy="53" rx="21" ry="32" fill="#ff5555" opacity="0.015" />
+                <ellipse cx="269" cy="53" rx="21" ry="32" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
                 <line x1="269" y1="6" x2="269" y2="22" stroke="#ff5555" strokeWidth="10" opacity="0.18" filter="url(#neon2)" />
                 <line x1="269" y1="6" x2="269" y2="22" stroke="#ff6666" strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
 
@@ -558,29 +558,29 @@ export default function WickCoachFull() {
                 <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00d4a0" strokeWidth="16" opacity="0.16" filter="url(#neon3)" />
                 <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00ffcc" strokeWidth="10" opacity="0.27" filter="url(#neon2)" />
                 <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00ffcc" strokeWidth="5.5" opacity="0.4" filter="url(#neon)" />
-                <rect x="322" y="4" width="46" height="72" rx="23" fill="#00d4a0" opacity="0.02" />
-                <rect x="322" y="4" width="46" height="72" rx="23" fill="none" stroke="#00ffcc" strokeWidth="1.4" opacity="0.42" />
+                <ellipse cx="345" cy="40" rx="23" ry="36" fill="#00d4a0" opacity="0.02" />
+                <ellipse cx="345" cy="40" rx="23" ry="36" fill="none" stroke="#00ffcc" strokeWidth="1.4" opacity="0.42" />
 
                 {/* ══ Candle 4 (GREEN) — center-right ══ */}
                 <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
                 <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
                 <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="390" y="14" width="40" height="66" rx="20" fill="#00d4a0" opacity="0.02" />
-                <rect x="390" y="14" width="40" height="66" rx="20" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <ellipse cx="410" cy="47" rx="20" ry="33" fill="#00d4a0" opacity="0.02" />
+                <ellipse cx="410" cy="47" rx="20" ry="33" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
 
                 {/* ══ Candle 5 (RED) ══ */}
                 <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff5555" strokeWidth="14" opacity="0.12" filter="url(#neon3)" />
                 <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff6666" strokeWidth="9" opacity="0.23" filter="url(#neon2)" />
                 <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff6666" strokeWidth="5" opacity="0.35" filter="url(#neon)" />
-                <rect x="455" y="4" width="40" height="62" rx="20" fill="#ff5555" opacity="0.015" />
-                <rect x="455" y="4" width="40" height="62" rx="20" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
+                <ellipse cx="475" cy="35" rx="20" ry="31" fill="#ff5555" opacity="0.015" />
+                <ellipse cx="475" cy="35" rx="20" ry="31" fill="none" stroke="#ff6666" strokeWidth="1.2" opacity="0.35" />
 
                 {/* ══ Candle 6 (GREEN) — far right, highest ══ */}
                 <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00d4a0" strokeWidth="14" opacity="0.14" filter="url(#neon3)" />
                 <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00ffcc" strokeWidth="9" opacity="0.25" filter="url(#neon2)" />
                 <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00ffcc" strokeWidth="5" opacity="0.38" filter="url(#neon)" />
-                <rect x="520" y="0" width="40" height="50" rx="20" fill="#00d4a0" opacity="0.02" />
-                <rect x="520" y="0" width="40" height="50" rx="20" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
+                <ellipse cx="540" cy="25" rx="20" ry="25" fill="#00d4a0" opacity="0.02" />
+                <ellipse cx="540" cy="25" rx="20" ry="25" fill="none" stroke="#00ffcc" strokeWidth="1.2" opacity="0.38" />
 
                 {/* ══ Stick figure — logo proportions scaled up ══ */}
                 {/* Head */}
@@ -616,7 +616,7 @@ export default function WickCoachFull() {
               const isActive = activeCategory === i;
               return (
                 <div key={i} onClick={() => handleCategoryClick(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : 'rgba(255,255,255,0.03)', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid rgba(255,255,255,0.06)', boxShadow: isActive ? '0 0 30px rgba(0,212,160,0.2), 0 0 60px rgba(0,212,160,0.05)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : 'rgba(255,255,255,0.03)', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid rgba(255,255,255,0.06)', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.12)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? teal : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={cat.d} /></svg>
                   </div>
                   <span style={{ fontFamily: fm, fontSize: 11, color: isActive ? teal : '#6b7280', textAlign: 'center', whiteSpace: 'nowrap' as const, transition: 'color 0.3s ease' }}>{cat.label}</span>
