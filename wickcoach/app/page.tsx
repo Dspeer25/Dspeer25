@@ -97,14 +97,15 @@ function MockPastTrades() {
 
 function MockTradingGoals() {
   const bullets = [
-    { marker: '\u2022 ', text: "3-trade limit \u2014 Clear rule, easy to track. I\u2019ll flag any day you log a 4th trade and pull up what you wrote in your journal right before that entry." },
-    { marker: '\u2022 ', text: "15-min wait after open \u2014 I need to understand this better. Are you avoiding the first-candle chop, or are you giving yourself time to assess direction? The difference matters for how I evaluate your early entries." },
-    { marker: '\u2022 ', text: "Journal within 10 minutes \u2014 This is the hardest one to measure honestly. I\u2019ll track the timestamp gap between your trade close and your journal entry. If the gap grows, we\u2019ll talk about why." },
+    { marker: '\u2022 ', text: "3-trade limit \u2014 Clear. I\u2019ll flag any 4th entry and pull up what you journaled before it." },
+    { marker: '\u2022 ', text: "15-min wait \u2014 Are you avoiding chop or reading the open? This changes how I evaluate your early trades." },
+    { marker: '\u2022 ', text: "Journal within 10 min \u2014 I\u2019ll track the gap between your close and your entry timestamp." },
   ];
   const fullText = bullets.map(b => b.marker + b.text).join('\n');
   const [displayedText, setDisplayedText] = useState('');
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [answer, setAnswer] = useState('');
 
   React.useEffect(() => {
@@ -119,7 +120,11 @@ function MockTradingGoals() {
         } else {
           clearInterval(typingTimer);
           setIsTyping(false);
-          setTimeout(() => setShowFollowUp(true), 500);
+          setIsThinking(true);
+          setTimeout(() => {
+            setIsThinking(false);
+            setShowFollowUp(true);
+          }, 2000);
         }
       }, 18);
     }, 4000);
@@ -130,6 +135,7 @@ function MockTradingGoals() {
   }, []);
 
   const renderedBullets = displayedText.split('\n');
+  const aiAnimating = isTyping || isThinking;
 
   return (<div style={{ display: 'flex', gap: 24, minHeight: 380, padding: 0 }}>
     <style>{`
@@ -150,6 +156,10 @@ function MockTradingGoals() {
       @keyframes aiPulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
+      }
+      @keyframes thinkDot {
+        0%, 100% { opacity: 0.2; }
+        50% { opacity: 1; }
       }
     `}</style>
     {/* LEFT COLUMN */}
@@ -200,22 +210,29 @@ function MockTradingGoals() {
     </div>
     {/* RIGHT COLUMN */}
     <div style={{ flex: '0 0 38%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: isTyping ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: aiAnimating ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
         <Logo size={16} />
         <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
       </div>
       <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120 }}>
-        <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 12, lineHeight: '1.7', fontStyle: 'italic' }}>
+        <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 14, lineHeight: '1.7', fontStyle: 'italic' }}>
           {renderedBullets.map((line, idx) => (
             <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
               {line.startsWith('\u2022') ? <><span style={{ color: '#00d4a0' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
             </div>
           ))}
-          {displayedText.length < fullText.length && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
+          {isTyping && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
         </div>
+        {isThinking && (
+          <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0s' }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.3s' }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.6s' }} />
+          </div>
+        )}
       </div>
-      {showFollowUp && (
-        <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14, opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+      <div style={{ opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: showFollowUp ? 'auto' : 'none' }}>
+        <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14 }}>
           <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
           <div style={{ fontFamily: fm, color: '#c9cdd4', fontSize: 13, lineHeight: '1.6' }}>
             On the 15-minute rule &mdash; are you avoiding first-candle volatility, or giving yourself time to read the open before reacting? This changes what I watch for in your journal.
@@ -231,7 +248,7 @@ function MockTradingGoals() {
             onBlur={(e) => { e.currentTarget.style.borderColor = '#232430'; }}
           />
         </div>
-      )}
+      </div>
     </div>
   </div>);
 }
@@ -760,7 +777,12 @@ export default function WickCoachFull() {
 
           {/* CTA */}
           <div style={{ textAlign: 'center', marginTop: 48 }}>
-            <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 18, fontWeight: 700, padding: '16px 48px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Sign Up &rarr;</button>
+            <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 18, fontWeight: 700, padding: '16px 48px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Log Goals &rarr;</button>
+            <p
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#00d4a0'; }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#6b7280'; }}
+              style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, marginTop: 8, cursor: 'pointer', textAlign: 'center' }}
+            >or sign up to get started</p>
             <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, marginTop: 12 }}>One-time payment. No subscription. No data collection.</p>
           </div>
         </div>
