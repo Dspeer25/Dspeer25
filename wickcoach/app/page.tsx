@@ -96,17 +96,42 @@ function MockPastTrades() {
 }
 
 function MockTradingGoals() {
-  return (<div style={{ display: 'flex', gap: 24, height: '100%', minHeight: 380 }}>
+  const fullText = "Three goals noted. The 3-trade limit tests your discipline when you\u2019re hot. The 15-min rule tests your patience when the market is loud. The journaling window tests your honesty with yourself. I\u2019ll flag conflicts between these goals and your actual entries this week.";
+  const [displayedText, setDisplayedText] = useState('');
+  const [showFollowUp, setShowFollowUp] = useState(false);
+  const [answer, setAnswer] = useState('');
+
+  React.useEffect(() => {
+    let i = 0;
+    let typingTimer: ReturnType<typeof setInterval>;
+    const delayTimer = setTimeout(() => {
+      typingTimer = setInterval(() => {
+        if (i < fullText.length) {
+          setDisplayedText(fullText.slice(0, i + 1));
+          i++;
+        } else {
+          clearInterval(typingTimer);
+          setTimeout(() => setShowFollowUp(true), 500);
+        }
+      }, 25);
+    }, 4000);
+    return () => {
+      clearTimeout(delayTimer);
+      if (typingTimer) clearInterval(typingTimer);
+    };
+  }, []);
+
+  return (<div style={{ display: 'flex', gap: 24, minHeight: 380, padding: 0 }}>
     <style>{`
-      @keyframes scanLine {
-        0% { top: 8%; opacity: 0; }
-        10% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { top: 88%; opacity: 0; }
+      @keyframes goalScan {
+        0% { top: 5%; opacity: 0; }
+        15% { opacity: 1; }
+        85% { opacity: 1; }
+        100% { top: 90%; opacity: 0; }
       }
-      @keyframes sparkle {
-        0%, 100% { opacity: 0.2; transform: scale(0.8); }
-        50% { opacity: 1; transform: scale(1.2); }
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
       }
     `}</style>
     {/* LEFT COLUMN */}
@@ -119,39 +144,34 @@ function MockTradingGoals() {
         </div>
       </div>
       <div style={{ fontFamily: fm, color: '#6b7280', fontSize: 12, marginTop: 12, marginBottom: 16 }}>Week of Mar 17 &ndash; Mar 21</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Goal 1 — completed */}
-        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="10" cy="10" r="9" fill="#00d4a0" /><path d="M6 10l3 3 5-6" stroke="#0e0f14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <svg width="22" height="22" viewBox="0 0 22 22" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="11" cy="11" r="10" fill="#00d4a0" /><path d="M7 11l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
           <div>
-            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13 }}>Limit to 3 trades per day &mdash; no exceptions</div>
-            <div style={{ fontFamily: fm, color: '#00d4a0', fontSize: 11, marginTop: 4 }}>Hit 5/5 days this week</div>
+            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13, fontWeight: 500 }}>Limit to 3 trades per day &mdash; no exceptions</div>
+            <div style={{ fontFamily: fm, color: '#00d4a0', fontSize: 11, marginTop: 4 }}>Completed &mdash; hit 5/5 days</div>
           </div>
         </div>
         {/* Goal 2 — in progress */}
-        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="10" cy="10" r="8.5" fill="none" stroke="#eab308" strokeWidth="1.5" /></svg>
+        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <svg width="22" height="22" viewBox="0 0 22 22" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="11" cy="11" r="9.5" fill="none" stroke="#eab308" strokeWidth="2" /></svg>
           <div>
-            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13 }}>Wait minimum 15 minutes after market open before first entry</div>
-            <div style={{ fontFamily: fm, color: '#eab308', fontSize: 11, marginTop: 4 }}>Hit 3/5 days &mdash; missed Monday and Thursday</div>
+            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13, fontWeight: 500 }}>Wait 15 min after open before first entry</div>
+            <div style={{ fontFamily: fm, color: '#eab308', fontSize: 11, marginTop: 4 }}>In progress &mdash; hit 3/5 days</div>
           </div>
         </div>
-        {/* Goal 3 — not started */}
-        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="10" cy="10" r="8.5" fill="none" stroke="#6b7280" strokeWidth="1.5" /></svg>
+        {/* Goal 3 — missed */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+          <svg width="22" height="22" viewBox="0 0 22 22" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="11" cy="11" r="9.5" fill="none" stroke="#ef4444" strokeWidth="2" /></svg>
           <div>
-            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13 }}>Journal every trade within 10 minutes of closing the position</div>
-            <div style={{ fontFamily: fm, color: '#ef4444', fontSize: 11, marginTop: 4 }}>0/5 days &mdash; no entries within window</div>
+            <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13, fontWeight: 500 }}>Journal every trade within 10 minutes of closing</div>
+            <div style={{ fontFamily: fm, color: '#ef4444', fontSize: 11, marginTop: 4 }}>Missed &mdash; 0/5 days completed</div>
           </div>
         </div>
       </div>
       {/* Scan line */}
-      <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.3), 0 0 60px rgba(0,212,160,0.1)', animation: 'scanLine 3s ease-in-out infinite' }} />
-      {/* Sparkle dots */}
-      <div style={{ position: 'absolute', left: '20%', top: '30%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0s' }} />
-      <div style={{ position: 'absolute', left: '55%', top: '50%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0.7s' }} />
-      <div style={{ position: 'absolute', left: '80%', top: '40%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '1.4s' }} />
-      <div style={{ position: 'absolute', left: '35%', top: '70%', width: 3, height: 3, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: '0.3s' }} />
+      <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />
     </div>
     {/* RIGHT COLUMN */}
     <div style={{ flex: '0 0 38%' }}>
@@ -159,21 +179,30 @@ function MockTradingGoals() {
         <Logo size={16} />
         <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
       </div>
-      <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12 }}>
+      <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120 }}>
         <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 12, lineHeight: '1.65', fontStyle: 'italic' }}>
-          I&apos;ve noted your three goals for this week. The 3-trade limit is about discipline under pressure. The 15-minute rule is about patience with your edge. The journaling window is about accountability to yourself &mdash; not to me.<br /><br />
-          I&apos;ll be tracking your entries against all three. When you log trades this week, I&apos;ll flag moments where your behavior aligns or conflicts with these commitments.
+          {displayedText}
+          {displayedText.length < fullText.length && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
         </div>
       </div>
-      <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14 }}>
-        <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
-        <div style={{ fontFamily: fm, color: '#9ca3af', fontSize: 12, lineHeight: '1.6' }}>
-          On the 15-minute rule &mdash; is this about avoiding the first candle volatility, or is it more about giving yourself time to read the open before reacting? The answer changes what I look for in your entries.
+      {showFollowUp && (
+        <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14, opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.5s ease' }}>
+          <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
+          <div style={{ fontFamily: fm, color: '#9ca3af', fontSize: 12, lineHeight: '1.6' }}>
+            On the 15-minute rule &mdash; are you avoiding first-candle volatility, or giving yourself time to read the open before reacting? This changes what I watch for in your journal.
+          </div>
+          <input
+            type="text"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') setAnswer(''); }}
+            placeholder="Type your answer..."
+            style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '10px 12px', color: '#ffffff', fontSize: 12, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = '#00d4a0'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = '#232430'; }}
+          />
         </div>
-        <div style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '8px 12px', marginTop: 10 }}>
-          <span style={{ fontFamily: fm, fontSize: 11, color: '#6b7280' }}>Type your answer...</span>
-        </div>
-      </div>
+      )}
     </div>
   </div>);
 }
@@ -245,21 +274,9 @@ export default function WickCoachFull() {
   const [activeTab, setActiveTab] = useState("Log a Trade");
   const [view, setView] = useState<'home' | 'app'>('home');
   const [activeCategory, setActiveCategory] = useState(0);
-  const carouselRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    carouselRef.current = setInterval(() => {
-      setActiveCategory(prev => (prev + 1) % 8);
-    }, 4000);
-    return () => { if (carouselRef.current) clearInterval(carouselRef.current); };
-  }, []);
 
   const handleCategoryClick = (index: number) => {
     setActiveCategory(index);
-    if (carouselRef.current) clearInterval(carouselRef.current);
-    carouselRef.current = setInterval(() => {
-      setActiveCategory(prev => (prev + 1) % 8);
-    }, 4000);
   };
 
   const tabs = ["Log a Trade", "Past Trades", "Trading Goals", "Analysis", "Trader Profile"];
