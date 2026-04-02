@@ -530,13 +530,38 @@ export default function LandingPage() {
         {/* Glowing candlestick behind text */}
         <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }}>
           {/* Wide ambient glow */}
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 300, height: 400, background: '#00d4a0', borderRadius: '50%', filter: 'blur(120px)', opacity: 0.1 }} />
-          {/* Candle body glow */}
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 60, height: 140, background: '#00d4a0', borderRadius: 4, filter: 'blur(60px)', opacity: 0.25 }} />
-          {/* Candlestick SVG */}
-          <svg width="60" height="300" viewBox="0 0 60 300" fill="none" style={{ display: 'block' }}>
-            <line x1="30" y1="0" x2="30" y2="300" stroke="#00d4a0" strokeWidth="2" />
-            <rect x="0" y="80" width="60" height="140" rx="4" fill="#00d4a0" opacity="0.35" />
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 400, height: 500, background: '#00d4a0', borderRadius: '50%', filter: 'blur(140px)', opacity: 0.08 }} />
+          {/* Core candle glow */}
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 80, height: 200, background: '#00d4a0', borderRadius: 8, filter: 'blur(70px)', opacity: 0.2 }} />
+          {/* Secondary candle glow — offset right */}
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(10px, -30px)', width: 40, height: 160, background: '#00d4a0', borderRadius: 6, filter: 'blur(50px)', opacity: 0.15 }} />
+          {/* Candlestick SVG — artistic multi-candle cluster */}
+          <svg width="140" height="360" viewBox="0 0 140 360" fill="none" style={{ display: 'block', opacity: 0.18 }}>
+            {/* Main candle — tall, center */}
+            <line x1="50" y1="10" x2="50" y2="80" stroke="#00d4a0" strokeWidth="2.5" strokeLinecap="round" />
+            <rect x="30" y="80" width="40" height="160" rx="4" fill="#00d4a0" />
+            <rect x="30" y="80" width="40" height="20" rx="4" fill="#00ffb8" opacity="0.4" />
+            <line x1="50" y1="240" x2="50" y2="320" stroke="#00d4a0" strokeWidth="2.5" strokeLinecap="round" />
+
+            {/* Right candle — shorter, offset */}
+            <line x1="100" y1="60" x2="100" y2="110" stroke="#00d4a0" strokeWidth="2" strokeLinecap="round" />
+            <rect x="82" y="110" width="36" height="120" rx="4" fill="#00d4a0" />
+            <rect x="82" y="110" width="36" height="16" rx="4" fill="#00ffb8" opacity="0.35" />
+            <line x1="100" y1="230" x2="100" y2="290" stroke="#00d4a0" strokeWidth="2" strokeLinecap="round" />
+
+            {/* Left small candle — accent */}
+            <line x1="12" y1="100" x2="12" y2="140" stroke="#00d4a0" strokeWidth="1.5" strokeLinecap="round" />
+            <rect x="2" y="140" width="20" height="80" rx="3" fill="#00d4a0" />
+            <rect x="2" y="140" width="20" height="12" rx="3" fill="#00ffb8" opacity="0.3" />
+            <line x1="12" y1="220" x2="12" y2="260" stroke="#00d4a0" strokeWidth="1.5" strokeLinecap="round" />
+
+            {/* Horizontal scan lines across bodies for texture */}
+            {Array.from({ length: 18 }, (_, i) => (
+              <line key={`sl-${i}`} x1="31" y1={84 + i * 9} x2="69" y2={84 + i * 9} stroke="#00ffcc" strokeWidth="0.5" opacity={0.15 + Math.random() * 0.2} />
+            ))}
+            {Array.from({ length: 13 }, (_, i) => (
+              <line key={`sr-${i}`} x1="83" y1={114 + i * 9} x2="117" y2={114 + i * 9} stroke="#00ffcc" strokeWidth="0.5" opacity={0.12 + Math.random() * 0.18} />
+            ))}
           </svg>
         </div>
 
