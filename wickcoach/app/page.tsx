@@ -141,7 +141,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
   };
 
   return (
-    <div style={{ display: 'flex', gap: 24, minHeight: 380, padding: 0 }}>
+    <div style={{ display: 'flex', gap: 20, padding: 0 }}>
       {/* LEFT COLUMN */}
       <div style={{ flex: '0 0 58%', position: 'relative', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -152,11 +152,11 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
           </div>
         </div>
         <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 14, marginTop: 10, marginBottom: 18 }}>{goalSet.week}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {goalSet.goals.map((goal, gi) => {
             const sc = statusColors[goal.status] || statusColors.progress;
             return (
-              <div key={gi} style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+              <div key={gi} style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                 <svg width="22" height="22" viewBox="0 0 22 22" style={{ flexShrink: 0, marginTop: 1 }}>
                   {goal.status === 'complete' ? (
                     <><circle cx="11" cy="11" r="10" fill={sc.fill} /><path d="M7 11l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></>
@@ -186,7 +186,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
           <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
         </div>
         <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120 }}>
-          <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 14, lineHeight: '1.7', fontStyle: 'italic' }}>
+          <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 13, lineHeight: '1.7', fontStyle: 'italic' }}>
             {renderedBullets.map((line, idx) => (
               <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
                 {line.startsWith('\u2022') ? <><span style={{ color: '#00d4a0' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
@@ -203,7 +203,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
           )}
         </div>
         <div style={{ opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: showFollowUp ? 'auto' : 'none' }}>
-          <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 12, marginTop: 14 }}>
+          <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 10, marginTop: 10 }}>
             <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
             <div style={{ fontFamily: fm, color: '#c9cdd4', fontSize: 13, lineHeight: '1.6' }}>{goalSet.followUp}</div>
             <input
@@ -212,7 +212,7 @@ function MockTradingGoalsInner({ goalSet }: { goalSet: { week: string; goals: { 
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setAnswer(''); }}
               placeholder="Type your answer..."
-              style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '10px 12px', color: '#ffffff', fontSize: 13, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
+              style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '8px 10px', color: '#ffffff', fontSize: 13, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
               onFocus={(e) => { e.currentTarget.style.borderColor = '#00d4a0'; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = '#232430'; }}
             />
@@ -810,7 +810,7 @@ export default function WickCoachFull() {
             })}
           </div>
           {/* iMac frame */}
-          <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 20px' }}>
+          <div style={{ maxWidth: 1060, margin: '0 auto', padding: '0 20px' }}>
             {/* Monitor */}
             <div style={{ background: 'linear-gradient(180deg, #38393f 0%, #2c2d33 4%, #232428 100%)', borderRadius: '18px 18px 2px 2px', padding: '10px 10px 28px 10px', position: 'relative', boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5)' }}>
               {/* Camera dot */}
@@ -818,7 +818,7 @@ export default function WickCoachFull() {
               {/* Screen bezel */}
               <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
-                <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', minHeight: 420, padding: 32 }}>
+                <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 440, padding: 32 }}>
                   {activeCategory === 0 && <MockLogATrade />}
                   {activeCategory === 1 && <MockPastTrades />}
                   {activeCategory === 2 && <MockTradingGoals />}
