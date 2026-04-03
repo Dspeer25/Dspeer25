@@ -79,24 +79,24 @@ function MockLogATrade() {
   const [flyIn, setFlyIn] = useState(false);
 
   React.useEffect(() => {
-    const timer = setTimeout(() => setFlyIn(true), 6000);
+    const timer = setTimeout(() => setFlyIn(true), 7500);
     return () => clearTimeout(timer);
   }, []);
 
   const vals: { text: string; from: string; delay: number; color?: string; weight?: number }[] = [
-    { text: "NVDA", from: "translateX(-200px)", delay: 0 },
-    { text: "0DTE Call", from: "translateX(200px)", delay: 100 },
-    { text: "LONG", from: "translateX(-200px)", delay: 200, color: teal },
-    { text: "+$870.00", from: "translateX(200px)", delay: 300, color: teal, weight: 700 },
-    { text: "$482.50", from: "translateY(200px)", delay: 400 },
-    { text: "$491.20", from: "translateY(-200px)", delay: 500 },
+    { text: "NVDA", from: "translateX(-600px) scale(1.3)", delay: 0 },
+    { text: "0DTE Call", from: "translateX(600px) scale(1.3)", delay: 100 },
+    { text: "LONG", from: "translateX(-600px) scale(1.3)", delay: 200, color: teal },
+    { text: "+$870.00", from: "translateX(600px) scale(1.3)", delay: 300, color: teal, weight: 700 },
+    { text: "$482.50", from: "translateY(600px) scale(1.3)", delay: 400 },
+    { text: "$491.20", from: "translateY(-600px) scale(1.3)", delay: 500 },
   ];
 
   const flyStyle = (i: number): React.CSSProperties => ({
     display: 'inline-block',
-    opacity: flyIn ? 1 : 0,
-    transform: flyIn ? 'translate(0)' : vals[i].from,
-    transition: `all 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${vals[i].delay}ms`,
+    opacity: 1,
+    transform: flyIn ? 'translate(0) scale(1)' : vals[i].from,
+    transition: `transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${vals[i].delay}ms`,
   });
 
   return (<div>
@@ -731,9 +731,9 @@ export default function WickCoachFull() {
             {/* Animated logo video */}
             <video autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 2s ease-out' }} />
             {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, transition: 'opacity 1.5s ease-in 0.5s' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, transition: 'opacity 1.5s ease-in 0.1s' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#9ca3af', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, transition: 'opacity 1.5s ease-in 0.5s' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
+            <p style={{ position: 'relative', zIndex: 1, color: '#9ca3af', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, transition: 'opacity 1.5s ease-in 0.1s' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
