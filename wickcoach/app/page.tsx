@@ -88,89 +88,133 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
   const [focusField, setFocusField] = useState('');
   const [showScreenshot, setShowScreenshot] = useState(false);
   const [btnClicked, setBtnClicked] = useState(false);
+  const [leftShift, setLeftShift] = useState(0);
 
   const inp: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 4, padding: '6px 8px', color: '#fff', fontFamily: fm, fontSize: 12, width: '100%', boxSizing: 'border-box' };
   const lab: React.CSSProperties = { color: '#9ca3af', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 };
   const journalFull = "VWAP reclaim at 10:15. Clean setup, followed rules.";
   const strategies = ['0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call'];
 
+  /* Animation timing: cursor ALWAYS leads.
+     Pattern: move cursor (0.5s travel) → land+pause 200ms → action → pause 300ms → next */
   React.useEffect(() => {
     const tt: ReturnType<typeof setTimeout>[] = [];
     const q = (fn: () => void, ms: number) => { tt.push(setTimeout(fn, ms)); };
-    const base = 6500;
+    const base = 5000;
+    let t = base;
 
-    // Step 0: show cursor
-    q(() => setShowCursor(true), base);
+    // Show cursor
+    q(() => setShowCursor(true), t);
 
-    // Step 1: cursor to ticker, type NVDA
-    q(() => { setCursorPos({ top: 30, left: 60 }); setFocusField('ticker'); }, base + 300);
-    q(() => setTickerText('N'), base + 800);
-    q(() => setTickerText('NV'), base + 950);
-    q(() => setTickerText('NVD'), base + 1100);
-    q(() => setTickerText('NVDA'), base + 1250);
-    q(() => { setS(1); setFocusField(''); }, base + 1500);
+    // Step 1: cursor → ticker, type NVDA
+    q(() => setCursorPos({ top: 30, left: 60 }), t);        // move starts
+    t += 500;                                                 // travel
+    t += 200;                                                 // land pause
+    q(() => setFocusField('ticker'), t);                     // focus
+    q(() => setTickerText('N'), t + 100);
+    q(() => setTickerText('NV'), t + 250);
+    q(() => setTickerText('NVD'), t + 400);
+    q(() => setTickerText('NVDA'), t + 550);
+    t += 700;
+    q(() => { setS(1); setFocusField(''); }, t);
+    t += 300;                                                 // post-action pause
 
-    // Step 2: date auto-fills
-    q(() => setS(2), base + 1800);
+    // Step 2: date auto-fills (no cursor move needed)
+    q(() => setS(2), t);
+    t += 400;
 
-    // Step 3: cursor to DERIVATIVES pill
-    q(() => { setCursorPos({ top: 106, left: 160 }); }, base + 2200);
-    q(() => setS(3), base + 2700);
+    // Step 3: cursor → DERIVATIVES pill
+    q(() => setCursorPos({ top: 106, left: 160 }), t);
+    t += 500 + 200;
+    q(() => setS(3), t);                                     // click
+    t += 300;
 
-    // Step 4: cursor to strategy dropdown, open it
-    q(() => { setCursorPos({ top: 140, left: 80 }); setFocusField('strategy'); }, base + 3000);
-    q(() => setDropdownOpen(true), base + 3400);
-    // cursor to 0DTE Call in list
-    q(() => setCursorPos({ top: 168, left: 80 }), base + 3700);
-    q(() => { setS(4); setDropdownOpen(false); setFocusField(''); }, base + 4200);
+    // Step 4: cursor → strategy dropdown
+    q(() => setCursorPos({ top: 140, left: 80 }), t);
+    t += 500 + 200;
+    q(() => { setFocusField('strategy'); setDropdownOpen(true); }, t);  // open dropdown
+    t += 400;
+    // cursor → 0DTE Call item
+    q(() => setCursorPos({ top: 168, left: 80 }), t);
+    t += 400 + 200;                                           // short move
+    q(() => { setS(4); setDropdownOpen(false); setFocusField(''); }, t);  // select
+    t += 300;
 
-    // Step 5: cursor to LONG
-    q(() => setCursorPos({ top: 190, left: 50 }), base + 4400);
-    q(() => setS(5), base + 4800);
+    // Step 5: cursor → LONG pill
+    q(() => setCursorPos({ top: 190, left: 50 }), t);
+    t += 500 + 200;
+    q(() => setS(5), t);                                     // click
+    t += 300;
 
-    // Step 6: cursor to contracts, type 10
-    q(() => { setCursorPos({ top: 220, left: 50 }); setFocusField('contracts'); }, base + 5100);
-    q(() => setContractsText('1'), base + 5400);
-    q(() => { setContractsText('10'); setFocusField(''); }, base + 5500);
+    // Step 6: cursor → contracts, type 10
+    q(() => setCursorPos({ top: 220, left: 50 }), t);
+    t += 500 + 200;
+    q(() => setFocusField('contracts'), t);
+    q(() => setContractsText('1'), t + 100);
+    q(() => setContractsText('10'), t + 250);
+    t += 400;
+    q(() => setFocusField(''), t);
+    t += 300;
 
-    // Step 7: cursor to entry, type $3.87
-    q(() => { setCursorPos({ top: 220, left: 180 }); setFocusField('entry'); }, base + 5800);
-    q(() => setEntryText('$'), base + 6000);
-    q(() => setEntryText('$3'), base + 6100);
-    q(() => setEntryText('$3.'), base + 6200);
-    q(() => setEntryText('$3.8'), base + 6300);
-    q(() => { setEntryText('$3.87'); setFocusField(''); }, base + 6400);
+    // Shift left column up as we reach the lower fields
+    q(() => setLeftShift(80), t);
 
-    // Step 8: cursor to exit, type $4.26
-    q(() => { setCursorPos({ top: 250, left: 180 }); setFocusField('exit'); }, base + 6600);
-    q(() => setExitText('$'), base + 6800);
-    q(() => setExitText('$4'), base + 6900);
-    q(() => setExitText('$4.'), base + 7000);
-    q(() => setExitText('$4.2'), base + 7100);
-    q(() => { setExitText('$4.26'); setFocusField(''); }, base + 7200);
+    // Step 7: cursor → entry price, type $3.87
+    q(() => setCursorPos({ top: 170, left: 180 }), t);       // adjusted for translateY shift
+    t += 500 + 200;
+    q(() => setFocusField('entry'), t);
+    q(() => setEntryText('$'), t + 100);
+    q(() => setEntryText('$3'), t + 200);
+    q(() => setEntryText('$3.'), t + 300);
+    q(() => setEntryText('$3.8'), t + 400);
+    q(() => setEntryText('$3.87'), t + 500);
+    t += 600;
+    q(() => setFocusField(''), t);
+    t += 300;
 
-    // Step 9: P/L auto-calculates, risk fills
-    q(() => setS(9), base + 7500);
+    // Step 8: cursor → exit price, type $4.26
+    q(() => setCursorPos({ top: 200, left: 180 }), t);       // adjusted for translateY shift
+    t += 500 + 200;
+    q(() => setFocusField('exit'), t);
+    q(() => setExitText('$'), t + 100);
+    q(() => setExitText('$4'), t + 200);
+    q(() => setExitText('$4.'), t + 300);
+    q(() => setExitText('$4.2'), t + 400);
+    q(() => setExitText('$4.26'), t + 500);
+    t += 600;
+    q(() => setFocusField(''), t);
+    t += 300;
 
-    // Step 10: cursor to journal, type text
-    q(() => { setCursorPos({ top: 30, left: 360 }); setFocusField('journal'); }, base + 8000);
-    q(() => setS(10), base + 8300);
+    // Step 9: P/L + risk auto-calculate
+    q(() => setS(9), t);
+    t += 500;
+
+    // Step 10: cursor → journal textarea (right column)
+    q(() => setCursorPos({ top: 30, left: 360 }), t);
+    t += 600 + 200;                                           // longer travel cross-column
+    q(() => { setFocusField('journal'); setS(10); }, t);
     for (let i = 0; i < journalFull.length; i++) {
-      q(() => setJournalText(journalFull.slice(0, i + 1)), base + 8500 + i * 30);
+      q(() => setJournalText(journalFull.slice(0, i + 1)), t + 100 + i * 30);
     }
-    const jDone = base + 8500 + journalFull.length * 30;
+    t += 100 + journalFull.length * 30 + 200;
+    q(() => setFocusField(''), t);
+    t += 300;
 
-    // Step 11: cursor to screenshot area, click
-    q(() => { setCursorPos({ top: 180, left: 400 }); setFocusField(''); }, jDone + 300);
-    q(() => { setShowScreenshot(true); setS(11); }, jDone + 900);
+    // Step 11: cursor → screenshot area
+    q(() => setCursorPos({ top: 180, left: 400 }), t);
+    t += 500 + 200;
+    q(() => { setShowScreenshot(true); setS(11); }, t);      // click
+    t += 400;
 
-    // Step 12: cursor to Log Trade button
-    q(() => setCursorPos({ top: 340, left: 400 }), jDone + 1500);
-    q(() => { setBtnScale(0.95); setBtnClicked(true); setFocusField('btn'); }, jDone + 2200);
-    q(() => setBtnScale(1), jDone + 2350);
+    // Step 12: cursor → Log Trade button
+    q(() => setCursorPos({ top: 340, left: 400 }), t);
+    t += 500 + 200;
+    q(() => { setBtnScale(0.95); setBtnClicked(true); setFocusField('btn'); }, t);
+    q(() => setBtnScale(1), t + 150);
+    t += 500;
 
     // Step 13: advance carousel
-    q(() => { setShowCursor(false); onAdvance(); }, jDone + 2900);
+    q(() => { setShowCursor(false); onAdvance(); }, t);
 
     return () => tt.forEach(clearTimeout);
   }, [onAdvance, journalFull]);
@@ -197,7 +241,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
 
     <div style={{ display: 'flex', gap: 16 }}>
       {/* ═══ LEFT COLUMN — Trade Details ═══ */}
-      <div style={{ flex: '0 0 55%' }}>
+      <div style={{ flex: '0 0 55%', transform: `translateY(-${leftShift}px)`, transition: 'transform 0.8s ease' }}>
         <div style={{ color: teal, fontFamily: fd, fontSize: 14, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>TRADE DETAILS</div>
 
         {/* Ticker */}
