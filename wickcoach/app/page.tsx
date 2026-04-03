@@ -75,163 +75,257 @@ const cDomains: Record<string, string> = { QQQ: "invesco.com", SPY: "ssga.com", 
 const CLogo = ({ t }: { t: string }) => <img src={`https://logo.clearbit.com/${cDomains[t]}?size=48`} alt={t} style={{ width: 20, height: 20, borderRadius: "50%", background: "#1a1b22", objectFit: "cover" as const }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />;
 
 function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
-  const [step, setStep] = useState(0);
+  const [s, setS] = useState(0);
   const [tickerText, setTickerText] = useState('');
+  const [contractsText, setContractsText] = useState('');
+  const [entryText, setEntryText] = useState('');
+  const [exitText, setExitText] = useState('');
   const [journalText, setJournalText] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [btnScale, setBtnScale] = useState(1);
-  const [cursorPos, setCursorPos] = useState<{ top: number; left: number } | null>(null);
+  const [cursorPos, setCursorPos] = useState({ top: 20, left: 20 });
+  const [showCursor, setShowCursor] = useState(false);
+  const [focusField, setFocusField] = useState('');
+  const [showScreenshot, setShowScreenshot] = useState(false);
+  const [btnClicked, setBtnClicked] = useState(false);
 
-  const is: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 6, padding: '8px 10px', color: '#fff', fontFamily: fm, fontSize: 13, width: '100%', boxSizing: 'border-box', minHeight: 32, overflow: 'hidden' };
-  const lb: React.CSSProperties = { color: '#8a8d98', fontFamily: fm, fontSize: 12, marginBottom: 3 };
-
-  const journalFull = "Waited for VWAP reclaim at 10:15. Setup looked clean, followed my rules.";
+  const inp: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 4, padding: '6px 8px', color: '#fff', fontFamily: fm, fontSize: 12, width: '100%', boxSizing: 'border-box' };
+  const lab: React.CSSProperties = { color: '#9ca3af', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 };
+  const journalFull = "VWAP reclaim at 10:15. Clean setup, followed rules.";
+  const strategies = ['0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call'];
 
   React.useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const t = (fn: () => void, ms: number) => { timers.push(setTimeout(fn, ms)); };
+    const tt: ReturnType<typeof setTimeout>[] = [];
+    const q = (fn: () => void, ms: number) => { tt.push(setTimeout(fn, ms)); };
+    const base = 6500;
 
-    // Step 1: type ticker (t+0)
-    t(() => setStep(1), 7000);
-    t(() => setTickerText('N'), 7200);
-    t(() => setTickerText('NV'), 7400);
-    t(() => setTickerText('NVD'), 7700);
-    t(() => setTickerText('NVDA'), 8000);
-    t(() => setStep(2), 8300);
+    // Step 0: show cursor
+    q(() => setShowCursor(true), base);
 
-    // Step 2: cursor moves to Options pill (t+1.2s from step1 start → ~8.2s)
-    t(() => { setCursorPos({ top: 52, left: 340 }); setStep(3); }, 8500);
-    // Click Options
-    t(() => setStep(4), 9000);
-    // 0DTE Call appears
-    t(() => setStep(5), 9300);
+    // Step 1: cursor to ticker, type NVDA
+    q(() => { setCursorPos({ top: 30, left: 60 }); setFocusField('ticker'); }, base + 300);
+    q(() => setTickerText('N'), base + 800);
+    q(() => setTickerText('NV'), base + 950);
+    q(() => setTickerText('NVD'), base + 1100);
+    q(() => setTickerText('NVDA'), base + 1250);
+    q(() => { setS(1); setFocusField(''); }, base + 1500);
 
-    // Step 3: Direction fills (t+2.5s → ~9.5s)
-    t(() => setStep(6), 9800);
+    // Step 2: date auto-fills
+    q(() => setS(2), base + 1800);
 
-    // Step 4: Contracts field (brief), then Entry/Exit fly in (t+3s → ~10s)
-    t(() => setStep(7), 10300);
+    // Step 3: cursor to DERIVATIVES pill
+    q(() => { setCursorPos({ top: 106, left: 160 }); }, base + 2200);
+    q(() => setS(3), base + 2700);
 
-    // Step 5: P/L calculates (t+3.8s → ~10.8s)
-    t(() => setStep(8), 11000);
+    // Step 4: cursor to strategy dropdown, open it
+    q(() => { setCursorPos({ top: 140, left: 80 }); setFocusField('strategy'); }, base + 3000);
+    q(() => setDropdownOpen(true), base + 3400);
+    // cursor to 0DTE Call in list
+    q(() => setCursorPos({ top: 168, left: 80 }), base + 3700);
+    q(() => { setS(4); setDropdownOpen(false); setFocusField(''); }, base + 4200);
 
-    // Step 6: Journal types (t+4.5s → ~11.5s)
-    t(() => setStep(9), 11500);
-    // Type journal chars
+    // Step 5: cursor to LONG
+    q(() => setCursorPos({ top: 190, left: 50 }), base + 4400);
+    q(() => setS(5), base + 4800);
+
+    // Step 6: cursor to contracts, type 10
+    q(() => { setCursorPos({ top: 220, left: 50 }); setFocusField('contracts'); }, base + 5100);
+    q(() => setContractsText('1'), base + 5400);
+    q(() => { setContractsText('10'); setFocusField(''); }, base + 5500);
+
+    // Step 7: cursor to entry, type $3.87
+    q(() => { setCursorPos({ top: 220, left: 180 }); setFocusField('entry'); }, base + 5800);
+    q(() => setEntryText('$'), base + 6000);
+    q(() => setEntryText('$3'), base + 6100);
+    q(() => setEntryText('$3.'), base + 6200);
+    q(() => setEntryText('$3.8'), base + 6300);
+    q(() => { setEntryText('$3.87'); setFocusField(''); }, base + 6400);
+
+    // Step 8: cursor to exit, type $4.26
+    q(() => { setCursorPos({ top: 250, left: 180 }); setFocusField('exit'); }, base + 6600);
+    q(() => setExitText('$'), base + 6800);
+    q(() => setExitText('$4'), base + 6900);
+    q(() => setExitText('$4.'), base + 7000);
+    q(() => setExitText('$4.2'), base + 7100);
+    q(() => { setExitText('$4.26'); setFocusField(''); }, base + 7200);
+
+    // Step 9: P/L auto-calculates, risk fills
+    q(() => setS(9), base + 7500);
+
+    // Step 10: cursor to journal, type text
+    q(() => { setCursorPos({ top: 30, left: 360 }); setFocusField('journal'); }, base + 8000);
+    q(() => setS(10), base + 8300);
     for (let i = 0; i < journalFull.length; i++) {
-      t(() => setJournalText(journalFull.slice(0, i + 1)), 11500 + i * 30);
+      q(() => setJournalText(journalFull.slice(0, i + 1)), base + 8500 + i * 30);
     }
-    const journalDoneMs = 11500 + journalFull.length * 30;
+    const jDone = base + 8500 + journalFull.length * 30;
 
-    // Step 7: cursor to button (t+7s → ~14s)
-    t(() => { setCursorPos({ top: 370, left: 200 }); setStep(10); }, journalDoneMs + 500);
-    // Button click
-    t(() => { setBtnScale(0.97); setStep(11); }, journalDoneMs + 1300);
-    t(() => setBtnScale(1), journalDoneMs + 1450);
+    // Step 11: cursor to screenshot area, click
+    q(() => { setCursorPos({ top: 180, left: 400 }); setFocusField(''); }, jDone + 300);
+    q(() => { setShowScreenshot(true); setS(11); }, jDone + 900);
 
-    // Step 8: advance carousel (t+8s → ~15s)
-    t(() => { setCursorPos(null); onAdvance(); }, journalDoneMs + 2000);
+    // Step 12: cursor to Log Trade button
+    q(() => setCursorPos({ top: 340, left: 400 }), jDone + 1500);
+    q(() => { setBtnScale(0.95); setBtnClicked(true); setFocusField('btn'); }, jDone + 2200);
+    q(() => setBtnScale(1), jDone + 2350);
 
-    return () => timers.forEach(clearTimeout);
+    // Step 13: advance carousel
+    q(() => { setShowCursor(false); onAdvance(); }, jDone + 2900);
+
+    return () => tt.forEach(clearTimeout);
   }, [onAdvance, journalFull]);
 
-  const optionsSelected = step >= 4;
-  const showStrategy = step >= 5;
-  const showDirection = step >= 6;
-  const entryExitFly = step >= 7;
-  const showPL = step >= 8;
-  const showJournal = step >= 9;
-  const showCursor = cursorPos !== null && step < 11;
-  const btnClicked = step >= 11;
+  const derivSelected = s >= 3;
+  const longSelected = s >= 5;
+  const showPL = s >= 9;
+  const showJournal = s >= 10;
 
-  return (<div style={{ position: 'relative', overflow: 'hidden' }}>
+  return (<div style={{ position: 'relative', overflow: 'hidden', height: '100%' }}>
     <style>{`
-      @keyframes cursorGlow { 0%, 100% { box-shadow: 0 0 8px rgba(0,212,160,0.5); } 50% { box-shadow: 0 0 14px rgba(0,212,160,0.8); } }
-      @keyframes btnRipple { 0% { transform: scale(0.5); opacity: 0.6; } 100% { transform: scale(2.5); opacity: 0; } }
-      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+      @keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0 } }
+      @keyframes btnRipple { 0% { transform:translate(-50%,-50%) scale(0.5); opacity:0.6 } 100% { transform:translate(-50%,-50%) scale(2.5); opacity:0 } }
     `}</style>
 
     {/* Green cursor */}
-    {showCursor && cursorPos && (
-      <div style={{ position: 'absolute', top: cursorPos.top, left: cursorPos.left, zIndex: 20, transition: 'top 0.8s ease, left 0.8s ease', pointerEvents: 'none' }}>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="#00d4a0" style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,160,0.6))' }}>
+    {showCursor && (
+      <div style={{ position: 'absolute', top: cursorPos.top, left: cursorPos.left, zIndex: 20, transition: 'top 0.6s ease, left 0.6s ease', pointerEvents: 'none' }}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="#00d4a0" style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,160,0.5))' }}>
           <path d="M0 0 L0 12 L4 8 L8 13 L10 11 L6 6 L11 6 Z" />
         </svg>
       </div>
     )}
 
-    {/* Header */}
-    <div style={{ textAlign: 'center', marginBottom: 14 }}>
-      <span style={{ color: teal, fontFamily: fd, fontSize: 18, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADE DETAILS</span>
-    </div>
+    <div style={{ display: 'flex', gap: 16 }}>
+      {/* ═══ LEFT COLUMN — Trade Details ═══ */}
+      <div style={{ flex: '0 0 55%' }}>
+        <div style={{ color: teal, fontFamily: fd, fontSize: 14, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>TRADE DETAILS</div>
 
-    {/* Row 1: Ticker + Strategy */}
-    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-      <div style={{ flex: 1 }}>
-        <div style={lb}>Ticker</div>
-        <div style={{ ...is, display: 'flex', alignItems: 'center', gap: 6 }}>
-          {step >= 2 && <img src="https://logo.clearbit.com/nvidia.com" alt="" width={20} height={20} style={{ borderRadius: 4, opacity: step >= 2 ? 1 : 0, transition: 'opacity 0.3s ease' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+        {/* Ticker */}
+        <div style={lab}>TICKER</div>
+        <div style={{ ...inp, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderColor: focusField === 'ticker' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+          {s >= 1 && <img src="https://logo.clearbit.com/nvidia.com" alt="" width={16} height={16} style={{ borderRadius: 3, opacity: s >= 1 ? 1 : 0, transition: 'opacity 0.2s' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
           <span>{tickerText}</span>
-          {step >= 1 && step < 2 && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+          {tickerText.length > 0 && s < 1 && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+        </div>
+
+        {/* Date */}
+        <div style={lab}>DATE</div>
+        <div style={{ ...inp, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: s >= 2 ? 1 : 0.3, transition: 'opacity 0.2s' }}>
+          <span>{s >= 2 ? '04/03/2026' : ''}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+        </div>
+
+        {/* Position Type */}
+        <div style={lab}>POSITION TYPE</div>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+          <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: derivSelected ? '#1a1b22' : 'rgba(0,212,160,0.12)', border: derivSelected ? '1px solid #2a2b32' : '1px solid #00d4a0', color: derivSelected ? '#6b7280' : teal, transition: 'all 0.3s' }}>SHARES</div>
+          <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: derivSelected ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: derivSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: derivSelected ? teal : '#6b7280', transition: 'all 0.3s' }}>DERIVATIVES</div>
+        </div>
+
+        {/* Strategy Type */}
+        <div style={lab}>STRATEGY TYPE</div>
+        <div style={{ position: 'relative', marginBottom: 6 }}>
+          <div style={{ ...inp, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: focusField === 'strategy' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+            <span>{s >= 4 ? '0DTE Call' : ''}</span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#6b7280" strokeWidth="1.5"><path d="M2 4 L5 7 L8 4" /></svg>
+          </div>
+          {dropdownOpen && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 4, zIndex: 10, maxHeight: 120, overflowY: 'auto', marginTop: 2 }}>
+              {strategies.map((st, i) => (
+                <div key={i} style={{ padding: '4px 8px', fontSize: 11, fontFamily: fm, color: i === 0 ? teal : '#d1d5db', background: i === 0 ? 'rgba(0,212,160,0.1)' : 'transparent', cursor: 'pointer' }}>{st}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Direction */}
+        <div style={lab}>DIRECTION</div>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+          <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: longSelected ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: longSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: longSelected ? teal : '#6b7280', transition: 'all 0.3s' }}>LONG</div>
+          <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: '#1a1b22', border: '1px solid #2a2b32', color: '#6b7280' }}>SHORT</div>
+        </div>
+
+        {/* Contracts + P/L */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+          <div style={{ flex: 1 }}>
+            <div style={lab}>CONTRACTS</div>
+            <div style={{ ...inp, borderColor: focusField === 'contracts' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+              {contractsText}
+              {focusField === 'contracts' && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={lab}>P/L</div>
+            <div style={{ ...inp, color: teal, fontWeight: 700, transform: showPL ? 'scale(1)' : 'scale(0.8)', opacity: showPL ? 1 : 0.3, transition: 'transform 0.3s, opacity 0.3s' }}>{showPL ? '+$390.00' : ''}</div>
+          </div>
+        </div>
+
+        {/* Entry + Exit */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+          <div style={{ flex: 1 }}>
+            <div style={lab}>ENTRY PRICE</div>
+            <div style={{ ...inp, borderColor: focusField === 'entry' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+              {entryText}
+              {focusField === 'entry' && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={lab}>EXIT PRICE</div>
+            <div style={{ ...inp, borderColor: focusField === 'exit' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+              {exitText}
+              {focusField === 'exit' && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Risk + Risk:Reward */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ flex: 1 }}>
+            <div style={lab}>RISK ($)</div>
+            <div style={{ ...inp, opacity: showPL ? 1 : 0.3, transition: 'opacity 0.3s' }}>{showPL ? '$150' : ''}</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={lab}>RISK : REWARD</div>
+            <div style={{ ...inp, color: teal, fontWeight: 700, opacity: showPL ? 1 : 0.3, transition: 'opacity 0.3s' }}>{showPL ? '1 : 2.6' : ''}</div>
+          </div>
         </div>
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={lb}>Strategy</div>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-          <div style={{ flex: 1, padding: '5px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: optionsSelected ? '#1a1b22' : 'rgba(0,212,160,0.15)', border: optionsSelected ? '1px solid #2a2b32' : '1px solid #00d4a0', color: optionsSelected ? '#6b7280' : teal, transition: 'all 0.3s ease' }}>Shares</div>
-          <div style={{ flex: 1, padding: '5px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: optionsSelected ? 'rgba(0,212,160,0.15)' : '#1a1b22', border: optionsSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: optionsSelected ? teal : '#6b7280', transition: 'all 0.3s ease' }}>Options</div>
+
+      {/* ═══ RIGHT COLUMN — Journal + Screenshot ═══ */}
+      <div style={{ flex: '0 0 42%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ color: teal, fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>JOURNAL ENTRY</div>
+        <div style={{ ...inp, minHeight: 80, lineHeight: 1.5, color: '#d1d5db', marginBottom: 8, borderColor: focusField === 'journal' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+          {showJournal ? journalText : <span style={{ color: '#6b7280' }}>Share your brief approach on this trade for the WickCoach AI to analyze...</span>}
+          {showJournal && journalText.length < journalFull.length && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
         </div>
-        <div style={{ ...is, opacity: showStrategy ? 1 : 0, transition: 'opacity 0.3s ease' }}>0DTE Call</div>
-      </div>
-    </div>
 
-    {/* Row 2: Direction + Contracts */}
-    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-      <div style={{ flex: 1 }}>
-        <div style={lb}>Direction</div>
-        <div style={{ ...is, color: teal, opacity: showDirection ? 1 : 0, transition: 'opacity 0.2s ease' }}>LONG</div>
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={lb}>Contracts</div>
-        <div style={{ ...is, opacity: showDirection ? 1 : 0, transition: 'opacity 0.2s ease' }}>10</div>
-      </div>
-    </div>
-
-    {/* Row 3: Entry + Exit */}
-    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-      <div style={{ flex: 1 }}>
-        <div style={lb}>Entry</div>
-        <div style={{ ...is }}>
-          <span style={{ display: 'inline-block', transform: entryExitFly ? 'translateX(0)' : 'translateX(-300px)', transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}>10 &times; $3.87</span>
+        <div style={{ color: teal, fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>SCREENSHOT</div>
+        <div style={{ border: '2px dashed #2a2b32', borderRadius: 6, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 8, overflow: 'hidden', position: 'relative' }}>
+          {!showScreenshot ? (<>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            <span style={{ color: '#9ca3af', fontFamily: fm, fontSize: 11, marginTop: 4 }}>Drop an image here</span>
+          </>) : (
+            <div style={{ width: '100%', height: 100, background: '#0e0f14', position: 'relative', padding: 8 }}>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 10, marginBottom: 4 }}>NVDA 2min</div>
+              <svg width="100%" height="60" viewBox="0 0 200 60" fill="none">
+                {[{ x: 15, h: 30, g: true }, { x: 35, h: 20, g: false }, { x: 55, h: 35, g: true }, { x: 75, h: 15, g: true }, { x: 95, h: 25, g: false }, { x: 115, h: 40, g: true }, { x: 135, h: 18, g: true }, { x: 155, h: 28, g: false }, { x: 175, h: 32, g: true }].map((c, i) => (
+                  <React.Fragment key={i}>
+                    <line x1={c.x} y1={60 - c.h - 5} x2={c.x} y2={60 - c.h + c.h * 0.3} stroke={c.g ? '#00d4a0' : '#ef4444'} strokeWidth="1" />
+                    <rect x={c.x - 4} y={60 - c.h} width="8" height={c.h * 0.6} fill={c.g ? '#00d4a0' : '#ef4444'} rx="1" opacity="0.8" />
+                    <line x1={c.x} y1={60} x2={c.x} y2={60 - c.h * 0.2} stroke={c.g ? '#00d4a0' : '#ef4444'} strokeWidth="1" />
+                  </React.Fragment>
+                ))}
+              </svg>
+            </div>
+          )}
         </div>
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={lb}>Exit</div>
-        <div style={{ ...is }}>
-          <span style={{ display: 'inline-block', transform: entryExitFly ? 'translateX(0)' : 'translateX(300px)', transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}>$4.26</span>
+
+        <div style={{ marginTop: 'auto', position: 'relative' }}>
+          <div style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontWeight: 700, padding: '8px 0', borderRadius: 6, textAlign: 'center', fontSize: 12, transform: `scale(${btnScale})`, transition: 'transform 0.15s', position: 'relative', overflow: 'hidden', borderColor: focusField === 'btn' ? '#fff' : 'transparent' }}>
+            Log Trade
+            {btnClicked && <div style={{ position: 'absolute', top: '50%', left: '50%', width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', animation: 'btnRipple 0.5s ease-out forwards', pointerEvents: 'none' }} />}
+          </div>
         </div>
-      </div>
-    </div>
-
-    {/* Row 4: P/L */}
-    <div style={{ marginBottom: 8 }}>
-      <div style={lb}>P/L</div>
-      <div style={{ ...is, color: teal, fontWeight: 700, textAlign: 'center', transform: showPL ? 'scale(1)' : 'scale(0.8)', opacity: showPL ? 1 : 0, transition: 'transform 0.3s ease, opacity 0.3s ease' }}>+$390.00</div>
-    </div>
-
-    {/* Row 5: Journal */}
-    <div style={{ marginBottom: 8 }}>
-      <div style={{ color: teal, fontFamily: fm, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' as const, marginBottom: 3, fontWeight: 700 }}>JOURNAL</div>
-      <div style={{ ...is, minHeight: 44, color: '#d1d5db', lineHeight: 1.5, fontSize: 12 }}>
-        {showJournal ? journalText : ''}
-        {showJournal && journalText.length < journalFull.length && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
-      </div>
-    </div>
-
-    {/* Row 6: Log Trade button */}
-    <div style={{ position: 'relative' }}>
-      <div style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontWeight: 700, padding: '10px 0', borderRadius: 8, textAlign: 'center', fontSize: 15, transform: `scale(${btnScale})`, transition: 'transform 0.15s ease', position: 'relative', overflow: 'hidden' }}>
-        Log Trade
-        {btnClicked && <div style={{ position: 'absolute', top: '50%', left: '50%', width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', transform: 'translate(-50%, -50%)', animation: 'btnRipple 0.5s ease-out forwards', pointerEvents: 'none' }} />}
       </div>
     </div>
   </div>);
@@ -863,9 +957,9 @@ export default function WickCoachFull() {
             {/* Animated logo video */}
             <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 2s ease-out' }} />
             {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in 0.1s, filter 1.5s ease-in 0.1s' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in 0.1s, filter 1.5s ease-in 0.1s' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
+            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
