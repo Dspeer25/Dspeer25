@@ -87,6 +87,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
   const [showCursor, setShowCursor] = useState(false);
   const [focusField, setFocusField] = useState('');
   const [showScreenshot, setShowScreenshot] = useState(false);
+  const [showFilePicker, setShowFilePicker] = useState(false);
   const [btnClicked, setBtnClicked] = useState(false);
   const [leftShift, setLeftShift] = useState(0);
 
@@ -117,12 +118,12 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
     setCursorPos({ top: el.top - c.top + el.height / 2 - 4, left: el.left - c.left + 20 });
   };
 
-  /* Animation: cursor ALWAYS leads every action.
-     move cursor → 0.5s travel → 200ms land pause → action → 300ms pause → next */
+  /* Animation: cursor LEADS every action. FAST timing.
+     move cursor (0.3s) → 100ms land → action → 150ms pause → next */
   React.useEffect(() => {
     const tt: ReturnType<typeof setTimeout>[] = [];
     const q = (fn: () => void, ms: number) => { tt.push(setTimeout(fn, ms)); };
-    const base = 4000;
+    const base = 3500; // starts right as hero text reaches full opacity
     let t = base;
 
     // Show cursor
@@ -130,110 +131,112 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
 
     // Step 1: cursor → ticker, type NVDA
     q(() => moveTo(refTicker), t);
-    t += 500 + 200;
+    t += 300 + 100; // travel + land
     q(() => setFocusField('ticker'), t);
-    q(() => setTickerText('N'), t + 100);
-    q(() => setTickerText('NV'), t + 250);
-    q(() => setTickerText('NVD'), t + 400);
-    q(() => setTickerText('NVDA'), t + 550);
-    t += 700;
+    q(() => setTickerText('N'), t + 80);
+    q(() => setTickerText('NV'), t + 160);
+    q(() => setTickerText('NVD'), t + 240);
+    q(() => setTickerText('NVDA'), t + 320);
+    t += 400;
     q(() => { setS(1); setFocusField(''); }, t);
-    t += 300;
+    t += 150;
 
     // Step 2: date auto-fills
     q(() => setS(2), t);
-    t += 400;
+    t += 200;
 
     // Step 3: cursor → DERIVATIVES pill
     q(() => moveTo(refDeriv), t);
-    t += 500 + 200;
+    t += 300 + 100;
     q(() => setS(3), t);
-    t += 300;
+    t += 150;
 
     // Step 4: cursor → strategy dropdown, open it
     q(() => moveTo(refStrategy), t);
-    t += 500 + 200;
+    t += 300 + 100;
     q(() => { setFocusField('strategy'); setDropdownOpen(true); }, t);
-    t += 400;
-    // cursor → 0DTE Call item in list
+    t += 250;
+    // cursor → 0DTE Call item
     q(() => moveTo(refStratItem), t);
-    t += 400 + 200;
+    t += 250 + 100;
     q(() => { setS(4); setDropdownOpen(false); setFocusField(''); }, t);
-    t += 300;
+    t += 150;
 
     // Step 5: cursor → LONG pill
     q(() => moveTo(refLong), t);
-    t += 500 + 200;
+    t += 300 + 100;
     q(() => setS(5), t);
-    t += 300;
+    t += 150;
 
     // Step 6: cursor → contracts, type 10
     q(() => moveTo(refContracts), t);
-    t += 500 + 200;
+    t += 300 + 100;
     q(() => setFocusField('contracts'), t);
-    q(() => setContractsText('1'), t + 100);
-    q(() => setContractsText('10'), t + 250);
-    t += 400;
+    q(() => setContractsText('1'), t + 80);
+    q(() => setContractsText('10'), t + 160);
+    t += 250;
     q(() => setFocusField(''), t);
-    t += 300;
+    t += 150;
 
     // Shift left column up to reveal lower fields
     q(() => setLeftShift(80), t);
-    t += 200; // let shift start before cursor moves
+    t += 100;
 
     // Step 7: cursor → entry price, type $3.87
     q(() => moveTo(refEntry), t);
-    t += 600 + 200; // extra travel time since column is shifting
+    t += 400 + 100; // slightly longer for column shift
     q(() => setFocusField('entry'), t);
-    q(() => setEntryText('$'), t + 100);
-    q(() => setEntryText('$3'), t + 200);
-    q(() => setEntryText('$3.'), t + 300);
-    q(() => setEntryText('$3.8'), t + 400);
-    q(() => setEntryText('$3.87'), t + 500);
-    t += 600;
+    q(() => setEntryText('$'), t + 60);
+    q(() => setEntryText('$3'), t + 120);
+    q(() => setEntryText('$3.'), t + 180);
+    q(() => setEntryText('$3.8'), t + 240);
+    q(() => setEntryText('$3.87'), t + 300);
+    t += 380;
     q(() => setFocusField(''), t);
-    t += 300;
+    t += 150;
 
     // Step 8: cursor → exit price, type $4.26
     q(() => moveTo(refExit), t);
-    t += 500 + 200;
+    t += 300 + 100;
     q(() => setFocusField('exit'), t);
-    q(() => setExitText('$'), t + 100);
-    q(() => setExitText('$4'), t + 200);
-    q(() => setExitText('$4.'), t + 300);
-    q(() => setExitText('$4.2'), t + 400);
-    q(() => setExitText('$4.26'), t + 500);
-    t += 600;
+    q(() => setExitText('$'), t + 60);
+    q(() => setExitText('$4'), t + 120);
+    q(() => setExitText('$4.'), t + 180);
+    q(() => setExitText('$4.2'), t + 240);
+    q(() => setExitText('$4.26'), t + 300);
+    t += 380;
     q(() => setFocusField(''), t);
-    t += 300;
+    t += 150;
 
     // Step 9: P/L + risk auto-calculate
     q(() => setS(9), t);
-    t += 500;
+    t += 300;
 
     // Step 10: cursor → journal textarea (right column)
     q(() => moveTo(refJournal), t);
-    t += 600 + 200;
+    t += 400 + 100; // cross-column travel
     q(() => { setFocusField('journal'); setS(10); }, t);
     for (let i = 0; i < journalFull.length; i++) {
-      q(() => setJournalText(journalFull.slice(0, i + 1)), t + 100 + i * 30);
+      q(() => setJournalText(journalFull.slice(0, i + 1)), t + 50 + i * 25);
     }
-    t += 100 + journalFull.length * 30 + 200;
+    t += 50 + journalFull.length * 25 + 100;
     q(() => setFocusField(''), t);
-    t += 300;
+    t += 150;
 
-    // Step 11: cursor → screenshot area
+    // Step 11: cursor → screenshot area, file picker animation
     q(() => moveTo(refScreenshot), t);
-    t += 500 + 200;
-    q(() => { setShowScreenshot(true); setS(11); }, t);
+    t += 300 + 100;
+    q(() => setShowFilePicker(true), t); // show mock file picker
     t += 400;
+    q(() => { setShowFilePicker(false); setShowScreenshot(true); setS(11); }, t); // pick file → image loads
+    t += 300;
 
     // Step 12: cursor → Log Trade button
     q(() => moveTo(refBtn), t);
-    t += 500 + 200;
+    t += 300 + 100;
     q(() => { setBtnScale(0.95); setBtnClicked(true); setFocusField('btn'); }, t);
     q(() => setBtnScale(1), t + 150);
-    t += 500;
+    t += 300;
 
     // Step 13: advance carousel
     q(() => { setShowCursor(false); onAdvance(); }, t);
@@ -250,11 +253,12 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
     <style>{`
       @keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0 } }
       @keyframes btnRipple { 0% { transform:translate(-50%,-50%) scale(0.5); opacity:0.6 } 100% { transform:translate(-50%,-50%) scale(2.5); opacity:0 } }
+      @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
     `}</style>
 
     {/* Green cursor */}
     {showCursor && (
-      <div style={{ position: 'absolute', top: cursorPos.top, left: cursorPos.left, zIndex: 20, transition: 'top 0.6s ease, left 0.6s ease', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: cursorPos.top, left: cursorPos.left, zIndex: 20, transition: 'top 0.3s cubic-bezier(0.25,0.1,0.25,1), left 0.3s cubic-bezier(0.25,0.1,0.25,1)', pointerEvents: 'none' }}>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="#00d4a0" style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,160,0.5))' }}>
           <path d="M0 0 L0 12 L4 8 L8 13 L10 11 L6 6 L11 6 Z" />
         </svg>
@@ -367,11 +371,20 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
 
         <div style={{ color: teal, fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>SCREENSHOT</div>
         <div ref={refScreenshot} style={{ border: '2px dashed #2a2b32', borderRadius: 6, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 8, overflow: 'hidden', position: 'relative' }}>
+          {/* Mock file picker overlay */}
+          {showFilePicker && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 6, padding: '8px 12px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+                <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 9, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Select file</div>
+                <div style={{ background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 4, padding: '4px 10px', color: teal, fontFamily: fm, fontSize: 11, fontWeight: 600 }}>NVDA_2min_chart.png</div>
+              </div>
+            </div>
+          )}
           {!showScreenshot ? (<>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             <span style={{ color: '#9ca3af', fontFamily: fm, fontSize: 11, marginTop: 4 }}>Drop an image here</span>
           </>) : (
-            <div style={{ width: '100%', height: 100, background: '#0e0f14', position: 'relative', padding: 8 }}>
+            <div style={{ width: '100%', height: 100, background: '#0e0f14', position: 'relative', padding: 8, opacity: 1, animation: 'fadeIn 0.3s ease' }}>
               <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 10, marginBottom: 4 }}>NVDA 2min</div>
               <svg width="100%" height="60" viewBox="0 0 200 60" fill="none">
                 {[{ x: 15, h: 30, g: true }, { x: 35, h: 20, g: false }, { x: 55, h: 35, g: true }, { x: 75, h: 15, g: true }, { x: 95, h: 25, g: false }, { x: 115, h: 40, g: true }, { x: 135, h: 18, g: true }, { x: 155, h: 28, g: false }, { x: 175, h: 32, g: true }].map((c, i) => (
@@ -679,10 +692,14 @@ export default function WickCoachFull() {
   const [view, setView] = useState<'home' | 'app'>('home');
   const [activeCategory, setActiveCategory] = useState(0);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [textVisible, setTextVisible] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   React.useEffect(() => {
     if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.5;
+    // Start text fade-in ~1s before video ends (video is ~3s at 1.5x)
+    const t = setTimeout(() => setTextVisible(true), 2000);
+    return () => clearTimeout(t);
   }, []);
 
   const handleCategoryClick = (index: number) => {
@@ -1021,11 +1038,11 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Animated logo video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 2s ease-out' }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1.5s ease-out' }} />
             {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
+            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
