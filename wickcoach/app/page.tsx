@@ -74,39 +74,166 @@ const TBadge = ({ ticker }: { ticker: string }) => {
 const cDomains: Record<string, string> = { QQQ: "invesco.com", SPY: "ssga.com", AAPL: "apple.com", NVDA: "nvidia.com", TSLA: "tesla.com", AMZN: "amazon.com", META: "meta.com", MSFT: "microsoft.com", GOOG: "google.com" };
 const CLogo = ({ t }: { t: string }) => <img src={`https://logo.clearbit.com/${cDomains[t]}?size=48`} alt={t} style={{ width: 20, height: 20, borderRadius: "50%", background: "#1a1b22", objectFit: "cover" as const }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />;
 
-function MockLogATrade() {
-  const is = { background: "#0e0f14", border: "1px solid #2a2b35", borderRadius: 8, padding: "10px 12px", color: "#fff", fontFamily: fm, fontSize: 13, width: "100%" };
-  const [flyIn, setFlyIn] = useState(false);
+function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
+  const [step, setStep] = useState(0);
+  const [tickerText, setTickerText] = useState('');
+  const [journalText, setJournalText] = useState('');
+  const [btnScale, setBtnScale] = useState(1);
+  const [cursorPos, setCursorPos] = useState<{ top: number; left: number } | null>(null);
+
+  const is: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 6, padding: '8px 10px', color: '#fff', fontFamily: fm, fontSize: 13, width: '100%', boxSizing: 'border-box', minHeight: 32, overflow: 'hidden' };
+  const lb: React.CSSProperties = { color: '#8a8d98', fontFamily: fm, fontSize: 12, marginBottom: 3 };
+
+  const journalFull = "Waited for VWAP reclaim at 10:15. Setup looked clean, followed my rules.";
 
   React.useEffect(() => {
-    const timer = setTimeout(() => setFlyIn(true), 7500);
-    return () => clearTimeout(timer);
-  }, []);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const t = (fn: () => void, ms: number) => { timers.push(setTimeout(fn, ms)); };
 
-  const vals: { text: string; from: string; delay: number; color?: string; weight?: number }[] = [
-    { text: "NVDA", from: "translateX(-600px) scale(1.3)", delay: 0 },
-    { text: "0DTE Call", from: "translateX(600px) scale(1.3)", delay: 100 },
-    { text: "LONG", from: "translateX(-600px) scale(1.3)", delay: 200, color: teal },
-    { text: "+$870.00", from: "translateX(600px) scale(1.3)", delay: 300, color: teal, weight: 700 },
-    { text: "$482.50", from: "translateY(600px) scale(1.3)", delay: 400 },
-    { text: "$491.20", from: "translateY(-600px) scale(1.3)", delay: 500 },
-  ];
+    // Step 1: type ticker (t+0)
+    t(() => setStep(1), 7000);
+    t(() => setTickerText('N'), 7200);
+    t(() => setTickerText('NV'), 7400);
+    t(() => setTickerText('NVD'), 7700);
+    t(() => setTickerText('NVDA'), 8000);
+    t(() => setStep(2), 8300);
 
-  const flyStyle = (i: number): React.CSSProperties => ({
-    display: 'inline-block',
-    opacity: 1,
-    transform: flyIn ? 'translate(0) scale(1)' : vals[i].from,
-    transition: `transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${vals[i].delay}ms`,
-  });
+    // Step 2: cursor moves to Options pill (t+1.2s from step1 start → ~8.2s)
+    t(() => { setCursorPos({ top: 52, left: 340 }); setStep(3); }, 8500);
+    // Click Options
+    t(() => setStep(4), 9000);
+    // 0DTE Call appears
+    t(() => setStep(5), 9300);
 
-  return (<div>
-    <div style={{ color: teal, fontFamily: fm, fontSize: 11, textTransform: "uppercase" as const, letterSpacing: 2, marginBottom: 16 }}>TRADE DETAILS</div>
-    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Ticker</div><div style={{ ...is }}><span style={flyStyle(0)}>{vals[0].text}</span></div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Strategy</div><div style={{ ...is }}><span style={flyStyle(1)}>{vals[1].text}</span></div></div></div>
-    <div style={{ display: "flex", gap: 12, marginBottom: 12 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Direction</div><div style={{ ...is, color: teal }}><span style={flyStyle(2)}>{vals[2].text}</span></div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>P/L</div><div style={{ ...is, color: teal, fontWeight: 700 }}><span style={flyStyle(3)}>{vals[3].text}</span></div></div></div>
-    <div style={{ display: "flex", gap: 12, marginBottom: 16 }}><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Entry</div><div style={{ ...is }}><span style={flyStyle(4)}>{vals[4].text}</span></div></div><div style={{ flex: 1 }}><div style={{ color: "#9ca3af", fontFamily: fm, fontSize: 11, marginBottom: 4 }}>Exit</div><div style={{ ...is }}><span style={flyStyle(5)}>{vals[5].text}</span></div></div></div>
-    <div style={{ color: teal, fontFamily: fm, fontSize: 11, textTransform: "uppercase" as const, letterSpacing: 2, marginBottom: 8 }}>JOURNAL</div>
-    <div style={{ ...is, minHeight: 60, color: "#9ca3af", lineHeight: 1.6 }}>Waited for the VWAP reclaim at 10:15. Felt confident in the setup...</div>
-    <div style={{ background: teal, color: "#0e0f14", fontFamily: fd, fontWeight: 700, padding: "12px 0", borderRadius: 8, textAlign: "center", marginTop: 16, fontSize: 15 }}>Log Trade</div>
+    // Step 3: Direction fills (t+2.5s → ~9.5s)
+    t(() => setStep(6), 9800);
+
+    // Step 4: Contracts field (brief), then Entry/Exit fly in (t+3s → ~10s)
+    t(() => setStep(7), 10300);
+
+    // Step 5: P/L calculates (t+3.8s → ~10.8s)
+    t(() => setStep(8), 11000);
+
+    // Step 6: Journal types (t+4.5s → ~11.5s)
+    t(() => setStep(9), 11500);
+    // Type journal chars
+    for (let i = 0; i < journalFull.length; i++) {
+      t(() => setJournalText(journalFull.slice(0, i + 1)), 11500 + i * 30);
+    }
+    const journalDoneMs = 11500 + journalFull.length * 30;
+
+    // Step 7: cursor to button (t+7s → ~14s)
+    t(() => { setCursorPos({ top: 370, left: 200 }); setStep(10); }, journalDoneMs + 500);
+    // Button click
+    t(() => { setBtnScale(0.97); setStep(11); }, journalDoneMs + 1300);
+    t(() => setBtnScale(1), journalDoneMs + 1450);
+
+    // Step 8: advance carousel (t+8s → ~15s)
+    t(() => { setCursorPos(null); onAdvance(); }, journalDoneMs + 2000);
+
+    return () => timers.forEach(clearTimeout);
+  }, [onAdvance, journalFull]);
+
+  const optionsSelected = step >= 4;
+  const showStrategy = step >= 5;
+  const showDirection = step >= 6;
+  const entryExitFly = step >= 7;
+  const showPL = step >= 8;
+  const showJournal = step >= 9;
+  const showCursor = cursorPos !== null && step < 11;
+  const btnClicked = step >= 11;
+
+  return (<div style={{ position: 'relative', overflow: 'hidden' }}>
+    <style>{`
+      @keyframes cursorGlow { 0%, 100% { box-shadow: 0 0 8px rgba(0,212,160,0.5); } 50% { box-shadow: 0 0 14px rgba(0,212,160,0.8); } }
+      @keyframes btnRipple { 0% { transform: scale(0.5); opacity: 0.6; } 100% { transform: scale(2.5); opacity: 0; } }
+      @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    `}</style>
+
+    {/* Green cursor */}
+    {showCursor && cursorPos && (
+      <div style={{ position: 'absolute', top: cursorPos.top, left: cursorPos.left, zIndex: 20, transition: 'top 0.8s ease, left 0.8s ease', pointerEvents: 'none' }}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="#00d4a0" style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,160,0.6))' }}>
+          <path d="M0 0 L0 12 L4 8 L8 13 L10 11 L6 6 L11 6 Z" />
+        </svg>
+      </div>
+    )}
+
+    {/* Header */}
+    <div style={{ textAlign: 'center', marginBottom: 14 }}>
+      <span style={{ color: teal, fontFamily: fd, fontSize: 18, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADE DETAILS</span>
+    </div>
+
+    {/* Row 1: Ticker + Strategy */}
+    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+      <div style={{ flex: 1 }}>
+        <div style={lb}>Ticker</div>
+        <div style={{ ...is, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {step >= 2 && <img src="https://logo.clearbit.com/nvidia.com" alt="" width={20} height={20} style={{ borderRadius: 4, opacity: step >= 2 ? 1 : 0, transition: 'opacity 0.3s ease' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
+          <span>{tickerText}</span>
+          {step >= 1 && step < 2 && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+        </div>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={lb}>Strategy</div>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+          <div style={{ flex: 1, padding: '5px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: optionsSelected ? '#1a1b22' : 'rgba(0,212,160,0.15)', border: optionsSelected ? '1px solid #2a2b32' : '1px solid #00d4a0', color: optionsSelected ? '#6b7280' : teal, transition: 'all 0.3s ease' }}>Shares</div>
+          <div style={{ flex: 1, padding: '5px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: optionsSelected ? 'rgba(0,212,160,0.15)' : '#1a1b22', border: optionsSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: optionsSelected ? teal : '#6b7280', transition: 'all 0.3s ease' }}>Options</div>
+        </div>
+        <div style={{ ...is, opacity: showStrategy ? 1 : 0, transition: 'opacity 0.3s ease' }}>0DTE Call</div>
+      </div>
+    </div>
+
+    {/* Row 2: Direction + Contracts */}
+    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+      <div style={{ flex: 1 }}>
+        <div style={lb}>Direction</div>
+        <div style={{ ...is, color: teal, opacity: showDirection ? 1 : 0, transition: 'opacity 0.2s ease' }}>LONG</div>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={lb}>Contracts</div>
+        <div style={{ ...is, opacity: showDirection ? 1 : 0, transition: 'opacity 0.2s ease' }}>10</div>
+      </div>
+    </div>
+
+    {/* Row 3: Entry + Exit */}
+    <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+      <div style={{ flex: 1 }}>
+        <div style={lb}>Entry</div>
+        <div style={{ ...is }}>
+          <span style={{ display: 'inline-block', transform: entryExitFly ? 'translateX(0)' : 'translateX(-300px)', transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}>10 &times; $3.87</span>
+        </div>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={lb}>Exit</div>
+        <div style={{ ...is }}>
+          <span style={{ display: 'inline-block', transform: entryExitFly ? 'translateX(0)' : 'translateX(300px)', transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}>$4.26</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Row 4: P/L */}
+    <div style={{ marginBottom: 8 }}>
+      <div style={lb}>P/L</div>
+      <div style={{ ...is, color: teal, fontWeight: 700, textAlign: 'center', transform: showPL ? 'scale(1)' : 'scale(0.8)', opacity: showPL ? 1 : 0, transition: 'transform 0.3s ease, opacity 0.3s ease' }}>+$390.00</div>
+    </div>
+
+    {/* Row 5: Journal */}
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ color: teal, fontFamily: fm, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' as const, marginBottom: 3, fontWeight: 700 }}>JOURNAL</div>
+      <div style={{ ...is, minHeight: 44, color: '#d1d5db', lineHeight: 1.5, fontSize: 12 }}>
+        {showJournal ? journalText : ''}
+        {showJournal && journalText.length < journalFull.length && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
+      </div>
+    </div>
+
+    {/* Row 6: Log Trade button */}
+    <div style={{ position: 'relative' }}>
+      <div style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontWeight: 700, padding: '10px 0', borderRadius: 8, textAlign: 'center', fontSize: 15, transform: `scale(${btnScale})`, transition: 'transform 0.15s ease', position: 'relative', overflow: 'hidden' }}>
+        Log Trade
+        {btnClicked && <div style={{ position: 'absolute', top: '50%', left: '50%', width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', transform: 'translate(-50%, -50%)', animation: 'btnRipple 0.5s ease-out forwards', pointerEvents: 'none' }} />}
+      </div>
+    </div>
   </div>);
 }
 
@@ -392,6 +519,11 @@ export default function WickCoachFull() {
   const [view, setView] = useState<'home' | 'app'>('home');
   const [activeCategory, setActiveCategory] = useState(0);
   const [videoEnded, setVideoEnded] = useState(false);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.5;
+  }, []);
 
   const handleCategoryClick = (index: number) => {
     setActiveCategory(index);
@@ -729,11 +861,11 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Animated logo video */}
-            <video autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 2s ease-out' }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 2s ease-out' }} />
             {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, transition: 'opacity 1.5s ease-in 0.1s' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in 0.1s, filter 1.5s ease-in 0.1s' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#9ca3af', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, transition: 'opacity 1.5s ease-in 0.1s' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
+            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: videoEnded ? 1 : 0, filter: videoEnded ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in 0.1s, filter 1.5s ease-in 0.1s' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
@@ -767,7 +899,7 @@ export default function WickCoachFull() {
               <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
                 <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 440, padding: 32 }}>
-                  {activeCategory === 0 && <MockLogATrade />}
+                  {activeCategory === 0 && <MockLogATrade onAdvance={() => setActiveCategory(1)} />}
                   {activeCategory === 1 && <MockPastTrades />}
                   {activeCategory === 2 && <MockTradingGoals />}
                   {activeCategory === 3 && <MockAnalysis />}
