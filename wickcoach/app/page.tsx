@@ -83,71 +83,92 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
   const [journalText, setJournalText] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [btnScale, setBtnScale] = useState(1);
-  const [cursorPos, setCursorPos] = useState({ top: 20, left: 20 });
+  const [cursorPos, setCursorPos] = useState({ top: -20, left: -20 });
   const [showCursor, setShowCursor] = useState(false);
   const [focusField, setFocusField] = useState('');
   const [showScreenshot, setShowScreenshot] = useState(false);
   const [btnClicked, setBtnClicked] = useState(false);
   const [leftShift, setLeftShift] = useState(0);
 
+  // Refs for cursor targeting
+  const containerRef = useRef<HTMLDivElement>(null);
+  const refTicker = useRef<HTMLDivElement>(null);
+  const refDeriv = useRef<HTMLDivElement>(null);
+  const refStrategy = useRef<HTMLDivElement>(null);
+  const refStratItem = useRef<HTMLDivElement>(null);
+  const refLong = useRef<HTMLDivElement>(null);
+  const refContracts = useRef<HTMLDivElement>(null);
+  const refEntry = useRef<HTMLDivElement>(null);
+  const refExit = useRef<HTMLDivElement>(null);
+  const refJournal = useRef<HTMLDivElement>(null);
+  const refScreenshot = useRef<HTMLDivElement>(null);
+  const refBtn = useRef<HTMLDivElement>(null);
+
   const inp: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 4, padding: '6px 8px', color: '#fff', fontFamily: fm, fontSize: 12, width: '100%', boxSizing: 'border-box' };
   const lab: React.CSSProperties = { color: '#9ca3af', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 };
   const journalFull = "VWAP reclaim at 10:15. Clean setup, followed rules.";
   const strategies = ['0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call'];
 
-  /* Animation timing: cursor ALWAYS leads.
-     Pattern: move cursor (0.5s travel) → land+pause 200ms → action → pause 300ms → next */
+  // Move cursor to center of a ref element (relative to container)
+  const moveTo = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current || !containerRef.current) return;
+    const c = containerRef.current.getBoundingClientRect();
+    const el = ref.current.getBoundingClientRect();
+    setCursorPos({ top: el.top - c.top + el.height / 2 - 4, left: el.left - c.left + 20 });
+  };
+
+  /* Animation: cursor ALWAYS leads every action.
+     move cursor → 0.5s travel → 200ms land pause → action → 300ms pause → next */
   React.useEffect(() => {
     const tt: ReturnType<typeof setTimeout>[] = [];
     const q = (fn: () => void, ms: number) => { tt.push(setTimeout(fn, ms)); };
-    const base = 5000;
+    const base = 4000;
     let t = base;
 
     // Show cursor
     q(() => setShowCursor(true), t);
 
     // Step 1: cursor → ticker, type NVDA
-    q(() => setCursorPos({ top: 30, left: 60 }), t);        // move starts
-    t += 500;                                                 // travel
-    t += 200;                                                 // land pause
-    q(() => setFocusField('ticker'), t);                     // focus
+    q(() => moveTo(refTicker), t);
+    t += 500 + 200;
+    q(() => setFocusField('ticker'), t);
     q(() => setTickerText('N'), t + 100);
     q(() => setTickerText('NV'), t + 250);
     q(() => setTickerText('NVD'), t + 400);
     q(() => setTickerText('NVDA'), t + 550);
     t += 700;
     q(() => { setS(1); setFocusField(''); }, t);
-    t += 300;                                                 // post-action pause
+    t += 300;
 
-    // Step 2: date auto-fills (no cursor move needed)
+    // Step 2: date auto-fills
     q(() => setS(2), t);
     t += 400;
 
     // Step 3: cursor → DERIVATIVES pill
-    q(() => setCursorPos({ top: 106, left: 160 }), t);
+    q(() => moveTo(refDeriv), t);
     t += 500 + 200;
-    q(() => setS(3), t);                                     // click
+    q(() => setS(3), t);
     t += 300;
 
-    // Step 4: cursor → strategy dropdown
-    q(() => setCursorPos({ top: 140, left: 80 }), t);
+    // Step 4: cursor → strategy dropdown, open it
+    q(() => moveTo(refStrategy), t);
     t += 500 + 200;
-    q(() => { setFocusField('strategy'); setDropdownOpen(true); }, t);  // open dropdown
+    q(() => { setFocusField('strategy'); setDropdownOpen(true); }, t);
     t += 400;
-    // cursor → 0DTE Call item
-    q(() => setCursorPos({ top: 168, left: 80 }), t);
-    t += 400 + 200;                                           // short move
-    q(() => { setS(4); setDropdownOpen(false); setFocusField(''); }, t);  // select
+    // cursor → 0DTE Call item in list
+    q(() => moveTo(refStratItem), t);
+    t += 400 + 200;
+    q(() => { setS(4); setDropdownOpen(false); setFocusField(''); }, t);
     t += 300;
 
     // Step 5: cursor → LONG pill
-    q(() => setCursorPos({ top: 190, left: 50 }), t);
+    q(() => moveTo(refLong), t);
     t += 500 + 200;
-    q(() => setS(5), t);                                     // click
+    q(() => setS(5), t);
     t += 300;
 
     // Step 6: cursor → contracts, type 10
-    q(() => setCursorPos({ top: 220, left: 50 }), t);
+    q(() => moveTo(refContracts), t);
     t += 500 + 200;
     q(() => setFocusField('contracts'), t);
     q(() => setContractsText('1'), t + 100);
@@ -156,12 +177,13 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
     q(() => setFocusField(''), t);
     t += 300;
 
-    // Shift left column up as we reach the lower fields
+    // Shift left column up to reveal lower fields
     q(() => setLeftShift(80), t);
+    t += 200; // let shift start before cursor moves
 
     // Step 7: cursor → entry price, type $3.87
-    q(() => setCursorPos({ top: 170, left: 180 }), t);       // adjusted for translateY shift
-    t += 500 + 200;
+    q(() => moveTo(refEntry), t);
+    t += 600 + 200; // extra travel time since column is shifting
     q(() => setFocusField('entry'), t);
     q(() => setEntryText('$'), t + 100);
     q(() => setEntryText('$3'), t + 200);
@@ -173,7 +195,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
     t += 300;
 
     // Step 8: cursor → exit price, type $4.26
-    q(() => setCursorPos({ top: 200, left: 180 }), t);       // adjusted for translateY shift
+    q(() => moveTo(refExit), t);
     t += 500 + 200;
     q(() => setFocusField('exit'), t);
     q(() => setExitText('$'), t + 100);
@@ -190,8 +212,8 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
     t += 500;
 
     // Step 10: cursor → journal textarea (right column)
-    q(() => setCursorPos({ top: 30, left: 360 }), t);
-    t += 600 + 200;                                           // longer travel cross-column
+    q(() => moveTo(refJournal), t);
+    t += 600 + 200;
     q(() => { setFocusField('journal'); setS(10); }, t);
     for (let i = 0; i < journalFull.length; i++) {
       q(() => setJournalText(journalFull.slice(0, i + 1)), t + 100 + i * 30);
@@ -201,13 +223,13 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
     t += 300;
 
     // Step 11: cursor → screenshot area
-    q(() => setCursorPos({ top: 180, left: 400 }), t);
+    q(() => moveTo(refScreenshot), t);
     t += 500 + 200;
-    q(() => { setShowScreenshot(true); setS(11); }, t);      // click
+    q(() => { setShowScreenshot(true); setS(11); }, t);
     t += 400;
 
     // Step 12: cursor → Log Trade button
-    q(() => setCursorPos({ top: 340, left: 400 }), t);
+    q(() => moveTo(refBtn), t);
     t += 500 + 200;
     q(() => { setBtnScale(0.95); setBtnClicked(true); setFocusField('btn'); }, t);
     q(() => setBtnScale(1), t + 150);
@@ -224,7 +246,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
   const showPL = s >= 9;
   const showJournal = s >= 10;
 
-  return (<div style={{ position: 'relative', overflow: 'hidden', height: '100%' }}>
+  return (<div ref={containerRef} style={{ position: 'relative', overflow: 'hidden', height: '100%' }}>
     <style>{`
       @keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0 } }
       @keyframes btnRipple { 0% { transform:translate(-50%,-50%) scale(0.5); opacity:0.6 } 100% { transform:translate(-50%,-50%) scale(2.5); opacity:0 } }
@@ -246,7 +268,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
 
         {/* Ticker */}
         <div style={lab}>TICKER</div>
-        <div style={{ ...inp, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderColor: focusField === 'ticker' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+        <div ref={refTicker} style={{ ...inp, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, borderColor: focusField === 'ticker' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
           {s >= 1 && <img src="https://logo.clearbit.com/nvidia.com" alt="" width={16} height={16} style={{ borderRadius: 3, opacity: s >= 1 ? 1 : 0, transition: 'opacity 0.2s' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />}
           <span>{tickerText}</span>
           {tickerText.length > 0 && s < 1 && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
@@ -263,20 +285,20 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
         <div style={lab}>POSITION TYPE</div>
         <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
           <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: derivSelected ? '#1a1b22' : 'rgba(0,212,160,0.12)', border: derivSelected ? '1px solid #2a2b32' : '1px solid #00d4a0', color: derivSelected ? '#6b7280' : teal, transition: 'all 0.3s' }}>SHARES</div>
-          <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: derivSelected ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: derivSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: derivSelected ? teal : '#6b7280', transition: 'all 0.3s' }}>DERIVATIVES</div>
+          <div ref={refDeriv} style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: derivSelected ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: derivSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: derivSelected ? teal : '#6b7280', transition: 'all 0.3s' }}>DERIVATIVES</div>
         </div>
 
         {/* Strategy Type */}
         <div style={lab}>STRATEGY TYPE</div>
         <div style={{ position: 'relative', marginBottom: 6 }}>
-          <div style={{ ...inp, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: focusField === 'strategy' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+          <div ref={refStrategy} style={{ ...inp, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderColor: focusField === 'strategy' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
             <span>{s >= 4 ? '0DTE Call' : ''}</span>
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#6b7280" strokeWidth="1.5"><path d="M2 4 L5 7 L8 4" /></svg>
           </div>
           {dropdownOpen && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 4, zIndex: 10, maxHeight: 120, overflowY: 'auto', marginTop: 2 }}>
               {strategies.map((st, i) => (
-                <div key={i} style={{ padding: '4px 8px', fontSize: 11, fontFamily: fm, color: i === 0 ? teal : '#d1d5db', background: i === 0 ? 'rgba(0,212,160,0.1)' : 'transparent', cursor: 'pointer' }}>{st}</div>
+                <div key={i} ref={i === 0 ? refStratItem : undefined} style={{ padding: '4px 8px', fontSize: 11, fontFamily: fm, color: i === 0 ? teal : '#d1d5db', background: i === 0 ? 'rgba(0,212,160,0.1)' : 'transparent', cursor: 'pointer' }}>{st}</div>
               ))}
             </div>
           )}
@@ -285,7 +307,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
         {/* Direction */}
         <div style={lab}>DIRECTION</div>
         <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-          <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: longSelected ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: longSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: longSelected ? teal : '#6b7280', transition: 'all 0.3s' }}>LONG</div>
+          <div ref={refLong} style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: longSelected ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: longSelected ? '1px solid #00d4a0' : '1px solid #2a2b32', color: longSelected ? teal : '#6b7280', transition: 'all 0.3s' }}>LONG</div>
           <div style={{ flex: 1, padding: '4px 0', borderRadius: 4, fontSize: 11, fontFamily: fm, fontWeight: 700, textAlign: 'center', background: '#1a1b22', border: '1px solid #2a2b32', color: '#6b7280' }}>SHORT</div>
         </div>
 
@@ -293,7 +315,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <div style={{ flex: 1 }}>
             <div style={lab}>CONTRACTS</div>
-            <div style={{ ...inp, borderColor: focusField === 'contracts' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+            <div ref={refContracts} style={{ ...inp, borderColor: focusField === 'contracts' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
               {contractsText}
               {focusField === 'contracts' && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
             </div>
@@ -308,14 +330,14 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
         <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
           <div style={{ flex: 1 }}>
             <div style={lab}>ENTRY PRICE</div>
-            <div style={{ ...inp, borderColor: focusField === 'entry' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+            <div ref={refEntry} style={{ ...inp, borderColor: focusField === 'entry' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
               {entryText}
               {focusField === 'entry' && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
             </div>
           </div>
           <div style={{ flex: 1 }}>
             <div style={lab}>EXIT PRICE</div>
-            <div style={{ ...inp, borderColor: focusField === 'exit' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+            <div ref={refExit} style={{ ...inp, borderColor: focusField === 'exit' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
               {exitText}
               {focusField === 'exit' && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
             </div>
@@ -338,13 +360,13 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
       {/* ═══ RIGHT COLUMN — Journal + Screenshot ═══ */}
       <div style={{ flex: '0 0 42%', display: 'flex', flexDirection: 'column' }}>
         <div style={{ color: teal, fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>JOURNAL ENTRY</div>
-        <div style={{ ...inp, minHeight: 80, lineHeight: 1.5, color: '#d1d5db', marginBottom: 8, borderColor: focusField === 'journal' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
+        <div ref={refJournal} style={{ ...inp, minHeight: 80, lineHeight: 1.5, color: '#d1d5db', marginBottom: 8, borderColor: focusField === 'journal' ? teal : '#2a2b32', transition: 'border-color 0.3s' }}>
           {showJournal ? journalText : <span style={{ color: '#6b7280' }}>Share your brief approach on this trade for the WickCoach AI to analyze...</span>}
           {showJournal && journalText.length < journalFull.length && <span style={{ color: teal, animation: 'blink 1s step-end infinite' }}>|</span>}
         </div>
 
         <div style={{ color: teal, fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>SCREENSHOT</div>
-        <div style={{ border: '2px dashed #2a2b32', borderRadius: 6, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 8, overflow: 'hidden', position: 'relative' }}>
+        <div ref={refScreenshot} style={{ border: '2px dashed #2a2b32', borderRadius: 6, minHeight: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 8, overflow: 'hidden', position: 'relative' }}>
           {!showScreenshot ? (<>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             <span style={{ color: '#9ca3af', fontFamily: fm, fontSize: 11, marginTop: 4 }}>Drop an image here</span>
@@ -364,7 +386,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
           )}
         </div>
 
-        <div style={{ marginTop: 'auto', position: 'relative' }}>
+        <div ref={refBtn} style={{ marginTop: 'auto', position: 'relative' }}>
           <div style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontWeight: 700, padding: '8px 0', borderRadius: 6, textAlign: 'center', fontSize: 12, transform: `scale(${btnScale})`, transition: 'transform 0.15s', position: 'relative', overflow: 'hidden', borderColor: focusField === 'btn' ? '#fff' : 'transparent' }}>
             Log Trade
             {btnClicked && <div style={{ position: 'absolute', top: '50%', left: '50%', width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.3)', animation: 'btnRipple 0.5s ease-out forwards', pointerEvents: 'none' }} />}
