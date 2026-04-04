@@ -759,7 +759,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const [dateRange, setDateRange] = useState('All Time');
   const [sortBy, setSortBy] = useState('Newest');
   const [aiPopover, setAiPopover] = useState<string | null>(null);
-  const [hoveredJournal, setHoveredJournal] = useState<string | null>(null);
   const [strategies, setStrategies] = useState<string[]>(() => {
     try { const s = localStorage.getItem('wickcoach_strategies'); if (s) return JSON.parse(s); } catch {}
     return ['All', '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor'];
@@ -820,8 +819,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
 
   const tickerDomains: Record<string, string> = { QQQ: 'invesco.com', NVDA: 'nvidia.com', AAPL: 'apple.com', TSLA: 'tesla.com', SPY: 'ssga.com', AMZN: 'amazon.com', META: 'meta.com', MSFT: 'microsoft.com', GOOGL: 'google.com', AMD: 'amd.com' };
 
-  const gridCols = '48px 1.2fr 0.8fr 0.7fr 0.6fr 0.5fr 1fr 0.8fr 0.6fr 0.5fr 2fr 0.6fr';
-
   const formatDate = (d: string) => {
     const dt = new Date(d);
     return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -850,172 +847,191 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   });
 
   return (
-    <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', minHeight: '80vh' }} onClick={() => { setAiPopover(null); setHoveredJournal(null); }}>
+    <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', minHeight: '80vh' }} onClick={() => setAiPopover(null)}>
       {/* Background glows */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 10% 0%, rgba(0,212,160,0.05) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 90% 100%, rgba(0,212,160,0.03) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
         {/* ── STAT CARDS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, marginBottom: 32 }}>
           {/* Card 1 — Total P/L */}
-          <div style={{ background: 'linear-gradient(135deg, #13141a 0%, #161720 100%)', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 12, padding: 20, transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 30px rgba(0,212,160,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Total P/L</div>
-            <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 28, fontWeight: 700, marginBottom: 8 }}>{formatDollar(totalPL)}</div>
-            <svg width="60" height="24" viewBox="0 0 60 24" fill="none"><path d={sparkPoints} stroke={totalPL >= 0 ? teal : '#ef4444'} strokeWidth="1.5" fill="none" opacity="0.7" /></svg>
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 16, padding: '24px 24px 16px', transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 40px rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, letterSpacing: 0.5, marginBottom: 12 }}>Total P/L</div>
+            <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 32, fontWeight: 700, marginBottom: 16 }}>{formatDollar(totalPL)}</div>
+            <svg width="100%" height="40" viewBox="0 0 200 40" preserveAspectRatio="none" style={{ display: 'block', opacity: 0.6 }}>
+              <defs><linearGradient id="plGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0.3" /><stop offset="100%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0" /></linearGradient></defs>
+              <path d={sparkPoints.replace(/60/g, '200').replace(/24/g, '40') || 'M0,20 L200,20'} stroke={totalPL >= 0 ? teal : '#ef4444'} strokeWidth="2" fill="none" />
+            </svg>
           </div>
 
           {/* Card 2 — Win Rate */}
-          <div style={{ background: 'linear-gradient(135deg, #13141a 0%, #161720 100%)', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 12, padding: 20, transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 30px rgba(0,212,160,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Win Rate</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginBottom: 8 }}>{winRate}%</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="32" height="32" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="14" fill="none" stroke="#1e1f2a" strokeWidth="3.5" />
-                <circle cx="18" cy="18" r="14" fill="none" stroke={teal} strokeWidth="3.5" strokeDasharray={`${winRate * 0.88} 88`} strokeLinecap="round" transform="rotate(-90 18 18)" />
-                <text x="18" y="19" textAnchor="middle" dominantBaseline="middle" fill="#6b7280" fontSize="7" fontFamily={fm}>{winRate}%</text>
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 16, padding: '24px 24px 16px', transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 40px rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, letterSpacing: 0.5, marginBottom: 12 }}>Win Rate</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ color: '#fff', fontFamily: fd, fontSize: 32, fontWeight: 700 }}>{winRate}%</div>
+              <svg width="52" height="52" viewBox="0 0 52 52">
+                <circle cx="26" cy="26" r="20" fill="none" stroke="#1e1f2a" strokeWidth="5" />
+                <circle cx="26" cy="26" r="20" fill="none" stroke={teal} strokeWidth="5" strokeDasharray={`${winRate * 1.257} 125.7`} strokeLinecap="round" transform="rotate(-90 26 26)" />
               </svg>
             </div>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, marginTop: 12 }}>{wins.length} wins from {filtered.length} trades</div>
           </div>
 
           {/* Card 3 — Total Trades */}
-          <div style={{ background: 'linear-gradient(135deg, #13141a 0%, #161720 100%)', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 12, padding: 20, transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 30px rgba(0,212,160,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Total Trades</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginBottom: 8 }}>{filtered.length}</div>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>{wins.length}W – {losses.length}L</div>
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 16, padding: '24px 24px 16px', transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 40px rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, letterSpacing: 0.5, marginBottom: 12 }}>Total Trades</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 32, fontWeight: 700, marginBottom: 16 }}>{filtered.length}</div>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <span style={{ color: teal, fontFamily: fm, fontSize: 14, fontWeight: 600 }}>{wins.length}W</span>
+              <span style={{ color: '#ef4444', fontFamily: fm, fontSize: 14, fontWeight: 600 }}>{losses.length}L</span>
+            </div>
           </div>
 
           {/* Card 4 — Avg R:R */}
-          <div style={{ background: 'linear-gradient(135deg, #13141a 0%, #161720 100%)', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 12, padding: 20, transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 0 30px rgba(0,212,160,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Avg R:R</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginBottom: 8 }}>{avgRR}</div>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Best: {bestRR} | Worst: {worstRR}</div>
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 16, padding: '24px 24px 16px', transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 40px rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, letterSpacing: 0.5, marginBottom: 12 }}>Avg Risk/Reward</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 32, fontWeight: 700, marginBottom: 16 }}>{avgRR}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fm, fontSize: 13 }}>
+              <span style={{ color: teal }}>Best {bestRR}</span>
+              <span style={{ color: '#ef4444' }}>Worst {worstRR}</span>
+            </div>
           </div>
         </div>
 
         {/* ── FILTER BAR ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 16px', background: '#13141a', borderRadius: 10, padding: '12px 16px', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a' }}>
-          {/* Search */}
-          <div style={{ position: 'relative' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectBase, paddingLeft: 36, width: 200 }} />
-          </div>
+        <div style={{ background: '#13141a', borderRadius: 14, padding: '16px 20px', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            {/* Search */}
+            <div style={{ position: 'relative' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectBase, paddingLeft: 38, width: 180 }} />
+            </div>
 
-          {/* Strategy dropdown */}
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectBase, paddingRight: 30, minWidth: 160 }}>
-              {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
-              <option value="+ Add New">+ Add New</option>
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
-          </div>
-          {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
-            <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕ remove</span>
-          )}
+            {/* Strategy dropdown */}
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectBase, paddingRight: 32, minWidth: 170 }}>
+                {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
+                <option value="+ Add New">+ Add New</option>
+              </select>
+              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+            </div>
+            {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
+              <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕</span>
+            )}
 
-          {/* Result pills */}
-          <div style={{ display: 'flex', gap: 4 }}>
-            {['All', 'Wins', 'Losses', 'Break Even'].map(r => (
-              <span key={r} onClick={() => setResultFilter(r)} style={pillBtn(resultFilter === r)}>{r}</span>
-            ))}
-          </div>
+            {/* Separator */}
+            <div style={{ width: 1, height: 28, background: '#1e1f2a' }} />
 
-          {/* Date pills — pushed right */}
-          <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
-            {['This Week', 'This Month', 'All Time'].map(d => (
-              <span key={d} onClick={() => setDateRange(d)} style={pillBtn(dateRange === d)}>{d}</span>
-            ))}
-          </div>
+            {/* Result pills */}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['All', 'Wins', 'Losses', 'Break Even'].map(r => (
+                <span key={r} onClick={() => setResultFilter(r)} style={pillBtn(resultFilter === r)}>{r}</span>
+              ))}
+            </div>
 
-          {/* Sort dropdown */}
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectBase, paddingRight: 30 }}>
-              {['Newest', 'Oldest', 'Highest P/L', 'Lowest P/L', 'Ticker A-Z'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+            {/* Separator */}
+            <div style={{ width: 1, height: 28, background: '#1e1f2a' }} />
+
+            {/* Date pills */}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['This Week', 'This Month', 'All Time'].map(d => (
+                <span key={d} onClick={() => setDateRange(d)} style={pillBtn(dateRange === d)}>{d}</span>
+              ))}
+            </div>
+
+            {/* Sort dropdown — pushed right */}
+            <div style={{ position: 'relative', display: 'inline-block', marginLeft: 'auto' }}>
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectBase, paddingRight: 32 }}>
+                {['Newest', 'Oldest', 'Highest P/L', 'Lowest P/L', 'Ticker A-Z'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+            </div>
           </div>
         </div>
 
         {/* ── TRADE LIST ── */}
-        {filtered.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 100, paddingBottom: 100 }}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <rect x="10" y="28" width="6" height="12" rx="1" fill="#2a2b32" />
-              <rect x="21" y="18" width="6" height="22" rx="1" fill="#2a2b32" />
-              <rect x="32" y="24" width="6" height="16" rx="1" fill="#2a2b32" />
-              <line x1="10" y1="22" x2="13" y2="22" stroke="#2a2b32" strokeWidth="1.5" />
-              <line x1="13" y1="18" x2="13" y2="28" stroke="#2a2b32" strokeWidth="1.5" />
-              <line x1="21" y1="12" x2="24" y2="12" stroke="#2a2b32" strokeWidth="1.5" />
-              <line x1="24" y1="8" x2="24" y2="18" stroke="#2a2b32" strokeWidth="1.5" />
-              <line x1="32" y1="18" x2="35" y2="18" stroke="#2a2b32" strokeWidth="1.5" />
-              <line x1="35" y1="14" x2="35" y2="24" stroke="#2a2b32" strokeWidth="1.5" />
-            </svg>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 18, marginTop: 16 }}>No trades logged yet</div>
-            <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 8, fontWeight: 600 }}>Log your first trade &rarr;</span>
+        <div style={{ background: '#13141a', borderRadius: 14, borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', overflow: 'hidden' }}>
+          {/* Section header */}
+          <div style={{ padding: '20px 28px 16px', borderBottom: '1px solid #1e1f2a' }}>
+            <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#e8e8f0', letterSpacing: 0.5 }}>Trade History</span>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginLeft: 12 }}>{filtered.length} trade{filtered.length !== 1 ? 's' : ''}</span>
           </div>
-        ) : (
-          <div>
-            {/* Header row */}
-            <div style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '12px 16px', background: '#0e0f14', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #1e1f2a', position: 'sticky', top: 0, zIndex: 2 }}>
-              {['', 'Ticker', 'Date', 'Time', 'Strategy', 'Dir', 'Entry → Exit', 'P/L', 'R:R', 'AI', 'Journal', 'Result'].map(h => (
-                <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1 }}>{h}</span>
+
+          {filtered.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
+              <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+                <rect x="12" y="32" width="7" height="14" rx="1.5" fill="#1e1f2a" />
+                <rect x="24.5" y="20" width="7" height="26" rx="1.5" fill="#1e1f2a" />
+                <rect x="37" y="26" width="7" height="20" rx="1.5" fill="#1e1f2a" />
+                <line x1="15.5" y1="25" x2="15.5" y2="32" stroke="#1e1f2a" strokeWidth="1.5" />
+                <line x1="28" y1="12" x2="28" y2="20" stroke="#1e1f2a" strokeWidth="1.5" />
+                <line x1="40.5" y1="19" x2="40.5" y2="26" stroke="#1e1f2a" strokeWidth="1.5" />
+              </svg>
+              <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 16, marginTop: 20 }}>No trades logged yet</div>
+              <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
+            </div>
+          ) : (<>
+            {/* Column headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '14px 28px', borderBottom: '1px solid #1e1f2a', background: '#111218' }}>
+              {['Symbol', 'Date', 'Strategy', 'Direction', 'Entry / Exit', 'P/L', 'R:R', 'Result'].map(h => (
+                <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.2, textAlign: 'center' }}>{h}</span>
               ))}
             </div>
 
-            {/* Trade rows */}
+            {/* Rows */}
             {filtered.map(t => {
               const domain = tickerDomains[t.ticker];
-              const borderColor = t.pl === 0 ? '#f59e0b' : t.result === 'WIN' ? teal : '#ef4444';
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '14px 16px', background: '#13141a', marginBottom: 2, borderRadius: 6, borderLeft: `3px solid ${borderColor}`, alignItems: 'center', fontSize: 14, fontFamily: fm, color: '#e8e8f0', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#181924'; e.currentTarget.style.transform = 'scale(1.002)'; }} onMouseLeave={e => { e.currentTarget.style.background = '#13141a'; e.currentTarget.style.transform = 'scale(1)'; }}>
-                  {/* Logo */}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '18px 28px', borderBottom: '1px solid #16171e', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#16171e'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                  {/* Symbol — logo + ticker + company */}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
                     {domain ? (
-                      <img src={`https://logo.clearbit.com/${domain}?size=48`} alt="" width={24} height={24} style={{ borderRadius: '50%', background: '#1a1b22', objectFit: 'cover' as const }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; el.nextElementSibling && ((el.nextElementSibling as HTMLElement).style.display = 'flex'); }} />
+                      <img src={`https://logo.clearbit.com/${domain}?size=48`} alt="" width={28} height={28} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
                     ) : null}
-                    <span style={{ display: domain ? 'none' : 'flex', width: 24, height: 24, borderRadius: '50%', background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#6b7280' }}>{t.ticker[0]}</span>
+                    <span style={{ display: domain ? 'none' : 'flex', width: 28, height: 28, borderRadius: 6, background: '#1e1f2a', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#8a8d98', flexShrink: 0 }}>{t.ticker[0]}</span>
+                    <span>
+                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>{t.ticker}</div>
+                      <div style={{ color: '#6b7280', fontSize: 12, marginTop: 2 }}>{t.companyName || t.ticker}</div>
+                    </span>
                   </span>
-                  {/* Ticker */}
-                  <span style={{ fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
-                  {/* Date */}
-                  <span style={{ color: '#9ca3af', textAlign: 'center' }}>{formatDate(t.date)}</span>
-                  {/* Time */}
-                  <span style={{ color: '#9ca3af', textAlign: 'center' }}>{formatTime(t.time)}</span>
+
+                  {/* Date + Time */}
+                  <span style={{ textAlign: 'center' }}>
+                    <div style={{ color: '#e8e8f0', fontSize: 14 }}>{formatDate(t.date)}</div>
+                    <div style={{ color: '#6b7280', fontSize: 12, marginTop: 2 }}>{formatTime(t.time)}</div>
+                  </span>
+
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4' }}>{t.strategy}</span>
+                  <span style={{ textAlign: 'center', color: '#c9cdd4', fontSize: 13 }}>{t.strategy}</span>
+
                   {/* Direction */}
-                  <span style={{ color: t.direction === 'LONG' ? teal : '#ef4444', fontWeight: 700, fontSize: 12 }}>{t.direction}</span>
-                  {/* Entry → Exit */}
-                  <span style={{ color: '#c9cdd4' }}>${t.entryPrice.toFixed(2)} <span style={{ color: '#6b7280', margin: '0 2px' }}>→</span> ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ textAlign: 'center' }}>
+                    <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, letterSpacing: 0.5, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(239,68,68,0.1)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
+                  </span>
+
+                  {/* Entry / Exit */}
+                  <span style={{ textAlign: 'center', color: '#c9cdd4' }}>
+                    <span>${t.entryPrice.toFixed(2)}</span>
+                    <span style={{ color: '#4b5563', margin: '0 6px' }}>/</span>
+                    <span>${t.exitPrice.toFixed(2)}</span>
+                  </span>
+
                   {/* P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700 }}>{formatDollar(t.pl)}</span>
+                  <span style={{ textAlign: 'center', color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 15 }}>{formatDollar(t.pl)}</span>
+
                   {/* R:R */}
-                  <span style={{ whiteSpace: 'nowrap', color: '#9ca3af' }}>{t.riskReward}</span>
-                  {/* AI */}
-                  <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span onClick={e => { e.stopPropagation(); setAiPopover(aiPopover === t.id ? null : t.id); }} style={{ width: 8, height: 8, borderRadius: '50%', background: teal, display: 'inline-block', cursor: 'pointer', boxShadow: '0 0 6px rgba(0,212,160,0.4)', animation: 'aiDotPulse 2s ease-in-out infinite' }} />
-                    {aiPopover === t.id && (
-                      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '100%', left: -80, marginTop: 8, background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 8, padding: 14, minWidth: 200, zIndex: 10, boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
-                        <span onClick={() => { setAiPopover(null); setActiveTab('Analysis'); }} style={{ color: teal, fontFamily: fm, fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>View analysis &rarr;</span>
-                      </div>
-                    )}
-                  </span>
-                  {/* Journal */}
-                  <span style={{ position: 'relative', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, color: '#9ca3af', cursor: t.journal ? 'default' : 'default' }} onMouseEnter={() => t.journal && setHoveredJournal(t.id)} onMouseLeave={() => setHoveredJournal(null)}>
-                    {t.journal || '—'}
-                    {hoveredJournal === t.id && t.journal && (
-                      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 8, padding: 12, maxWidth: 320, zIndex: 10, boxShadow: '0 4px 24px rgba(0,0,0,0.5)', whiteSpace: 'normal' as const, color: '#e8e8f0', fontFamily: fm, fontSize: 13, lineHeight: 1.5 }}>{t.journal}</div>
-                    )}
-                  </span>
+                  <span style={{ textAlign: 'center', whiteSpace: 'nowrap', color: '#9ca3af' }}>{t.riskReward}</span>
+
                   {/* Result */}
-                  <span>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 4, background: t.result === 'WIN' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span>
+                  <span style={{ textAlign: 'center' }}>
+                    <span style={{ display: 'inline-block', padding: '5px 14px', borderRadius: 6, fontSize: 12, fontWeight: 700, background: t.result === 'WIN' ? 'rgba(0,212,160,0.12)' : 'rgba(239,68,68,0.12)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span>
                   </span>
                 </div>
               );
             })}
-          </div>
-        )}
+          </>)}
+        </div>
       </div>
       <style>{`@keyframes aiDotPulse { 0%,100% { opacity: 1; box-shadow: 0 0 6px rgba(0,212,160,0.4); } 50% { opacity: 0.6; box-shadow: 0 0 12px rgba(0,212,160,0.6); } }`}</style>
     </div>
