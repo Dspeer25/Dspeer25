@@ -724,6 +724,194 @@ function MockTradeTimeline() {
 }
 
 
+interface Trade {
+  id: string;
+  ticker: string;
+  companyName: string;
+  date: string;
+  time: string;
+  strategy: string;
+  direction: 'LONG' | 'SHORT';
+  contracts: number;
+  entryPrice: number;
+  exitPrice: number;
+  pl: number;
+  plPercent: number;
+  riskAmount: number;
+  riskReward: string;
+  journal: string;
+  screenshot?: string;
+  aiScore?: number;
+  result: 'WIN' | 'LOSS';
+}
+
+function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiveTab: (tab: string) => void }) {
+  const [search, setSearch] = useState('');
+  const [stratFilter, setStratFilter] = useState('All');
+  const [resultFilter, setResultFilter] = useState('All');
+  const [dateRange, setDateRange] = useState('All Time');
+  const [sortBy, setSortBy] = useState('Newest');
+
+  const strategies = ['All', '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor'];
+
+  // Filter + sort
+  const filtered = trades.filter(t => {
+    if (search && !t.ticker.toLowerCase().includes(search.toLowerCase())) return false;
+    if (stratFilter !== 'All' && t.strategy !== stratFilter) return false;
+    if (resultFilter === 'Wins' && t.result !== 'WIN') return false;
+    if (resultFilter === 'Losses' && t.result !== 'LOSS') return false;
+    if (dateRange === 'This Week') {
+      const d = new Date(t.date); const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
+      if (d < weekAgo) return false;
+    } else if (dateRange === 'This Month') {
+      const d = new Date(t.date); const now = new Date();
+      if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'Newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (sortBy === 'Oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (sortBy === 'Highest P/L') return b.pl - a.pl;
+    if (sortBy === 'Lowest P/L') return a.pl - b.pl;
+    if (sortBy === 'Ticker A-Z') return a.ticker.localeCompare(b.ticker);
+    return 0;
+  });
+
+  // Stats
+  const wins = filtered.filter(t => t.result === 'WIN');
+  const losses = filtered.filter(t => t.result === 'LOSS');
+  const totalPL = filtered.reduce((s, t) => s + t.pl, 0);
+  const winRate = filtered.length > 0 ? Math.round((wins.length / filtered.length) * 100) : 0;
+  const avgRR = filtered.length > 0 ? (filtered.reduce((s, t) => s + parseFloat(t.riskReward) || 0, 0) / filtered.length).toFixed(1) : '—';
+  const best = wins.length > 0 ? wins.reduce((a, b) => a.pl > b.pl ? a : b) : null;
+  const worst = losses.length > 0 ? losses.reduce((a, b) => a.pl < b.pl ? a : b) : null;
+
+  const cardStyle: React.CSSProperties = { background: '#13141a', border: '1px solid #1a1b22', borderRadius: 8, padding: 16, flex: 1, minWidth: 0, transition: 'box-shadow 0.3s' };
+  const cardLabel: React.CSSProperties = { color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
+  const cardValue: React.CSSProperties = { color: '#fff', fontFamily: fd, fontSize: 20, fontWeight: 700 };
+  const selectStyle: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 6, padding: '6px 10px', color: '#d1d5db', fontFamily: fm, fontSize: 12, outline: 'none', cursor: 'pointer', appearance: 'none' as const, WebkitAppearance: 'none' as const };
+  const pillStyle = (active: boolean): React.CSSProperties => ({ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontFamily: fm, fontWeight: 600, cursor: 'pointer', background: active ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: active ? '1px solid #00d4a0' : '1px solid #2a2b32', color: active ? teal : '#6b7280', transition: 'all 0.2s' });
+
+  const tickerDomains: Record<string, string> = { NVDA: 'nvidia.com', AAPL: 'apple.com', TSLA: 'tesla.com', AMZN: 'amazon.com', META: 'meta.com', MSFT: 'microsoft.com', GOOGL: 'google.com', SPY: 'ssga.com', QQQ: 'invesco.com', AMD: 'amd.com' };
+
+  return (
+    <div style={{ position: 'relative', minHeight: '80vh' }}>
+      {/* Background glows */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 15% 15%, rgba(0,212,160,0.06) 0%, transparent 50%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 85% 85%, rgba(0,212,160,0.04) 0%, transparent 50%)' }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 50% 50%, rgba(0,212,160,0.02) 0%, transparent 60%)' }} />
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Stat cards */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+          <div style={cardStyle} className="price-card">
+            <div style={cardLabel}>This Week P/L</div>
+            <div style={{ ...cardValue, color: totalPL >= 0 ? teal : '#ef4444' }}>{totalPL >= 0 ? '+' : ''}{totalPL === 0 ? '$0.00' : `$${totalPL.toFixed(2)}`}</div>
+          </div>
+          <div style={cardStyle} className="price-card">
+            <div style={cardLabel}>Win Rate</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={cardValue}>{winRate}%</div>
+              <svg width="28" height="28" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#1a1b22" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15" fill="none" stroke={teal} strokeWidth="3" strokeDasharray={`${winRate * 0.942} 94.2`} strokeLinecap="round" transform="rotate(-90 18 18)" />
+              </svg>
+            </div>
+          </div>
+          <div style={cardStyle} className="price-card">
+            <div style={cardLabel}>Total Trades</div>
+            <div style={cardValue}>{filtered.length}</div>
+          </div>
+          <div style={cardStyle} className="price-card">
+            <div style={cardLabel}>Avg R:R</div>
+            <div style={cardValue}>{avgRR}</div>
+          </div>
+          <div style={cardStyle} className="price-card">
+            <div style={cardLabel}>Best Trade</div>
+            <div style={{ ...cardValue, fontSize: 16, color: teal }}>{best ? `${best.ticker} +$${best.pl.toFixed(2)}` : '—'}</div>
+          </div>
+          <div style={cardStyle} className="price-card">
+            <div style={cardLabel}>Worst Trade</div>
+            <div style={{ ...cardValue, fontSize: 16, color: '#ef4444' }}>{worst ? `${worst.ticker} -$${Math.abs(worst.pl).toFixed(2)}` : '—'}</div>
+          </div>
+        </div>
+
+        {/* Filter/sort bar */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
+          {/* Search */}
+          <div style={{ position: 'relative' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectStyle, paddingLeft: 30, width: 160 }} />
+          </div>
+          {/* Strategy filter */}
+          <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={selectStyle}>
+            {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
+          </select>
+          {/* Result filter */}
+          <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} style={selectStyle}>
+            <option value="All">All Results</option>
+            <option value="Wins">Wins</option>
+            <option value="Losses">Losses</option>
+          </select>
+          {/* Date range pills */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            {['This Week', 'This Month', 'All Time'].map(d => (
+              <span key={d} onClick={() => setDateRange(d)} style={pillStyle(dateRange === d)}>{d}</span>
+            ))}
+          </div>
+          {/* Sort */}
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectStyle, marginLeft: 'auto' }}>
+            {['Newest', 'Oldest', 'Highest P/L', 'Lowest P/L', 'Ticker A-Z'].map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        {/* Trades table or empty state */}
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', paddingTop: 80, paddingBottom: 80 }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}>
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            <div style={{ color: '#9ca3af', fontFamily: fm, fontSize: 16, marginBottom: 12 }}>No trades logged yet</div>
+            <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>Log your first trade &rarr;</span>
+          </div>
+        ) : (
+          <div style={{ borderRadius: 8, border: '1px solid #1a1b22', overflow: 'hidden' }}>
+            {/* Table header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '100px 90px 100px 60px 60px 120px 90px 50px 50px 1fr 60px', padding: '10px 12px', background: '#0e0f14', borderBottom: '1px solid #1a1b22', position: 'sticky', top: 0, zIndex: 2 }}>
+              {['Ticker', 'Date', 'Strategy', 'Dir', 'Qty', 'Entry → Exit', 'P/L', 'R:R', 'AI', 'Journal', 'Result'].map(h => (
+                <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
+              ))}
+            </div>
+            {/* Table rows */}
+            {filtered.map(t => {
+              const domain = tickerDomains[t.ticker] || `${t.ticker.toLowerCase()}.com`;
+              return (
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '100px 90px 100px 60px 60px 120px 90px 50px 50px 1fr 60px', padding: '12px 12px', borderBottom: '1px solid #1a1b22', borderLeft: `3px solid ${t.result === 'WIN' ? teal : '#ef4444'}`, alignItems: 'center', fontSize: 13, fontFamily: fm, color: '#d1d5db', transition: 'background 0.2s' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#fff' }}>
+                    <img src={`https://logo.clearbit.com/${domain}`} alt="" width={16} height={16} style={{ borderRadius: 3 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    {t.ticker}
+                  </span>
+                  <span style={{ color: '#9ca3af', fontSize: 12 }}>{t.date}</span>
+                  <span style={{ fontSize: 12 }}>{t.strategy}</span>
+                  <span style={{ color: t.direction === 'LONG' ? teal : '#ef4444', fontWeight: 600, fontSize: 11 }}>{t.direction}</span>
+                  <span>{t.contracts}</span>
+                  <span style={{ fontSize: 12 }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700 }}>{t.pl >= 0 ? '+' : ''}${t.pl.toFixed(2)}</span>
+                  <span>{t.riskReward}</span>
+                  <span>{t.aiScore ? <span style={{ background: 'rgba(0,212,160,0.12)', color: teal, padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>{t.aiScore}</span> : '—'}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, color: '#9ca3af', fontSize: 12 }}>{t.journal || '—'}</span>
+                  <span><span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: t.result === 'WIN' ? 'rgba(0,212,160,0.1)' : 'rgba(239,68,68,0.1)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span></span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
@@ -733,6 +921,7 @@ export default function WickCoachFull() {
   const [videoEnded, setVideoEnded] = useState(false);
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
+  const [trades, setTrades] = useState<Trade[]>([]);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   React.useEffect(() => {
@@ -1053,26 +1242,32 @@ export default function WickCoachFull() {
             ))}
           </div>
         </nav>
-        <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
-          {activeTab === 'Log a Trade' && (
+        {activeTab === 'Log a Trade' && (
+          <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
             <LogATradeContent setActiveTab={setActiveTab} />
-          )}
-          {activeTab !== 'Log a Trade' && (
-            <div style={{ textAlign: 'center', paddingTop: 80 }}>
-              <p style={{ color: '#4b5563', fontFamily: 'DM Mono', fontSize: 16 }}>Coming soon</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+        {activeTab === 'Past Trades' && (
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
+            <PastTradesContent trades={trades} setActiveTab={setActiveTab} />
+          </div>
+        )}
+        {activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && (
+          <div style={{ textAlign: 'center', paddingTop: 80 }}>
+            <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
+          </div>
+        )}
       </>)}
 
       {/* ═══ HOME VIEW ═══ */}
       {view === 'home' && (<>
 
       {/* ═══ NAV ═══ */}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible" }}>
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible", position: 'relative' }}>
         <div style={{ marginBottom: 20 }}>
           <Logo size={34} showText />
         </div>
+        <span style={{ position: 'absolute', top: 28, right: 40, color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Login</span>
         <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
           {tabs.map(t => (
             <span key={t} onClick={() => setView('app')} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: showClickHint ? "iconGlowPulse 1s ease-in-out 3" : tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
