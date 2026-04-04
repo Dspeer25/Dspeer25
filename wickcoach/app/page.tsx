@@ -856,9 +856,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     color: active ? teal : '#6b7280', transition: 'all 0.2s',
   });
 
-  // Equity curve data
+  // Equity curve data — always from ALL trades, not filtered
   const equityCurve = (() => {
-    const sorted = filtered.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = trades.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     let running = 0;
     return sorted.map(t => { running += t.pl; return { date: t.date, value: running }; });
   })();
@@ -889,8 +889,8 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff' }}>Past Trades</span>
-              <span style={{ fontSize: 10, fontFamily: fm, color: teal, background: 'rgba(0,212,160,0.12)', padding: '2px 8px', borderRadius: 4, fontWeight: 700, letterSpacing: 1 }}>LIVE</span>
+              <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>Past Trades</span>
+              <span style={{ fontSize: 10, fontFamily: fm, color: '#0e0f14', background: teal, padding: '3px 8px', borderRadius: 4, fontWeight: 700, letterSpacing: 1 }}>LIVE</span>
             </div>
             <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginTop: 4 }}>Analyze, review, and backtest your historical executions.</div>
           </div>
@@ -905,7 +905,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         {/* ── STAT CARDS ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
           {/* Total P/L */}
-          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Total P/L</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
@@ -918,7 +918,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </svg>
           </div>
           {/* Win Rate */}
-          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Win Rate</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
@@ -936,7 +936,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </div>
           </div>
           {/* Total Trades */}
-          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Total Trades</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
@@ -944,7 +944,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{filtered.length}</div>
           </div>
           {/* Avg R:R */}
-          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Avg R:R</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -954,7 +954,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 2 }}>Avg Loss: {formatDollar(Math.round(avgLoss))}</div>
           </div>
           {/* Expected Value */}
-          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fm, fontSize: 13 }}>Expected Value</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expectedValue >= 0 ? teal : '#ef4444'} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
@@ -969,7 +969,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-              <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Equity Curve</span>
+              <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#e8e8f0' }}>Equity Curve</span>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {['1W', '1M', 'YTD'].map(p => (
@@ -996,6 +996,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               ))}
             </div>
           )}
+          <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 6 }}>Showing all-time equity</div>
         </div>
 
         {/* ── FILTER BAR ── */}
@@ -1039,76 +1040,67 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         </div>
 
         {/* ── TRADE LIST ── */}
-        {/* Header row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 1.2fr 1.2fr 1.4fr 1fr 1.2fr 0.5fr', padding: '12px 20px', borderBottom: '1px solid #1e1f2a', marginBottom: 4 }}>
-          {['Asset', 'Direction', 'Entry / Exit', 'Duration', 'Net P/L', 'Status', ''].map(h => (
-            <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600 }}>{h}</span>
-          ))}
-        </div>
-
-        {filtered.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 16, marginTop: 8 }}>No trades logged yet</div>
-            <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
+        <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
+          {/* Header row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.7fr 0.5fr 1.2fr 1fr 0.8fr 0.7fr', padding: '14px 20px', background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
+            {['Asset', 'Date / Time', 'Strategy', 'Direction', 'Qty', 'Entry / Exit', 'Net P/L', 'R:R', 'Status'].map(h => (
+              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600 }}>{h}</span>
+            ))}
           </div>
-        ) : (<>
-          {filtered.map(t => {
-            const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
-            return (
-              <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2.2fr 1.2fr 1.2fr 1.4fr 1fr 1.2fr 0.5fr', padding: '16px 20px', background: '#111218', borderRadius: 8, marginBottom: 4, alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'all 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#161720'; e.currentTarget.style.boxShadow = '0 0 20px rgba(0,212,160,0.04)'; }} onMouseLeave={e => { e.currentTarget.style.background = '#111218'; e.currentTarget.style.boxShadow = 'none'; }}>
-                {/* Asset — logo + ticker + company */}
-                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <img src={logoUrl} alt="" width={32} height={32} style={{ borderRadius: '50%', background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
-                  <span style={{ display: 'none', width: 32, height: 32, borderRadius: '50%', background: '#1e1f2a', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
-                  <span>
-                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 16 }}>{t.ticker}</div>
-                    <div style={{ color: '#6b7280', fontSize: 12, marginTop: 1 }}>{t.companyName || t.ticker}</div>
+
+          {filtered.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
+              <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 16 }}>No trades logged yet</div>
+              <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
+            </div>
+          ) : (<>
+            {filtered.map((t, idx) => {
+              const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
+              const rowBg = idx % 2 === 0 ? '#131419' : '#161720';
+              return (
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.7fr 0.5fr 1.2fr 1fr 0.8fr 0.7fr', padding: '16px 20px', background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
+                  {/* Asset */}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <img src={logoUrl} alt="" width={30} height={30} style={{ borderRadius: '50%', background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
+                    <span style={{ display: 'none', width: 30, height: 30, borderRadius: '50%', background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
+                    <span>
+                      <div style={{ fontWeight: 700, color: '#ffffff', fontSize: 15 }}>{t.ticker}</div>
+                      <div style={{ color: '#8a8d98', fontSize: 12, marginTop: 1 }}>{t.companyName || t.ticker}</div>
+                    </span>
                   </span>
-                </span>
-
-                {/* Direction badge */}
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.direction === 'LONG' ? teal : '#ef4444'} strokeWidth="2.5"><polyline points={t.direction === 'LONG' ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} /></svg>
-                  <span style={{ padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
-                </span>
-
-                {/* Entry / Exit */}
-                <span>
-                  <div style={{ color: '#c9cdd4', fontSize: 14 }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</div>
-                  <div style={{ color: '#6b7280', fontSize: 11, marginTop: 2 }}>{formatDate(t.date)}, {formatTime(t.time)}</div>
-                </span>
-
-                {/* Duration placeholder */}
-                <span style={{ color: '#c9cdd4', fontSize: 14 }}>{t.strategy}</span>
-
-                {/* Net P/L */}
-                <span>
-                  <div style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16 }}>{formatDollar(t.pl)}</div>
-                  <div style={{ color: '#6b7280', fontSize: 11, marginTop: 2 }}>{t.riskReward} R</div>
-                </span>
-
-                {/* Status */}
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  {t.result === 'WIN' ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                  )}
-                </span>
-
-                {/* Details chevron */}
-                <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-                </span>
-              </div>
-            );
-          })}
-
-          {/* Showing count + Load more */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', marginTop: 8 }}>
-            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing 1-{filtered.length} of {filtered.length} trades</span>
+                  {/* Date / Time */}
+                  <span>
+                    <div style={{ color: '#c9cdd4', fontSize: 14 }}>{formatDate(t.date)}</div>
+                    <div style={{ color: '#8a8d98', fontSize: 12, marginTop: 2 }}>{formatTime(t.time)}</div>
+                  </span>
+                  {/* Strategy */}
+                  <span style={{ color: '#c9cdd4', fontSize: 14 }}>{t.strategy}</span>
+                  {/* Direction */}
+                  <span>
+                    <span style={{ padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
+                  </span>
+                  {/* Qty */}
+                  <span style={{ color: '#c9cdd4', fontSize: 14 }}>{t.contracts}</span>
+                  {/* Entry / Exit */}
+                  <span style={{ color: '#c9cdd4', fontSize: 14 }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  {/* Net P/L */}
+                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 18 }}>{formatDollar(t.pl)}</span>
+                  {/* R:R */}
+                  <span style={{ color: '#c9cdd4', fontSize: 14, whiteSpace: 'nowrap' }}>{t.riskReward}</span>
+                  {/* Status badge */}
+                  <span>
+                    <span style={{ padding: '4px 12px', borderRadius: 4, fontSize: 12, fontWeight: 700, background: t.result === 'WIN' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </>)}
+        </div>
+        {filtered.length > 0 && (
+          <div style={{ textAlign: 'center', padding: '16px 0', marginTop: 8 }}>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing {filtered.length} of {trades.length} trades</span>
           </div>
-        </>)}
+        )}
       </div>
 
       {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
