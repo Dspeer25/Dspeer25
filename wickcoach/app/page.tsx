@@ -1181,7 +1181,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState("Log a Trade");
+  const [activeTab, setActiveTab] = useState("");
   const [view, setView] = useState<'home' | 'app'>('home');
   const [activeCategory, setActiveCategory] = useState(0);
   const [videoEnded, setVideoEnded] = useState(false);
@@ -1262,10 +1262,13 @@ export default function WickCoachFull() {
     React.useEffect(() => {
       if (!plManualOverride && entryPrice && exitPrice && contracts) {
         const multiplier = positionType === 'SHARES' ? 1 : 100;
-        const calc = (parseFloat(exitPrice) - parseFloat(entryPrice)) * parseInt(contracts) * multiplier;
+        const diff = direction === 'SHORT'
+          ? parseFloat(entryPrice) - parseFloat(exitPrice)
+          : parseFloat(exitPrice) - parseFloat(entryPrice);
+        const calc = diff * parseInt(contracts) * multiplier;
         setPl(calc.toFixed(2));
       }
-    }, [entryPrice, exitPrice, contracts, plManualOverride, positionType]);
+    }, [entryPrice, exitPrice, contracts, plManualOverride, positionType, direction]);
 
     React.useEffect(() => {
       setPlManualOverride(false);
@@ -1555,7 +1558,7 @@ export default function WickCoachFull() {
         {activeTab === 'Past Trades' && (
           <PastTradesContent trades={trades} setActiveTab={setActiveTab} />
         )}
-        {activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && (
+        {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
           </div>
