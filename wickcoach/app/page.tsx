@@ -123,7 +123,7 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
   React.useEffect(() => {
     const tt: ReturnType<typeof setTimeout>[] = [];
     const q = (fn: () => void, ms: number) => { tt.push(setTimeout(fn, ms)); };
-    const base = 3500; // starts right as hero text reaches full opacity
+    const base = 300; // starts immediately on mount — component only renders when tab is active
     let t = base;
 
     // Show cursor
@@ -704,7 +704,7 @@ export default function WickCoachFull() {
   React.useEffect(() => {
     if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.5;
     // Start text fade-in ~1s before video ends (video is ~3s at 1.5x)
-    const t = setTimeout(() => setTextVisible(true), 2000);
+    const t = setTimeout(() => setTextVisible(true), 1200);
     return () => clearTimeout(t);
   }, []);
 
@@ -1044,7 +1044,7 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Animated logo video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.08 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1.5s ease-out' }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.15 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 2s ease-out' }} />
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
