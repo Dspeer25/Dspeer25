@@ -700,14 +700,24 @@ export default function WickCoachFull() {
   const [activeCategory, setActiveCategory] = useState(0);
   const [videoEnded, setVideoEnded] = useState(false);
   const [textVisible, setTextVisible] = useState(false);
+  const [showClickHint, setShowClickHint] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   React.useEffect(() => {
     if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.5;
-    // Start text fade-in ~1s before video ends (video is ~3s at 1.5x)
     const t = setTimeout(() => setTextVisible(true), 2000);
     return () => clearTimeout(t);
   }, []);
+
+  // Show "click these" hint once when textVisible fires
+  const hintShownRef = useRef(false);
+  React.useEffect(() => {
+    if (!textVisible || hintShownRef.current) return;
+    hintShownRef.current = true;
+    setShowClickHint(true);
+    const t = setTimeout(() => setShowClickHint(false), 4000);
+    return () => clearTimeout(t);
+  }, [textVisible]);
 
   const handleCategoryClick = (index: number) => {
     setActiveCategory(index);
@@ -1065,7 +1075,7 @@ export default function WickCoachFull() {
               const isActive = activeCategory === i;
               return (
                 <div key={i} onClick={() => handleCategoryClick(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : 'rgba(255,255,255,0.03)', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid rgba(255,255,255,0.06)', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.12)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : 'rgba(255,255,255,0.03)', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid rgba(255,255,255,0.06)', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.12)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease', animation: showClickHint ? 'iconGlowPulse 1s ease-in-out 3' : 'none' }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? teal : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={cat.d} /></svg>
                   </div>
                   <span style={{ fontFamily: fm, fontSize: 11, color: isActive ? teal : '#6b7280', textAlign: 'center', whiteSpace: 'nowrap' as const, transition: 'color 0.3s ease' }}>{cat.label}</span>
@@ -1073,6 +1083,11 @@ export default function WickCoachFull() {
               );
             })}
           </div>
+          {/* "click these" hint */}
+          <div style={{ textAlign: 'center', marginTop: -36, marginBottom: 24, height: 16 }}>
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#9ca3af', opacity: showClickHint ? 1 : 0, transition: 'opacity 0.5s ease' }}>click these ↑</span>
+          </div>
+          <style>{`@keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }`}</style>
           {/* iMac frame */}
           <div style={{ maxWidth: 1060, margin: '0 auto', padding: '0 20px' }}>
             {/* Monitor */}
