@@ -745,14 +745,46 @@ interface Trade {
   result: 'WIN' | 'LOSS';
 }
 
+function formatDollar(n: number): string {
+  const sign = n >= 0 ? '+' : '-';
+  const abs = Math.abs(n);
+  if (abs % 1 === 0) return sign + '$' + abs.toLocaleString();
+  return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiveTab: (tab: string) => void }) {
   const [search, setSearch] = useState('');
   const [stratFilter, setStratFilter] = useState('All');
   const [resultFilter, setResultFilter] = useState('All');
   const [dateRange, setDateRange] = useState('All Time');
   const [sortBy, setSortBy] = useState('Newest');
+  const [journalColW, setJournalColW] = useState(200);
+  const [aiPopover, setAiPopover] = useState<string | null>(null);
+  const [strategies, setStrategies] = useState<string[]>(() => {
+    try { const s = localStorage.getItem('wickcoach_strategies'); if (s) return JSON.parse(s); } catch {}
+    return ['All', '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor'];
+  });
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
 
-  const strategies = ['All', '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor'];
+  const removeStrategy = (strat: string) => {
+    const updated = strategies.filter(s => s !== strat);
+    setStrategies(updated);
+    try { localStorage.setItem('wickcoach_strategies', JSON.stringify(updated)); } catch {}
+    if (stratFilter === strat) setStratFilter('All');
+  };
+
+  const onDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startW: journalColW };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const diff = ev.clientX - dragRef.current.startX;
+      setJournalColW(Math.max(100, Math.min(500, dragRef.current.startW + diff)));
+    };
+    const onUp = () => { dragRef.current = null; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 
   // Filter + sort
   const filtered = trades.filter(t => {
@@ -783,20 +815,22 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const losses = filtered.filter(t => t.result === 'LOSS');
   const totalPL = filtered.reduce((s, t) => s + t.pl, 0);
   const winRate = filtered.length > 0 ? Math.round((wins.length / filtered.length) * 100) : 0;
-  const avgRR = filtered.length > 0 ? (filtered.reduce((s, t) => s + parseFloat(t.riskReward) || 0, 0) / filtered.length).toFixed(1) : '—';
+  const avgRR = filtered.length > 0 ? (filtered.reduce((s, t) => s + (parseFloat(t.riskReward) || 0), 0) / filtered.length).toFixed(1) : '—';
   const best = wins.length > 0 ? wins.reduce((a, b) => a.pl > b.pl ? a : b) : null;
   const worst = losses.length > 0 ? losses.reduce((a, b) => a.pl < b.pl ? a : b) : null;
 
   const cardStyle: React.CSSProperties = { background: '#13141a', border: '1px solid #1a1b22', borderRadius: 8, padding: 16, flex: 1, minWidth: 0, transition: 'box-shadow 0.3s' };
-  const cardLabel: React.CSSProperties = { color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
+  const cardLabel: React.CSSProperties = { color: '#6b7280', fontFamily: fm, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
   const cardValue: React.CSSProperties = { color: '#fff', fontFamily: fd, fontSize: 20, fontWeight: 700 };
-  const selectStyle: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 6, padding: '6px 10px', color: '#d1d5db', fontFamily: fm, fontSize: 12, outline: 'none', cursor: 'pointer', appearance: 'none' as const, WebkitAppearance: 'none' as const };
-  const pillStyle = (active: boolean): React.CSSProperties => ({ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontFamily: fm, fontWeight: 600, cursor: 'pointer', background: active ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: active ? '1px solid #00d4a0' : '1px solid #2a2b32', color: active ? teal : '#6b7280', transition: 'all 0.2s' });
+  const selectStyle: React.CSSProperties = { background: '#1a1b22', border: '1px solid #2a2b32', borderRadius: 6, padding: '10px 14px', color: '#d1d5db', fontFamily: fm, fontSize: 14, outline: 'none', cursor: 'pointer', appearance: 'none' as const, WebkitAppearance: 'none' as const };
+  const pillStyle = (active: boolean): React.CSSProperties => ({ padding: '10px 18px', borderRadius: 6, fontSize: 14, fontFamily: fm, fontWeight: 600, cursor: 'pointer', background: active ? 'rgba(0,212,160,0.12)' : '#1a1b22', border: active ? '1px solid #00d4a0' : '1px solid #2a2b32', color: active ? teal : '#6b7280', transition: 'all 0.2s' });
 
   const tickerDomains: Record<string, string> = { NVDA: 'nvidia.com', AAPL: 'apple.com', TSLA: 'tesla.com', AMZN: 'amazon.com', META: 'meta.com', MSFT: 'microsoft.com', GOOGL: 'google.com', SPY: 'ssga.com', QQQ: 'invesco.com', AMD: 'amd.com' };
 
+  const gridCols = `100px 90px 70px 110px 60px 55px 130px 100px 60px 50px ${journalColW}px 65px`;
+
   return (
-    <div style={{ position: 'relative', minHeight: '80vh' }}>
+    <div style={{ position: 'relative', minHeight: '80vh' }} onClick={() => setAiPopover(null)}>
       {/* Background glows */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 15% 15%, rgba(0,212,160,0.06) 0%, transparent 50%)' }} />
@@ -808,7 +842,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <div style={cardStyle} className="price-card">
             <div style={cardLabel}>This Week P/L</div>
-            <div style={{ ...cardValue, color: totalPL >= 0 ? teal : '#ef4444' }}>{totalPL >= 0 ? '+' : ''}{totalPL === 0 ? '$0.00' : `$${totalPL.toFixed(2)}`}</div>
+            <div style={{ ...cardValue, color: totalPL >= 0 ? teal : '#ef4444' }}>{formatDollar(totalPL)}</div>
           </div>
           <div style={cardStyle} className="price-card">
             <div style={cardLabel}>Win Rate</div>
@@ -830,11 +864,11 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
           <div style={cardStyle} className="price-card">
             <div style={cardLabel}>Best Trade</div>
-            <div style={{ ...cardValue, fontSize: 16, color: teal }}>{best ? `${best.ticker} +$${best.pl.toFixed(2)}` : '—'}</div>
+            <div style={{ ...cardValue, fontSize: 16, color: teal }}>{best ? `${best.ticker} ${formatDollar(best.pl)}` : '—'}</div>
           </div>
           <div style={cardStyle} className="price-card">
             <div style={cardLabel}>Worst Trade</div>
-            <div style={{ ...cardValue, fontSize: 16, color: '#ef4444' }}>{worst ? `${worst.ticker} -$${Math.abs(worst.pl).toFixed(2)}` : '—'}</div>
+            <div style={{ ...cardValue, fontSize: 16, color: '#ef4444' }}>{worst ? `${worst.ticker} ${formatDollar(worst.pl)}` : '—'}</div>
           </div>
         </div>
 
@@ -842,24 +876,31 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
           {/* Search */}
           <div style={{ position: 'relative' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectStyle, paddingLeft: 30, width: 160 }} />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectStyle, paddingLeft: 34, width: 180 }} />
           </div>
-          {/* Strategy filter */}
+          {/* Strategy filter with removable items */}
           <div style={{ position: 'relative', display: 'inline-block' }}>
-            <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectStyle, paddingRight: 28 }}>
+            <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectStyle, paddingRight: 30 }}>
               {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
               <option value="+ Add New" style={{ color: '#00d4a0' }}>+ Add New</option>
             </select>
-            <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
           </div>
+          {/* Remove strategy buttons (shown beside dropdown) */}
+          {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
+            <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕ remove</span>
+          )}
           {/* Result filter */}
-          <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} style={selectStyle}>
-            <option value="All">All Results</option>
-            <option value="Wins">Wins</option>
-            <option value="Losses">Losses</option>
-            <option value="Break Even">Break Even</option>
-          </select>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} style={{ ...selectStyle, paddingRight: 30 }}>
+              <option value="All">All Results</option>
+              <option value="Wins">Wins</option>
+              <option value="Losses">Losses</option>
+              <option value="Break Even">Break Even</option>
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+          </div>
           {/* Date range pills */}
           <div style={{ display: 'flex', gap: 4 }}>
             {['This Week', 'This Month', 'All Time'].map(d => (
@@ -867,9 +908,12 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             ))}
           </div>
           {/* Sort */}
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectStyle, marginLeft: 'auto' }}>
-            {['Newest', 'Oldest', 'Highest P/L', 'Lowest P/L', 'Ticker A-Z'].map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <div style={{ position: 'relative', display: 'inline-block', marginLeft: 'auto' }}>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectStyle, paddingRight: 30 }}>
+              {['Newest', 'Oldest', 'Highest P/L', 'Lowest P/L', 'Ticker A-Z'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+          </div>
         </div>
 
         {/* Trades table or empty state */}
@@ -881,30 +925,46 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         ) : (
           <div style={{ borderRadius: 8, border: '1px solid #1a1b22', overflow: 'hidden' }}>
             {/* Table header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '100px 90px 100px 60px 60px 120px 90px 50px 50px 1fr 60px', padding: '10px 12px', background: '#0e0f14', borderBottom: '1px solid #1a1b22', position: 'sticky', top: 0, zIndex: 2 }}>
-              {['Ticker', 'Date', 'Strategy', 'Dir', 'Qty', 'Entry → Exit', 'P/L', 'R:R', 'AI', 'Journal', 'Result'].map(h => (
-                <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>{h}</span>
+            <div style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '12px 14px', background: '#0e0f14', borderBottom: '1px solid #1a1b22', position: 'sticky', top: 0, zIndex: 2 }}>
+              {['Ticker', 'Date', 'Time', 'Strategy', 'Dir', 'Qty', 'Entry → Exit', 'P/L', 'R:R', 'AI'].map(h => (
+                <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>{h}</span>
               ))}
+              <span style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, position: 'relative', userSelect: 'none' }}>
+                Journal
+                <span onMouseDown={onDragStart} style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, cursor: 'col-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ width: 2, height: 16, background: '#2a2b32', borderRadius: 1 }} />
+                </span>
+              </span>
+              <span style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>Result</span>
             </div>
             {/* Table rows */}
             {filtered.map(t => {
               const domain = tickerDomains[t.ticker] || `${t.ticker.toLowerCase()}.com`;
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '100px 90px 100px 60px 60px 120px 90px 50px 50px 1fr 60px', padding: '12px 12px', borderBottom: '1px solid #1a1b22', borderLeft: `3px solid ${t.result === 'WIN' ? teal : '#ef4444'}`, alignItems: 'center', fontSize: 13, fontFamily: fm, color: '#d1d5db', transition: 'background 0.2s' }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: gridCols, padding: '14px 14px', borderBottom: '1px solid #1a1b22', borderLeft: `3px solid ${t.result === 'WIN' ? teal : '#ef4444'}`, alignItems: 'center', fontSize: 14, fontFamily: fm, color: '#d1d5db', transition: 'background 0.2s' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#fff' }}>
                     <img src={`https://logo.clearbit.com/${domain}`} alt="" width={16} height={16} style={{ borderRadius: 3 }} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     {t.ticker}
                   </span>
-                  <span style={{ color: '#9ca3af', fontSize: 12 }}>{t.date}</span>
-                  <span style={{ fontSize: 12 }}>{t.strategy}</span>
-                  <span style={{ color: t.direction === 'LONG' ? teal : '#ef4444', fontWeight: 600, fontSize: 11 }}>{t.direction}</span>
+                  <span style={{ color: '#9ca3af' }}>{t.date}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 13 }}>{t.time || '—'}</span>
+                  <span>{t.strategy}</span>
+                  <span style={{ color: t.direction === 'LONG' ? teal : '#ef4444', fontWeight: 600 }}>{t.direction}</span>
                   <span>{t.contracts}</span>
-                  <span style={{ fontSize: 12 }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
-                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700 }}>{t.pl >= 0 ? '+' : ''}${t.pl.toFixed(2)}</span>
-                  <span>{t.riskReward}</span>
-                  <span>{t.aiScore ? <span style={{ background: 'rgba(0,212,160,0.12)', color: teal, padding: '2px 6px', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>{t.aiScore}</span> : '—'}</span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, color: '#9ca3af', fontSize: 12 }}>{t.journal || '—'}</span>
-                  <span><span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: t.result === 'WIN' ? 'rgba(0,212,160,0.1)' : 'rgba(239,68,68,0.1)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span></span>
+                  <span style={{ fontSize: 13 }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700 }}>{formatDollar(t.pl)}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{t.riskReward}</span>
+                  <span style={{ position: 'relative' }} onClick={e => { e.stopPropagation(); setAiPopover(aiPopover === t.id ? null : t.id); }}>
+                    {t.aiScore ? <span style={{ background: 'rgba(0,212,160,0.12)', color: teal, padding: '2px 6px', borderRadius: 4, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{t.aiScore}</span> : <span style={{ color: '#6b7280', cursor: 'pointer' }}>—</span>}
+                    {aiPopover === t.id && (
+                      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', top: '100%', left: -60, marginTop: 6, background: '#13141a', border: '1px solid #1a1b22', borderRadius: 8, padding: 12, maxWidth: 300, zIndex: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.4)', whiteSpace: 'normal' }}>
+                        <div style={{ color: '#d1d5db', fontFamily: fm, fontSize: 13, lineHeight: 1.5, marginBottom: 8 }}>AI analysis available in the Analysis tab</div>
+                        <span onClick={() => { setAiPopover(null); setActiveTab('Analysis'); }} style={{ color: teal, fontFamily: fm, fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>View Analysis &rarr;</span>
+                      </div>
+                    )}
+                  </span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const, color: '#9ca3af' }}>{t.journal || '—'}</span>
+                  <span><span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: t.result === 'WIN' ? 'rgba(0,212,160,0.1)' : 'rgba(239,68,68,0.1)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span></span>
                 </div>
               );
             })}
