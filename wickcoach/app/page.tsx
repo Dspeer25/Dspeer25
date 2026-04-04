@@ -856,160 +856,330 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     color: active ? teal : '#6b7280', transition: 'all 0.2s',
   });
 
-  return (
-    <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
-      {/* Background glows */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 10% 0%, rgba(0,212,160,0.05) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 90% 100%, rgba(0,212,160,0.03) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
+  // Equity curve data
+  const equityCurve = (() => {
+    const sorted = filtered.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let running = 0;
+    return sorted.map(t => { running += t.pl; return { date: t.date, value: running }; });
+  })();
+  const eqMax = equityCurve.length > 0 ? Math.max(...equityCurve.map(e => Math.abs(e.value)), 1) : 1;
+  const eqLine = equityCurve.length > 0
+    ? equityCurve.map((e, i) => { const x = (i / Math.max(equityCurve.length - 1, 1)) * 700; const y = 160 - ((e.value / eqMax) * 140 + 10); return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ')
+    : 'M0,160 L700,160';
+  const eqFill = equityCurve.length > 0 ? eqLine + ` L700,170 L0,170 Z` : 'M0,160 L700,160 L700,170 L0,170 Z';
+  const breakEven = filtered.filter(t => t.pl === 0);
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* ── STAT CARDS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 32 }}>
-          {[
-            { label: 'TOTAL P/L', value: formatDollar(totalPL), color: totalPL >= 0 ? teal : '#ef4444', sub: <svg width="100%" height="32" viewBox="0 0 200 32" preserveAspectRatio="none" style={{ display: 'block', opacity: 0.5, marginTop: 4 }}><path d={sparkPoints.replace(/60/g, '200').replace(/24/g, '32') || 'M0,16 L200,16'} stroke={totalPL >= 0 ? teal : '#ef4444'} strokeWidth="2" fill="none" /></svg> },
-            { label: 'WIN RATE', value: `${winRate}%`, color: '#fff', sub: <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}><svg width="40" height="40" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#1e1f2a" strokeWidth="4.5" /><circle cx="26" cy="26" r="20" fill="none" stroke={teal} strokeWidth="4.5" strokeDasharray={`${winRate * 1.257} 125.7`} strokeLinecap="round" transform="rotate(-90 26 26)" /></svg><span style={{ fontFamily: fm, fontSize: 13, color: '#8a8d98' }}>{wins.length}W / {losses.length}L</span></div> },
-            { label: 'TOTAL TRADES', value: `${filtered.length}`, color: '#fff', sub: <div style={{ fontFamily: fm, fontSize: 13, color: '#8a8d98', marginTop: 4 }}>{wins.length} wins · {losses.length} losses</div> },
-            { label: 'AVG R:R', value: avgRR, color: '#fff', sub: null },
-            { label: 'EXPECTED VALUE', value: formatDollar(Math.round(expectedValue)), color: expectedValue >= 0 ? teal : '#ef4444', sub: <div style={{ fontFamily: fm, fontSize: 13, color: '#8a8d98', marginTop: 4 }}>per trade</div> },
-          ].map(card => (
-            <div key={card.label} style={{ background: '#131418', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 14, padding: '22px 20px 18px', transition: 'all 0.3s ease' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 40px rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.15)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#1e1f2a'; }}>
-              <div style={{ color: '#9ca3af', fontFamily: fm, fontSize: 14, letterSpacing: 1, marginBottom: 10, textTransform: 'uppercase' as const }}>{card.label}</div>
-              <div style={{ color: card.color, fontFamily: fd, fontSize: 30, fontWeight: 700 }}>{card.value}</div>
-              {card.sub}
+  return (
+    <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
+      {/* ── LEFT SIDEBAR ── */}
+      <div style={{ width: 56, background: '#0a0b10', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 20, gap: 8, flexShrink: 0, borderRight: '1px solid #1a1b22' }}>
+        {[
+          <svg key="chart" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
+          <svg key="grid" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
+          <svg key="target" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>,
+          <svg key="layers" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>,
+        ].map((icon, i) => (
+          <div key={i} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: i === 0 ? 'rgba(0,212,160,0.12)' : 'transparent', cursor: 'pointer' }}>{icon}</div>
+        ))}
+      </div>
+
+      {/* ── CENTER CONTENT ── */}
+      <div style={{ flex: 1, padding: '24px 28px', overflow: 'auto', position: 'relative' }}>
+        {/* Page header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff' }}>Past Trades</span>
+              <span style={{ fontSize: 10, fontFamily: fm, color: teal, background: 'rgba(0,212,160,0.12)', padding: '2px 8px', borderRadius: 4, fontWeight: 700, letterSpacing: 1 }}>LIVE</span>
             </div>
-          ))}
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginTop: 4 }}>Analyze, review, and backtest your historical executions.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', padding: '8px 16px', borderRadius: 8, borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', background: '#111218', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              Export CSV
+            </span>
+            <span onClick={() => setActiveTab('Log a Trade')} style={{ fontFamily: fm, fontSize: 13, color: '#0e0f14', padding: '8px 16px', borderRadius: 8, background: teal, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>+ Manual Entry</span>
+          </div>
+        </div>
+        {/* ── STAT CARDS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
+          {/* Total P/L */}
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Total P/L</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
+            </div>
+            <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{formatDollar(totalPL)}</div>
+            <svg width="100%" height="30" viewBox="0 0 200 30" preserveAspectRatio="none" style={{ display: 'block', marginTop: 8 }}>
+              <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0.15" /><stop offset="100%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0" /></linearGradient></defs>
+              <path d={(sparkPoints.replace(/60/g, '200').replace(/24/g, '30') || 'M0,15 L200,15') + ' L200,30 L0,30 Z'} fill="url(#sparkFill)" />
+              <path d={sparkPoints.replace(/60/g, '200').replace(/24/g, '30') || 'M0,15 L200,15'} stroke={totalPL >= 0 ? teal : '#ef4444'} strokeWidth="1.5" fill="none" />
+            </svg>
+          </div>
+          {/* Win Rate */}
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Win Rate</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+            </div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{winRate}%</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, fontFamily: fm, fontSize: 12 }}>
+              <span style={{ color: teal }}>{wins.length}W</span>
+              <span style={{ color: '#ef4444' }}>{losses.length}L</span>
+              {breakEven.length > 0 && <span style={{ color: '#f59e0b' }}>{breakEven.length}E</span>}
+            </div>
+            {/* Mini win/loss bar */}
+            <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginTop: 6, background: '#1e1f2a' }}>
+              {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: teal }} />}
+              {filtered.length > 0 && <div style={{ width: `${(losses.length / filtered.length) * 100}%`, background: '#ef4444' }} />}
+            </div>
+          </div>
+          {/* Total Trades */}
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Total Trades</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
+            </div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{filtered.length}</div>
+          </div>
+          {/* Avg R:R */}
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Avg R:R</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            </div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>1 : {avgRR}</div>
+            <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 8 }}>Avg Win: {formatDollar(Math.round(avgWin))}</div>
+            <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 2 }}>Avg Loss: {formatDollar(Math.round(avgLoss))}</div>
+          </div>
+          {/* Expected Value */}
+          <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fm, fontSize: 13 }}>Expected Value</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expectedValue >= 0 ? teal : '#ef4444'} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+            </div>
+            <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{formatDollar(Math.round(expectedValue * 100) / 100)}</div>
+            <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 8 }}>Per trade execution</div>
+          </div>
+        </div>
+
+        {/* ── EQUITY CURVE ── */}
+        <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 20, marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+              <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Equity Curve</span>
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {['1W', '1M', 'YTD'].map(p => (
+                <span key={p} style={{ fontFamily: fm, fontSize: 12, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', background: p === '1M' ? 'rgba(0,212,160,0.12)' : 'transparent', color: p === '1M' ? teal : '#6b7280', borderTop: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderRight: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderBottom: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderLeft: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', fontWeight: 600 }}>{p}</span>
+              ))}
+            </div>
+          </div>
+          <svg width="100%" height="200" viewBox="0 0 700 200" preserveAspectRatio="none" style={{ display: 'block' }}>
+            {/* Grid lines */}
+            {[40, 80, 120, 160].map(y => <line key={y} x1="0" y1={y} x2="700" y2={y} stroke="#1a1b22" strokeWidth="1" />)}
+            {/* Fill area */}
+            <defs><linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={teal} stopOpacity="0.12" /><stop offset="100%" stopColor={teal} stopOpacity="0" /></linearGradient></defs>
+            <path d={eqFill} fill="url(#eqGrad)" />
+            {/* Line */}
+            <path d={eqLine} fill="none" stroke={teal} strokeWidth="2" />
+          </svg>
+          {/* X-axis date labels */}
+          {equityCurve.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+              {[0, Math.floor(equityCurve.length * 0.25), Math.floor(equityCurve.length * 0.5), Math.floor(equityCurve.length * 0.75), equityCurve.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(idx => (
+                <span key={idx} style={{ fontFamily: fm, fontSize: 11, color: '#6b7280' }}>
+                  {new Date(equityCurve[idx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── FILTER BAR ── */}
-        <div style={{ background: '#13141a', borderRadius: 14, padding: '16px 20px', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            {/* Search */}
-            <div style={{ position: 'relative' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectBase, paddingLeft: 38, width: 180 }} />
-            </div>
-
-            {/* Strategy dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          {/* Search */}
+          <div style={{ position: 'relative' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Ticker (e.g. AAPL)" style={{ ...selectBase, paddingLeft: 38, width: 220 }} />
+          </div>
+          {/* Strategy dropdown */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
+            <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectBase, paddingLeft: 32, paddingRight: 32, minWidth: 170 }}>
+              {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'Strategy: All' : `Strategy: ${s}`}</option>)}
+              <option value="+ Add New">+ Add New</option>
+            </select>
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+          </div>
+          {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
+            <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕</span>
+          )}
+          {/* Result pills with colored dots */}
+          <div style={{ display: 'flex', gap: 4, background: '#111218', borderRadius: 8, padding: 3, borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a' }}>
+            {([['All', '#6b7280'], ['Wins', teal], ['Losses', '#ef4444'], ['Break Even', '#f59e0b']] as [string, string][]).map(([r, dotColor]) => (
+              <span key={r} onClick={() => setResultFilter(r)} style={{ ...pillBtn(resultFilter === r), display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                {r === 'All' ? 'All Trades' : r}
+              </span>
+            ))}
+          </div>
+          {/* Date range — pushed right */}
+          <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{ marginRight: 4 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
             <div style={{ position: 'relative', display: 'inline-block' }}>
-              <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectBase, paddingRight: 32, minWidth: 170 }}>
-                {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
-                <option value="+ Add New">+ Add New</option>
+              <select value={dateRange} onChange={e => setDateRange(e.target.value)} style={{ ...selectBase, paddingRight: 28, fontSize: 13 }}>
+                {['This Week', 'This Month', 'All Time'].map(d => <option key={d} value={d}>{d === 'All Time' ? 'Last 30 Days' : d}</option>)}
               </select>
-              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
-            </div>
-            {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
-              <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕</span>
-            )}
-
-            {/* Separator */}
-            <div style={{ width: 1, height: 28, background: '#1e1f2a' }} />
-
-            {/* Result pills */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['All', 'Wins', 'Losses', 'Break Even'].map(r => (
-                <span key={r} onClick={() => setResultFilter(r)} style={pillBtn(resultFilter === r)}>{r}</span>
-              ))}
-            </div>
-
-            {/* Separator */}
-            <div style={{ width: 1, height: 28, background: '#1e1f2a' }} />
-
-            {/* Date pills */}
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['This Week', 'This Month', 'All Time'].map(d => (
-                <span key={d} onClick={() => setDateRange(d)} style={pillBtn(dateRange === d)}>{d}</span>
-              ))}
-            </div>
-
-            {/* Sort dropdown — pushed right */}
-            <div style={{ position: 'relative', display: 'inline-block', marginLeft: 'auto' }}>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ ...selectBase, paddingRight: 32 }}>
-                {['Newest', 'Oldest', 'Highest P/L', 'Lowest P/L', 'Ticker A-Z'].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
             </div>
           </div>
         </div>
 
         {/* ── TRADE LIST ── */}
-        <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 12, padding: 20, boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
-          {/* Section header */}
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>Trade History</span>
-            <span style={{ fontFamily: fm, fontSize: 14, color: '#6b7280', marginLeft: 12 }}>{filtered.length} trade{filtered.length !== 1 ? 's' : ''}</span>
+        {/* Header row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 1.2fr 1.2fr 1.4fr 1fr 1.2fr 0.5fr', padding: '12px 20px', borderBottom: '1px solid #1e1f2a', marginBottom: 4 }}>
+          {['Asset', 'Direction', 'Entry / Exit', 'Duration', 'Net P/L', 'Status', ''].map(h => (
+            <span key={h} style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600 }}>{h}</span>
+          ))}
+        </div>
+
+        {filtered.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
+            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 16, marginTop: 8 }}>No trades logged yet</div>
+            <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
+          </div>
+        ) : (<>
+          {filtered.map(t => {
+            const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
+            return (
+              <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2.2fr 1.2fr 1.2fr 1.4fr 1fr 1.2fr 0.5fr', padding: '16px 20px', background: '#111218', borderRadius: 8, marginBottom: 4, alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'all 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#161720'; e.currentTarget.style.boxShadow = '0 0 20px rgba(0,212,160,0.04)'; }} onMouseLeave={e => { e.currentTarget.style.background = '#111218'; e.currentTarget.style.boxShadow = 'none'; }}>
+                {/* Asset — logo + ticker + company */}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <img src={logoUrl} alt="" width={32} height={32} style={{ borderRadius: '50%', background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
+                  <span style={{ display: 'none', width: 32, height: 32, borderRadius: '50%', background: '#1e1f2a', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
+                  <span>
+                    <div style={{ fontWeight: 700, color: '#fff', fontSize: 16 }}>{t.ticker}</div>
+                    <div style={{ color: '#6b7280', fontSize: 12, marginTop: 1 }}>{t.companyName || t.ticker}</div>
+                  </span>
+                </span>
+
+                {/* Direction badge */}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.direction === 'LONG' ? teal : '#ef4444'} strokeWidth="2.5"><polyline points={t.direction === 'LONG' ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} /></svg>
+                  <span style={{ padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
+                </span>
+
+                {/* Entry / Exit */}
+                <span>
+                  <div style={{ color: '#c9cdd4', fontSize: 14 }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</div>
+                  <div style={{ color: '#6b7280', fontSize: 11, marginTop: 2 }}>{formatDate(t.date)}, {formatTime(t.time)}</div>
+                </span>
+
+                {/* Duration placeholder */}
+                <span style={{ color: '#c9cdd4', fontSize: 14 }}>{t.strategy}</span>
+
+                {/* Net P/L */}
+                <span>
+                  <div style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16 }}>{formatDollar(t.pl)}</div>
+                  <div style={{ color: '#6b7280', fontSize: 11, marginTop: 2 }}>{t.riskReward} R</div>
+                </span>
+
+                {/* Status */}
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  {t.result === 'WIN' ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  )}
+                </span>
+
+                {/* Details chevron */}
+                <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+                </span>
+              </div>
+            );
+          })}
+
+          {/* Showing count + Load more */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', marginTop: 8 }}>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing 1-{filtered.length} of {filtered.length} trades</span>
+          </div>
+        </>)}
+      </div>
+
+      {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
+      <div style={{ width: 300, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12' }}>
+        {/* Header */}
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid #1a1b22' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(0,212,160,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
+                <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>Coach AI</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: teal, letterSpacing: 2, textTransform: 'uppercase' as const }}>Analyzing Portfolio...</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Chat area */}
+        <div style={{ flex: 1, padding: '16px 14px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* AI message */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 14, left: -4, width: 8, height: 8, borderRadius: '50%', background: teal }} />
+            <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 14, marginLeft: 10 }}>
+              <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>
+                {filtered.length > 0
+                  ? <>I noticed your win rate on <strong style={{ color: '#fff' }}>{filtered[0]?.strategy || 'your'}</strong> strategies is {winRate}%. {winRate >= 50 ? 'Keep up the discipline.' : 'Consider reviewing your entry criteria.'} Ask me anything about your trades.</>
+                  : 'No trades logged yet. Log your first trade and I\'ll start analyzing your patterns.'}
+              </div>
+            </div>
           </div>
 
-          {filtered.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
-              <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                <rect x="12" y="32" width="7" height="14" rx="1.5" fill="#1e1f2a" />
-                <rect x="24.5" y="20" width="7" height="26" rx="1.5" fill="#1e1f2a" />
-                <rect x="37" y="26" width="7" height="20" rx="1.5" fill="#1e1f2a" />
-                <line x1="15.5" y1="25" x2="15.5" y2="32" stroke="#1e1f2a" strokeWidth="1.5" />
-                <line x1="28" y1="12" x2="28" y2="20" stroke="#1e1f2a" strokeWidth="1.5" />
-                <line x1="40.5" y1="19" x2="40.5" y2="26" stroke="#1e1f2a" strokeWidth="1.5" />
-              </svg>
-              <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 16, marginTop: 20 }}>No trades logged yet</div>
-              <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
-            </div>
-          ) : (<>
-            {/* Column headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '14px 20px', borderBottom: '2px solid #2a2b32', marginBottom: 8 }}>
-              {['Symbol', 'Date', 'Strategy', 'Direction', 'Entry / Exit', 'P/L', 'R:R', 'Result'].map(h => (
-                <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 13, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, textAlign: 'center' }}>{h}</span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            {filtered.map(t => {
-              const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
-              return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '16px 20px', borderBottom: '1px solid #1e1f2a', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-                  {/* Symbol — logo + ticker + company */}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <img src={logoUrl} alt="" width={28} height={28} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
-                    <span style={{ display: 'none', width: 28, height: 28, borderRadius: 6, background: '#1e1f2a', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
-                    <span>
-                      <div style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>{t.ticker}</div>
-                      <div style={{ color: '#6b7280', fontSize: 12, marginTop: 2 }}>{t.companyName || t.ticker}</div>
-                    </span>
-                  </span>
-
-                  {/* Date + Time */}
-                  <span style={{ textAlign: 'center' }}>
-                    <div style={{ color: '#e8e8f0', fontSize: 15 }}>{formatDate(t.date)}</div>
-                    <div style={{ color: '#8a8d98', fontSize: 12, marginTop: 2 }}>{formatTime(t.time)}</div>
-                  </span>
-
-                  {/* Strategy */}
-                  <span style={{ textAlign: 'center', color: '#e8e8f0', fontSize: 15 }}>{t.strategy}</span>
-
-                  {/* Direction */}
-                  <span style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'inline-block', padding: '5px 14px', borderRadius: 6, fontSize: 13, fontWeight: 700, letterSpacing: 0.5, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(239,68,68,0.1)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
-                  </span>
-
-                  {/* Entry / Exit */}
-                  <span style={{ textAlign: 'center', color: '#e8e8f0', fontSize: 15 }}>
-                    <span>${t.entryPrice.toFixed(2)}</span>
-                    <span style={{ color: '#4b5563', margin: '0 6px' }}>/</span>
-                    <span>${t.exitPrice.toFixed(2)}</span>
-                  </span>
-
-                  {/* P/L */}
-                  <span style={{ textAlign: 'center', color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16 }}>{formatDollar(t.pl)}</span>
-
-                  {/* R:R */}
-                  <span style={{ textAlign: 'center', whiteSpace: 'nowrap', color: '#e8e8f0', fontSize: 15 }}>{t.riskReward}</span>
-
-                  {/* Result */}
-                  <span style={{ textAlign: 'center' }}>
-                    <span style={{ display: 'inline-block', padding: '5px 14px', borderRadius: 6, fontSize: 13, fontWeight: 700, background: t.result === 'WIN' ? 'rgba(0,212,160,0.12)' : 'rgba(239,68,68,0.12)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span>
-                  </span>
+          {filtered.length > 0 && (
+            <>
+              {/* User message */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ background: '#1a1b22', borderRadius: 10, padding: 14, maxWidth: '85%' }}>
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>Why was my {filtered[filtered.length - 1]?.ticker} trade a {filtered[filtered.length - 1]?.result === 'WIN' ? 'winner' : 'loser'}?</div>
                 </div>
-              );
-            })}
-          </>)}
+              </div>
+              {/* AI response */}
+              <div style={{ position: 'relative' }}>
+                <div style={{ position: 'absolute', top: 14, left: -4, width: 8, height: 8, borderRadius: '50%', background: '#6b7280' }} />
+                <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 14, marginLeft: 10 }}>
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>
+                    Analyzing Trade <strong style={{ color: '#fff' }}>#{filtered[filtered.length - 1]?.ticker}</strong>... Entry at ${filtered[filtered.length - 1]?.entryPrice.toFixed(2)} with {filtered[filtered.length - 1]?.riskReward} R:R. {filtered[filtered.length - 1]?.result === 'WIN' ? 'Clean execution following your rules.' : 'Review your position sizing and timing.'}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Chat input */}
+        <div style={{ padding: '12px 14px', borderTop: '1px solid #1a1b22' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '10px 12px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{ flexShrink: 0, cursor: 'pointer' }}><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+            <input placeholder="Ask Coach about your trades..." readOnly style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#6b7280', fontFamily: fm, fontSize: 13 }} />
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', fontFamily: fm, fontSize: 10, color: '#6b7280', marginTop: 6 }}>WickCoach 2.0</div>
         </div>
       </div>
     </div>
