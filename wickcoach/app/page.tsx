@@ -233,10 +233,10 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
 
     // Step 12: cursor → Log Trade button
     q(() => moveTo(refBtn), t);
-    t += 300 + 100;
+    t += 300 + 200; // travel + longer pause before click
     q(() => { setBtnScale(0.95); setBtnClicked(true); setFocusField('btn'); }, t);
     q(() => setBtnScale(1), t + 150);
-    t += 300;
+    t += 500; // wait for click animation to complete
 
     // Step 13: advance carousel
     q(() => { setShowCursor(false); onAdvance(); }, t);
@@ -1075,9 +1075,14 @@ export default function WickCoachFull() {
         </div>
         <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
           {tabs.map(t => (
-            <span key={t} onClick={() => setView('app')} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
+            <span key={t} onClick={() => setView('app')} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: showClickHint ? "iconGlowPulse 1s ease-in-out 3" : tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
           ))}
         </div>
+        {/* "click these" hint below app tabs */}
+        <div style={{ textAlign: 'center', marginTop: 8, height: 16 }}>
+          <span style={{ fontFamily: fm, fontSize: 11, color: '#9ca3af', opacity: showClickHint ? 1 : 0, transition: 'opacity 0.5s ease' }}>click these ↑</span>
+        </div>
+        <style>{`@keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }`}</style>
       </nav>
 
       {/* ═══ FEATURE CAROUSEL ═══ */}
@@ -1091,7 +1096,7 @@ export default function WickCoachFull() {
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
+            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>It reads your journal. It spots your patterns. It coaches the trader in you.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
@@ -1107,7 +1112,7 @@ export default function WickCoachFull() {
               const isActive = activeCategory === i;
               return (
                 <div key={i} onClick={() => handleCategoryClick(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : 'rgba(255,255,255,0.03)', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid rgba(255,255,255,0.06)', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.12)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease', animation: showClickHint ? 'iconGlowPulse 1s ease-in-out 3' : 'none' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : 'rgba(255,255,255,0.03)', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid rgba(255,255,255,0.06)', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.12)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease', }}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? teal : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={cat.d} /></svg>
                   </div>
                   <span style={{ fontFamily: fm, fontSize: 11, color: isActive ? teal : '#6b7280', textAlign: 'center', whiteSpace: 'nowrap' as const, transition: 'color 0.3s ease' }}>{cat.label}</span>
@@ -1115,11 +1120,6 @@ export default function WickCoachFull() {
               );
             })}
           </div>
-          {/* "click these" hint */}
-          <div style={{ textAlign: 'center', marginTop: -36, marginBottom: 24, height: 16 }}>
-            <span style={{ fontFamily: fm, fontSize: 11, color: '#9ca3af', opacity: showClickHint ? 1 : 0, transition: 'opacity 0.5s ease' }}>click these ↑</span>
-          </div>
-          <style>{`@keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }`}</style>
           {/* iMac frame */}
           <div style={{ maxWidth: 1060, margin: '0 auto', padding: '0 20px' }}>
             {/* Monitor */}
