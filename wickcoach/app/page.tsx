@@ -760,6 +760,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     if (stratFilter !== 'All' && t.strategy !== stratFilter) return false;
     if (resultFilter === 'Wins' && t.result !== 'WIN') return false;
     if (resultFilter === 'Losses' && t.result !== 'LOSS') return false;
+    if (resultFilter === 'Break Even' && t.pl !== 0) return false;
     if (dateRange === 'This Week') {
       const d = new Date(t.date); const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
       if (d < weekAgo) return false;
@@ -845,14 +846,19 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search ticker..." style={{ ...selectStyle, paddingLeft: 30, width: 160 }} />
           </div>
           {/* Strategy filter */}
-          <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={selectStyle}>
-            {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
-          </select>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <select value={stratFilter} onChange={e => setStratFilter(e.target.value)} style={{ ...selectStyle, paddingRight: 28 }}>
+              {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'All Strategies' : s}</option>)}
+              <option value="+ Add New" style={{ color: '#00d4a0' }}>+ Add New</option>
+            </select>
+            <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+          </div>
           {/* Result filter */}
           <select value={resultFilter} onChange={e => setResultFilter(e.target.value)} style={selectStyle}>
             <option value="All">All Results</option>
             <option value="Wins">Wins</option>
             <option value="Losses">Losses</option>
+            <option value="Break Even">Break Even</option>
           </select>
           {/* Date range pills */}
           <div style={{ display: 'flex', gap: 4 }}>
@@ -869,9 +875,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         {/* Trades table or empty state */}
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', paddingTop: 80, paddingBottom: 80 }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}>
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-            </svg>
             <div style={{ color: '#9ca3af', fontFamily: fm, fontSize: 16, marginBottom: 12 }}>No trades logged yet</div>
             <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>Log your first trade &rarr;</span>
           </div>
@@ -923,6 +926,14 @@ export default function WickCoachFull() {
   const [showClickHint, setShowClickHint] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Load trades from localStorage on mount
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('wickcoach_trades');
+      if (stored) setTrades(JSON.parse(stored));
+    } catch {}
+  }, []);
 
   React.useEffect(() => {
     if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.0;
@@ -1189,7 +1200,38 @@ export default function WickCoachFull() {
           </div>
         </div>
 
-        <button onClick={() => { setFinalTime(elapsedTime); if (intervalRef.current) clearInterval(intervalRef.current); setSubmitted(true); }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0e0f14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '14px 0', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>Log Trade</button>
+        <button onClick={() => {
+          setFinalTime(elapsedTime);
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          // Build and save trade
+          const entry = parseFloat(entryPrice) || 0;
+          const exit = parseFloat(exitPrice) || 0;
+          const qty = parseInt(contracts) || 0;
+          const computedPl = plManualOverride ? parseFloat(pl) || 0 : (exit - entry) * qty * (positionType === 'DERIVATIVES' ? 100 : 1);
+          const newTrade: Trade = {
+            id: Date.now().toString(),
+            ticker: ticker || 'UNKNOWN',
+            companyName: ticker || 'Unknown',
+            date: tradeDate,
+            time: new Date().toLocaleTimeString(),
+            strategy: positionType === 'DERIVATIVES' ? (strategyInputMode === 'select' ? strategyType : customStrategy || 'Custom') : 'Shares',
+            direction: direction as 'LONG' | 'SHORT',
+            contracts: qty,
+            entryPrice: entry,
+            exitPrice: exit,
+            pl: computedPl,
+            plPercent: entry > 0 ? ((exit - entry) / entry) * 100 : 0,
+            riskAmount: parseFloat(risk) || 0,
+            riskReward: riskReward,
+            journal: journal,
+            screenshot: screenshot || undefined,
+            result: computedPl > 0 ? 'WIN' : computedPl < 0 ? 'LOSS' : 'WIN',
+          };
+          const updated = [...trades, newTrade];
+          setTrades(updated);
+          try { localStorage.setItem('wickcoach_trades', JSON.stringify(updated)); } catch {}
+          setSubmitted(true);
+        }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0e0f14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '14px 0', borderRadius: 10, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>Log Trade</button>
 
         <p style={{ color: '#4b5563', fontFamily: "'DM Mono', monospace", fontSize: 12, textAlign: 'center', marginTop: 12 }}>Your data stays on your device. Always.</p>
       </>
@@ -1270,7 +1312,7 @@ export default function WickCoachFull() {
         <span style={{ position: 'absolute', top: 28, right: 40, color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Login</span>
         <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
           {tabs.map(t => (
-            <span key={t} onClick={() => setView('app')} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: showClickHint ? "iconGlowPulse 1s ease-in-out 3" : tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
+            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", border: "1px solid rgba(0,212,160,0.12)", borderBottom: "none", flex: 1, textAlign: "center", lineHeight: 1.5, animation: showClickHint ? "iconGlowPulse 1s ease-in-out 3" : tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
           ))}
         </div>
         {/* "click these" hint below app tabs */}
@@ -1287,9 +1329,9 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Animated logo video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, clipPath: 'inset(0 0 15% 0)' }} />
             {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that fixes your psychology</h1>
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
             {/* Subtitle */}
             <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>AI-enhanced behavioral and trading pattern recognition</p>
           </div>
