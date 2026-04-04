@@ -704,7 +704,7 @@ export default function WickCoachFull() {
   React.useEffect(() => {
     if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.5;
     // Start text fade-in ~1s before video ends (video is ~3s at 1.5x)
-    const t = setTimeout(() => setTextVisible(true), 1200);
+    const t = setTimeout(() => setTextVisible(true), 2000);
     return () => clearTimeout(t);
   }, []);
 
