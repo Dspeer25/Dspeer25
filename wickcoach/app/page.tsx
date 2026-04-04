@@ -1044,11 +1044,11 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Animated logo video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: videoEnded ? 0.15 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 0.8s ease-out' }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out' }} />
             {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>You&apos;ve reviewed a thousand charts. When&apos;s the last time you <span style={{ color: '#00d4a0' }}>reviewed yourself</span>?</h1>
             {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1.5s ease-in, filter 1.5s ease-in' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
+            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The AI trading journal that reads what you wrote and holds you accountable to the trader you said you&apos;d be.</p>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
