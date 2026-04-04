@@ -424,7 +424,7 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
 }
 
 
-function MockTradingGoalsInner({ goalSet, onAdvance, startAnimation = false }: { goalSet: { week: string; goals: { text: string; status: string; statusText: string }[]; aiBullets: string; followUp: string }; onAdvance?: () => void; startAnimation?: boolean }) {
+function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet: { week: string; goals: { text: string; status: string; statusText: string }[]; aiBullets: string; followUp: string }; onAdvance?: () => void; frozen?: boolean }) {
   const [displayedText, setDisplayedText] = useState('');
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -434,7 +434,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, startAnimation = false }: {
   const fullText = goalSet.aiBullets;
 
   React.useEffect(() => {
-    if (!startAnimation) return;
+    if (frozen) return;
     let i = 0;
     let typingTimer: ReturnType<typeof setInterval>;
     const delayTimer = setTimeout(() => {
@@ -459,10 +459,10 @@ function MockTradingGoalsInner({ goalSet, onAdvance, startAnimation = false }: {
       clearTimeout(delayTimer);
       if (typingTimer) clearInterval(typingTimer);
     };
-  }, [startAnimation, fullText]);
+  }, [frozen, fullText]);
 
   const renderedBullets = displayedText.split('\n').filter(l => l.length > 0);
-  const aiAnimating = isTyping || isThinking;
+  const aiAnimating = !frozen && (isTyping || isThinking);
 
   const statusColors: Record<string, { fill: string; stroke: string; textColor: string }> = {
     complete: { fill: '#00d4a0', stroke: '#00d4a0', textColor: '#00d4a0' },
@@ -502,10 +502,10 @@ function MockTradingGoalsInner({ goalSet, onAdvance, startAnimation = false }: {
             );
           })}
         </div>
-        {/* Scan line */}
-        <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />
-        {/* Sparkles */}
-        {[{ l: '12%', t: '22%', d: '0s' }, { l: '45%', t: '38%', d: '0.4s' }, { l: '78%', t: '28%', d: '0.8s' }, { l: '30%', t: '58%', d: '1.2s' }, { l: '65%', t: '72%', d: '1.6s' }, { l: '88%', t: '52%', d: '2s' }].map((s, i) => (
+        {/* Scan line — only animates when NOT frozen */}
+        {!frozen && <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />}
+        {/* Sparkles — only render when NOT frozen */}
+        {!frozen && [{l:'12%',t:'22%',d:'0s'},{l:'45%',t:'38%',d:'0.4s'},{l:'78%',t:'28%',d:'0.8s'},{l:'30%',t:'58%',d:'1.2s'},{l:'65%',t:'72%',d:'1.6s'},{l:'88%',t:'52%',d:'2s'}].map((s, i) => (
           <div key={i} style={{ position: 'absolute', left: s.l, top: s.t, width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: s.d, pointerEvents: 'none' }} />
         ))}
       </div>
@@ -553,7 +553,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, startAnimation = false }: {
   );
 }
 
-function MockTradingGoals({ onAdvance, startAnimation = false }: { onAdvance?: () => void; startAnimation?: boolean }) {
+function MockTradingGoals({ onAdvance, frozen = true }: { onAdvance?: () => void; frozen?: boolean }) {
   const goalSets = [
     {
       week: "Week of Mar 17 \u2013 Mar 21",
@@ -627,7 +627,7 @@ function MockTradingGoals({ onAdvance, startAnimation = false }: { onAdvance?: (
         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
       </svg>
     </div>
-    <MockTradingGoalsInner key={goalSetIndex} goalSet={goalSets[goalSetIndex]} onAdvance={onAdvance} startAnimation={startAnimation} />
+    <MockTradingGoalsInner key={goalSetIndex} goalSet={goalSets[goalSetIndex]} onAdvance={onAdvance} frozen={frozen} />
   </div>);
 }
 
@@ -1083,7 +1083,7 @@ export default function WickCoachFull() {
               <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
                 <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 440, padding: 32 }}>
-                  {activeCategory === 0 && <MockTradingGoals onAdvance={() => setActiveCategory(1)} startAnimation={textVisible} />}
+                  {activeCategory === 0 && <MockTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
                   {activeCategory === 1 && <MockLogATrade onAdvance={() => setActiveCategory(2)} />}
                   {activeCategory === 2 && <MockPastTrades onAdvance={() => setActiveCategory(0)} />}
                   {activeCategory === 3 && <MockAnalysis />}
