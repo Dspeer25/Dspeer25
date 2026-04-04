@@ -424,24 +424,17 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
 }
 
 
-function MockTradingGoalsInner({ goalSet, onAdvance, animReady = true }: { goalSet: { week: string; goals: { text: string; status: string; statusText: string }[]; aiBullets: string; followUp: string }; onAdvance?: () => void; animReady?: boolean }) {
+function MockTradingGoalsInner({ goalSet, onAdvance, startAnimation = false }: { goalSet: { week: string; goals: { text: string; status: string; statusText: string }[]; aiBullets: string; followUp: string }; onAdvance?: () => void; startAnimation?: boolean }) {
   const [displayedText, setDisplayedText] = useState('');
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [answer, setAnswer] = useState('');
-  const [animStarted, setAnimStarted] = useState(false);
 
   const fullText = goalSet.aiBullets;
 
-  // Wait for animReady before starting
   React.useEffect(() => {
-    if (!animReady || animStarted) return;
-    setAnimStarted(true);
-  }, [animReady, animStarted]);
-
-  React.useEffect(() => {
-    if (!animStarted) return;
+    if (!startAnimation) return;
     let i = 0;
     let typingTimer: ReturnType<typeof setInterval>;
     const delayTimer = setTimeout(() => {
@@ -457,7 +450,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, animReady = true }: { goalS
           setTimeout(() => {
             setIsThinking(false);
             setShowFollowUp(true);
-            if (onAdvance) setTimeout(onAdvance, 3000);
+            if (onAdvance) setTimeout(onAdvance, 2000);
           }, 2000);
         }
       }, 18);
@@ -466,7 +459,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, animReady = true }: { goalS
       clearTimeout(delayTimer);
       if (typingTimer) clearInterval(typingTimer);
     };
-  }, [animStarted, fullText]);
+  }, [startAnimation, fullText]);
 
   const renderedBullets = displayedText.split('\n').filter(l => l.length > 0);
   const aiAnimating = isTyping || isThinking;
@@ -560,7 +553,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, animReady = true }: { goalS
   );
 }
 
-function MockTradingGoals({ onAdvance, animReady = true }: { onAdvance?: () => void; animReady?: boolean }) {
+function MockTradingGoals({ onAdvance, startAnimation = false }: { onAdvance?: () => void; startAnimation?: boolean }) {
   const goalSets = [
     {
       week: "Week of Mar 17 \u2013 Mar 21",
@@ -634,7 +627,7 @@ function MockTradingGoals({ onAdvance, animReady = true }: { onAdvance?: () => v
         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
       </svg>
     </div>
-    <MockTradingGoalsInner key={goalSetIndex} goalSet={goalSets[goalSetIndex]} onAdvance={onAdvance} animReady={animReady} />
+    <MockTradingGoalsInner key={goalSetIndex} goalSet={goalSets[goalSetIndex]} onAdvance={onAdvance} startAnimation={startAnimation} />
   </div>);
 }
 
@@ -1090,7 +1083,7 @@ export default function WickCoachFull() {
               <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
                 <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 440, padding: 32 }}>
-                  {activeCategory === 0 && <MockTradingGoals onAdvance={() => setActiveCategory(1)} animReady={textVisible} />}
+                  {activeCategory === 0 && <MockTradingGoals onAdvance={() => setActiveCategory(1)} startAnimation={textVisible} />}
                   {activeCategory === 1 && <MockLogATrade onAdvance={() => setActiveCategory(2)} />}
                   {activeCategory === 2 && <MockPastTrades onAdvance={() => setActiveCategory(0)} />}
                   {activeCategory === 3 && <MockAnalysis />}
