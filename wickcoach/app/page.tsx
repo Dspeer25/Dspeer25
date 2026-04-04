@@ -857,7 +857,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   });
 
   return (
-    <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', minHeight: '80vh' }}>
+    <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto', padding: '32px 24px', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
       {/* Background glows */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 10% 0%, rgba(0,212,160,0.05) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'radial-gradient(circle at 90% 100%, rgba(0,212,160,0.03) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
@@ -932,10 +932,10 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         </div>
 
         {/* ── TRADE LIST ── */}
-        <div style={{ background: '#131418', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 12, padding: 20 }}>
+        <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 12, padding: 20, boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
           {/* Section header */}
           <div style={{ marginBottom: 16 }}>
-            <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#e8e8f0' }}>Trade History</span>
+            <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>Trade History</span>
             <span style={{ fontFamily: fm, fontSize: 14, color: '#6b7280', marginLeft: 12 }}>{filtered.length} trade{filtered.length !== 1 ? 's' : ''}</span>
           </div>
 
@@ -954,9 +954,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </div>
           ) : (<>
             {/* Column headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '12px 20px', borderBottom: '2px solid #2a2b32', marginBottom: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '14px 20px', borderBottom: '2px solid #2a2b32', marginBottom: 8 }}>
               {['Symbol', 'Date', 'Strategy', 'Direction', 'Entry / Exit', 'P/L', 'R:R', 'Result'].map(h => (
-                <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 14, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, textAlign: 'center' }}>{h}</span>
+                <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 13, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: 1.5, textAlign: 'center' }}>{h}</span>
               ))}
             </div>
 
@@ -964,7 +964,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             {filtered.map(t => {
               const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '16px 20px', borderBottom: '1px solid #1e1f2a', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#1a1b25'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1.4fr 1.2fr 1fr 0.8fr', padding: '16px 20px', borderBottom: '1px solid #1e1f2a', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
                   {/* Symbol — logo + ticker + company */}
                   <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <img src={logoUrl} alt="" width={28} height={28} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
