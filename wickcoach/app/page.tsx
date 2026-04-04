@@ -384,16 +384,48 @@ function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
             <span style={{ color: '#9ca3af', fontFamily: fm, fontSize: 11, marginTop: 4 }}>Drop an image here</span>
           </>) : (
-            <div style={{ width: '100%', height: 100, background: '#0e0f14', position: 'relative', padding: 8, opacity: 1, animation: 'fadeIn 0.3s ease' }}>
-              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 10, marginBottom: 4 }}>NVDA 2min</div>
-              <svg width="100%" height="60" viewBox="0 0 200 60" fill="none">
-                {[{ x: 15, h: 30, g: true }, { x: 35, h: 20, g: false }, { x: 55, h: 35, g: true }, { x: 75, h: 15, g: true }, { x: 95, h: 25, g: false }, { x: 115, h: 40, g: true }, { x: 135, h: 18, g: true }, { x: 155, h: 28, g: false }, { x: 175, h: 32, g: true }].map((c, i) => (
-                  <React.Fragment key={i}>
-                    <line x1={c.x} y1={60 - c.h - 5} x2={c.x} y2={60 - c.h + c.h * 0.3} stroke={c.g ? '#00d4a0' : '#ef4444'} strokeWidth="1" />
-                    <rect x={c.x - 4} y={60 - c.h} width="8" height={c.h * 0.6} fill={c.g ? '#00d4a0' : '#ef4444'} rx="1" opacity="0.8" />
-                    <line x1={c.x} y1={60} x2={c.x} y2={60 - c.h * 0.2} stroke={c.g ? '#00d4a0' : '#ef4444'} strokeWidth="1" />
-                  </React.Fragment>
-                ))}
+            <div style={{ width: '100%', opacity: 1, animation: 'fadeIn 0.3s ease' }}>
+              <svg width="100%" height="100" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" style={{ background: '#0e0f14', borderRadius: 6, display: 'block' }}>
+                <rect width="400" height="200" fill="#0e0f14" rx="6"/>
+                <text x="12" y="16" fill="#6b7280" fontFamily="monospace" fontSize="10">NVDA 2min</text>
+                <line x1="30" y1="35" x2="385" y2="35" stroke="#1a1b22" strokeWidth="0.5"/>
+                <line x1="30" y1="65" x2="385" y2="65" stroke="#1a1b22" strokeWidth="0.5"/>
+                <line x1="30" y1="95" x2="385" y2="95" stroke="#1a1b22" strokeWidth="0.5"/>
+                <line x1="30" y1="125" x2="385" y2="125" stroke="#1a1b22" strokeWidth="0.5"/>
+                <line x1="30" y1="155" x2="385" y2="155" stroke="#1a1b22" strokeWidth="0.5"/>
+                <line x1="30" y1="185" x2="385" y2="185" stroke="#1a1b22" strokeWidth="0.5"/>
+                <rect x="195" y="30" width="100" height="100" fill="#00d4a0" opacity="0.06" rx="2"/>
+                <rect x="195" y="130" width="100" height="55" fill="#ef4444" opacity="0.08" rx="2"/>
+                <line x1="195" y1="130" x2="295" y2="130" stroke="#00d4a0" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5"/>
+                <line x1="195" y1="55" x2="295" y2="55" stroke="#00d4a0" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5"/>
+                <line x1="195" y1="168" x2="295" y2="168" stroke="#ef4444" strokeWidth="0.8" strokeDasharray="3,3" opacity="0.5"/>
+                <line x1="42" y1="80" x2="42" y2="148" stroke="#ef4444" strokeWidth="1"/><rect x="38" y="90" width="8" height="38" fill="#ef4444" rx="1"/>
+                <line x1="60" y1="100" x2="60" y2="165" stroke="#ef4444" strokeWidth="1"/><rect x="56" y="110" width="8" height="40" fill="#ef4444" rx="1"/>
+                <line x1="78" y1="125" x2="78" y2="178" stroke="#ef4444" strokeWidth="1"/><rect x="74" y="138" width="8" height="30" fill="#ef4444" rx="1"/>
+                <line x1="96" y1="140" x2="96" y2="188" stroke="#ef4444" strokeWidth="1"/><rect x="92" y="148" width="8" height="35" fill="#ef4444" rx="1"/>
+                <line x1="114" y1="155" x2="114" y2="192" stroke="#00d4a0" strokeWidth="1"/><rect x="110" y="165" width="8" height="10" fill="#00d4a0" rx="1"/>
+                <line x1="132" y1="148" x2="132" y2="178" stroke="#00d4a0" strokeWidth="1"/><rect x="128" y="152" width="8" height="18" fill="#00d4a0" rx="1"/>
+                <line x1="150" y1="130" x2="150" y2="165" stroke="#00d4a0" strokeWidth="1"/><rect x="146" y="135" width="8" height="22" fill="#00d4a0" rx="1"/>
+                <line x1="168" y1="125" x2="168" y2="155" stroke="#ef4444" strokeWidth="1"/><rect x="164" y="130" width="8" height="18" fill="#ef4444" rx="1"/>
+                <line x1="186" y1="118" x2="186" y2="148" stroke="#00d4a0" strokeWidth="1"/><rect x="182" y="122" width="8" height="18" fill="#00d4a0" rx="1"/>
+                <line x1="208" y1="105" x2="208" y2="142" stroke="#00d4a0" strokeWidth="1"/><rect x="204" y="108" width="8" height="28" fill="#00d4a0" rx="1"/>
+                <line x1="226" y1="88" x2="226" y2="120" stroke="#00d4a0" strokeWidth="1"/><rect x="222" y="92" width="8" height="20" fill="#00d4a0" rx="1"/>
+                <line x1="244" y1="82" x2="244" y2="108" stroke="#ef4444" strokeWidth="1"/><rect x="240" y="88" width="8" height="14" fill="#ef4444" rx="1"/>
+                <line x1="262" y1="65" x2="262" y2="95" stroke="#00d4a0" strokeWidth="1"/><rect x="258" y="68" width="8" height="20" fill="#00d4a0" rx="1"/>
+                <line x1="280" y1="50" x2="280" y2="78" stroke="#00d4a0" strokeWidth="1"/><rect x="276" y="52" width="8" height="20" fill="#00d4a0" rx="1"/>
+                <line x1="302" y1="55" x2="302" y2="88" stroke="#ef4444" strokeWidth="1"/><rect x="298" y="60" width="8" height="20" fill="#ef4444" rx="1"/>
+                <line x1="320" y1="50" x2="320" y2="78" stroke="#00d4a0" strokeWidth="1"/><rect x="316" y="54" width="8" height="16" fill="#00d4a0" rx="1"/>
+                <line x1="338" y1="55" x2="338" y2="82" stroke="#ef4444" strokeWidth="1"/><rect x="334" y="60" width="8" height="16" fill="#ef4444" rx="1"/>
+                <line x1="356" y1="48" x2="356" y2="72" stroke="#00d4a0" strokeWidth="1"/><rect x="352" y="50" width="8" height="15" fill="#00d4a0" rx="1"/>
+                <path d="M42,115 Q60,130 78,152 Q96,168 114,172 Q132,160 150,145 Q168,138 186,128 Q208,115 226,100 Q244,92 262,78 Q280,62 302,65 Q320,60 338,62 Q356,58 370,60" fill="none" stroke="#3b82f6" strokeWidth="1.2" opacity="0.7"/>
+                <path d="M42,120 Q60,132 78,148 Q96,162 114,168 Q132,162 150,152 Q168,145 186,138 Q208,125 226,112 Q244,102 262,90 Q280,78 302,75 Q320,72 338,70 Q356,68 370,68" fill="none" stroke="#f59e0b" strokeWidth="1.2" opacity="0.5"/>
+                <path d="M42,118 Q60,128 78,148 Q96,165 114,170 Q132,162 150,148 Q168,140 186,132 Q208,120 226,106 Q244,96 262,84 Q280,70 302,70 Q320,66 338,66 Q356,62 370,64" fill="none" stroke="#a78bfa" strokeWidth="1" opacity="0.5" strokeDasharray="4,3"/>
+                <line x1="12" y1="196" x2="22" y2="196" stroke="#3b82f6" strokeWidth="1.2"/>
+                <text x="25" y="198" fill="#6b7280" fontFamily="monospace" fontSize="7">20 EMA</text>
+                <line x1="68" y1="196" x2="78" y2="196" stroke="#f59e0b" strokeWidth="1.2"/>
+                <text x="81" y="198" fill="#6b7280" fontFamily="monospace" fontSize="7">50 SMA</text>
+                <line x1="125" y1="196" x2="135" y2="196" stroke="#a78bfa" strokeWidth="1" strokeDasharray="4,3"/>
+                <text x="138" y="198" fill="#6b7280" fontFamily="monospace" fontSize="7">VWAP</text>
               </svg>
             </div>
           )}
