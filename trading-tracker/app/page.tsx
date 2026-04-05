@@ -853,68 +853,126 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
       const next = statusOrder[(statusOrder.indexOf(mGoals[i].status) + 1) % statusOrder.length];
       setMGoals(mGoals.map((g, j) => j === i ? { ...g, status: next } : g));
     };
-    const statusStyle: Record<GoalStatus, { border: string; icon: React.ReactNode; label: string; labelColor: string }> = {
-      none:      { border: "border-slate-600",   icon: <span className="w-6 h-6 rounded-full border-2 border-slate-500 flex-shrink-0 block" />, label: "", labelColor: "" },
-      progress:  { border: "border-yellow-500",  icon: <span className="w-6 h-6 rounded-full border-2 border-yellow-400 flex-shrink-0 block bg-yellow-400/20" />, label: "In progress", labelColor: "text-yellow-400" },
-      completed: { border: "border-emerald-500", icon: <span className="w-6 h-6 rounded-full bg-emerald-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">✓</span>, label: "Completed", labelColor: "text-emerald-400" },
-      missed:    { border: "border-red-500",     icon: <span className="w-6 h-6 rounded-full border-2 border-red-500 flex-shrink-0 block bg-red-500/20" />, label: "Missed", labelColor: "text-red-400" },
+    const completed = mGoals.filter(g => g.status === "completed").length;
+    const total = mGoals.length;
+
+    const StatusIcon = ({ status }: { status: GoalStatus }) => {
+      if (status === "completed") return (
+        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/30">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      );
+      if (status === "progress") return (
+        <div className="w-8 h-8 rounded-full border-2 border-yellow-400 bg-yellow-400/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+        </div>
+      );
+      if (status === "missed") return (
+        <div className="w-8 h-8 rounded-full border-2 border-red-500 bg-red-500/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-3 h-3 rounded-full bg-red-500" />
+        </div>
+      );
+      return <div className="w-8 h-8 rounded-full border-2 border-slate-600 bg-slate-800/50 flex-shrink-0" />;
     };
+
+    const Badge = ({ status }: { status: GoalStatus }) => {
+      if (status === "none") return null;
+      const cfg = {
+        progress:  { cls: "bg-yellow-400/10 text-yellow-400 border border-yellow-400/30",  text: "IN PROGRESS" },
+        completed: { cls: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30", text: "COMPLETED" },
+        missed:    { cls: "bg-red-500/10 text-red-400 border border-red-500/30",             text: "MISSED" },
+      }[status];
+      return <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-full ${cfg.cls}`}>{cfg.text}</span>;
+    };
+
     return (
-      <div className="space-y-4">
-        <button onClick={onBack} className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1">
+      <div className="space-y-5">
+        <button onClick={onBack} className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1 transition-colors">
           ← All Journals
         </button>
         <h2 className="text-2xl font-extrabold tracking-tight text-white">
           Play to <span className="text-indigo-400">Win</span>
         </h2>
-        <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white">Monthly Goals</h3>
-              <p className="text-sm text-slate-400">{journal.date}</p>
+
+        <div className="bg-[#1a1b2e] border border-[#2d2f50] rounded-2xl overflow-hidden">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b border-[#2d2f50]">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-bold tracking-widest text-indigo-400 uppercase mb-1">Daily Journal</p>
+                <h3 className="text-2xl font-extrabold text-white tracking-tight">Trader Stated Goals</h3>
+                <p className="text-sm text-slate-400 mt-1">{journal.date}</p>
+              </div>
+              {total > 0 && (
+                <div className="text-right">
+                  <p className="text-3xl font-extrabold text-white">{total > 0 ? Math.round(completed / total * 100) : 0}<span className="text-lg text-slate-400">%</span></p>
+                  <p className="text-xs text-slate-500">{completed}/{total} complete</p>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="space-y-3">
-            {mGoals.length === 0 && (
-              <p className="text-slate-600 text-sm text-center py-4">No goals yet — hit + Add Goal below.</p>
+            {total > 0 && (
+              <div className="mt-4 h-1.5 bg-[#2d2f50] rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.round(completed / total * 100)}%` }} />
+              </div>
             )}
-            {mGoals.map((goal, i) => {
-              const st = statusStyle[goal.status];
-              return (
-                <div key={i} className={`bg-[#13142a] border rounded-xl p-4 space-y-2 ${st.border}`}>
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => cycleStatus(i)} className="flex-shrink-0" title="Click to change status">
-                      {st.icon}
-                    </button>
-                    <input
-                      value={goal.text}
-                      onChange={e => setMGoals(mGoals.map((g, j) => j === i ? { ...g, text: e.target.value } : g))}
-                      placeholder="Enter goal..."
-                      className="flex-1 bg-transparent text-slate-100 text-sm font-medium focus:outline-none placeholder-slate-600"
-                    />
-                    <button onClick={() => setMGoals(mGoals.filter((_, j) => j !== i))}
-                      className="text-slate-600 hover:text-red-400 text-xs transition-colors flex-shrink-0">✕</button>
-                  </div>
+          </div>
+
+          {/* Goals list */}
+          <div className="px-6 py-4 space-y-3">
+            {mGoals.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-slate-600 text-sm">No goals yet.</p>
+                <p className="text-slate-700 text-xs mt-1">Hit + Add Goal to get started.</p>
+              </div>
+            )}
+            {mGoals.map((goal, i) => (
+              <div key={i}
+                className={`group flex items-start gap-4 p-4 rounded-xl border transition-all duration-150 ${
+                  goal.status === "completed" ? "bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40" :
+                  goal.status === "progress"  ? "bg-yellow-400/5 border-yellow-400/20 hover:border-yellow-400/40" :
+                  goal.status === "missed"    ? "bg-red-500/5 border-red-500/20 hover:border-red-500/40" :
+                  "bg-[#13142a] border-[#2d2f50] hover:border-slate-500"
+                }`}>
+                <button onClick={() => cycleStatus(i)} title="Click to change status" className="mt-0.5">
+                  <StatusIcon status={goal.status} />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <input
+                    value={goal.text}
+                    onChange={e => setMGoals(mGoals.map((g, j) => j === i ? { ...g, text: e.target.value } : g))}
+                    placeholder="Enter goal..."
+                    className="w-full bg-transparent text-white text-sm font-semibold focus:outline-none placeholder-slate-700"
+                  />
                   {goal.status !== "none" && (
-                    <div className="flex items-center gap-2 pl-9">
-                      <span className={`text-xs font-semibold ${st.labelColor}`}>{st.label} —</span>
-                      <input
-                        value={goal.note}
-                        onChange={e => setMGoals(mGoals.map((g, j) => j === i ? { ...g, note: e.target.value } : g))}
-                        placeholder="Add note (e.g. hit 3/5 days)"
-                        className={`flex-1 bg-transparent text-xs focus:outline-none placeholder-slate-700 ${st.labelColor}`}
-                      />
-                    </div>
+                    <input
+                      value={goal.note}
+                      onChange={e => setMGoals(mGoals.map((g, j) => j === i ? { ...g, note: e.target.value } : g))}
+                      placeholder={goal.status === "completed" ? "e.g. hit 5/5 days" : goal.status === "progress" ? "e.g. hit 3/5 days" : "e.g. 0/5 days completed"}
+                      className={`w-full bg-transparent text-xs mt-1 focus:outline-none placeholder-slate-700 ${
+                        goal.status === "completed" ? "text-emerald-400" :
+                        goal.status === "progress"  ? "text-yellow-400" : "text-red-400"
+                      }`}
+                    />
                   )}
                 </div>
-              );
-            })}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge status={goal.status} />
+                  <button onClick={() => setMGoals(mGoals.filter((_, j) => j !== i))}
+                    className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 text-xs transition-all px-1">✕</button>
+                </div>
+              </div>
+            ))}
           </div>
-          <button
-            onClick={() => setMGoals([...mGoals, { text: "", status: "none", note: "" }])}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-sm font-semibold transition-colors">
-            + Add Goal
-          </button>
+
+          {/* Footer */}
+          <div className="px-6 pb-5">
+            <button
+              onClick={() => setMGoals([...mGoals, { text: "", status: "none", note: "" }])}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#3d3f5e] hover:border-indigo-500 text-slate-500 hover:text-indigo-400 text-sm font-semibold transition-all">
+              + Add Goal
+            </button>
+          </div>
         </div>
       </div>
     );
