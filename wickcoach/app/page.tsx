@@ -759,8 +759,16 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const [dateRange, setDateRange] = useState('All Time');
   const [sortBy, setSortBy] = useState('Newest');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [colWidths, setColWidths] = useState([60, 140, 100, 80, 50, 130, 100, 70, 60]);
+  const [colWidths, setColWidths] = useState<number[]>([70, 120, 100, 90, 50, 120, 100, 70, 70, 150]);
   const [resizing, setResizing] = useState<{ col: number; startX: number; startW: number } | null>(null);
+  const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [aiMessages, aiLoading]);
 
   React.useEffect(() => {
     if (!resizing) return;
@@ -784,6 +792,35 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [expandedImage]);
+
+  async function sendToCoach() {
+    if (!aiInput.trim() || aiLoading) return;
+    const userMsg = aiInput.trim();
+    setAiInput('');
+    setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setAiLoading(true);
+    try {
+      const tradesContext = trades.map(t =>
+        `${t.ticker} ${t.strategy} ${t.direction} Entry:$${t.entryPrice} Exit:$${t.exitPrice} P/L:$${t.pl} R:R:${t.riskReward} Date:${t.date} Journal:"${t.journal}"`
+      ).join('\n');
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content: userMsg }
+          ],
+          tradesContext
+        })
+      });
+      const data = await response.json();
+      setAiMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'Unable to analyze right now.' }]);
+    } catch {
+      setAiMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Try again.' }]);
+    }
+    setAiLoading(false);
+  }
 
   const [strategies, setStrategies] = useState<string[]>(() => {
     try { const s = localStorage.getItem('wickcoach_strategies'); if (s) return JSON.parse(s); } catch {}
@@ -896,20 +933,17 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const eqFill = equityCurve.length > 0 ? eqLine + ` L700,120 L0,120 Z` : 'M0,100 L700,100 L700,120 L0,120 Z';
   const breakEven = filtered.filter(t => t.pl === 0);
 
+  // Welcome message for Fix 8
+  const welcomeMsg = trades.length > 0 && aiMessages.length === 0 ? (() => {
+    const wr = trades.length > 0 ? Math.round((trades.filter(t => t.result === 'WIN').length / trades.length) * 100) : 0;
+    const best = trades.slice().sort((a, b) => b.pl - a.pl)[0];
+    return `You have ${trades.length} trade${trades.length !== 1 ? 's' : ''} logged with a ${wr}% win rate. Your best performer was ${best?.ticker} (+$${best?.pl.toFixed(2)}). Want me to analyze your patterns?`;
+  })() : null;
+
+  const colHeaders = ['Asset', 'Date/Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image', 'Notes'];
+
   return (
     <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
-      {/* ── LEFT SIDEBAR ── */}
-      <div style={{ width: 56, background: '#0a0b10', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 20, gap: 8, flexShrink: 0, borderRight: '1px solid #1a1b22' }}>
-        {[
-          <svg key="chart" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
-          <svg key="grid" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
-          <svg key="target" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>,
-          <svg key="layers" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></svg>,
-        ].map((icon, i) => (
-          <div key={i} style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: i === 0 ? 'rgba(0,212,160,0.12)' : 'transparent', cursor: 'pointer' }}>{icon}</div>
-        ))}
-      </div>
-
       {/* ── CENTER CONTENT ── */}
       <div style={{ flex: 1, padding: '24px 28px', overflow: 'auto', position: 'relative' }}>
         {/* Page header */}
@@ -962,7 +996,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Avg R:R */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
             <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>1:{avgRR}</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}><span>1</span><span style={{ margin: '0 4px' }}>:</span><span>{avgRR}</span></div>
           </div>
           {/* Expected Value */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
@@ -1044,19 +1078,19 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
 
         {/* ── EXPANDED IMAGE MODAL ── */}
         {expandedImage && (
-          <div onClick={() => setExpandedImage(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={expandedImage} alt="" style={{ maxWidth: '80vw', maxHeight: '80vh', objectFit: 'contain' as const, borderRadius: 8 }} />
+          <div onClick={() => setExpandedImage(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={expandedImage} alt="" style={{ maxWidth: '80vw', maxHeight: '80vh', objectFit: 'contain' as const, borderRadius: 8, borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32' }} />
           </div>
         )}
 
         {/* ── TRADE LIST ── */}
         <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
           {/* Header row */}
-          <div style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), padding: '12px 16px', background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
-            {['Asset', 'Date/Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image'].map((h, hi) => (
-              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: 'none' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
+            {colHeaders.map((h, hi) => (
+              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: 'none', padding: '12px 14px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none' }}>
                 {h}
-                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} style={{ position: 'absolute', right: 0, top: 0, width: 4, height: '100%', cursor: 'col-resize', background: 'transparent' }} onMouseEnter={e => { e.currentTarget.style.background = '#2a2b32'; }} onMouseLeave={e => { if (!resizing) e.currentTarget.style.background = 'transparent'; }} />
+                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} style={{ position: 'absolute', right: 0, top: 0, width: 4, height: '100%', cursor: 'col-resize', background: 'transparent', zIndex: 2 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.3)'; }} onMouseLeave={e => { if (!resizing) e.currentTarget.style.background = 'transparent'; }} />
               </span>
             ))}
           </div>
@@ -1069,39 +1103,41 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           ) : (<>
             {filtered.map((t, idx) => {
               const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
-              const rowBg = idx % 2 === 0 ? '#131419' : '#161720';
+              const rowBg = idx % 2 === 0 ? '#111218' : '#151620';
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), padding: '10px 16px', background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', padding: '14px', borderRight: '1px solid #1e1f2a' }}>
                     <img src={logoUrl} alt="" width={24} height={24} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
                     <span style={{ display: 'none', width: 24, height: 24, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>{t.ticker}</span>
                   </span>
                   {/* Date / Time */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap' }}>{new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {formatTime(t.time)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.strategy}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{t.strategy}</span>
                   {/* Direction */}
-                  <span>
+                  <span style={{ padding: '14px', borderRight: '1px solid #1e1f2a' }}>
                     <span style={{ padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
                   </span>
                   {/* Qty */}
-                  <span style={{ color: '#c9cdd4', fontSize: 14, textAlign: 'center' }}>{t.contracts}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 14, textAlign: 'center', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{t.contracts}</span>
                   {/* Entry / Exit */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
                   {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16 }}>{formatDollar(t.pl)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16, padding: '14px', borderRight: '1px solid #1e1f2a' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap' }}>{t.riskReward.replace(/\s/g, '')}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{t.riskReward}</span>
                   {/* Image */}
-                  <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', padding: '14px', borderRight: '1px solid #1e1f2a' }}>
                     {t.screenshot ? (
                       <img src={t.screenshot} alt="" width={40} height={30} style={{ borderRadius: 4, objectFit: 'cover' as const, background: '#1a1b22', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setExpandedImage(t.screenshot!); }} />
                     ) : (
                       <svg width="22" height="18" viewBox="0 0 24 20" fill="none" stroke="#4b5563" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2" /><circle cx="12" cy="10" r="3" /><circle cx="17" cy="6" r="1" /></svg>
                     )}
                   </span>
+                  {/* Notes */}
+                  <span style={{ color: '#8a8d98', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px' }}>{t.journal ? (t.journal.length > 30 ? t.journal.slice(0, 30) + '...' : t.journal) : '—'}</span>
                 </div>
               );
             })}
@@ -1132,61 +1168,72 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
+              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
               <div style={{ fontFamily: fm, fontSize: 10, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
             </div>
           </div>
         </div>
 
         {/* Chat area */}
-        <div style={{ flex: 1, padding: '14px 12px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.length === 0 ? (
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 12, left: -4, width: 8, height: 8, borderRadius: '50%', background: teal }} />
-              <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, marginLeft: 10 }}>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>No trades logged yet. Log your first trade and I&apos;ll start analyzing your patterns.</div>
+        <div style={{ flex: 1, padding: '12px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Welcome message or empty state */}
+          {aiMessages.length === 0 && (
+            welcomeMsg ? (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, maxWidth: '90%' }}>
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>{welcomeMsg}</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic', textAlign: 'center', padding: '0 20px', lineHeight: 1.6 }}>Ask about your trading patterns, psychology, or specific trades.</div>
+              </div>
+            )
+          )}
+          {/* Messages */}
+          {aiMessages.map((msg, i) => (
+            msg.role === 'assistant' ? (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, maxWidth: '90%' }}>
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>{msg.content}</div>
+                </div>
+              </div>
+            ) : (
+              <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ background: '#1a2520', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', borderRadius: 10, padding: 12, maxWidth: '85%' }}>
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>{msg.content}</div>
+                </div>
+              </div>
+            )
+          ))}
+          {/* Loading indicator */}
+          {aiLoading && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+              <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '12px 16px' }}>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[0, 1, 2].map(d => (
+                    <span key={d} style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b7280', animation: `dotPulse 1.2s ease-in-out ${d * 0.2}s infinite` }} />
+                  ))}
+                </div>
               </div>
             </div>
-          ) : (<>
-            {/* Trader message 1 */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div style={{ background: 'rgba(0,212,160,0.08)', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', borderRadius: 10, padding: 12, maxWidth: '85%' }}>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>Just logged a {filtered[0]?.ticker} {filtered[0]?.strategy}. Felt good about the {filtered[0]?.direction === 'LONG' ? 'VWAP reclaim' : 'breakdown'} entry.</div>
-              </div>
-            </div>
-            {/* AI response 1 */}
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 12, left: -4, width: 8, height: 8, borderRadius: '50%', background: teal }} />
-              <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, marginLeft: 10 }}>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>I noticed your win rate on <strong style={{ color: '#fff' }}>{filtered[0]?.strategy}</strong> strategies is {winRate}%. Your entry at ${filtered[0]?.entryPrice.toFixed(2)} was clean. {winRate >= 50 ? 'Keep this discipline.' : 'Consider reviewing your entry criteria.'} Ask me anything about your trades.</div>
-              </div>
-            </div>
-            {/* Trader message 2 */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <div style={{ background: 'rgba(0,212,160,0.08)', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', borderRadius: 10, padding: 12, maxWidth: '85%' }}>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>Why was my {filtered[filtered.length - 1]?.ticker} trade a {filtered[filtered.length - 1]?.result === 'WIN' ? 'winner' : 'loser'}?</div>
-              </div>
-            </div>
-            {/* AI response 2 */}
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 12, left: -4, width: 8, height: 8, borderRadius: '50%', background: teal }} />
-              <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, marginLeft: 10 }}>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>Analyzing Trade <strong style={{ color: '#fff' }}>#{filtered[filtered.length - 1]?.ticker}</strong>... Entry at ${filtered[filtered.length - 1]?.entryPrice.toFixed(2)} with {filtered[filtered.length - 1]?.riskReward} R:R. {filtered[filtered.length - 1]?.result === 'WIN' ? 'Clean execution following your rules. The entry provided a high-probability setup with defined risk.' : 'Review your position sizing and timing on this one.'}</div>
-              </div>
-            </div>
-          </>)}
+          )}
+          <div ref={chatEndRef} />
         </div>
 
         {/* Chat input */}
         <div style={{ padding: '10px 12px', borderTop: '1px solid #1a1b22' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '8px 12px' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{ flexShrink: 0, cursor: 'pointer' }}><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-            <input placeholder="Ask WickCoach about your trades..." readOnly style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#6b7280', fontFamily: fm, fontSize: 13 }} />
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '10px 14px' }}>
+            <input value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendToCoach(); }} placeholder="Ask WickCoach about your trades..." style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#c9cdd4', fontFamily: fm, fontSize: 13 }} />
+            <div onClick={sendToCoach} style={{ width: 32, height: 32, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: aiLoading ? 0.5 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
             </div>
           </div>
         </div>
+        <style>{`@keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }`}</style>
       </div>
     </div>
   );
@@ -1610,7 +1657,7 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Hero animation video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, clipPath: 'inset(0 0 12% 0)' }} />
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
             {/* Subtitle */}
