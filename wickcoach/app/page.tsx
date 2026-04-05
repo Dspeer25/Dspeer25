@@ -1413,7 +1413,7 @@ export default function WickCoachFull() {
   // Load trades from localStorage on mount, fallback to fake-trades.json
   React.useEffect(() => {
     try {
-      const dataVersion = 'v3';
+      const dataVersion = 'v4';
       const storedVersion = localStorage.getItem('wickcoach_trades_version');
       const stored = localStorage.getItem('wickcoach_trades');
       const parsed = stored ? JSON.parse(stored) : [];
