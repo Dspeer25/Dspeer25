@@ -759,7 +759,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const [dateRange, setDateRange] = useState('All Time');
   const [sortBy, setSortBy] = useState('Newest');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [colWidths, setColWidths] = useState<number[]>([70, 120, 100, 90, 50, 120, 100, 70, 70, 150]);
+  const [colWidths, setColWidths] = useState<number[]>([70, 90, 70, 110, 80, 50, 130, 100, 80, 60, 180]);
   const [resizing, setResizing] = useState<{ col: number; startX: number; startW: number } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [eqHover, setEqHover] = useState<{ x: number; y: number; date: string; value: number } | null>(null);
@@ -863,15 +863,26 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     return 0;
   });
 
-  // Stats
-  const wins = filtered.filter(t => t.result === 'WIN');
-  const losses = filtered.filter(t => t.result === 'LOSS');
-  const totalPL = filtered.reduce((s, t) => s + t.pl, 0);
-  const winRate = filtered.length > 0 ? Math.round((wins.length / filtered.length) * 100) : 0;
-  const avgRR = filtered.length > 0 ? (filtered.reduce((s, t) => s + (parseFloat(t.riskReward) || 0), 0) / filtered.length).toFixed(1) : '—';
+  // Stats — also respect equity curve time filter
+  const statTrades = (() => {
+    const now = new Date();
+    let cutoff: Date;
+    if (eqRange === '1D') cutoff = new Date(now.getTime() - 86400000);
+    else if (eqRange === '1W') cutoff = new Date(now.getTime() - 7 * 86400000);
+    else if (eqRange === '1M') cutoff = new Date(now.getTime() - 30 * 86400000);
+    else if (eqRange === '3M') cutoff = new Date(now.getTime() - 90 * 86400000);
+    else cutoff = new Date('2000-01-01');
+    return filtered.filter(t => new Date(t.date) >= cutoff);
+  })();
+  const wins = statTrades.filter(t => t.result === 'WIN' && t.pl > 0);
+  const losses = statTrades.filter(t => t.result === 'LOSS' || (t.result !== 'WIN' && t.pl < 0));
+  const totalPL = statTrades.reduce((s, t) => s + t.pl, 0);
+  const winRate = statTrades.length > 0 ? Math.round((wins.length / statTrades.length) * 100) : 0;
+  const winRRValues = wins.map(t => parseFloat(t.riskReward.split(':')[1]) || 0);
+  const avgRR = winRRValues.length > 0 ? (winRRValues.reduce((a, b) => a + b, 0) / winRRValues.length).toFixed(1) : '—';
   const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pl, 0) / wins.length : 0;
   const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pl, 0) / losses.length) : 0;
-  const expectedValue = filtered.length > 0 ? (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss : 0;
+  const expectedValue = statTrades.length > 0 ? (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss : 0;
 
   // P/L sparkline points
   const sparkPoints = (() => {
@@ -961,7 +972,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     }
     return labels;
   })();
-  const breakEven = filtered.filter(t => t.pl === 0);
+  const breakEven = statTrades.filter(t => t.pl === 0);
 
   // Pagination
   const perPage = 20;
@@ -976,7 +987,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     return `You have ${trades.length} trade${trades.length !== 1 ? 's' : ''} logged with a ${wr}% win rate. Your best performer was ${best?.ticker} (+$${best?.pl.toFixed(2)}). Want me to analyze your patterns?`;
   })() : null;
 
-  const colHeaders = ['Asset', 'Date/Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image', 'Notes'];
+  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image', 'Notes'];
 
   function autoFitColumn(colIndex: number) {
     const headerLen = colHeaders[colIndex].length;
@@ -985,15 +996,16 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
       let cellText = '';
       switch (colIndex) {
         case 0: cellText = t.ticker; break;
-        case 1: cellText = new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + formatTime(t.time); break;
-        case 2: cellText = t.strategy; break;
-        case 3: cellText = t.direction; break;
-        case 4: cellText = String(t.contracts); break;
-        case 5: cellText = '$' + t.entryPrice.toFixed(2) + ' → $' + t.exitPrice.toFixed(2); break;
-        case 6: cellText = formatDollar(t.pl); break;
-        case 7: cellText = t.riskReward.replace(/(\d+):(\d)/, '$1 : $2'); break;
-        case 8: cellText = 'IMG'; break;
-        case 9: cellText = t.journal ? t.journal.slice(0, 30) : '—'; break;
+        case 1: { const d = new Date(t.date); cellText = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`; break; }
+        case 2: cellText = formatTime(t.time); break;
+        case 3: cellText = t.strategy; break;
+        case 4: cellText = t.direction; break;
+        case 5: cellText = String(t.contracts); break;
+        case 6: cellText = '$' + t.entryPrice.toFixed(2) + ' → $' + t.exitPrice.toFixed(2); break;
+        case 7: cellText = formatDollar(t.pl); break;
+        case 8: cellText = t.riskReward.replace(/(\d+):(\d)/, '$1 : $2'); break;
+        case 9: cellText = 'IMG'; break;
+        case 10: cellText = t.journal || '—'; break;
       }
       if (cellText.length > maxLen) maxLen = cellText.length;
     });
@@ -1070,7 +1082,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Total Trades */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
             <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Trades</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{filtered.length}</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{statTrades.length}</div>
           </div>
           {/* Avg R:R */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
@@ -1221,37 +1233,39 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               return (
                 <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden', padding: '14px 8px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                    <img src={logoUrl} alt="" width={24} height={24} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
-                    <span style={{ display: 'none', width: 24, height: 24, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
-                    <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>{t.ticker}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap' }}>
+                    <img src={logoUrl} alt="" width={22} height={22} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
+                    <span style={{ display: 'none', width: 22, height: 22, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
+                    <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 13 }}>{t.ticker}</span>
                   </span>
-                  {/* Date / Time */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>{new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {formatTime(t.time)}</span>
+                  {/* Date */}
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
+                  {/* Time */}
+                  <span style={{ color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
                   {/* Direction */}
-                  <span style={{ padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
+                  <span style={{ padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
                   </span>
                   {/* Qty */}
-                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
+                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
                   {/* Entry / Exit */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
                   {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 15, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Image */}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 8px', borderRight: '1px solid #1e1f2a' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 6px', borderRight: '1px solid #1e1f2a' }}>
                     {t.screenshot ? (
                       <img src={t.screenshot} alt="" width={40} height={30} style={{ borderRadius: 4, objectFit: 'cover' as const, background: '#1a1b22', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setExpandedImage(t.screenshot!); }} />
                     ) : (
-                      <svg width="22" height="18" viewBox="0 0 24 20" fill="none" stroke="#4b5563" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2" /><circle cx="12" cy="10" r="3" /><circle cx="17" cy="6" r="1" /></svg>
+                      <span style={{ color: '#3a3b42', fontSize: 11 }}>—</span>
                     )}
                   </span>
                   {/* Notes */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal ? (t.journal.length > 30 ? t.journal.slice(0, 30) + '...' : t.journal) : '—'}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', display: 'flex', alignItems: 'center', position: 'relative' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</span>
                 </div>
               );
             })}
@@ -1274,7 +1288,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
       </div>
 
       {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
-      <div style={{ width: '30%', minWidth: 280, maxWidth: 380, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12' }}>
+      <div style={{ width: '30%', minWidth: 280, maxWidth: 380, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid #1a1b22' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1376,14 +1390,17 @@ export default function WickCoachFull() {
   // Load trades from localStorage on mount, fallback to fake-trades.json
   React.useEffect(() => {
     try {
+      const dataVersion = 'v2';
+      const storedVersion = localStorage.getItem('wickcoach_trades_version');
       const stored = localStorage.getItem('wickcoach_trades');
       const parsed = stored ? JSON.parse(stored) : [];
-      if (parsed.length < 10) {
+      if (parsed.length < 10 || storedVersion !== dataVersion) {
         fetch('/fake-trades.json')
           .then(r => r.json())
           .then(data => {
             setTrades(data);
             localStorage.setItem('wickcoach_trades', JSON.stringify(data));
+            localStorage.setItem('wickcoach_trades_version', dataVersion);
           })
           .catch(() => setTrades(parsed));
       } else {
