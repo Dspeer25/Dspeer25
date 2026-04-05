@@ -765,6 +765,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const [eqHover, setEqHover] = useState<{ x: number; y: number; date: string; value: number } | null>(null);
   const [eqRange, setEqRange] = useState('YTD');
   const [notesTooltip, setNotesTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [showAiSidebar, setShowAiSidebar] = useState(false);
   React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy]);
   const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [aiInput, setAiInput] = useState('');
@@ -1049,9 +1050,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
       {/* ── CENTER CONTENT ── */}
-      <div style={{ flex: '1 1 72%', padding: '24px 28px', overflow: 'auto', position: 'relative' }}>
+      <div style={{ flex: 1, padding: '24px 40px', overflow: 'auto', position: 'relative', maxWidth: showAiSidebar ? undefined : 1200, margin: showAiSidebar ? undefined : '0 auto' }}>
         {/* Page header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
@@ -1113,9 +1114,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
         </div>
           {/* HIGH-LEVEL ANALYSIS — right of stat cards */}
-          <div onClick={() => { document.getElementById('wickcoach-ai-sidebar')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', flexShrink: 0 }}>
+          <div onClick={() => setShowAiSidebar(prev => !prev)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', flexShrink: 0 }}>
             <div style={{ fontFamily: fm, fontSize: 16, color: teal, textTransform: 'uppercase' as const, letterSpacing: 3, textAlign: 'center', lineHeight: 1.3, fontWeight: 700 }}>HIGH-LEVEL<br/>ANALYSIS</div>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', border: '2px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 24px rgba(0,212,160,0.2)', transition: 'all 0.3s' }}>
+            <div className="hla-icon-circle" style={{ width: 72, height: 72, borderRadius: '50%', border: `2px solid ${showAiSidebar ? teal : '#ffffff'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', background: showAiSidebar ? 'rgba(0,212,160,0.1)' : 'rgba(255,255,255,0.05)', boxShadow: showAiSidebar ? '0 0 20px rgba(0,212,160,0.4)' : '0 0 24px rgba(0,212,160,0.2)', transition: 'all 0.3s' }} onMouseEnter={e => { if (!showAiSidebar) e.currentTarget.style.boxShadow = '0 0 15px rgba(0,212,160,0.3)'; }} onMouseLeave={e => { if (!showAiSidebar) e.currentTarget.style.boxShadow = '0 0 24px rgba(0,212,160,0.2)'; }}>
               <svg width="32" height="56" viewBox="0 0 20 24" fill="none">
                 <circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" />
                 <line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" />
@@ -1323,7 +1324,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
       </div>
 
       {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
-      <div id="wickcoach-ai-sidebar" style={{ flex: '0 0 28%', minWidth: 280, maxWidth: 380, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
+      <div id="wickcoach-ai-sidebar" style={{ flex: '0 0 28%', minWidth: 280, maxWidth: 380, borderLeft: '1px solid #1a1b22', display: showAiSidebar ? 'flex' : 'none', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid #1a1b22' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1339,10 +1340,11 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                 <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
               </svg>
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
               <div style={{ fontFamily: fm, fontSize: 10, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
             </div>
+            <span onClick={() => setShowAiSidebar(false)} style={{ color: '#6b7280', fontSize: 18, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, lineHeight: 1, transition: 'color 0.2s' }} onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }} onMouseLeave={e => { e.currentTarget.style.color = '#6b7280'; }}>✕</span>
           </div>
         </div>
 
