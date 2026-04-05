@@ -74,6 +74,31 @@ const TBadge = ({ ticker }: { ticker: string }) => {
 const cDomains: Record<string, string> = { QQQ: "invesco.com", SPY: "ssga.com", AAPL: "apple.com", NVDA: "nvidia.com", TSLA: "tesla.com", AMZN: "amazon.com", META: "meta.com", MSFT: "microsoft.com", GOOG: "google.com" };
 const CLogo = ({ t }: { t: string }) => <img src={`https://logo.clearbit.com/${cDomains[t]}?size=48`} alt={t} style={{ width: 20, height: 20, borderRadius: "50%", background: "#1a1b22", objectFit: "cover" as const }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />;
 
+const tickerBgColors: Record<string, string> = { QQQ: '#7b3fe4', TSLA: '#cc0000', SPY: '#1a4a8a', NVDA: '#76b900', AAPL: '#555', META: '#0668E1', AMZN: '#ff9900', MSFT: '#00a4ef', GOOGL: '#4285f4', AMD: '#ed1c24', NFLX: '#e50914', BA: '#0039a6', DIS: '#113ccf', JPM: '#006cb7', V: '#1a1f71', WMT: '#0071dc', COIN: '#0052ff', GOOG: '#4285f4' };
+
+const TickerLogo = ({ ticker, sources }: { ticker: string; sources: string[] }) => {
+  const [srcIdx, setSrcIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const allFailed = srcIdx >= sources.length;
+  return (
+    <div style={{ width: 24, height: 24, borderRadius: 6, background: tickerBgColors[ticker] || '#2a2b32', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+      {!allFailed && (
+        <img
+          key={srcIdx}
+          src={sources[srcIdx]}
+          alt={ticker}
+          width={24}
+          height={24}
+          style={{ objectFit: 'cover', borderRadius: 6, display: loaded ? 'block' : 'none' }}
+          onLoad={() => setLoaded(true)}
+          onError={() => { setLoaded(false); setSrcIdx(i => i + 1); }}
+        />
+      )}
+      {(allFailed || !loaded) && <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: fm }}>{ticker.slice(0, 3)}</span>}
+    </div>
+  );
+};
+
 function MockLogATrade({ onAdvance }: { onAdvance: () => void }) {
   const [s, setS] = useState(0);
   const [tickerText, setTickerText] = useState('');
@@ -904,16 +929,25 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     }).join(' ');
   })();
 
-  const tickerLogos: Record<string, string> = {
-    QQQ: 'https://logo.clearbit.com/invesco.com', NVDA: 'https://logo.clearbit.com/nvidia.com',
-    AAPL: 'https://logo.clearbit.com/apple.com', TSLA: 'https://logo.clearbit.com/tesla.com',
-    SPY: 'https://logo.clearbit.com/ssga.com', AMZN: 'https://logo.clearbit.com/amazon.com',
-    META: 'https://logo.clearbit.com/meta.com', MSFT: 'https://logo.clearbit.com/microsoft.com',
-    GOOGL: 'https://logo.clearbit.com/google.com', AMD: 'https://logo.clearbit.com/amd.com',
-    GOOG: 'https://logo.clearbit.com/google.com', NFLX: 'https://logo.clearbit.com/netflix.com',
-    BA: 'https://logo.clearbit.com/boeing.com', DIS: 'https://logo.clearbit.com/disney.com',
-    JPM: 'https://logo.clearbit.com/jpmorganchase.com', V: 'https://logo.clearbit.com/visa.com',
-    WMT: 'https://logo.clearbit.com/walmart.com', COIN: 'https://logo.clearbit.com/coinbase.com',
+  const tickerLogos: Record<string, string[]> = {
+    QQQ: ['https://logo.clearbit.com/invesco.com', 'https://assets.parqet.com/logos/symbol/QQQ?format=png', 'https://storage.googleapis.com/iex/api/logos/QQQ.png'],
+    NVDA: ['https://logo.clearbit.com/nvidia.com', 'https://assets.parqet.com/logos/symbol/NVDA?format=png', 'https://storage.googleapis.com/iex/api/logos/NVDA.png'],
+    AAPL: ['https://logo.clearbit.com/apple.com', 'https://assets.parqet.com/logos/symbol/AAPL?format=png', 'https://storage.googleapis.com/iex/api/logos/AAPL.png'],
+    TSLA: ['https://logo.clearbit.com/tesla.com', 'https://assets.parqet.com/logos/symbol/TSLA?format=png', 'https://storage.googleapis.com/iex/api/logos/TSLA.png'],
+    SPY: ['https://logo.clearbit.com/ssga.com', 'https://assets.parqet.com/logos/symbol/SPY?format=png', 'https://storage.googleapis.com/iex/api/logos/SPY.png'],
+    AMZN: ['https://logo.clearbit.com/amazon.com', 'https://assets.parqet.com/logos/symbol/AMZN?format=png', 'https://storage.googleapis.com/iex/api/logos/AMZN.png'],
+    META: ['https://logo.clearbit.com/meta.com', 'https://assets.parqet.com/logos/symbol/META?format=png', 'https://storage.googleapis.com/iex/api/logos/META.png'],
+    MSFT: ['https://logo.clearbit.com/microsoft.com', 'https://assets.parqet.com/logos/symbol/MSFT?format=png', 'https://storage.googleapis.com/iex/api/logos/MSFT.png'],
+    GOOGL: ['https://logo.clearbit.com/google.com', 'https://assets.parqet.com/logos/symbol/GOOGL?format=png', 'https://storage.googleapis.com/iex/api/logos/GOOGL.png'],
+    AMD: ['https://logo.clearbit.com/amd.com', 'https://assets.parqet.com/logos/symbol/AMD?format=png', 'https://storage.googleapis.com/iex/api/logos/AMD.png'],
+    GOOG: ['https://logo.clearbit.com/google.com', 'https://assets.parqet.com/logos/symbol/GOOG?format=png'],
+    NFLX: ['https://logo.clearbit.com/netflix.com', 'https://assets.parqet.com/logos/symbol/NFLX?format=png', 'https://storage.googleapis.com/iex/api/logos/NFLX.png'],
+    BA: ['https://logo.clearbit.com/boeing.com', 'https://assets.parqet.com/logos/symbol/BA?format=png', 'https://storage.googleapis.com/iex/api/logos/BA.png'],
+    DIS: ['https://logo.clearbit.com/disney.com', 'https://assets.parqet.com/logos/symbol/DIS?format=png', 'https://storage.googleapis.com/iex/api/logos/DIS.png'],
+    JPM: ['https://logo.clearbit.com/jpmorganchase.com', 'https://assets.parqet.com/logos/symbol/JPM?format=png', 'https://storage.googleapis.com/iex/api/logos/JPM.png'],
+    V: ['https://logo.clearbit.com/visa.com', 'https://assets.parqet.com/logos/symbol/V?format=png', 'https://storage.googleapis.com/iex/api/logos/V.png'],
+    WMT: ['https://logo.clearbit.com/walmart.com', 'https://assets.parqet.com/logos/symbol/WMT?format=png', 'https://storage.googleapis.com/iex/api/logos/WMT.png'],
+    COIN: ['https://logo.clearbit.com/coinbase.com', 'https://assets.parqet.com/logos/symbol/COIN?format=png', 'https://storage.googleapis.com/iex/api/logos/COIN.png'],
   };
 
   const formatDate = (d: string) => {
@@ -1247,14 +1281,13 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </div>
           ) : (<>
             {pagedTrades.map((t, idx) => {
-              const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
+              const logoSources = tickerLogos[t.ticker] || [`https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`, `https://assets.parqet.com/logos/symbol/${t.ticker}?format=png`, `https://storage.googleapis.com/iex/api/logos/${t.ticker}.png`];
               const rowBg = idx % 2 === 0 ? '#111218' : '#151620';
               return (
                 <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap' }}>
-                    <img src={logoUrl} alt="" width={22} height={22} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
-                    <span style={{ display: 'none', width: 22, height: 22, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
+                    <TickerLogo ticker={t.ticker} sources={logoSources} />
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 13 }}>{t.ticker}</span>
                   </span>
                   {/* Date */}
