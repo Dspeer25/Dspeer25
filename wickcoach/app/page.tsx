@@ -761,6 +761,11 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [colWidths, setColWidths] = useState<number[]>([70, 120, 100, 90, 50, 120, 100, 70, 70, 150]);
   const [resizing, setResizing] = useState<{ col: number; startX: number; startW: number } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [eqHover, setEqHover] = useState<{ x: number; y: number; date: string; value: number } | null>(null);
+  const [eqRange, setEqRange] = useState('YTD');
+  const [notesTooltip, setNotesTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+  React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy]);
   const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -921,17 +926,48 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   });
 
   // Equity curve data — always from ALL trades, not filtered
-  const equityCurve = (() => {
+  const equityCurveAll = (() => {
     const sorted = trades.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     let running = 0;
     return sorted.map(t => { running += t.pl; return { date: t.date, value: running }; });
   })();
-  const eqMax = equityCurve.length > 0 ? Math.max(...equityCurve.map(e => Math.abs(e.value)), 1) : 1;
+  const equityCurve = (() => {
+    if (equityCurveAll.length === 0) return [];
+    const now = new Date();
+    let cutoff: Date;
+    if (eqRange === '1D') { cutoff = new Date(now.getTime() - 86400000); }
+    else if (eqRange === '1W') { cutoff = new Date(now.getTime() - 7 * 86400000); }
+    else if (eqRange === '1M') { cutoff = new Date(now.getTime() - 30 * 86400000); }
+    else if (eqRange === '3M') { cutoff = new Date(now.getTime() - 90 * 86400000); }
+    else { cutoff = new Date('2000-01-01'); }
+    return equityCurveAll.filter(e => new Date(e.date) >= cutoff);
+  })();
+  const eqMin = equityCurve.length > 0 ? Math.min(...equityCurve.map(e => e.value)) : 0;
+  const eqMaxVal = equityCurve.length > 0 ? Math.max(...equityCurve.map(e => e.value)) : 1;
+  const eqRange2 = Math.max(eqMaxVal - eqMin, 1);
   const eqLine = equityCurve.length > 0
-    ? equityCurve.map((e, i) => { const x = (i / Math.max(equityCurve.length - 1, 1)) * 700; const y = 100 - ((e.value / eqMax) * 80 + 10); return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ')
+    ? equityCurve.map((e, i) => { const x = (i / Math.max(equityCurve.length - 1, 1)) * 700; const y = 10 + (1 - (e.value - eqMin) / eqRange2) * 100; return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ')
     : 'M0,100 L700,100';
   const eqFill = equityCurve.length > 0 ? eqLine + ` L700,120 L0,120 Z` : 'M0,100 L700,100 L700,120 L0,120 Z';
+  // Y-axis labels
+  const eqYLabels = (() => {
+    if (equityCurve.length === 0) return [];
+    const steps = 4;
+    const labels: { value: number; y: number }[] = [];
+    for (let i = 0; i <= steps; i++) {
+      const value = eqMaxVal - (i / steps) * eqRange2;
+      const y = 10 + (i / steps) * 100;
+      labels.push({ value: Math.round(value), y });
+    }
+    return labels;
+  })();
   const breakEven = filtered.filter(t => t.pl === 0);
+
+  // Pagination
+  const perPage = 20;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedTrades = filtered.slice((safePage - 1) * perPage, safePage * perPage);
 
   // Welcome message for Fix 8
   const welcomeMsg = trades.length > 0 && aiMessages.length === 0 ? (() => {
@@ -945,7 +981,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   function autoFitColumn(colIndex: number) {
     const headerLen = colHeaders[colIndex].length;
     let maxLen = headerLen;
-    filtered.forEach(t => {
+    pagedTrades.forEach(t => {
       let cellText = '';
       switch (colIndex) {
         case 0: cellText = t.ticker; break;
@@ -961,7 +997,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
       }
       if (cellText.length > maxLen) maxLen = cellText.length;
     });
-    const newWidth = Math.min(300, Math.max(50, Math.round(maxLen * 8.5) + 32));
+    const newWidth = Math.min(300, Math.max(50, Math.round(maxLen * 9) + 40));
     setColWidths(prev => { const next = [...prev]; next[colIndex] = newWidth; return next; });
   }
 
@@ -1057,19 +1093,54 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#e8e8f0' }}>Equity Curve</span>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
-              {['1W', '1M', 'YTD'].map(p => (
-                <span key={p} style={{ fontFamily: fm, fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: p === '1M' ? 'rgba(0,212,160,0.12)' : 'transparent', color: p === '1M' ? teal : '#6b7280', borderTop: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderRight: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderBottom: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderLeft: p === '1M' ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', fontWeight: 600 }}>{p}</span>
+              {['1D', '1W', '1M', '3M', 'YTD'].map(p => (
+                <span key={p} onClick={() => setEqRange(p)} style={{ fontFamily: fm, fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: eqRange === p ? 'rgba(0,212,160,0.12)' : 'transparent', color: eqRange === p ? teal : '#6b7280', borderTop: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderRight: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderBottom: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderLeft: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', fontWeight: 600 }}>{p}</span>
               ))}
             </div>
           </div>
-          <svg width="100%" height="120" viewBox="0 0 700 120" preserveAspectRatio="none" style={{ display: 'block' }}>
-            {[30, 60, 90].map(y => <line key={y} x1="0" y1={y} x2="700" y2={y} stroke="#1a1b22" strokeWidth="1" />)}
-            <defs><linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={teal} stopOpacity="0.12" /><stop offset="100%" stopColor={teal} stopOpacity="0" /></linearGradient></defs>
-            <path d={eqFill} fill="url(#eqGrad)" />
-            <path d={eqLine} fill="none" stroke={teal} strokeWidth="2" />
-          </svg>
+          <div style={{ display: 'flex', position: 'relative' }}>
+            {/* Y-axis labels */}
+            <div style={{ width: 55, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 6 }}>
+              {eqYLabels.map((label, li) => (
+                <span key={li} style={{ fontFamily: fm, fontSize: 10, color: '#6b7280', textAlign: 'right', lineHeight: '1' }}>{label.value >= 0 ? '+' : ''}{label.value >= 1000 ? `$${(label.value / 1000).toFixed(1)}k` : `$${label.value}`}</span>
+              ))}
+            </div>
+            {/* Chart */}
+            <div style={{ flex: 1, position: 'relative' }}>
+              <svg width="100%" height="120" viewBox="0 0 700 120" preserveAspectRatio="none" style={{ display: 'block' }}
+                onMouseMove={e => {
+                  if (equityCurve.length === 0) return;
+                  const rect = (e.target as SVGElement).closest('svg')?.getBoundingClientRect();
+                  if (!rect) return;
+                  const relX = (e.clientX - rect.left) / rect.width;
+                  const idx = Math.min(Math.max(Math.round(relX * (equityCurve.length - 1)), 0), equityCurve.length - 1);
+                  const pt = equityCurve[idx];
+                  const svgX = (idx / Math.max(equityCurve.length - 1, 1)) * 700;
+                  const svgY = 10 + (1 - (pt.value - eqMin) / eqRange2) * 100;
+                  setEqHover({ x: svgX, y: svgY, date: pt.date, value: pt.value });
+                }}
+                onMouseLeave={() => setEqHover(null)}
+              >
+                {[30, 60, 90].map(y => <line key={y} x1="0" y1={y} x2="700" y2={y} stroke="#1a1b22" strokeWidth="1" />)}
+                <defs><linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={teal} stopOpacity="0.12" /><stop offset="100%" stopColor={teal} stopOpacity="0" /></linearGradient></defs>
+                <path d={eqFill} fill="url(#eqGrad)" />
+                <path d={eqLine} fill="none" stroke={teal} strokeWidth="2" />
+                {eqHover && (<>
+                  <line x1={eqHover.x} y1="0" x2={eqHover.x} y2="120" stroke="rgba(0,212,160,0.4)" strokeWidth="1" strokeDasharray="3,3" />
+                  <circle cx={eqHover.x} cy={eqHover.y} r="4" fill={teal} stroke="#0e0f14" strokeWidth="2" />
+                </>)}
+              </svg>
+              {/* Hover tooltip */}
+              {eqHover && (
+                <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#13141a', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                  <div style={{ color: '#9ca3af' }}>{new Date(eqHover.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div style={{ color: eqHover.value >= 0 ? teal : '#ef4444', fontWeight: 700 }}>{formatDollar(Math.round(eqHover.value))}</div>
+                </div>
+              )}
+            </div>
+          </div>
           {equityCurve.length > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, paddingLeft: 55 }}>
               {[0, Math.floor(equityCurve.length * 0.25), Math.floor(equityCurve.length * 0.5), Math.floor(equityCurve.length * 0.75), equityCurve.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(idx => (
                 <span key={idx} style={{ fontFamily: fm, fontSize: 11, color: '#6b7280' }}>
                   {new Date(equityCurve[idx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -1133,7 +1204,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             {colHeaders.map((h, hi) => (
               <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {h}
-                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} onDoubleClick={() => autoFitColumn(hi)} style={{ position: 'absolute', right: -1, top: 0, width: 2, height: '100%', cursor: 'col-resize', background: resizing?.col === hi ? 'rgba(0,212,160,1)' : 'transparent', zIndex: 2, transition: 'background 0.2s ease, opacity 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.8)'; e.currentTarget.style.width = '3px'; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.width = '2px'; } }} />
+                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} onDoubleClick={() => autoFitColumn(hi)} style={{ position: 'absolute', right: -4, top: 0, width: 8, height: '100%', cursor: 'col-resize', zIndex: 2, background: 'transparent' }} onMouseEnter={e => { e.currentTarget.style.borderRight = `3px solid ${teal}`; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) e.currentTarget.style.borderRight = 'none'; }} />
               </span>
             ))}
           </div>
@@ -1144,7 +1215,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
             </div>
           ) : (<>
-            {filtered.map((t, idx) => {
+            {pagedTrades.map((t, idx) => {
               const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
               const rowBg = idx % 2 === 0 ? '#111218' : '#151620';
               return (
@@ -1180,15 +1251,24 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                     )}
                   </span>
                   {/* Notes */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.journal ? (t.journal.length > 30 ? t.journal.slice(0, 30) + '...' : t.journal) : '—'}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal ? (t.journal.length > 30 ? t.journal.slice(0, 30) + '...' : t.journal) : '—'}</span>
                 </div>
               );
             })}
           </>)}
         </div>
         {filtered.length > 0 && (
-          <div style={{ textAlign: 'center', padding: '16px 0', marginTop: 8 }}>
-            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing {filtered.length} of {trades.length} trades</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, padding: '16px 0', marginTop: 8 }}>
+            <span onClick={() => { if (safePage > 1) setCurrentPage(safePage - 1); }} style={{ fontFamily: fm, fontSize: 13, color: safePage > 1 ? teal : '#3a3b42', cursor: safePage > 1 ? 'pointer' : 'default', fontWeight: 600 }}>&larr; Previous</span>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing {(safePage - 1) * perPage + 1}-{Math.min(safePage * perPage, filtered.length)} of {filtered.length} trades</span>
+            <span onClick={() => { if (safePage < totalPages) setCurrentPage(safePage + 1); }} style={{ fontFamily: fm, fontSize: 13, color: safePage < totalPages ? teal : '#3a3b42', cursor: safePage < totalPages ? 'pointer' : 'default', fontWeight: 600 }}>Next &rarr;</span>
+          </div>
+        )}
+
+        {/* Notes tooltip */}
+        {notesTooltip && (
+          <div style={{ position: 'fixed', left: Math.min(notesTooltip.x, window.innerWidth - 380), top: notesTooltip.y - 10, transform: 'translateY(-100%)', background: '#13141a', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 8, padding: 12, maxWidth: 350, fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6, zIndex: 50, whiteSpace: 'normal', pointerEvents: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+            {notesTooltip.text}
           </div>
         )}
       </div>
