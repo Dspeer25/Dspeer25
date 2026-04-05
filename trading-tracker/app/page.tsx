@@ -33,12 +33,14 @@ type Folder = { id: string; name: string; collapsed: boolean };
 type Journal = {
   id: string;
   folderId?: string;
+  title?: string;
   date: string;
   goals: [Goal, Goal, Goal];
   marketOn: boolean;
   observations: string;
   grade?: string;
   review?: string;
+  body?: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -841,6 +843,37 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   const btnCls = "flex items-center justify-center rounded-lg text-sm font-semibold h-10 transition-all cursor-pointer select-none";
   const rBtnCls = "flex items-center justify-center rounded-lg text-xs font-bold h-10 bg-violet-900/60 hover:bg-violet-700 text-violet-200 transition-all cursor-pointer select-none";
 
+  if (journal.title === "Monthly Goals") {
+    return (
+      <div className="space-y-4">
+        <button onClick={onBack} className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1">
+          ← All Journals
+        </button>
+        <h2 className="text-2xl font-extrabold tracking-tight text-white">
+          Play to <span className="text-indigo-400">Win</span>
+        </h2>
+        <p className="text-sm text-slate-400">{journal.date}</p>
+        <textarea
+          value={journal.body ?? ""}
+          onChange={e => onChange({ ...journal, body: e.target.value })}
+          placeholder="Write your monthly trading goals here..."
+          style={{
+            minHeight: 400,
+            width: "100%",
+            background: "#1a1b2e",
+            border: "1px solid #3d3f5e",
+            borderRadius: 8,
+            padding: 16,
+            fontSize: 14,
+            color: "white",
+            resize: "vertical",
+          }}
+          className="focus:outline-none focus:border-indigo-500"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Back */}
@@ -1172,6 +1205,24 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
     setOpenId(j.id);
   };
 
+  const createMonthFolder = () => {
+    const monthName = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const folderId = crypto.randomUUID();
+    const goalsEntry: Journal = {
+      id: crypto.randomUUID(),
+      folderId,
+      title: "Monthly Goals",
+      date: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+      goals: [{ text: "", checked: false }, { text: "", checked: false }, { text: "", checked: false }],
+      marketOn: false,
+      observations: "",
+      body: "",
+    };
+    setFolders((prev) => [{ id: folderId, name: monthName, collapsed: false }, ...prev]);
+    setJournals((prev) => [goalsEntry, ...prev]);
+    setOpenId(goalsEntry.id);
+  };
+
   const confirmFolder = () => {
     const name = newFolderName.trim();
     if (!name) { setCreatingFolder(false); setNewFolderName(""); return; }
@@ -1194,6 +1245,16 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
     setJournals((prev) => prev.filter((j) => j.id !== id));
     if (openId === id) setOpenId(null);
   };
+
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const isMonthFolder = (name: string) => MONTH_NAMES.some(m => name.startsWith(m + " ") && /\d{4}$/.test(name));
+  const sortedFolders = [...folders].sort((a, b) => {
+    const aM = isMonthFolder(a.name), bM = isMonthFolder(b.name);
+    if (aM && !bM) return -1;
+    if (!aM && bM) return 1;
+    if (aM && bM) return new Date(b.name).getTime() - new Date(a.name).getTime();
+    return 0;
+  });
 
   const open = journals.find((j) => j.id === openId);
   if (open) {
@@ -1220,6 +1281,10 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
           <button onClick={() => setCreatingFolder(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2d2f45] border border-[#3d3f5e] hover:border-sky-400 text-slate-300 text-sm font-semibold transition-colors">
             <FolderIcon /> New Folder
+          </button>
+          <button onClick={createMonthFolder}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2d2f45] border border-[#3d3f5e] hover:border-indigo-400 text-slate-300 text-sm font-semibold transition-colors">
+            📁 New Month
           </button>
           <button onClick={() => createJournal()}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
@@ -1279,7 +1344,7 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
         </div>
       )}
 
-      {folders.map((folder) => {
+      {sortedFolders.map((folder) => {
         const folderJournals = journals.filter((j) => j.folderId === folder.id);
         return (
           <div key={folder.id} className="border border-[#3d3f5e] rounded-xl overflow-hidden">
@@ -1322,10 +1387,11 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                       className="flex items-center justify-between bg-[#1e2035] border border-[#3d3f5e] rounded-xl px-5 py-4 cursor-pointer hover:border-indigo-500 transition-all group"
                       onClick={() => setOpenId(j.id)}>
                       <div>
-                        <p className="text-slate-100 font-semibold text-sm">{j.date || "Untitled"}</p>
+                        <p className="text-slate-100 font-semibold text-sm">{j.title || j.date || "Untitled"}</p>
                         <p className="text-slate-500 text-xs mt-0.5">
-                          {j.goals.filter((g) => g.checked).length}/3 goals ·{" "}
-                          {j.observations ? `${stripHtml(j.observations).slice(0, 60)}${stripHtml(j.observations).length > 60 ? "…" : ""}` : "No notes yet"}
+                          {j.title === "Monthly Goals"
+                            ? (j.body ? `${j.body.slice(0, 60)}${j.body.length > 60 ? "…" : ""}` : "No goals written yet")
+                            : `${j.goals.filter((g) => g.checked).length}/3 goals · ${j.observations ? `${stripHtml(j.observations).slice(0, 60)}${stripHtml(j.observations).length > 60 ? "…" : ""}` : "No notes yet"}`}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
