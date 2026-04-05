@@ -898,15 +898,30 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   })();
 
   const tickerLogos: Record<string, string> = {
-    QQQ: 'https://logo.clearbit.com/invesco.com', NVDA: 'https://logo.clearbit.com/nvidia.com',
-    AAPL: 'https://logo.clearbit.com/apple.com', TSLA: 'https://logo.clearbit.com/tesla.com',
-    SPY: 'https://logo.clearbit.com/ssga.com', AMZN: 'https://logo.clearbit.com/amazon.com',
-    META: 'https://logo.clearbit.com/meta.com', MSFT: 'https://logo.clearbit.com/microsoft.com',
-    GOOGL: 'https://logo.clearbit.com/google.com', AMD: 'https://logo.clearbit.com/amd.com',
-    GOOG: 'https://logo.clearbit.com/google.com', NFLX: 'https://logo.clearbit.com/netflix.com',
-    BA: 'https://logo.clearbit.com/boeing.com', DIS: 'https://logo.clearbit.com/disney.com',
-    JPM: 'https://logo.clearbit.com/jpmorganchase.com', V: 'https://logo.clearbit.com/visa.com',
-    WMT: 'https://logo.clearbit.com/walmart.com', COIN: 'https://logo.clearbit.com/coinbase.com',
+    QQQ: 'https://img.logo.dev/invesco.com?token=pk_anonymous',
+    NVDA: 'https://img.logo.dev/nvidia.com?token=pk_anonymous',
+    AAPL: 'https://img.logo.dev/apple.com?token=pk_anonymous',
+    TSLA: 'https://img.logo.dev/tesla.com?token=pk_anonymous',
+    SPY: 'https://img.logo.dev/ssga.com?token=pk_anonymous',
+    AMZN: 'https://img.logo.dev/amazon.com?token=pk_anonymous',
+    META: 'https://img.logo.dev/meta.com?token=pk_anonymous',
+    MSFT: 'https://img.logo.dev/microsoft.com?token=pk_anonymous',
+    GOOGL: 'https://img.logo.dev/google.com?token=pk_anonymous',
+    AMD: 'https://img.logo.dev/amd.com?token=pk_anonymous',
+    GOOG: 'https://img.logo.dev/google.com?token=pk_anonymous',
+    NFLX: 'https://img.logo.dev/netflix.com?token=pk_anonymous',
+    BA: 'https://img.logo.dev/boeing.com?token=pk_anonymous',
+    DIS: 'https://img.logo.dev/disney.com?token=pk_anonymous',
+    JPM: 'https://img.logo.dev/jpmorganchase.com?token=pk_anonymous',
+    V: 'https://img.logo.dev/visa.com?token=pk_anonymous',
+    WMT: 'https://img.logo.dev/walmart.com?token=pk_anonymous',
+    COIN: 'https://img.logo.dev/coinbase.com?token=pk_anonymous',
+    PLTR: 'https://img.logo.dev/palantir.com?token=pk_anonymous',
+    SOFI: 'https://img.logo.dev/sofi.com?token=pk_anonymous',
+    CRM: 'https://img.logo.dev/salesforce.com?token=pk_anonymous',
+    COST: 'https://img.logo.dev/costco.com?token=pk_anonymous',
+    HD: 'https://img.logo.dev/homedepot.com?token=pk_anonymous',
+    UNH: 'https://img.logo.dev/unitedhealthgroup.com?token=pk_anonymous',
   };
 
   const formatDate = (d: string) => {
@@ -936,9 +951,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     color: active ? teal : '#6b7280', transition: 'all 0.2s',
   });
 
-  // Equity curve data — always from ALL trades, not filtered
+  // Equity curve data — derived from FILTERED trades (respects all filters)
   const equityCurveAll = (() => {
-    const sorted = trades.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = filtered.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     let running = 0;
     return sorted.map(t => { running += t.pl; return { date: t.date, value: running }; });
   })();
@@ -975,7 +990,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const breakEven = statTrades.filter(t => t.pl === 0);
 
   // Pagination
-  const perPage = 20;
+  const perPage = 8;
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const safePage = Math.min(currentPage, totalPages);
   const pagedTrades = filtered.slice((safePage - 1) * perPage, safePage * perPage);
@@ -1054,10 +1069,11 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
         </div>
         {/* ── STAT CARDS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 16, alignItems: 'stretch' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flex: 1 }}>
           {/* Total P/L */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total P/L</div>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total P/L</div>
             <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{formatDollar(totalPL)}</div>
             <svg width="100%" height="20" viewBox="0 0 200 20" preserveAspectRatio="none" style={{ display: 'block', marginTop: 6 }}>
               <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0.15" /><stop offset="100%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0" /></linearGradient></defs>
@@ -1067,9 +1083,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
           {/* Win Rate */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</div>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{winRate}%</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6, fontFamily: fm, fontSize: 11 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6, fontFamily: fm, fontSize: 13 }}>
               <span style={{ color: teal }}>{wins.length}W</span>
               <span style={{ color: '#ef4444' }}>{losses.length}L</span>
               {breakEven.length > 0 && <span style={{ color: '#f59e0b' }}>{breakEven.length}E</span>}
@@ -1081,19 +1097,36 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
           {/* Total Trades */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Trades</div>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Trades</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{statTrades.length}</div>
           </div>
           {/* Avg R:R */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
           </div>
           {/* Expected Value */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Expected Value</div>
+            <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Expected Value</div>
             <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{formatDollar(Math.round(expectedValue * 100) / 100)}</div>
-            <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Per trade</div>
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#8a8d98', marginTop: 4 }}>Per trade</div>
+          </div>
+        </div>
+          {/* HIGH-LEVEL ANALYSIS — right of stat cards */}
+          <div onClick={() => { document.getElementById('wickcoach-ai-sidebar')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ fontFamily: fm, fontSize: 16, color: teal, textTransform: 'uppercase' as const, letterSpacing: 3, textAlign: 'center', lineHeight: 1.3, fontWeight: 700 }}>HIGH-LEVEL<br/>ANALYSIS</div>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', border: '2px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', boxShadow: '0 0 24px rgba(0,212,160,0.2)', transition: 'all 0.3s' }}>
+              <svg width="32" height="56" viewBox="0 0 20 24" fill="none">
+                <circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" />
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke={teal} strokeWidth="1.2" />
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -1106,7 +1139,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {['1D', '1W', '1M', '3M', 'YTD'].map(p => (
-                <span key={p} onClick={() => setEqRange(p)} style={{ fontFamily: fm, fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: eqRange === p ? 'rgba(0,212,160,0.12)' : 'transparent', color: eqRange === p ? teal : '#6b7280', borderTop: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderRight: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderBottom: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderLeft: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', fontWeight: 600 }}>{p}</span>
+                <span key={p} onClick={() => setEqRange(p)} style={{ fontFamily: fm, fontSize: 13, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: eqRange === p ? 'rgba(0,212,160,0.12)' : 'transparent', color: eqRange === p ? teal : '#8a8d98', borderTop: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderRight: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderBottom: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderLeft: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', fontWeight: 600 }}>{p}</span>
               ))}
             </div>
           </div>
@@ -1114,7 +1147,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             {/* Y-axis labels */}
             <div style={{ width: 55, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 6 }}>
               {eqYLabels.map((label, li) => (
-                <span key={li} style={{ fontFamily: fm, fontSize: 10, color: '#6b7280', textAlign: 'right', lineHeight: '1' }}>{label.value >= 0 ? '+' : ''}{label.value >= 1000 ? `$${(label.value / 1000).toFixed(1)}k` : `$${label.value}`}</span>
+                <span key={li} style={{ fontFamily: fm, fontSize: 12, color: '#8a8d98', textAlign: 'right', lineHeight: '1' }}>{label.value >= 0 ? '+' : ''}{label.value >= 1000 ? `$${(label.value / 1000).toFixed(1)}k` : `$${label.value}`}</span>
               ))}
             </div>
             {/* Chart */}
@@ -1154,7 +1187,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {equityCurve.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, paddingLeft: 55 }}>
               {[0, Math.floor(equityCurve.length * 0.25), Math.floor(equityCurve.length * 0.5), Math.floor(equityCurve.length * 0.75), equityCurve.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(idx => (
-                <span key={idx} style={{ fontFamily: fm, fontSize: 11, color: '#6b7280' }}>
+                <span key={idx} style={{ fontFamily: fm, fontSize: 13, color: '#8a8d98' }}>
                   {new Date(equityCurve[idx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               ))}
@@ -1176,7 +1209,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'Strategy: All' : `Strategy: ${s}`}</option>)}
               <option value="+ Add New">+ Add New</option>
             </select>
-            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 12, pointerEvents: 'none' }}>▼</span>
           </div>
           {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
             <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕</span>
@@ -1197,7 +1230,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               <select value={dateRange} onChange={e => setDateRange(e.target.value)} style={{ ...selectBase, paddingRight: 28, fontSize: 13 }}>
                 {['This Week', 'This Month', 'All Time'].map(d => <option key={d} value={d}>{d === 'All Time' ? 'Last 30 Days' : d}</option>)}
               </select>
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 12, pointerEvents: 'none' }}>▼</span>
             </div>
           </div>
         </div>
@@ -1214,7 +1247,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Header row */}
           <div style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
             {colHeaders.map((h, hi) => (
-              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {h}
                 <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} onDoubleClick={() => autoFitColumn(hi)} style={{ position: 'absolute', right: -4, top: 0, width: 8, height: '100%', cursor: 'col-resize', zIndex: 2, background: 'transparent' }} onMouseEnter={e => { e.currentTarget.style.borderRight = `3px solid ${teal}`; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) e.currentTarget.style.borderRight = 'none'; }} />
               </span>
@@ -1228,25 +1261,27 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </div>
           ) : (<>
             {pagedTrades.map((t, idx) => {
-              const logoUrl = tickerLogos[t.ticker] || `https://logo.clearbit.com/${t.ticker.toLowerCase()}.com`;
+              const logoUrl = tickerLogos[t.ticker] || `https://img.logo.dev/${t.ticker.toLowerCase()}.com?token=pk_anonymous`;
               const rowBg = idx % 2 === 0 ? '#111218' : '#151620';
               return (
                 <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap' }}>
-                    <img src={logoUrl} alt="" width={22} height={22} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
-                    <span style={{ display: 'none', width: 22, height: 22, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
+                      <img src={logoUrl} alt="" width={28} height={28} style={{ borderRadius: 6, objectFit: 'contain' as const, display: 'block' }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.parentElement?.nextElementSibling?.previousElementSibling) { /* fallback handled below */ } const fb = el.parentElement?.querySelector('[data-fallback]') as HTMLElement; if (fb) fb.style.display = 'flex'; }} />
+                      <span data-fallback style={{ display: 'none', width: 28, height: 28, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
+                    </span>
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 13 }}>{t.ticker}</span>
                   </span>
                   {/* Date */}
                   <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
                   {/* Time */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
                   {/* Direction */}
                   <span style={{ padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
+                    <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 13, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
                   </span>
                   {/* Qty */}
                   <span style={{ color: '#e8e8f0', fontSize: 14, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
@@ -1261,11 +1296,11 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                     {t.screenshot ? (
                       <img src={t.screenshot} alt="" width={40} height={30} style={{ borderRadius: 4, objectFit: 'cover' as const, background: '#1a1b22', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setExpandedImage(t.screenshot!); }} />
                     ) : (
-                      <span style={{ color: '#3a3b42', fontSize: 11 }}>—</span>
+                      <span style={{ color: '#3a3b42', fontSize: 13 }}>—</span>
                     )}
                   </span>
                   {/* Notes */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', display: 'flex', alignItems: 'center', position: 'relative' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</span>
+                  <div style={{ color: '#9ca3af', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                 </div>
               );
             })}
@@ -1274,7 +1309,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         {filtered.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, padding: '16px 0', marginTop: 8 }}>
             <span onClick={() => { if (safePage > 1) setCurrentPage(safePage - 1); }} style={{ fontFamily: fm, fontSize: 13, color: safePage > 1 ? teal : '#3a3b42', cursor: safePage > 1 ? 'pointer' : 'default', fontWeight: 600 }}>&larr; Previous</span>
-            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing {(safePage - 1) * perPage + 1}-{Math.min(safePage * perPage, filtered.length)} of {filtered.length} trades</span>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#8a8d98' }}>Showing {(safePage - 1) * perPage + 1}-{Math.min(safePage * perPage, filtered.length)} of {filtered.length} trades</span>
             <span onClick={() => { if (safePage < totalPages) setCurrentPage(safePage + 1); }} style={{ fontFamily: fm, fontSize: 13, color: safePage < totalPages ? teal : '#3a3b42', cursor: safePage < totalPages ? 'pointer' : 'default', fontWeight: 600 }}>Next &rarr;</span>
           </div>
         )}
@@ -1288,7 +1323,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
       </div>
 
       {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
-      <div style={{ width: '30%', minWidth: 280, maxWidth: 380, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
+      <div id="wickcoach-ai-sidebar" style={{ width: '30%', minWidth: 280, maxWidth: 380, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid #1a1b22' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
