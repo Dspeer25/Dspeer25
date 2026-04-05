@@ -29,7 +29,7 @@ type Entry = {
 type CsvRow = Record<string, string>;
 
 type Goal = { text: string; checked: boolean };
-type Folder = { id: string; name: string; collapsed: boolean };
+type Folder = { id: string; name: string; collapsed: boolean; parentId?: string };
 type Journal = {
   id: string;
   folderId?: string;
@@ -1139,9 +1139,9 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
 }
 
 // ─── Folder Icon ──────────────────────────────────────────────────────────────
-function FolderIcon() {
+function FolderIcon({ gold }: { gold?: boolean } = {}) {
   return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="text-sky-400 flex-shrink-0">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className={gold ? "text-yellow-400 flex-shrink-0" : "text-sky-400 flex-shrink-0"}>
       <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
     </svg>
   );
@@ -1160,6 +1160,8 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const newFolderInputRef = useRef<HTMLInputElement>(null);
+  const [dragFolderId, setDragFolderId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
 
   // Load from Supabase once on mount
   useEffect(() => {
@@ -1234,9 +1236,15 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
     setFolders((prev) => prev.map((f) => f.id === id ? { ...f, collapsed: !f.collapsed } : f));
 
   const deleteFolder = (id: string) => {
-    setFolders((prev) => prev.filter((f) => f.id !== id));
+    setFolders((prev) => prev.filter((f) => f.id !== id).map((f) => f.parentId === id ? { ...f, parentId: undefined } : f));
     setJournals((prev) => prev.map((j) => j.folderId === id ? { ...j, folderId: undefined } : j));
   };
+
+  const nestFolder = (childId: string, parentId: string) =>
+    setFolders((prev) => prev.map((f) => f.id === childId ? { ...f, parentId } : f));
+
+  const unnestFolder = (childId: string) =>
+    setFolders((prev) => prev.map((f) => f.id === childId ? { ...f, parentId: undefined } : f));
 
   const updateJournal = (updated: Journal) =>
     setJournals((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
@@ -1344,78 +1352,113 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
         </div>
       )}
 
-      {sortedFolders.map((folder) => {
-        const folderJournals = journals.filter((j) => j.folderId === folder.id);
-        return (
-          <div key={folder.id} className="border border-[#3d3f5e] rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-[#2d2f45] cursor-pointer select-none"
-              onClick={() => toggleFolder(folder.id)}>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-400 text-xs transition-transform duration-150"
-                  style={{ display: "inline-block", transform: folder.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>▾</span>
-                <FolderIcon />
-                <span className="text-sm font-semibold text-slate-200">{folder.name}</span>
-                <span className="text-xs text-slate-500">{folderJournals.length} journal{folderJournals.length !== 1 ? "s" : ""}</span>
-                {folderJournals.filter((j) => j.grade).map((j) => (
-                  <span key={j.id} className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
-                    j.grade === "A" ? "bg-emerald-500/20 text-emerald-400" :
-                    j.grade === "B" ? "bg-sky-500/20 text-sky-400" :
-                    j.grade === "C" ? "bg-yellow-500/20 text-yellow-400" :
-                    j.grade === "D" ? "bg-orange-500/20 text-orange-400" :
-                    "bg-red-600/20 text-red-400"
-                  }`}>{j.grade}</span>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={(e) => { e.stopPropagation(); createJournal(folder.id); }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition-colors">
-                  + Add Journal
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}
-                  className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
-              </div>
+      {(() => {
+        const renderJournalRow = (j: Journal) => (
+          <div key={j.id}
+            className="flex items-center justify-between bg-[#1e2035] border border-[#3d3f5e] rounded-xl px-5 py-4 cursor-pointer hover:border-indigo-500 transition-all group"
+            onClick={() => setOpenId(j.id)}>
+            <div>
+              <p className="text-slate-100 font-semibold text-sm">{j.title || j.date || "Untitled"}</p>
+              <p className="text-slate-500 text-xs mt-0.5">
+                {j.title === "Monthly Goals"
+                  ? (j.body ? `${j.body.slice(0, 60)}${j.body.length > 60 ? "…" : ""}` : "No goals written yet")
+                  : `${j.goals.filter((g) => g.checked).length}/3 goals · ${j.observations ? `${stripHtml(j.observations).slice(0, 60)}${stripHtml(j.observations).length > 60 ? "…" : ""}` : "No notes yet"}`}
+              </p>
             </div>
-            {!folder.collapsed && (
-              <div className="p-3 space-y-2 bg-[#1a1c30]">
-                {folderJournals.length === 0 ? (
-                  <p className="text-slate-600 text-xs text-center py-3">
-                    No journals yet — hit <strong className="text-slate-500">+ Add Journal</strong> above.
-                  </p>
-                ) : (
-                  folderJournals.map((j) => (
-                    <div key={j.id}
-                      className="flex items-center justify-between bg-[#1e2035] border border-[#3d3f5e] rounded-xl px-5 py-4 cursor-pointer hover:border-indigo-500 transition-all group"
-                      onClick={() => setOpenId(j.id)}>
-                      <div>
-                        <p className="text-slate-100 font-semibold text-sm">{j.title || j.date || "Untitled"}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">
-                          {j.title === "Monthly Goals"
-                            ? (j.body ? `${j.body.slice(0, 60)}${j.body.length > 60 ? "…" : ""}` : "No goals written yet")
-                            : `${j.goals.filter((g) => g.checked).length}/3 goals · ${j.observations ? `${stripHtml(j.observations).slice(0, 60)}${stripHtml(j.observations).length > 60 ? "…" : ""}` : "No notes yet"}`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {j.grade && (
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
-                            j.grade === "A" ? "bg-emerald-500/20 text-emerald-400" :
-                            j.grade === "B" ? "bg-sky-500/20 text-sky-400" :
-                            j.grade === "C" ? "bg-yellow-500/20 text-yellow-400" :
-                            j.grade === "D" ? "bg-orange-500/20 text-orange-400" :
-                            "bg-red-600/20 text-red-400"
-                          }`}>{j.grade}</span>
-                        )}
-                        <span className="text-slate-500 text-xs group-hover:text-indigo-400 transition-colors">Open →</span>
-                        <button onClick={(e) => { e.stopPropagation(); deleteJournal(j.id); }}
-                          className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {j.grade && (
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                  j.grade === "A" ? "bg-emerald-500/20 text-emerald-400" :
+                  j.grade === "B" ? "bg-sky-500/20 text-sky-400" :
+                  j.grade === "C" ? "bg-yellow-500/20 text-yellow-400" :
+                  j.grade === "D" ? "bg-orange-500/20 text-orange-400" :
+                  "bg-red-600/20 text-red-400"
+                }`}>{j.grade}</span>
+              )}
+              <span className="text-slate-500 text-xs group-hover:text-indigo-400 transition-colors">Open →</span>
+              <button onClick={(e) => { e.stopPropagation(); deleteJournal(j.id); }}
+                className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
+            </div>
           </div>
         );
-      })}
+
+        const renderFolder = (folder: Folder, nested?: boolean) => {
+          const isMonth = isMonthFolder(folder.name);
+          const folderJournals = journals.filter((j) => j.folderId === folder.id);
+          const childFolders = folders.filter((f) => f.parentId === folder.id);
+          const isDragTarget = isMonth && dragOverFolderId === folder.id;
+          return (
+            <div key={folder.id}
+              className={`border rounded-xl overflow-hidden ${isDragTarget ? "border-yellow-400" : "border-[#3d3f5e]"} ${nested ? "ml-6" : ""}`}
+              onDragOver={isMonth ? (e) => { e.preventDefault(); setDragOverFolderId(folder.id); } : undefined}
+              onDragLeave={isMonth ? () => setDragOverFolderId(null) : undefined}
+              onDrop={isMonth ? (e) => {
+                e.preventDefault();
+                if (dragFolderId && dragFolderId !== folder.id) nestFolder(dragFolderId, folder.id);
+                setDragFolderId(null); setDragOverFolderId(null);
+              } : undefined}>
+              <div className="flex items-center justify-between px-4 py-3 bg-[#2d2f45] cursor-pointer select-none"
+                draggable={!isMonth}
+                onDragStart={!isMonth ? () => setDragFolderId(folder.id) : undefined}
+                onDragEnd={!isMonth ? () => { setDragFolderId(null); setDragOverFolderId(null); } : undefined}
+                onClick={() => toggleFolder(folder.id)}>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-xs transition-transform duration-150"
+                    style={{ display: "inline-block", transform: folder.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>▾</span>
+                  <FolderIcon gold={isMonth} />
+                  <span className="text-sm font-semibold text-slate-200">{folder.name}</span>
+                  <span className="text-xs text-slate-500">{folderJournals.length} journal{folderJournals.length !== 1 ? "s" : ""}</span>
+                  {folderJournals.filter((j) => j.grade).map((j) => (
+                    <span key={j.id} className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
+                      j.grade === "A" ? "bg-emerald-500/20 text-emerald-400" :
+                      j.grade === "B" ? "bg-sky-500/20 text-sky-400" :
+                      j.grade === "C" ? "bg-yellow-500/20 text-yellow-400" :
+                      j.grade === "D" ? "bg-orange-500/20 text-orange-400" :
+                      "bg-red-600/20 text-red-400"
+                    }`}>{j.grade}</span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={(e) => { e.stopPropagation(); createJournal(folder.id); }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition-colors">
+                    + Add Journal
+                  </button>
+                  {nested && (
+                    <button onClick={(e) => { e.stopPropagation(); unnestFolder(folder.id); }}
+                      className="text-slate-500 hover:text-slate-200 text-xs transition-colors px-1" title="Remove from month">↑</button>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}
+                    className="text-slate-600 hover:text-red-400 text-xs transition-colors px-1">✕</button>
+                </div>
+              </div>
+              {!folder.collapsed && (
+                <div className="p-3 space-y-2 bg-[#1a1c30]">
+                  {isMonth && isDragTarget && (
+                    <p className="text-yellow-400 text-xs text-center py-1">Drop to add folder here</p>
+                  )}
+                  {folderJournals.length === 0 && childFolders.length === 0 ? (
+                    <p className="text-slate-600 text-xs text-center py-3">
+                      No journals yet — hit <strong className="text-slate-500">+ Add Journal</strong> above.
+                    </p>
+                  ) : (
+                    <>
+                      {folderJournals.map(renderJournalRow)}
+                      {childFolders.length > 0 && (
+                        <div className="space-y-2 mt-2">
+                          {childFolders.map((cf) => renderFolder(cf, true))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        const topLevel = sortedFolders.filter((f) => !f.parentId);
+        return topLevel.map((f) => renderFolder(f, false));
+      })()}
     </div>
   );
 }
