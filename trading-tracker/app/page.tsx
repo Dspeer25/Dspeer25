@@ -41,6 +41,7 @@ type Journal = {
   grade?: string;
   review?: string;
   body?: string;
+  monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string }[];
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -844,6 +845,20 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   const rBtnCls = "flex items-center justify-center rounded-lg text-xs font-bold h-10 bg-violet-900/60 hover:bg-violet-700 text-violet-200 transition-all cursor-pointer select-none";
 
   if (journal.title === "Monthly Goals") {
+    type GoalStatus = "none" | "progress" | "completed" | "missed";
+    const mGoals = journal.monthlyGoals ?? [];
+    const setMGoals = (g: typeof mGoals) => onChange({ ...journal, monthlyGoals: g });
+    const statusOrder: GoalStatus[] = ["none", "progress", "completed", "missed"];
+    const cycleStatus = (i: number) => {
+      const next = statusOrder[(statusOrder.indexOf(mGoals[i].status) + 1) % statusOrder.length];
+      setMGoals(mGoals.map((g, j) => j === i ? { ...g, status: next } : g));
+    };
+    const statusStyle: Record<GoalStatus, { border: string; icon: React.ReactNode; label: string; labelColor: string }> = {
+      none:      { border: "border-slate-600",   icon: <span className="w-6 h-6 rounded-full border-2 border-slate-500 flex-shrink-0 block" />, label: "", labelColor: "" },
+      progress:  { border: "border-yellow-500",  icon: <span className="w-6 h-6 rounded-full border-2 border-yellow-400 flex-shrink-0 block bg-yellow-400/20" />, label: "In progress", labelColor: "text-yellow-400" },
+      completed: { border: "border-emerald-500", icon: <span className="w-6 h-6 rounded-full bg-emerald-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">✓</span>, label: "Completed", labelColor: "text-emerald-400" },
+      missed:    { border: "border-red-500",     icon: <span className="w-6 h-6 rounded-full border-2 border-red-500 flex-shrink-0 block bg-red-500/20" />, label: "Missed", labelColor: "text-red-400" },
+    };
     return (
       <div className="space-y-4">
         <button onClick={onBack} className="text-xs text-slate-500 hover:text-slate-300 flex items-center gap-1">
@@ -852,24 +867,55 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         <h2 className="text-2xl font-extrabold tracking-tight text-white">
           Play to <span className="text-indigo-400">Win</span>
         </h2>
-        <p className="text-sm text-slate-400">{journal.date}</p>
-        <textarea
-          value={journal.body ?? ""}
-          onChange={e => onChange({ ...journal, body: e.target.value })}
-          placeholder="Write your monthly trading goals here..."
-          style={{
-            minHeight: 400,
-            width: "100%",
-            background: "#1a1b2e",
-            border: "1px solid #3d3f5e",
-            borderRadius: 8,
-            padding: 16,
-            fontSize: 14,
-            color: "white",
-            resize: "vertical",
-          }}
-          className="focus:outline-none focus:border-indigo-500"
-        />
+        <div className="bg-[#1e2035] border border-[#3d3f5e] rounded-xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-white">Monthly Goals</h3>
+              <p className="text-sm text-slate-400">{journal.date}</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {mGoals.length === 0 && (
+              <p className="text-slate-600 text-sm text-center py-4">No goals yet — hit + Add Goal below.</p>
+            )}
+            {mGoals.map((goal, i) => {
+              const st = statusStyle[goal.status];
+              return (
+                <div key={i} className={`bg-[#13142a] border rounded-xl p-4 space-y-2 ${st.border}`}>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => cycleStatus(i)} className="flex-shrink-0" title="Click to change status">
+                      {st.icon}
+                    </button>
+                    <input
+                      value={goal.text}
+                      onChange={e => setMGoals(mGoals.map((g, j) => j === i ? { ...g, text: e.target.value } : g))}
+                      placeholder="Enter goal..."
+                      className="flex-1 bg-transparent text-slate-100 text-sm font-medium focus:outline-none placeholder-slate-600"
+                    />
+                    <button onClick={() => setMGoals(mGoals.filter((_, j) => j !== i))}
+                      className="text-slate-600 hover:text-red-400 text-xs transition-colors flex-shrink-0">✕</button>
+                  </div>
+                  {goal.status !== "none" && (
+                    <div className="flex items-center gap-2 pl-9">
+                      <span className={`text-xs font-semibold ${st.labelColor}`}>{st.label} —</span>
+                      <input
+                        value={goal.note}
+                        onChange={e => setMGoals(mGoals.map((g, j) => j === i ? { ...g, note: e.target.value } : g))}
+                        placeholder="Add note (e.g. hit 3/5 days)"
+                        className={`flex-1 bg-transparent text-xs focus:outline-none placeholder-slate-700 ${st.labelColor}`}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setMGoals([...mGoals, { text: "", status: "none", note: "" }])}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-sm font-semibold transition-colors">
+            + Add Goal
+          </button>
+        </div>
       </div>
     );
   }
@@ -1219,6 +1265,11 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
       marketOn: false,
       observations: "",
       body: "",
+      monthlyGoals: [
+        { text: "", status: "none", note: "" },
+        { text: "", status: "none", note: "" },
+        { text: "", status: "none", note: "" },
+      ],
     };
     setFolders((prev) => [{ id: folderId, name: monthName, collapsed: false }, ...prev]);
     setJournals((prev) => [goalsEntry, ...prev]);
