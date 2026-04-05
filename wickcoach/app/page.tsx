@@ -942,6 +942,29 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
 
   const colHeaders = ['Asset', 'Date/Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image', 'Notes'];
 
+  function autoFitColumn(colIndex: number) {
+    const headerLen = colHeaders[colIndex].length;
+    let maxLen = headerLen;
+    filtered.forEach(t => {
+      let cellText = '';
+      switch (colIndex) {
+        case 0: cellText = t.ticker; break;
+        case 1: cellText = new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' + formatTime(t.time); break;
+        case 2: cellText = t.strategy; break;
+        case 3: cellText = t.direction; break;
+        case 4: cellText = String(t.contracts); break;
+        case 5: cellText = '$' + t.entryPrice.toFixed(2) + ' → $' + t.exitPrice.toFixed(2); break;
+        case 6: cellText = formatDollar(t.pl); break;
+        case 7: cellText = t.riskReward.replace(/(\d+):(\d)/, '$1 : $2'); break;
+        case 8: cellText = 'IMG'; break;
+        case 9: cellText = t.journal ? t.journal.slice(0, 30) : '—'; break;
+      }
+      if (cellText.length > maxLen) maxLen = cellText.length;
+    });
+    const newWidth = Math.min(300, Math.max(50, Math.round(maxLen * 8.5) + 32));
+    setColWidths(prev => { const next = [...prev]; next[colIndex] = newWidth; return next; });
+  }
+
   function formatAiText(text: string): React.ReactNode[] {
     const lines = text.split('\n');
     const nodes: React.ReactNode[] = [];
@@ -1110,7 +1133,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             {colHeaders.map((h, hi) => (
               <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {h}
-                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} style={{ position: 'absolute', right: -1, top: 0, width: 2, height: '100%', cursor: 'col-resize', background: resizing?.col === hi ? 'rgba(0,212,160,1)' : 'transparent', zIndex: 2, transition: 'background 0.2s ease, opacity 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.8)'; e.currentTarget.style.width = '3px'; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.width = '2px'; } }} />
+                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} onDoubleClick={() => autoFitColumn(hi)} style={{ position: 'absolute', right: -1, top: 0, width: 2, height: '100%', cursor: 'col-resize', background: resizing?.col === hi ? 'rgba(0,212,160,1)' : 'transparent', zIndex: 2, transition: 'background 0.2s ease, opacity 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.8)'; e.currentTarget.style.width = '3px'; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.width = '2px'; } }} />
               </span>
             ))}
           </div>
@@ -1270,11 +1293,22 @@ export default function WickCoachFull() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Load trades from localStorage on mount
+  // Load trades from localStorage on mount, fallback to fake-trades.json
   React.useEffect(() => {
     try {
       const stored = localStorage.getItem('wickcoach_trades');
-      if (stored) setTrades(JSON.parse(stored));
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (parsed.length < 10) {
+        fetch('/fake-trades.json')
+          .then(r => r.json())
+          .then(data => {
+            setTrades(data);
+            localStorage.setItem('wickcoach_trades', JSON.stringify(data));
+          })
+          .catch(() => setTrades(parsed));
+      } else {
+        setTrades(parsed);
+      }
     } catch {}
   }, []);
 
@@ -1677,7 +1711,7 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
             {/* Hero animation video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, clipPath: 'inset(0 0 12% 0)' }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, }} />
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
             {/* Subtitle */}
