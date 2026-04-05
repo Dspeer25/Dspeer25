@@ -457,170 +457,128 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
 
 
 function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet: { week: string; goals: { text: string; status: string; statusText: string }[]; aiBullets: string; followUp: string }; onAdvance?: () => void; frozen?: boolean }) {
-  const [statsVisible, setStatsVisible] = useState(false);
-  const [cardsVisible, setCardsVisible] = useState<number[]>([]);
-  const [terminalText, setTerminalText] = useState('');
-  const [terminalDone, setTerminalDone] = useState(false);
+  const [displayedText, setDisplayedText] = useState('');
+  const [showFollowUp, setShowFollowUp] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [answer, setAnswer] = useState('');
 
-  const terminalLines = [
-    { type: 'line' as const, text: '>[10:14:02 AM] SYSTEM IDENTIFICATION: THREAT LEVEL LOW' },
-    { type: 'alert-green' as const, text: 'Rule Recognized: Volume Restraint. Status verified. You have executed 2 out of 3 total allowed trades.' },
-    { type: 'line' as const, text: '>[09:30:00 AM] MARKET OPEN ROUTINE RUNNING...' },
-    { type: 'alert-yellow' as const, text: 'Notice: Opening Range Patience rule is active. Historically, trades within the first 10 minutes have a 14% lower win rate.' },
-    { type: 'tminus' as const, text: 'T-MINUS 12:04' },
-  ];
-  const fullTerminalStr = terminalLines.map(l => l.text).join('\n');
+  const fullText = goalSet.aiBullets;
 
   React.useEffect(() => {
     if (frozen) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    // Step 1: stats fade in
-    timers.push(setTimeout(() => setStatsVisible(true), 300));
-    // Step 2: cards stagger
-    timers.push(setTimeout(() => setCardsVisible([0]), 800));
-    timers.push(setTimeout(() => setCardsVisible([0, 1]), 1100));
-    timers.push(setTimeout(() => setCardsVisible([0, 1, 2]), 1400));
-    // Step 3: terminal typing starts after cards
-    let charIdx = 0;
+    let i = 0;
     let typingTimer: ReturnType<typeof setInterval>;
-    timers.push(setTimeout(() => {
+    const delayTimer = setTimeout(() => {
+      setIsTyping(true);
       typingTimer = setInterval(() => {
-        if (charIdx < fullTerminalStr.length) {
-          charIdx++;
-          setTerminalText(fullTerminalStr.slice(0, charIdx));
+        if (i < fullText.length) {
+          setDisplayedText(fullText.slice(0, i + 1));
+          i++;
         } else {
           clearInterval(typingTimer);
-          setTerminalDone(true);
-          if (onAdvance) timers.push(setTimeout(onAdvance, 2000));
+          setIsTyping(false);
+          setIsThinking(true);
+          setTimeout(() => {
+            setIsThinking(false);
+            setShowFollowUp(true);
+            if (onAdvance) setTimeout(onAdvance, 2000);
+          }, 2000);
         }
-      }, 30);
-    }, 1700));
+      }, 18);
+    }, 2000);
     return () => {
-      timers.forEach(clearTimeout);
+      clearTimeout(delayTimer);
       if (typingTimer) clearInterval(typingTimer);
     };
-  }, [frozen, fullTerminalStr, onAdvance]);
+  }, [frozen, fullText]);
 
-  // Parse which terminal lines are visible based on typed chars
-  const visibleTerminalParts: { type: string; text: string }[] = [];
-  let consumed = 0;
-  for (const line of terminalLines) {
-    const start = consumed;
-    const end = consumed + line.text.length;
-    if (terminalText.length > start) {
-      visibleTerminalParts.push({ type: line.type, text: terminalText.slice(start, Math.min(terminalText.length, end)) });
-    }
-    consumed = end + 1; // +1 for \n
-  }
+  const renderedBullets = displayedText.split('\n').filter(l => l.length > 0);
+  const aiAnimating = !frozen && (isTyping || isThinking);
+
+  const statusColors: Record<string, { fill: string; stroke: string; textColor: string }> = {
+    complete: { fill: '#00d4a0', stroke: '#00d4a0', textColor: '#00d4a0' },
+    progress: { fill: 'none', stroke: '#eab308', textColor: '#eab308' },
+    missed: { fill: 'none', stroke: '#ef4444', textColor: '#ef4444' },
+  };
 
   return (
-    <div style={{ display: 'flex', gap: 16, padding: 0, height: '100%', overflow: 'hidden' }}>
-      {/* LEFT COLUMN — Operating Ruleset */}
-      <div style={{ flex: '0 0 60%', overflow: 'hidden' }}>
-        {/* Top label + active badge */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <span style={{ fontFamily: fm, fontSize: 10, color: '#6b7280', letterSpacing: 1 }}>ID: WK_MAR17_21 // STRATEGY: MEAN REVERSION</span>
-          <span style={{ background: '#00d4a0', color: '#0a0b0f', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 3, fontFamily: fm }}>ACTIVE</span>
-        </div>
-
-        {/* Stats row */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 14, opacity: statsVisible ? 1 : 0, transition: 'opacity 0.5s ease' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: fm, fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>DISCIPLINE SCORE</div>
-            <div><span style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff' }}>94</span><span style={{ fontFamily: fd, fontSize: 14, color: '#6b7280' }}>/100</span></div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: fm, fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>WIN/LOSS RATIO</div>
-            <div><span style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff' }}>2.4</span><span style={{ fontFamily: fd, fontSize: 14, color: teal, marginLeft: 4 }}>{'\u25B2'}</span></div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: fm, fontSize: 9, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>RISK EXPOSURE</div>
-            <div><span style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff' }}>1.2</span><span style={{ fontFamily: fd, fontSize: 14, color: '#6b7280' }}>%</span></div>
+    <div style={{ display: 'flex', gap: 20, padding: 0, height: '100%', overflow: 'hidden' }}>
+      {/* LEFT COLUMN */}
+      <div style={{ flex: '0 0 58%', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ fontFamily: fd, color: '#fff', fontSize: 20, fontWeight: 700 }}>Trader Stated Goals</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: 'rgba(0,212,160,0.15)', border: '1px solid #00d4a0', color: '#00d4a0' }}>Week</span>
+            <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: '#1a1b22', border: '1px solid #1a1b22', color: '#6b7280' }}>Month</span>
           </div>
         </div>
-
-        {/* Goal Card 1 — VOLUME RESTRAINT */}
-        <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 8, padding: '14px 16px', marginBottom: 8, opacity: cardsVisible.includes(0) ? 1 : 0, transform: cardsVisible.includes(0) ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.3s ease, transform 0.3s ease' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill={teal} /><path d="M6 9l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-              <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>VOLUME RESTRAINT</span>
-            </div>
-            <span style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: teal }}>NOMINAL</span>
-          </div>
-          <div style={{ fontFamily: fm, fontSize: 12, color: '#9ca3af', marginBottom: 10, lineHeight: '1.5' }}>Hard limit of 3 executed trades per daily session. No exceptions based on feel.</div>
-          <div style={{ height: 4, background: '#1a1b22', borderRadius: 2, overflow: 'hidden', marginBottom: 6 }}>
-            <div style={{ width: '66%', height: '100%', background: teal, borderRadius: 2 }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: fm, fontSize: 10, color: teal }}>Executions: 2/3</span>
-            <span style={{ fontFamily: fm, fontSize: 10, color: '#6b7280' }}>Remaining: 1</span>
-          </div>
-        </div>
-
-        {/* Goal Card 2 — OPENING RANGE PATIENCE */}
-        <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 8, padding: '14px 16px', marginBottom: 8, opacity: cardsVisible.includes(1) ? 1 : 0, transform: cardsVisible.includes(1) ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.3s ease, transform 0.3s ease' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14" rx="2" fill="#f59e0b" /></svg>
-              <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>OPENING RANGE PATIENCE</span>
-            </div>
-            <span style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#f59e0b' }}>MONITORING</span>
-          </div>
-          <div style={{ fontFamily: fm, fontSize: 12, color: '#9ca3af', marginBottom: 10, lineHeight: '1.5' }}>Mandatory 15-minute wait period after market open before first entry positioning.</div>
-          <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
-            {[0,1,2,3,4,5,6].map(i => (
-              <div key={i} style={{ flex: 1, height: 6, borderRadius: 2, background: i < 5 ? '#3b82f6' : '#2a2b32' }} />
-            ))}
-          </div>
-          <div style={{ fontFamily: fm, fontSize: 10, color: '#6b7280' }}>Adherence: 2 days streak</div>
-        </div>
-
-        {/* Goal Card 3 — IMMEDIATE JOURNALING (BREACHED) */}
-        <div style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid #1e1f2a', borderRadius: 8, padding: '14px 16px', marginBottom: 8, opacity: cardsVisible.includes(2) ? 1 : 0, transform: cardsVisible.includes(2) ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.3s ease, transform 0.3s ease' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#ef4444" strokeWidth="1.5" /><path d="M6 6l6 6M12 6l-6 6" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" /></svg>
-              <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', textDecoration: 'line-through' }}>IMMEDIATE JOURNALING</span>
-            </div>
-            <span style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#ef4444' }}>BREACHED</span>
-          </div>
-          <div style={{ fontFamily: fm, fontSize: 12, color: '#9ca3af', marginBottom: 10, lineHeight: '1.5' }}>Log emotional state within 5 minutes of trade closure.</div>
-          <div style={{ height: 3, background: '#ef4444', borderRadius: 2, width: '100%' }} />
-        </div>
-      </div>
-
-      {/* RIGHT COLUMN — WICKCOACH_CORE terminal */}
-      <div style={{ flex: '0 0 40%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Terminal header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>WICKCOACH_CORE</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontFamily: fm, fontSize: 9, color: '#6b7280' }}>LATENCY: 12ms</span>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, display: 'inline-block' }} />
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, display: 'inline-block' }} />
-          </div>
-        </div>
-
-        {/* Terminal body */}
-        <div style={{ flex: 1, background: '#0a0b0f', backgroundImage: 'radial-gradient(circle, rgba(0,212,160,0.03) 1px, transparent 1px)', backgroundSize: '3px 3px', borderRadius: 8, padding: 12, fontFamily: fm, fontSize: 11, lineHeight: '1.6', overflow: 'hidden' }}>
-          {visibleTerminalParts.map((part, idx) => {
-            if (part.type === 'line') {
-              return <div key={idx} style={{ color: '#6b7280', marginBottom: 6 }}>{part.text}</div>;
-            }
-            if (part.type === 'alert-green') {
-              return <div key={idx} style={{ background: 'rgba(0,212,160,0.1)', borderLeft: `3px solid ${teal}`, padding: '10px 12px', borderRadius: '0 4px 4px 0', color: teal, fontSize: 11, marginBottom: 8 }}>{part.text}</div>;
-            }
-            if (part.type === 'alert-yellow') {
-              return <div key={idx} style={{ background: 'rgba(245,158,11,0.08)', borderLeft: '3px solid #f59e0b', padding: '10px 12px', borderRadius: '0 4px 4px 0', color: '#f59e0b', fontSize: 11, marginBottom: 8 }}>{part.text}</div>;
-            }
-            if (part.type === 'tminus') {
-              return <div key={idx} style={{ marginBottom: 8 }}><span style={{ color: '#fff', fontWeight: 700 }}>{part.text}</span>{' '}<span style={{ color: '#ef4444', cursor: 'pointer', fontSize: 11 }}>OVERRIDE (LOG REASON) {'\u2192'}</span></div>;
-            }
-            return null;
+        <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 14, marginTop: 10, marginBottom: 18 }}>{goalSet.week}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {goalSet.goals.map((goal, gi) => {
+            const sc = statusColors[goal.status] || statusColors.progress;
+            return (
+              <div key={gi} style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <svg width="22" height="22" viewBox="0 0 22 22" style={{ flexShrink: 0, marginTop: 1 }}>
+                  {goal.status === 'complete' ? (
+                    <><circle cx="11" cy="11" r="10" fill={sc.fill} /><path d="M7 11l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></>
+                  ) : (
+                    <circle cx="11" cy="11" r="9.5" fill="none" stroke={sc.stroke} strokeWidth="2" />
+                  )}
+                </svg>
+                <div>
+                  <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13, fontWeight: 500 }}>{goal.text}</div>
+                  <div style={{ fontFamily: fm, color: sc.textColor, fontSize: 11, marginTop: 4 }}>{goal.statusText}</div>
+                </div>
+              </div>
+            );
           })}
-          {/* Blinking cursor */}
-          <div style={{ color: '#6b7280', marginTop: 8 }}>{'> Awaiting behavioral input '}<span style={{ animation: terminalDone ? 'blink 1s step-end infinite' : 'none', color: '#fff' }}>{'\u2588'}</span></div>
+        </div>
+        {/* Scan line — only animates when NOT frozen */}
+        {!frozen && <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />}
+        {/* Sparkles — only render when NOT frozen */}
+        {!frozen && [{l:'12%',t:'22%',d:'0s'},{l:'45%',t:'38%',d:'0.4s'},{l:'78%',t:'28%',d:'0.8s'},{l:'30%',t:'58%',d:'1.2s'},{l:'65%',t:'72%',d:'1.6s'},{l:'88%',t:'52%',d:'2s'}].map((s, i) => (
+          <div key={i} style={{ position: 'absolute', left: s.l, top: s.t, width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: s.d, pointerEvents: 'none' }} />
+        ))}
+      </div>
+      {/* RIGHT COLUMN */}
+      <div style={{ flex: '0 0 38%', transform: showFollowUp ? 'translateY(-120px)' : 'translateY(0)', transition: 'transform 0.8s ease' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: aiAnimating ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
+          <Logo size={16} />
+          <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
+        </div>
+        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120 }}>
+          <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 13, lineHeight: '1.7', fontStyle: 'italic' }}>
+            {renderedBullets.map((line, idx) => (
+              <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
+                {line.startsWith('\u2022') ? <><span style={{ color: '#00d4a0' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
+              </div>
+            ))}
+            {isTyping && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
+          </div>
+          {isThinking && (
+            <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.3s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.6s' }} />
+            </div>
+          )}
+        </div>
+        <div style={{ opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: showFollowUp ? 'auto' : 'none' }}>
+          <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 10, marginTop: 10 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
+            <div style={{ fontFamily: fm, color: '#c9cdd4', fontSize: 13, lineHeight: '1.6' }}>{goalSet.followUp}</div>
+            <input
+              type="text"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') setAnswer(''); }}
+              placeholder="Type your answer..."
+              style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '8px 10px', color: '#ffffff', fontSize: 13, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = '#00d4a0'; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = '#232430'; }}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -1358,67 +1316,90 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         )}
       </div>
 
-      {/* ── FLOATING AI PANEL — TERMINAL ── */}
+      {/* ── FLOATING AI PANEL — GLASSMORPHISM ── */}
       {aiOpen && (
-        <div style={{ position: 'fixed', bottom: 88, right: 24, width: 380, maxHeight: 520, borderRadius: 6, display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden', background: '#0a0b0f', border: '1px solid #2a2b32', boxShadow: '0 8px 40px rgba(0,0,0,0.7)' }}>
+        <div style={{ position: 'fixed', bottom: 88, right: 24, width: 380, maxHeight: 520, borderRadius: 16, display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden', background: 'rgba(14,15,20,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(0,212,160,0.08)' }}>
           {/* Header */}
-          <div style={{ padding: '10px 14px', background: '#0a0b0f', borderBottom: '1px solid #2a2b32', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>WICKCOACH_CORE</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: fm, fontSize: 10, color: '#6b7280' }}>LATENCY: 12ms</span>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', display: 'inline-block' }} />
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', display: 'inline-block' }} />
+          <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(0,212,160,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="14" height="17" viewBox="0 0 20 24" fill="none">
+                  <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
+                <div style={{ fontFamily: fm, fontSize: 9, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
+              </div>
             </div>
           </div>
 
           {/* Chat area */}
-          <div style={{ flex: 1, padding: '10px 12px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 360, background: `radial-gradient(circle, rgba(0,212,160,0.03) 1px, transparent 1px)`, backgroundSize: '3px 3px', backgroundColor: '#0a0b0f' }}>
+          <div style={{ flex: 1, padding: '10px 12px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 360 }}>
             {aiMessages.length === 0 && (
               welcomeMsg ? (
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>
-                  <span style={{ color: '#6b7280' }}>{`>[${new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}] `}</span>{welcomeMsg}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ background: 'rgba(19,20,26,0.7)', borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 10, maxWidth: '90%' }}>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#c9cdd4', lineHeight: 1.6 }}>{welcomeMsg}</div>
+                  </div>
                 </div>
               ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', textAlign: 'center', lineHeight: 1.6 }}>Ask about your trading patterns, psychology, or specific trades.</div>
+                  <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>Ask about your trading patterns, psychology, or specific trades.</div>
                 </div>
               )
             )}
             {aiMessages.map((msg, i) => (
               msg.role === 'assistant' ? (
-                <div key={i} style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6, padding: '4px 0' }}>
-                  <span style={{ color: '#6b7280' }}>{`>[${new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}] `}</span>{formatAiText(msg.content)}
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ background: 'rgba(19,20,26,0.7)', borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 10, maxWidth: '90%' }}>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#c9cdd4', lineHeight: 1.6 }}>{formatAiText(msg.content)}</div>
+                  </div>
                 </div>
               ) : (
-                <div key={i} style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6, padding: '4px 0' }}>
-                  <span style={{ color: teal }}>{'>_ '}</span>{msg.content}
+                <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ background: 'rgba(0,212,160,0.08)', borderTop: '1px solid rgba(0,212,160,0.15)', borderRight: '1px solid rgba(0,212,160,0.15)', borderBottom: '1px solid rgba(0,212,160,0.15)', borderLeft: '1px solid rgba(0,212,160,0.15)', borderRadius: 10, padding: 10, maxWidth: '85%' }}>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#fff', lineHeight: 1.6 }}>{msg.content}</div>
+                  </div>
                 </div>
               )
             ))}
             {aiLoading && (
-              <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', padding: '4px 0', display: 'flex', gap: 4, alignItems: 'center' }}>
-                <span style={{ color: '#6b7280' }}>{`>[${new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}] `}</span>
-                {[0, 1, 2].map(d => (
-                  <span key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: '#6b7280', display: 'inline-block', animation: `dotPulse 1.2s ease-in-out ${d * 0.2}s infinite` }} />
-                ))}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                <div style={{ background: 'rgba(19,20,26,0.7)', borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {[0, 1, 2].map(d => (
+                      <span key={d} style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b7280', animation: `dotPulse 1.2s ease-in-out ${d * 0.2}s infinite` }} />
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Status line + Chat input */}
-          <div style={{ borderTop: '1px solid #2a2b32' }}>
-            <div style={{ padding: '6px 14px', fontFamily: fm, fontSize: 11, color: '#6b7280' }}>
-              {'> Awaiting behavioral input'}<span style={{ animation: 'termBlink 1s step-end infinite', color: teal }}>{'█'}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px 10px' }}>
-              <input value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendToCoach(); }} placeholder="Query trade reasoning or request manual override" style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#c9cdd4', fontFamily: fm, fontSize: 13 }} />
-              <button onClick={sendToCoach} onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = teal; (e.currentTarget as HTMLButtonElement).style.color = teal; }} onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#2a2b32'; (e.currentTarget as HTMLButtonElement).style.color = '#6b7280'; }} style={{ background: 'transparent', border: '1px solid #2a2b32', color: '#6b7280', fontFamily: fm, fontSize: 11, letterSpacing: 1, padding: '6px 12px', cursor: 'pointer', flexShrink: 0, opacity: aiLoading ? 0.5 : 1, transition: 'all 0.2s ease' }}>EXECUTE</button>
+          {/* Chat input */}
+          <div style={{ padding: '8px 12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(14,15,20,0.6)', borderTop: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)', borderLeft: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px' }}>
+              <input value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendToCoach(); }} placeholder="Ask WickCoach..." style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#c9cdd4', fontFamily: fm, fontSize: 13 }} />
+              <div onClick={sendToCoach} style={{ width: 30, height: 30, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: aiLoading ? 0.5 : 1 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+              </div>
             </div>
           </div>
         </div>
       )}
-      <style>{`@keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } } @keyframes termBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
+      <style>{`@keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }`}</style>
     </div>
   );
 }
