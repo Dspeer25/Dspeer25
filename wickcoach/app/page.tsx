@@ -1201,6 +1201,7 @@ export default function WickCoachFull() {
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   // Load trades from localStorage on mount
   React.useEffect(() => {
@@ -1208,6 +1209,10 @@ export default function WickCoachFull() {
       const stored = localStorage.getItem('wickcoach_trades');
       if (stored) setTrades(JSON.parse(stored));
     } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.0;
   }, []);
 
   React.useEffect(() => {
@@ -1604,19 +1609,8 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
-            {/* Animated stick figure logo */}
-            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none', opacity: textVisible ? 0.08 : 0.9, transition: 'opacity 1.5s ease-out' }}>
-              <svg width="200" height="240" viewBox="0 0 20 24" fill="none" style={{ filter: 'drop-shadow(0 0 30px rgba(0,212,160,0.4))' }}>
-                <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none"><animate attributeName="opacity" values="0;1" dur="0.6s" fill="freeze" /></circle>
-                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.3s" fill="freeze" /></line>
-                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.5s" fill="freeze" /></line>
-                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.7s" fill="freeze" /></line>
-                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.9s" fill="freeze" /></line>
-                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.9s" fill="freeze" /></line>
-                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8"><animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.2s" fill="freeze" /></line>
-                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0"><animate attributeName="opacity" values="0;0.9" dur="0.5s" begin="1.4s" fill="freeze" /></rect>
-              </svg>
-            </div>
+            {/* Hero animation video */}
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const }} />
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
             {/* Subtitle */}
