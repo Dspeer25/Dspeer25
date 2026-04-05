@@ -907,10 +907,10 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Total P/L */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Total P/L</div>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 14 }}>Total P/L</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
             </div>
-            <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{formatDollar(totalPL)}</div>
+            <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 6 }}>{formatDollar(totalPL)}</div>
             <svg width="100%" height="30" viewBox="0 0 200 30" preserveAspectRatio="none" style={{ display: 'block', marginTop: 8 }}>
               <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0.15" /><stop offset="100%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0" /></linearGradient></defs>
               <path d={(sparkPoints.replace(/60/g, '200').replace(/24/g, '30') || 'M0,15 L200,15') + ' L200,30 L0,30 Z'} fill="url(#sparkFill)" />
@@ -920,10 +920,10 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Win Rate */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Win Rate</div>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 14 }}>Win Rate</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
             </div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{winRate}%</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 6 }}>{winRate}%</div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, fontFamily: fm, fontSize: 12 }}>
               <span style={{ color: teal }}>{wins.length}W</span>
               <span style={{ color: '#ef4444' }}>{losses.length}L</span>
@@ -938,18 +938,18 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Total Trades */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Total Trades</div>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 14 }}>Total Trades</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
             </div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{filtered.length}</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 6 }}>{filtered.length}</div>
           </div>
           {/* Avg R:R */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Avg R:R</div>
+              <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 14 }}>Avg R:R</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
             </div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>1 : {avgRR}</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 6 }}>1 : {avgRR}</div>
             <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 8 }}>Avg Win: {formatDollar(Math.round(avgWin))}</div>
             <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 2 }}>Avg Loss: {formatDollar(Math.round(avgLoss))}</div>
           </div>
@@ -959,7 +959,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fm, fontSize: 13 }}>Expected Value</div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={expectedValue >= 0 ? teal : '#ef4444'} strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
             </div>
-            <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 28, fontWeight: 700, marginTop: 6 }}>{formatDollar(Math.round(expectedValue * 100) / 100)}</div>
+            <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 6 }}>{formatDollar(Math.round(expectedValue * 100) / 100)}</div>
             <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', marginTop: 8 }}>Per trade execution</div>
           </div>
         </div>
@@ -1043,7 +1043,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
           {/* Header row */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 0.7fr 0.5fr 1.2fr 1fr 0.8fr 0.7fr', padding: '14px 20px', background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
-            {['Asset', 'Date / Time', 'Strategy', 'Direction', 'Qty', 'Entry / Exit', 'Net P/L', 'R:R', 'Status'].map(h => (
+            {['Asset', 'Date / Time', 'Strategy', 'Direction', 'Qty', 'Entry / Exit', 'Net P/L', 'R:R', 'Image'].map(h => (
               <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600 }}>{h}</span>
             ))}
           </div>
@@ -1086,10 +1086,14 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                   {/* Net P/L */}
                   <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 18 }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
-                  <span style={{ color: '#c9cdd4', fontSize: 14, whiteSpace: 'nowrap' }}>{t.riskReward}</span>
-                  {/* Status badge */}
-                  <span>
-                    <span style={{ padding: '4px 12px', borderRadius: 4, fontSize: 12, fontWeight: 700, background: t.result === 'WIN' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.result === 'WIN' ? teal : '#ef4444' }}>{t.result}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 14, whiteSpace: 'nowrap', letterSpacing: -0.5 }}>{t.riskReward}</span>
+                  {/* Screenshot thumbnail */}
+                  <span style={{ display: 'flex', alignItems: 'center' }}>
+                    {t.screenshot ? (
+                      <img src={t.screenshot} alt="" width={40} height={30} style={{ borderRadius: 4, objectFit: 'cover' as const, background: '#1a1b22' }} />
+                    ) : (
+                      <svg width="24" height="20" viewBox="0 0 24 20" fill="none" stroke="#4b5563" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2" /><circle cx="12" cy="10" r="3" /><circle cx="17" cy="6" r="1" /></svg>
+                    )}
                   </span>
                 </div>
               );
@@ -1166,7 +1170,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         <div style={{ padding: '12px 14px', borderTop: '1px solid #1a1b22' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '10px 12px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{ flexShrink: 0, cursor: 'pointer' }}><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
-            <input placeholder="Ask Coach about your trades..." readOnly style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#6b7280', fontFamily: fm, fontSize: 13 }} />
+            <input placeholder="Ask Coach about your trades..." readOnly style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#6b7280', fontFamily: fm, fontSize: 14 }} />
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
             </div>
@@ -1184,11 +1188,9 @@ export default function WickCoachFull() {
   const [activeTab, setActiveTab] = useState("");
   const [view, setView] = useState<'home' | 'app'>('home');
   const [activeCategory, setActiveCategory] = useState(0);
-  const [videoEnded, setVideoEnded] = useState(false);
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   // Load trades from localStorage on mount
   React.useEffect(() => {
@@ -1199,7 +1201,6 @@ export default function WickCoachFull() {
   }, []);
 
   React.useEffect(() => {
-    if (heroVideoRef.current) heroVideoRef.current.playbackRate = 1.0;
     const t = setTimeout(() => setTextVisible(true), 3500);
     return () => clearTimeout(t);
   }, []);
@@ -1592,8 +1593,19 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
-            {/* Animated logo video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" onEnded={() => setVideoEnded(true)} style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain', opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, clipPath: 'inset(0 0 15% 0)' }} />
+            {/* Animated stick figure logo */}
+            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none', opacity: textVisible ? 0.08 : 0.9, transition: 'opacity 1.5s ease-out' }}>
+              <svg width="200" height="240" viewBox="0 0 20 24" fill="none" style={{ filter: 'drop-shadow(0 0 30px rgba(0,212,160,0.4))' }}>
+                <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none"><animate attributeName="opacity" values="0;1" dur="0.6s" fill="freeze" /></circle>
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.3s" fill="freeze" /></line>
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.5s" fill="freeze" /></line>
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.7s" fill="freeze" /></line>
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.9s" fill="freeze" /></line>
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2"><animate attributeName="opacity" values="0;1" dur="0.4s" begin="0.9s" fill="freeze" /></line>
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8"><animate attributeName="opacity" values="0;1" dur="0.5s" begin="1.2s" fill="freeze" /></line>
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0"><animate attributeName="opacity" values="0;0.9" dur="0.5s" begin="1.4s" fill="freeze" /></rect>
+              </svg>
+            </div>
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
             {/* Subtitle */}
@@ -1683,7 +1695,7 @@ export default function WickCoachFull() {
               onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#6b7280'; }}
               style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, marginTop: 8, cursor: 'pointer', textAlign: 'center' }}
             >or sign up to get started</p>
-            <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, marginTop: 12 }}>One-time payment. No subscription. No data collection.</p>
+            <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 14, marginTop: 12 }}>One-time payment. No subscription. No data collection.</p>
           </div>
         </div>
       </section>
