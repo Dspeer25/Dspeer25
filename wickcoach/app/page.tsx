@@ -888,6 +888,12 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     if (dateRange === 'This Week') {
       const d = new Date(t.date); const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
       if (d < weekAgo) return false;
+    } else if (dateRange === '10 Days') {
+      const d = new Date(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 10 * 86400000);
+      if (d < cutoff) return false;
+    } else if (dateRange === '15 Days') {
+      const d = new Date(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 15 * 86400000);
+      if (d < cutoff) return false;
     } else if (dateRange === 'This Month') {
       const d = new Date(t.date); const now = new Date();
       if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
@@ -971,9 +977,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     color: active ? teal : '#6b7280', transition: 'all 0.2s',
   });
 
-  // Equity curve data — always from ALL trades, not filtered
+  // Equity curve data — respects calendar dropdown filter
   const equityCurveAll = (() => {
-    const sorted = trades.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = filtered.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     let running = 0;
     return sorted.map(t => { running += t.pl; return { date: t.date, value: running }; });
   })();
@@ -1026,6 +1032,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const sortableMap: Record<string, string> = { 'Date': 'date', 'Direction': 'direction', 'Qty': 'qty', 'Net P/L': 'pl', 'R:R': 'rr', 'Asset': 'ticker' };
   function toggleSort(field: string) {
     if (sortBy === field + '-desc') setSortBy(field + '-asc');
+    else if (sortBy === field + '-asc') setSortBy('date-desc');
     else setSortBy(field + '-desc');
   }
 
@@ -1098,22 +1105,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         </div>
         {/* ── STAT CARDS ── */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
-          {/* WickCoach icon — HIGH-LEVEL ANALYSIS */}
-          <div onClick={() => setAiOpen(!aiOpen)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, width: 80 }}>
-            <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase' as const, letterSpacing: 2, textAlign: 'center', lineHeight: 1.3, fontWeight: 600 }}>HIGH-LEVEL ANALYSIS</div>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,212,160,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,212,160,0.2)', transition: 'all 0.3s', borderTop: `1px solid rgba(0,212,160,0.3)`, borderRight: `1px solid rgba(0,212,160,0.3)`, borderBottom: `1px solid rgba(0,212,160,0.3)`, borderLeft: `1px solid rgba(0,212,160,0.3)` }}>
-              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-                <circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" />
-                <line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="9.5" x2="3" y2="13" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="15" x2="4.5" y2="21" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="15" x2="11.5" y2="21" stroke={teal} strokeWidth="1.2" />
-                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-              </svg>
-            </div>
-          </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flex: 1 }}>
           {/* Total P/L */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px', position: 'relative', overflow: 'hidden' }}>
@@ -1156,6 +1147,22 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Per trade</div>
           </div>
         </div>
+          {/* WickCoach icon — HIGH-LEVEL ANALYSIS (right of Expected Value) */}
+          <div onClick={() => setAiOpen(!aiOpen)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, width: 80 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase' as const, letterSpacing: 2, textAlign: 'center', lineHeight: 1.3, fontWeight: 600 }}>HIGH-LEVEL ANALYSIS</div>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,212,160,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,212,160,0.2)', transition: 'all 0.3s', borderTop: `1px solid rgba(0,212,160,0.3)`, borderRight: `1px solid rgba(0,212,160,0.3)`, borderBottom: `1px solid rgba(0,212,160,0.3)`, borderLeft: `1px solid rgba(0,212,160,0.3)` }}>
+              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+                <circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" />
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke={teal} strokeWidth="1.2" />
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* ── EQUITY CURVE ── */}
@@ -1251,12 +1258,18 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               </span>
             ))}
           </div>
+          {/* Sort reset */}
+          {sortBy !== 'date-desc' && (
+            <span onClick={() => setSortBy('date-desc')} title="Reset sort to default" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, cursor: 'pointer', background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', marginLeft: 4 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>
+            </span>
+          )}
           {/* Date range — pushed right */}
           <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{ marginRight: 4 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <select value={dateRange} onChange={e => setDateRange(e.target.value)} style={{ ...selectBase, paddingRight: 28, fontSize: 13 }}>
-                {['This Week', 'This Month', 'All Time'].map(d => <option key={d} value={d}>{d === 'All Time' ? 'Last 30 Days' : d}</option>)}
+                {['This Week', '10 Days', '15 Days', 'This Month', 'All Time'].map(d => <option key={d} value={d}>{d === 'All Time' ? 'All Time' : d}</option>)}
               </select>
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
             </div>
@@ -1318,7 +1331,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                   {/* Net P/L */}
                   <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 15, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
+                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Notes */}
                   <div style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                 </div>
