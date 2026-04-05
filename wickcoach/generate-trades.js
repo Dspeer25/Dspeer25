@@ -20,31 +20,15 @@ function pickStrategy() {
 
 function isShares(s) { return s.startsWith('Shares'); }
 
-// Generate placeholder candlestick chart SVGs
-function generateChartSVG() {
-  const numCandles = randInt(3, 5);
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120" viewBox="0 0 200 120"><rect width="200" height="120" fill="#13141a" rx="4"/>`;
-  svg += `<line x1="10" y1="35" x2="190" y2="35" stroke="#1e1f2a" stroke-width="0.5"/>`;
-  svg += `<line x1="10" y1="65" x2="190" y2="65" stroke="#1e1f2a" stroke-width="0.5"/>`;
-  svg += `<line x1="10" y1="95" x2="190" y2="95" stroke="#1e1f2a" stroke-width="0.5"/>`;
-  const spacing = 150 / (numCandles + 1);
-  for (let i = 0; i < numCandles; i++) {
-    const x = 25 + (i + 0.5) * spacing;
-    const green = Math.random() > 0.45;
-    const color = green ? '#00d4a0' : '#ef4444';
-    const bodyTop = 20 + Math.random() * 40;
-    const bodyH = 12 + Math.random() * 25;
-    const wickTop = bodyTop - 4 - Math.random() * 10;
-    const wickBot = bodyTop + bodyH + 4 + Math.random() * 10;
-    const w = 8 + Math.random() * 6;
-    svg += `<line x1="${x}" y1="${wickTop}" x2="${x}" y2="${wickBot}" stroke="${color}" stroke-width="1.5"/>`;
-    svg += `<rect x="${x - w/2}" y="${bodyTop}" width="${w}" height="${bodyH}" fill="${color}" rx="1"/>`;
-    // volume bars
-    const volH = 4 + Math.random() * 12;
-    svg += `<rect x="${x - w/2}" y="${115 - volH}" width="${w}" height="${volH}" fill="${color}" opacity="0.25" rx="1"/>`;
-  }
-  svg += `</svg>`;
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+// Read real screenshots from public/trade-screenshots/
+let screenshots = [];
+const ssDir = './public/trade-screenshots';
+if (fs.existsSync(ssDir)) {
+  screenshots = fs.readdirSync(ssDir).filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f));
+  console.log(`Found ${screenshots.length} screenshots in ${ssDir}`);
+} else {
+  console.log(`No trade-screenshots folder found at ${ssDir} — trades will have no images.`);
+  console.log(`To add images: create public/trade-screenshots/ and add your chart screenshots there, then re-run this script.`);
 }
 
 // WIN journals by month
@@ -250,9 +234,10 @@ for (let i = 0; i < 200; i++) {
     result: outcome === 'BREAKEVEN' ? 'BREAKEVEN' : outcome,
   };
 
-  // Attach placeholder screenshot SVG ~40% of the time
-  if (Math.random() < 0.4) {
-    trade.screenshot = generateChartSVG();
+  // Attach real screenshot if available (~40% of trades)
+  if (screenshots.length > 0 && Math.random() < 0.4) {
+    const ssFile = screenshots[Math.floor(Math.random() * screenshots.length)];
+    trade.screenshot = `/trade-screenshots/${encodeURIComponent(ssFile)}`;
   }
 
   trades.push(trade);

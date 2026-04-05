@@ -1048,7 +1048,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   return (
     <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
       {/* ── CENTER CONTENT ── */}
-      <div style={{ flex: 1, padding: '24px 28px', overflow: 'auto', position: 'relative' }}>
+      <div style={{ flex: 1, padding: '24px 48px', overflow: 'auto', position: 'relative', maxWidth: 1200, margin: '0 auto' }}>
         {/* Page header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
