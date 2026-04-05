@@ -91,7 +91,6 @@ const TickerLogo = ({ ticker }: { ticker: string }) => {
   const domain = tickerDomains[ticker] || ticker.toLowerCase() + '.com';
   const sources = [
     `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-    `https://logo.clearbit.com/${domain}?size=64`,
     `https://icons.duckduckgo.com/ip3/${domain}.ico`,
   ];
   const allFailed = srcIdx >= sources.length;
@@ -1098,7 +1097,24 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
         </div>
         {/* ── STAT CARDS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
+          {/* WickCoach icon — HIGH-LEVEL ANALYSIS */}
+          <div onClick={() => setAiOpen(!aiOpen)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, width: 80 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase' as const, letterSpacing: 2, textAlign: 'center', lineHeight: 1.3, fontWeight: 600 }}>HIGH-LEVEL ANALYSIS</div>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,212,160,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,212,160,0.2)', transition: 'all 0.3s', borderTop: `1px solid rgba(0,212,160,0.3)`, borderRight: `1px solid rgba(0,212,160,0.3)`, borderBottom: `1px solid rgba(0,212,160,0.3)`, borderLeft: `1px solid rgba(0,212,160,0.3)` }}>
+              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+                <circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" />
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke={teal} strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke={teal} strokeWidth="1.2" />
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+              </svg>
+            </div>
+          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flex: 1 }}>
           {/* Total P/L */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total P/L</div>
@@ -1139,6 +1155,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{formatDollar(Math.round(expectedValue * 100) / 100)}</div>
             <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Per trade</div>
           </div>
+        </div>
         </div>
 
         {/* ── EQUITY CURVE ── */}
@@ -1303,7 +1320,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                   {/* R:R */}
                   <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Notes */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', display: 'flex', alignItems: 'center', position: 'relative' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</span>
+                  <div style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                 </div>
               );
             })}
@@ -1322,24 +1339,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           <div style={{ position: 'fixed', left: Math.min(notesTooltip.x, window.innerWidth - 380), top: notesTooltip.y - 10, transform: 'translateY(-100%)', background: '#13141a', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 8, padding: 12, maxWidth: 350, fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6, zIndex: 50, whiteSpace: 'normal', pointerEvents: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
             {notesTooltip.text}
           </div>
-        )}
-      </div>
-
-      {/* ── FLOATING AI TOGGLE BUTTON ── */}
-      <div onClick={() => setAiOpen(!aiOpen)} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: aiOpen ? '#1a2520' : teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1001, boxShadow: '0 4px 24px rgba(0,212,160,0.3)', transition: 'all 0.3s ease', borderTop: aiOpen ? `2px solid ${teal}` : '2px solid transparent', borderRight: aiOpen ? `2px solid ${teal}` : '2px solid transparent', borderBottom: aiOpen ? `2px solid ${teal}` : '2px solid transparent', borderLeft: aiOpen ? `2px solid ${teal}` : '2px solid transparent' }}>
-        {aiOpen ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-        ) : (
-          <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-            <circle cx="8" cy="4" r="2.8" stroke="#0e0f14" strokeWidth="1.4" fill="none" />
-            <line x1="8" y1="6.8" x2="8" y2="15" stroke="#0e0f14" strokeWidth="1.4" />
-            <line x1="8" y1="9.5" x2="3" y2="13" stroke="#0e0f14" strokeWidth="1.4" />
-            <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#0e0f14" strokeWidth="1.4" />
-            <line x1="8" y1="15" x2="4.5" y2="21" stroke="#0e0f14" strokeWidth="1.4" />
-            <line x1="8" y1="15" x2="11.5" y2="21" stroke="#0e0f14" strokeWidth="1.4" />
-            <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#0e0f14" opacity="0.9" />
-            <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#0e0f14" strokeWidth="1" />
-          </svg>
         )}
       </div>
 
