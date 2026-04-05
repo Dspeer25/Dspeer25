@@ -942,6 +942,26 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
 
   const colHeaders = ['Asset', 'Date/Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image', 'Notes'];
 
+  function formatAiText(text: string): React.ReactNode[] {
+    const lines = text.split('\n');
+    const nodes: React.ReactNode[] = [];
+    lines.forEach((line, li) => {
+      if (li > 0) nodes.push(<br key={`br-${li}`} />);
+      const bulletMatch = line.match(/^•\s*(.*)/);
+      const content = bulletMatch ? bulletMatch[1] : line;
+      const parts = content.split(/\*\*(.*?)\*\*/g);
+      const rendered = parts.map((part, pi) =>
+        pi % 2 === 1 ? <span key={pi} style={{ color: teal, fontWeight: 700 }}>{part}</span> : part
+      );
+      if (bulletMatch) {
+        nodes.push(<span key={`bullet-${li}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', marginTop: 4 }}><span style={{ color: teal, flexShrink: 0 }}>•</span><span>{rendered}</span></span>);
+      } else {
+        nodes.push(<span key={`line-${li}`}>{rendered}</span>);
+      }
+    });
+    return nodes;
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
       {/* ── CENTER CONTENT ── */}
@@ -996,7 +1016,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Avg R:R */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
             <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}><span>1</span><span style={{ margin: '0 4px' }}>:</span><span>{avgRR}</span></div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
           </div>
           {/* Expected Value */}
           <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
@@ -1088,9 +1108,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           {/* Header row */}
           <div style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
             {colHeaders.map((h, hi) => (
-              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: 'none', padding: '12px 14px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none' }}>
+              <span key={h} style={{ color: '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 {h}
-                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} style={{ position: 'absolute', right: 0, top: 0, width: 4, height: '100%', cursor: 'col-resize', background: 'transparent', zIndex: 2 }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.3)'; }} onMouseLeave={e => { if (!resizing) e.currentTarget.style.background = 'transparent'; }} />
+                <span onMouseDown={e => { e.preventDefault(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} style={{ position: 'absolute', right: -1, top: 0, width: 2, height: '100%', cursor: 'col-resize', background: resizing?.col === hi ? 'rgba(0,212,160,1)' : 'transparent', zIndex: 2, transition: 'background 0.2s ease, opacity 0.2s ease' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.8)'; e.currentTarget.style.width = '3px'; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.width = '2px'; } }} />
               </span>
             ))}
           </div>
@@ -1107,29 +1127,29 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               return (
                 <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden', padding: '14px', borderRight: '1px solid #1e1f2a' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden', padding: '14px 8px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                     <img src={logoUrl} alt="" width={24} height={24} style={{ borderRadius: 6, background: '#1a1b22', objectFit: 'cover' as const, flexShrink: 0 }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.nextElementSibling) (el.nextElementSibling as HTMLElement).style.display = 'flex'; }} />
                     <span style={{ display: 'none', width: 24, height: 24, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>{t.ticker}</span>
                   </span>
                   {/* Date / Time */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {formatTime(t.time)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>{new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{t.strategy}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
                   {/* Direction */}
-                  <span style={{ padding: '14px', borderRight: '1px solid #1e1f2a' }}>
+                  <span style={{ padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ padding: '3px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(239,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ef4444' }}>{t.direction}</span>
                   </span>
                   {/* Qty */}
-                  <span style={{ color: '#c9cdd4', fontSize: 14, textAlign: 'center', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{t.contracts}</span>
+                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
                   {/* Entry / Exit */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
                   {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16, padding: '14px', borderRight: '1px solid #1e1f2a' }}>{formatDollar(t.pl)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px', borderRight: '1px solid #1e1f2a' }}>{t.riskReward}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Image */}
-                  <span style={{ display: 'flex', alignItems: 'center', padding: '14px', borderRight: '1px solid #1e1f2a' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 8px', borderRight: '1px solid #1e1f2a' }}>
                     {t.screenshot ? (
                       <img src={t.screenshot} alt="" width={40} height={30} style={{ borderRadius: 4, objectFit: 'cover' as const, background: '#1a1b22', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setExpandedImage(t.screenshot!); }} />
                     ) : (
@@ -1137,7 +1157,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                     )}
                   </span>
                   {/* Notes */}
-                  <span style={{ color: '#8a8d98', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px' }}>{t.journal ? (t.journal.length > 30 ? t.journal.slice(0, 30) + '...' : t.journal) : '—'}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.journal ? (t.journal.length > 30 ? t.journal.slice(0, 30) + '...' : t.journal) : '—'}</span>
                 </div>
               );
             })}
@@ -1197,7 +1217,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
                 <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, maxWidth: '90%' }}>
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>{msg.content}</div>
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>{formatAiText(msg.content)}</div>
                 </div>
               </div>
             ) : (
