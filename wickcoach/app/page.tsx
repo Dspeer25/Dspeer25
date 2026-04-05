@@ -1999,7 +1999,7 @@ export default function WickCoachFull() {
       `}</style>
 
       {/* ═══ APP VIEW ═══ */}
-      {view === 'app' && (<>
+      {view === 'app' && (<div style={{ background: '#1a1c23', minHeight: '100vh' }}>
         <div style={{ padding: "12px 24px" }}>
           <span onClick={() => setView('home')} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
@@ -2027,7 +2027,7 @@ export default function WickCoachFull() {
             <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
           </div>
         )}
-      </>)}
+      </div>)}
 
       {/* ═══ HOME VIEW ═══ */}
       {view === 'home' && (<>
