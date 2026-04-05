@@ -1049,9 +1049,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
+    <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)', maxWidth: 1400, margin: '0 auto' }}>
       {/* ── CENTER CONTENT ── */}
-      <div style={{ flex: 1, padding: '24px 28px', overflow: 'auto', position: 'relative' }}>
+      <div style={{ flex: '1 1 72%', padding: '24px 28px', overflow: 'auto', position: 'relative' }}>
         {/* Page header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
@@ -1323,7 +1323,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
       </div>
 
       {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
-      <div id="wickcoach-ai-sidebar" style={{ width: '30%', minWidth: 280, maxWidth: 380, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
+      <div id="wickcoach-ai-sidebar" style={{ flex: '0 0 28%', minWidth: 280, maxWidth: 380, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid #1a1b22' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
