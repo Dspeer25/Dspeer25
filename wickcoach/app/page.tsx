@@ -448,11 +448,72 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
     const t = setTimeout(onAdvance, 5000);
     return () => clearTimeout(t);
   }, [onAdvance]);
-  const rows = [{ t: "NVDA", d: "Mar 14", s: "0DTE Call", pl: "+$870", w: true }, { t: "QQQ", d: "Mar 13", s: "0DTE Put", pl: "+$445", w: true }, { t: "TSLA", d: "Mar 12", s: "Call Scalp", pl: "-$210", w: false }, { t: "SPY", d: "Mar 11", s: "Put Debit", pl: "+$380", w: true }, { t: "AAPL", d: "Mar 10", s: "0DTE Call", pl: "-$155", w: false }];
-  return (<div>
-    <div style={{ display: "flex", padding: "10px 0", borderBottom: "1px solid #1a1b22", color: "#6b7280", fontFamily: fm, fontSize: 11 }}><span style={{ width: 70 }}>Date</span><span style={{ flex: 1 }}>Ticker</span><span style={{ flex: 1 }}>Strategy</span><span style={{ width: 80, textAlign: "right" }}>P/L</span><span style={{ width: 60, textAlign: "right" }}>Result</span></div>
-    {rows.map((r, i) => (<div key={i} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: i < 4 ? "1px solid #1a1b22" : "none", fontFamily: fm, fontSize: 13 }}><span style={{ width: 70, color: "#9ca3af" }}>{r.d}</span><span style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, color: "#fff", fontWeight: 700 }}><CLogo t={r.t} />{r.t}</span><span style={{ flex: 1, color: "#9ca3af" }}>{r.s}</span><span style={{ width: 80, textAlign: "right", color: r.w ? teal : "#ef4444", fontWeight: 700 }}>{r.pl}</span><span style={{ width: 60, textAlign: "right" }}><span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: r.w ? "rgba(0,212,160,0.1)" : "rgba(239,68,68,0.1)", color: r.w ? teal : "#ef4444" }}>{r.w ? "WIN" : "LOSS"}</span></span></div>))}
-  </div>);
+  const mockRows = [
+    { ticker: 'QQQ', date: 'Mar 29', strategy: '0DTE Call', direction: 'LONG', pl: '+$1,515', rr: '1 : 2.9', result: 'WIN' },
+    { ticker: 'NVDA', date: 'Mar 28', strategy: '0DTE Put', direction: 'SHORT', pl: '-$463', rr: '1 : 0.9', result: 'LOSS' },
+    { ticker: 'AAPL', date: 'Mar 27', strategy: 'Call Scalp', direction: 'LONG', pl: '+$840', rr: '1 : 1.8', result: 'WIN' },
+    { ticker: 'TSLA', date: 'Mar 26', strategy: '0DTE Call', direction: 'LONG', pl: '+$0', rr: '—', result: 'BE' },
+  ];
+  const resultColor = (r: string) => r === 'WIN' ? teal : r === 'LOSS' ? '#ef4444' : '#f59e0b';
+  const resultBg = (r: string) => r === 'WIN' ? 'rgba(0,212,160,0.1)' : r === 'LOSS' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)';
+  const borderColor = (r: string) => r === 'WIN' ? teal : r === 'LOSS' ? '#ef4444' : '#f59e0b';
+  const eqCurvePath = 'M0,45 C30,42 60,38 90,30 C120,22 150,28 180,18 C210,24 240,15 270,10 C300,14 330,8 360,5';
+  const eqFillPath = eqCurvePath + ' L360,60 L0,60 Z';
+  return (
+    <div style={{ padding: 0 }}>
+      {/* Mini stat cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 8 }}>
+        <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 6, padding: '8px 10px' }}>
+          <div style={{ fontFamily: fm, fontSize: 8, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Total P/L</div>
+          <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: teal, marginTop: 2 }}>+$58,571</div>
+        </div>
+        <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 6, padding: '8px 10px' }}>
+          <div style={{ fontFamily: fm, fontSize: 8, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Win Rate</div>
+          <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginTop: 2 }}>46%</div>
+          <div style={{ fontFamily: fm, fontSize: 8, color: '#6b7280', marginTop: 1 }}>92W 80L</div>
+        </div>
+        <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 6, padding: '8px 10px' }}>
+          <div style={{ fontFamily: fm, fontSize: 8, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Total Trades</div>
+          <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginTop: 2 }}>200</div>
+        </div>
+        <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 6, padding: '8px 10px' }}>
+          <div style={{ fontFamily: fm, fontSize: 8, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Avg R:R</div>
+          <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginTop: 2 }}>1 : 2.2</div>
+        </div>
+      </div>
+      {/* Mini equity curve */}
+      <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 6, padding: 6, marginBottom: 8 }}>
+        <svg width="100%" height="60" viewBox="0 0 360 60" preserveAspectRatio="none" style={{ display: 'block' }}>
+          <defs><linearGradient id="mockEqFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={teal} stopOpacity="0.12" /><stop offset="100%" stopColor={teal} stopOpacity="0" /></linearGradient></defs>
+          <path d={eqFillPath} fill="url(#mockEqFill)" />
+          <path d={eqCurvePath} fill="none" stroke={teal} strokeWidth="2" />
+        </svg>
+      </div>
+      {/* Mini filter pills */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+        <span style={{ fontFamily: fm, fontSize: 7, fontWeight: 600, padding: '2px 6px', borderRadius: 4, background: 'rgba(0,212,160,0.12)', border: '1px solid rgba(0,212,160,0.3)', color: teal }}>All Trades</span>
+        <span style={{ fontFamily: fm, fontSize: 7, fontWeight: 600, padding: '2px 6px', borderRadius: 4, background: '#111218', border: '1px solid #1e1f2a', color: '#6b7280' }}>Wins</span>
+        <span style={{ fontFamily: fm, fontSize: 7, fontWeight: 600, padding: '2px 6px', borderRadius: 4, background: '#111218', border: '1px solid #1e1f2a', color: '#6b7280' }}>Losses</span>
+      </div>
+      {/* Mini trade rows */}
+      <div style={{ background: '#111218', border: '1px solid #1e1f2a', borderRadius: 6, overflow: 'hidden' }}>
+        {mockRows.map((r, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderBottom: i < mockRows.length - 1 ? '1px solid #1e1f2a' : 'none', borderLeft: `2px solid ${borderColor(r.result)}` }}>
+            <CLogo t={r.ticker} />
+            <span style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#fff', width: 36 }}>{r.ticker}</span>
+            <span style={{ fontFamily: fm, fontSize: 9, color: '#9ca3af', width: 44 }}>{r.date}</span>
+            <span style={{ fontFamily: fm, fontSize: 9, color: '#c9cdd4', flex: 1 }}>{r.strategy}</span>
+            <span style={{ fontFamily: fm, fontSize: 7, fontWeight: 700, padding: '1px 4px', borderRadius: 3, background: r.direction === 'LONG' ? 'rgba(0,212,160,0.12)' : 'rgba(239,68,68,0.12)', color: r.direction === 'LONG' ? teal : '#ef4444' }}>{r.direction}</span>
+            <span style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: r.result === 'WIN' ? teal : r.result === 'LOSS' ? '#ef4444' : '#f59e0b', width: 50, textAlign: 'right' }}>{r.pl}</span>
+            <span style={{ fontFamily: fm, fontSize: 9, color: '#9ca3af', width: 42, textAlign: 'right' }}>{r.rr}</span>
+            <span style={{ fontFamily: fm, fontSize: 7, fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: resultBg(r.result), color: resultColor(r.result), width: 28, textAlign: 'center' }}>{r.result}</span>
+          </div>
+        ))}
+      </div>
+      {/* Showing count */}
+      <div style={{ fontFamily: fm, fontSize: 8, color: '#6b7280', textAlign: 'center', marginTop: 6 }}>Showing 4 of 200 trades</div>
+    </div>
+  );
 }
 
 
