@@ -752,6 +752,38 @@ function formatDollar(n: number): string {
   return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function TickerLogoCell({ ticker, domain }: { ticker: string; domain: string }) {
+  const [srcIdx, setSrcIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const sources = [
+    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
+    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+    `https://logo.clearbit.com/${domain}`,
+    `https://financialmodelingprep.com/image-stock/${ticker}.png`,
+  ];
+  const allFailed = srcIdx >= sources.length;
+  const brandColors: Record<string, string> = { QQQ: '#7b3fe4', TSLA: '#cc0000', SPY: '#1a4a8a', NVDA: '#76b900', AAPL: '#555', META: '#0668E1', AMZN: '#ff9900', AMD: '#ed1c24', BA: '#0033a0', MSFT: '#00a4ef', GOOGL: '#4285f4', NFLX: '#e50914', DIS: '#0057a8', COIN: '#0052ff' };
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
+      {!allFailed && (
+        <img
+          key={srcIdx}
+          src={sources[srcIdx]}
+          alt=""
+          width={28}
+          height={28}
+          style={{ borderRadius: 6, objectFit: 'contain' as const, display: loaded ? 'block' : 'none' }}
+          onLoad={() => setLoaded(true)}
+          onError={() => { setLoaded(false); setSrcIdx(i => i + 1); }}
+        />
+      )}
+      {(allFailed || !loaded) && (
+        <span style={{ width: 28, height: 28, borderRadius: 6, background: brandColors[ticker] || '#2a2b32', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>{ticker.slice(0, 2)}</span>
+      )}
+    </span>
+  );
+}
+
 function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiveTab: (tab: string) => void }) {
   const [search, setSearch] = useState('');
   const [stratFilter, setStratFilter] = useState('All');
@@ -898,31 +930,14 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     }).join(' ');
   })();
 
-  const tickerLogos: Record<string, string> = {
-    QQQ: 'https://img.logo.dev/invesco.com?token=pk_anonymous',
-    NVDA: 'https://img.logo.dev/nvidia.com?token=pk_anonymous',
-    AAPL: 'https://img.logo.dev/apple.com?token=pk_anonymous',
-    TSLA: 'https://img.logo.dev/tesla.com?token=pk_anonymous',
-    SPY: 'https://img.logo.dev/ssga.com?token=pk_anonymous',
-    AMZN: 'https://img.logo.dev/amazon.com?token=pk_anonymous',
-    META: 'https://img.logo.dev/meta.com?token=pk_anonymous',
-    MSFT: 'https://img.logo.dev/microsoft.com?token=pk_anonymous',
-    GOOGL: 'https://img.logo.dev/google.com?token=pk_anonymous',
-    AMD: 'https://img.logo.dev/amd.com?token=pk_anonymous',
-    GOOG: 'https://img.logo.dev/google.com?token=pk_anonymous',
-    NFLX: 'https://img.logo.dev/netflix.com?token=pk_anonymous',
-    BA: 'https://img.logo.dev/boeing.com?token=pk_anonymous',
-    DIS: 'https://img.logo.dev/disney.com?token=pk_anonymous',
-    JPM: 'https://img.logo.dev/jpmorganchase.com?token=pk_anonymous',
-    V: 'https://img.logo.dev/visa.com?token=pk_anonymous',
-    WMT: 'https://img.logo.dev/walmart.com?token=pk_anonymous',
-    COIN: 'https://img.logo.dev/coinbase.com?token=pk_anonymous',
-    PLTR: 'https://img.logo.dev/palantir.com?token=pk_anonymous',
-    SOFI: 'https://img.logo.dev/sofi.com?token=pk_anonymous',
-    CRM: 'https://img.logo.dev/salesforce.com?token=pk_anonymous',
-    COST: 'https://img.logo.dev/costco.com?token=pk_anonymous',
-    HD: 'https://img.logo.dev/homedepot.com?token=pk_anonymous',
-    UNH: 'https://img.logo.dev/unitedhealthgroup.com?token=pk_anonymous',
+  const tickerDomains: Record<string, string> = {
+    QQQ: 'invesco.com', SPY: 'ssga.com', AAPL: 'apple.com', NVDA: 'nvidia.com',
+    TSLA: 'tesla.com', AMZN: 'amazon.com', META: 'meta.com', MSFT: 'microsoft.com',
+    GOOGL: 'google.com', GOOG: 'google.com', AMD: 'amd.com', NFLX: 'netflix.com',
+    BA: 'boeing.com', DIS: 'thewaltdisneycompany.com', JPM: 'jpmorganchase.com',
+    V: 'visa.com', WMT: 'walmart.com', COIN: 'coinbase.com', PLTR: 'palantir.com',
+    SOFI: 'sofi.com', CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com',
+    UNH: 'unitedhealthgroup.com',
   };
 
   const formatDate = (d: string) => {
@@ -1262,16 +1277,12 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             </div>
           ) : (<>
             {pagedTrades.map((t, idx) => {
-              const logoUrl = tickerLogos[t.ticker] || `https://img.logo.dev/${t.ticker.toLowerCase()}.com?token=pk_anonymous`;
               const rowBg = idx % 2 === 0 ? '#111218' : '#151620';
               return (
                 <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, flexShrink: 0 }}>
-                      <img src={logoUrl} alt="" width={28} height={28} style={{ borderRadius: 6, objectFit: 'contain' as const, display: 'block' }} onError={e => { const el = e.target as HTMLImageElement; el.style.display = 'none'; if (el.parentElement?.nextElementSibling?.previousElementSibling) { /* fallback handled below */ } const fb = el.parentElement?.querySelector('[data-fallback]') as HTMLElement; if (fb) fb.style.display = 'flex'; }} />
-                      <span data-fallback style={{ display: 'none', width: 28, height: 28, borderRadius: 6, background: '#2a2b32', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{t.ticker[0]}</span>
-                    </span>
+                    <TickerLogoCell ticker={t.ticker} domain={tickerDomains[t.ticker] || `${t.ticker.toLowerCase()}.com`} />
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 13 }}>{t.ticker}</span>
                   </span>
                   {/* Date */}
