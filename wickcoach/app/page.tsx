@@ -758,8 +758,8 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   const [resultFilter, setResultFilter] = useState('All');
   const [dateRange, setDateRange] = useState('All Time');
   const [sortBy, setSortBy] = useState('date-desc');
-  const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [colWidths, setColWidths] = useState<number[]>([70, 90, 70, 110, 80, 50, 130, 100, 80, 60, 180]);
+  const [colWidths, setColWidths] = useState<number[]>([80, 95, 75, 120, 80, 55, 140, 105, 80, 200]);
+  const [aiOpen, setAiOpen] = useState(false);
   const [resizing, setResizing] = useState<{ col: number; startX: number; startW: number } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [eqHover, setEqHover] = useState<{ x: number; y: number; date: string; value: number } | null>(null);
@@ -792,11 +792,11 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   }, [resizing]);
 
   React.useEffect(() => {
-    if (!expandedImage) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpandedImage(null); };
+    if (!aiOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAiOpen(false); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [expandedImage]);
+  }, [aiOpen]);
 
   async function sendToCoach() {
     if (!aiInput.trim() || aiLoading) return;
@@ -994,7 +994,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
     return `You have ${trades.length} trade${trades.length !== 1 ? 's' : ''} logged with a ${wr}% win rate. Your best performer was ${best?.ticker} (+$${best?.pl.toFixed(2)}). Want me to analyze your patterns?`;
   })() : null;
 
-  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Image', 'Notes'];
+  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Notes'];
   const sortableMap: Record<string, string> = { 'Date': 'date', 'Direction': 'direction', 'Qty': 'qty', 'Net P/L': 'pl', 'R:R': 'rr', 'Asset': 'ticker' };
   function toggleSort(field: string) {
     if (sortBy === field + '-desc') setSortBy(field + '-asc');
@@ -1016,8 +1016,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         case 6: cellText = '$' + t.entryPrice.toFixed(2) + ' → $' + t.exitPrice.toFixed(2); break;
         case 7: cellText = formatDollar(t.pl); break;
         case 8: cellText = t.riskReward.replace(/(\d+):(\d)/, '$1 : $2'); break;
-        case 9: cellText = 'IMG'; break;
-        case 10: cellText = t.journal || '—'; break;
+        case 9: cellText = t.journal || '—'; break;
       }
       if (cellText.length > maxLen) maxLen = cellText.length;
     });
@@ -1046,9 +1045,9 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)' }}>
-      {/* ── CENTER CONTENT ── */}
-      <div style={{ flex: 1, padding: '24px 48px', overflow: 'auto', position: 'relative', maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)', position: 'relative' }}>
+      {/* ── MAIN CONTENT — FULL WIDTH CENTERED ── */}
+      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 40px', position: 'relative' }}>
         {/* Page header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
@@ -1059,6 +1058,10 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
             <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginTop: 4 }}>Analyze, review, and backtest your historical executions.</div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
+            <span onClick={() => setAiOpen(!aiOpen)} style={{ fontFamily: fm, fontSize: 13, color: teal, padding: '8px 16px', borderRadius: 8, borderTop: `1px solid rgba(0,212,160,0.3)`, borderRight: `1px solid rgba(0,212,160,0.3)`, borderBottom: `1px solid rgba(0,212,160,0.3)`, borderLeft: `1px solid rgba(0,212,160,0.3)`, background: 'rgba(0,212,160,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+              <svg width="14" height="17" viewBox="0 0 20 24" fill="none"><circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" /><line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" /><rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" /><line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" /></svg>
+              AI Coach
+            </span>
             <span style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', padding: '8px 16px', borderRadius: 8, borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', background: '#111218', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export CSV
@@ -1214,13 +1217,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
           </div>
         </div>
 
-        {/* ── EXPANDED IMAGE MODAL ── */}
-        {expandedImage && (
-          <div onClick={() => setExpandedImage(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={expandedImage} alt="" style={{ maxWidth: '80vw', maxHeight: '80vh', objectFit: 'contain' as const, borderRadius: 8, borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32' }} />
-          </div>
-        )}
-
         {/* ── TRADE LIST ── */}
         <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
           {/* Header row */}
@@ -1279,14 +1275,6 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
                   <span style={{ color: t.pl >= 0 ? teal : '#ef4444', fontWeight: 700, fontSize: 15, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
                   <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
-                  {/* Image */}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 6px', borderRight: '1px solid #1e1f2a' }}>
-                    {t.screenshot ? (
-                      <img src={t.screenshot} alt="" width={40} height={30} style={{ borderRadius: 4, objectFit: 'cover' as const, background: '#1a1b22', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); setExpandedImage(t.screenshot!); }} />
-                    ) : (
-                      <span style={{ color: '#3a3b42', fontSize: 11 }}>—</span>
-                    )}
-                  </span>
                   {/* Notes */}
                   <span style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', display: 'flex', alignItems: 'center', position: 'relative' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</span>
                 </div>
@@ -1310,91 +1298,108 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
         )}
       </div>
 
-      {/* ── RIGHT SIDEBAR — WickCoach AI ── */}
-      <div style={{ width: '30%', minWidth: 280, maxWidth: 380, flexShrink: 0, borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', background: '#0c0d12', position: 'sticky', top: 0, alignSelf: 'flex-start', maxHeight: '100vh', overflow: 'hidden' }}>
-        {/* Header */}
-        <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid #1a1b22' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(0,212,160,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
-                <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
-              <div style={{ fontFamily: fm, fontSize: 10, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
+      {/* ── FLOATING AI TOGGLE BUTTON ── */}
+      <div onClick={() => setAiOpen(!aiOpen)} style={{ position: 'fixed', bottom: 24, right: 24, width: 52, height: 52, borderRadius: '50%', background: aiOpen ? '#1a2520' : teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1001, boxShadow: '0 4px 24px rgba(0,212,160,0.3)', transition: 'all 0.3s ease', borderTop: aiOpen ? `2px solid ${teal}` : '2px solid transparent', borderRight: aiOpen ? `2px solid ${teal}` : '2px solid transparent', borderBottom: aiOpen ? `2px solid ${teal}` : '2px solid transparent', borderLeft: aiOpen ? `2px solid ${teal}` : '2px solid transparent' }}>
+        {aiOpen ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        ) : (
+          <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+            <circle cx="8" cy="4" r="2.8" stroke="#0e0f14" strokeWidth="1.4" fill="none" />
+            <line x1="8" y1="6.8" x2="8" y2="15" stroke="#0e0f14" strokeWidth="1.4" />
+            <line x1="8" y1="9.5" x2="3" y2="13" stroke="#0e0f14" strokeWidth="1.4" />
+            <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#0e0f14" strokeWidth="1.4" />
+            <line x1="8" y1="15" x2="4.5" y2="21" stroke="#0e0f14" strokeWidth="1.4" />
+            <line x1="8" y1="15" x2="11.5" y2="21" stroke="#0e0f14" strokeWidth="1.4" />
+            <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#0e0f14" opacity="0.9" />
+            <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#0e0f14" strokeWidth="1" />
+          </svg>
+        )}
+      </div>
+
+      {/* ── FLOATING AI PANEL — GLASSMORPHISM ── */}
+      {aiOpen && (
+        <div style={{ position: 'fixed', bottom: 88, right: 24, width: 380, maxHeight: 520, borderRadius: 16, display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden', background: 'rgba(14,15,20,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(0,212,160,0.08)' }}>
+          {/* Header */}
+          <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(0,212,160,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="14" height="17" viewBox="0 0 20 24" fill="none">
+                  <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
+                <div style={{ fontFamily: fm, fontSize: 9, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Chat area */}
-        <div style={{ flex: 1, padding: '12px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Welcome message or empty state */}
-          {aiMessages.length === 0 && (
-            welcomeMsg ? (
+          {/* Chat area */}
+          <div style={{ flex: 1, padding: '10px 12px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 360 }}>
+            {aiMessages.length === 0 && (
+              welcomeMsg ? (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ background: 'rgba(19,20,26,0.7)', borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 10, maxWidth: '90%' }}>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#c9cdd4', lineHeight: 1.6 }}>{welcomeMsg}</div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                  <div style={{ fontFamily: fm, fontSize: 12, color: '#6b7280', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.6 }}>Ask about your trading patterns, psychology, or specific trades.</div>
+                </div>
+              )
+            )}
+            {aiMessages.map((msg, i) => (
+              msg.role === 'assistant' ? (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ background: 'rgba(19,20,26,0.7)', borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 10, maxWidth: '90%' }}>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#c9cdd4', lineHeight: 1.6 }}>{formatAiText(msg.content)}</div>
+                  </div>
+                </div>
+              ) : (
+                <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ background: 'rgba(0,212,160,0.08)', borderTop: '1px solid rgba(0,212,160,0.15)', borderRight: '1px solid rgba(0,212,160,0.15)', borderBottom: '1px solid rgba(0,212,160,0.15)', borderLeft: '1px solid rgba(0,212,160,0.15)', borderRadius: 10, padding: 10, maxWidth: '85%' }}>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#fff', lineHeight: 1.6 }}>{msg.content}</div>
+                  </div>
+                </div>
+              )
+            ))}
+            {aiLoading && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
-                <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, maxWidth: '90%' }}>
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>{welcomeMsg}</div>
+                <div style={{ background: 'rgba(19,20,26,0.7)', borderTop: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {[0, 1, 2].map(d => (
+                      <span key={d} style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b7280', animation: `dotPulse 1.2s ease-in-out ${d * 0.2}s infinite` }} />
+                    ))}
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic', textAlign: 'center', padding: '0 20px', lineHeight: 1.6 }}>Ask about your trading patterns, psychology, or specific trades.</div>
-              </div>
-            )
-          )}
-          {/* Messages */}
-          {aiMessages.map((msg, i) => (
-            msg.role === 'assistant' ? (
-              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
-                <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 12, maxWidth: '90%' }}>
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6 }}>{formatAiText(msg.content)}</div>
-                </div>
-              </div>
-            ) : (
-              <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ background: '#1a2520', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', borderRadius: 10, padding: 12, maxWidth: '85%' }}>
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>{msg.content}</div>
-                </div>
-              </div>
-            )
-          ))}
-          {/* Loading indicator */}
-          {aiLoading && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: teal, flexShrink: 0, marginTop: 6 }} />
-              <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: '12px 16px' }}>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[0, 1, 2].map(d => (
-                    <span key={d} style={{ width: 6, height: 6, borderRadius: '50%', background: '#6b7280', animation: `dotPulse 1.2s ease-in-out ${d * 0.2}s infinite` }} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
 
-        {/* Chat input */}
-        <div style={{ padding: '10px 12px', borderTop: '1px solid #1a1b22' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '10px 14px' }}>
-            <input value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendToCoach(); }} placeholder="Ask WickCoach about your trades..." style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#c9cdd4', fontFamily: fm, fontSize: 13 }} />
-            <div onClick={sendToCoach} style={{ width: 32, height: 32, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: aiLoading ? 0.5 : 1 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+          {/* Chat input */}
+          <div style={{ padding: '8px 12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(14,15,20,0.6)', borderTop: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)', borderLeft: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px' }}>
+              <input value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendToCoach(); }} placeholder="Ask WickCoach..." style={{ flex: 1, background: 'transparent', borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: 'none', outline: 'none', color: '#c9cdd4', fontFamily: fm, fontSize: 13 }} />
+              <div onClick={sendToCoach} style={{ width: 30, height: 30, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, opacity: aiLoading ? 0.5 : 1 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0e0f14" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+              </div>
             </div>
           </div>
         </div>
-        <style>{`@keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }`}</style>
-      </div>
+      )}
+      <style>{`@keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }`}</style>
     </div>
   );
 }
