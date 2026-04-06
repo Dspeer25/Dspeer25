@@ -917,8 +917,10 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   });
 
   // Stats — also respect equity curve time filter
+  // Use most recent trade date as "now" so time filters work with any date range
+  const latestTradeDate = filtered.length > 0 ? new Date(Math.max(...filtered.map(t => new Date(t.date).getTime()))) : new Date();
   const statTrades = (() => {
-    const now = new Date();
+    const now = latestTradeDate;
     let cutoff: Date;
     if (eqRange === '1D') cutoff = new Date(now.getTime() - 86400000);
     else if (eqRange === '1W') cutoff = new Date(now.getTime() - 7 * 86400000);
@@ -986,7 +988,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   })();
   const equityCurve = (() => {
     if (equityCurveAll.length === 0) return [];
-    const now = new Date();
+    const now = latestTradeDate;
     let cutoff: Date;
     if (eqRange === '1D') { cutoff = new Date(now.getTime() - 86400000); }
     else if (eqRange === '1W') { cutoff = new Date(now.getTime() - 7 * 86400000); }
