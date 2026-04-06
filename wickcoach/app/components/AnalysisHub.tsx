@@ -96,6 +96,8 @@ function parseHour(time: string): number {
 
 export default function AnalysisContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [expandedAxis, setExpandedAxis] = useState<string | null>(null);
+  const [hoveredAxis, setHoveredAxis] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -213,25 +215,83 @@ export default function AnalysisContent() {
     const topSetupTag = topSetups[0]?.[0] || 'Clean entries';
     const secondSetupTag = topSetups[1]?.[0] || 'disciplined setups';
 
-    // Psych scores
-    const patientCount = trades.filter(t => /waited|patient|patiently/i.test(t.journal)).length;
-    const executionCount = trades.filter(t => /textbook|defined risk|pre-planned|clean entry|clean exit|followed every rule|followed my rules|per my rules|per the rules/i.test(t.journal)).length;
-    const fearBECount = trades.filter(t => t.result === 'BREAKEVEN' && /fear|scared|panicked|bailed/i.test(t.journal)).length;
-    const beCount = trades.filter(t => t.result === 'BREAKEVEN').length;
-    const riskCount = trades.filter(t => /took the loss cleanly|pre-planned level|defined risk|risk was defined|stayed within risk|cut the loss|cut it fast|stopped out at/i.test(t.journal)).length;
+    // Psych scores — smarter calculation
+    const patientTrades = trades.filter(t => /waited|patient|patiently|entered at pre-planned|waited for the full signal|waited for the breakout|waited for clearing bars/i.test(t.journal));
+    const impatientTrades = trades.filter(t => /impatient|before the clearing bars|jumped in before|chased|too eager|anxious about missing|before volume confirmed|before full confirmation/i.test(t.journal));
+    const patienceScore = (patientTrades.length + impatientTrades.length) > 0
+      ? Math.min(100, Math.round((patientTrades.length / (patientTrades.length + impatientTrades.length)) * 100))
+      : 50;
 
-    const patienceScore = Math.min(100, Math.round((patientCount / trades.length) * 100));
     const disciplineScore = Math.min(100, Math.round((ruleAbiding.length / trades.length) * 100));
-    const executionScore = Math.min(100, Math.round((executionCount / trades.length) * 200));
-    const convictionScore = beCount > 0 ? Math.min(100, Math.max(0, Math.round(100 - (fearBECount / beCount) * 100))) : 60;
-    const riskMgmtScore = Math.min(100, Math.round((riskCount / trades.length) * 250));
+
+    const cleanEntryTrades = trades.filter(t => /textbook|defined risk|pre-planned|clean entry|clean exit|followed every rule|followed my rules|per my rules|per the rules|zero emotions|pure process/i.test(t.journal));
+    const sloppyEntryTrades = trades.filter(t => /froze|no clearing bars|chased|front-run|jumped in|forced the trade|no 2min confirmation/i.test(t.journal));
+    const executionScore = (cleanEntryTrades.length + sloppyEntryTrades.length) > 0
+      ? Math.min(100, Math.round((cleanEntryTrades.length / (cleanEntryTrades.length + sloppyEntryTrades.length)) * 100))
+      : 50;
+
+    const fearExitTrades = trades.filter(t => /panicked|fear|scared|bailed|playing scared|closed flat|fear-based exit|anxiety building/i.test(t.journal));
+    const heldTrades = trades.filter(t => /rode it|let the trade work|let the edge play out|no anxiety|without hesitation|maximum conviction|full send/i.test(t.journal));
+    const convictionScore = (fearExitTrades.length + heldTrades.length) > 0
+      ? Math.min(100, Math.round((heldTrades.length / (fearExitTrades.length + heldTrades.length)) * 100))
+      : 50;
+
+    const goodRiskTrades = trades.filter(t => /took the loss cleanly|pre-planned level|defined risk|risk was defined|stayed within risk|cut the loss|cut it fast|stopped out at|small loss|per my rules/i.test(t.journal));
+    const badRiskTrades = trades.filter(t => /doubled down|sized up 3x|loss was double|2x what it should|outsized loss|held through a stop level|added to the position out of frustration/i.test(t.journal));
+    const riskMgmtScore = (goodRiskTrades.length + badRiskTrades.length) > 0
+      ? Math.min(100, Math.round((goodRiskTrades.length / (goodRiskTrades.length + badRiskTrades.length)) * 100))
+      : 50;
+
+    // Psych example trades for expanded panels
+    const psychExamples = {
+      patience: {
+        positive: patientTrades.slice(0, 2),
+        negative: impatientTrades.slice(0, 1),
+      },
+      discipline: {
+        positive: ruleAbiding.filter(t => t.result === 'WIN').sort((a, b) => b.pl - a.pl).slice(0, 2),
+        negative: ruleBreaking.filter(t => t.result === 'LOSS').sort((a, b) => a.pl - b.pl).slice(0, 1),
+      },
+      execution: {
+        positive: cleanEntryTrades.slice(0, 2),
+        negative: sloppyEntryTrades.slice(0, 1),
+      },
+      conviction: {
+        positive: heldTrades.slice(0, 1),
+        negative: fearExitTrades.slice(0, 2),
+      },
+      riskMgmt: {
+        positive: goodRiskTrades.slice(0, 2),
+        negative: badRiskTrades.slice(0, 1),
+      },
+    };
+
+    // Psych insights
+    const patientWinRate = patientTrades.length > 0 ? (patientTrades.filter(t => t.result === 'WIN').length / patientTrades.length) * 100 : 0;
+    const impatientWinRate = impatientTrades.length > 0 ? (impatientTrades.filter(t => t.result === 'WIN').length / impatientTrades.length) * 100 : 0;
+    const abidingAvgR = ruleAbiding.length > 0 ? ruleAbiding.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / ruleAbiding.length : 0;
+    const breakingAvgR = ruleBreaking.length > 0 ? ruleBreaking.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / ruleBreaking.length : 0;
+    const cleanAvgR = cleanEntryTrades.length > 0 ? cleanEntryTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / cleanEntryTrades.length : 0;
+    const sloppyAvgR = sloppyEntryTrades.length > 0 ? sloppyEntryTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / sloppyEntryTrades.length : 0;
+    const goodRiskAvgR = goodRiskTrades.length > 0 ? goodRiskTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / goodRiskTrades.length : 0;
+    const badRiskAvgR = badRiskTrades.length > 0 ? badRiskTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / badRiskTrades.length : 0;
+    const losers = trades.filter(t => t.result === 'LOSS');
+    const stopsHonoredPct = losers.length > 0 ? (goodRiskTrades.filter(t => t.result === 'LOSS').length / losers.length) * 100 : 0;
+
+    const psychInsights = {
+      patience: `You waited for confirmation on ${fmtPct((patientTrades.length / trades.length) * 100)} of your trades. When you wait, your win rate is ${fmtPct(patientWinRate)} vs ${fmtPct(impatientWinRate)} when you don't.`,
+      discipline: `${fmtPct(disciplineScore)} of your trades followed your rules. Rule-following trades have a ${fmtR(abidingAvgR)} expectancy vs ${fmtR(breakingAvgR)} for rule-breaking.`,
+      execution: `${cleanEntryTrades.length} trades had clean, pre-planned entries. These averaged ${fmtR(cleanAvgR)} vs ${fmtR(sloppyAvgR)} for reactive entries.`,
+      conviction: `You exited ${fearExitTrades.length} trades at breakeven citing fear or anxiety. Your average R on held trades is significantly higher.`,
+      riskMgmt: `You honored your stops on ${fmtPct(stopsHonoredPct)} of losing trades. Clean losses averaged ${fmtR(goodRiskAvgR)} vs ${fmtR(badRiskAvgR)} for undisciplined exits.`,
+    };
 
     const psychScores = [
-      { label: 'Patience', value: patienceScore, abbr: 'PAT' },
-      { label: 'Discipline', value: disciplineScore, abbr: 'DIS' },
-      { label: 'Execution', value: executionScore, abbr: 'EXE' },
-      { label: 'Conviction', value: convictionScore, abbr: 'CON' },
-      { label: 'Risk Mgmt', value: riskMgmtScore, abbr: 'RSK' },
+      { label: 'Patience', value: patienceScore, abbr: 'PAT', key: 'patience' as const, desc: 'Waited for confirmation before entering' },
+      { label: 'Discipline', value: disciplineScore, abbr: 'DIS', key: 'discipline' as const, desc: 'Followed trading rules consistently' },
+      { label: 'Execution', value: executionScore, abbr: 'EXE', key: 'execution' as const, desc: 'Clean entries with defined risk' },
+      { label: 'Conviction', value: convictionScore, abbr: 'CON', key: 'conviction' as const, desc: 'Held winners, didn\'t bail at breakeven' },
+      { label: 'Risk Mgmt', value: riskMgmtScore, abbr: 'RSK', key: 'riskMgmt' as const, desc: 'Honored stops and cut losses cleanly' },
     ];
 
     return {
@@ -244,7 +304,7 @@ export default function AnalysisContent() {
       topWins, worstLosses,
       dominantFlawName, dominantFlawData, dominantTickers,
       topSetupTag, secondSetupTag,
-      psychScores,
+      psychScores, psychExamples, psychInsights,
     };
   }, [trades]);
 
@@ -530,76 +590,158 @@ export default function AnalysisContent() {
       {/* ═══ SECTION 6: PSYCH PROFILE + WICKCOACH AI ═══ */}
       <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
 
-        {/* Left: Psych Profile Radar */}
-        <div style={{ flex: 1, minWidth: 300, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
-          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Psych profile</div>
-
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <svg width={280} height={280} viewBox="-30 -30 340 340">
-              {(() => {
-                const cx = 140, cy = 140, maxR = 120;
-                const scores = analysis.psychScores;
-                const n = scores.length;
-                const angleStep = (2 * Math.PI) / n;
-                const startAngle = -Math.PI / 2;
-
-                const pt = (i: number, pct: number) => {
-                  const a = startAngle + i * angleStep;
-                  const d = (pct / 100) * maxR;
-                  return { x: cx + d * Math.cos(a), y: cy + d * Math.sin(a) };
-                };
-
-                const gridLevels = [33, 66, 100];
-                const elements: React.ReactNode[] = [];
-
-                // Grid pentagons
-                gridLevels.forEach(level => {
-                  const pts = scores.map((_, i) => pt(i, level));
-                  elements.push(
-                    <polygon key={`grid-${level}`} points={pts.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#1e1f2a" strokeWidth={0.5} />
-                  );
-                });
-
-                // Axis lines
-                scores.forEach((_, i) => {
-                  const p = pt(i, 100);
-                  elements.push(<line key={`axis-${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#1e1f2a" strokeWidth={0.5} />);
-                });
-
-                // Data polygon
-                const dataPts = scores.map((s, i) => pt(i, s.value));
-                elements.push(
-                  <polygon key="data" points={dataPts.map(p => `${p.x},${p.y}`).join(' ')} fill="rgba(0,212,160,0.15)" stroke={teal} strokeWidth={1.5} />
-                );
-
-                // Data dots
-                dataPts.forEach((p, i) => {
-                  elements.push(<circle key={`dot-${i}`} cx={p.x} cy={p.y} r={3} fill={teal} />);
-                });
-
-                // Labels
-                scores.forEach((s, i) => {
-                  const p = pt(i, 130);
-                  elements.push(
-                    <text key={`label-${i}`} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={12} fontFamily={fm}>{s.label}</text>
-                  );
-                });
-
-                return elements;
-              })()}
-            </svg>
+        {/* Left: Psych Profile — 55% */}
+        <div style={{ flex: '1.2 1 340px', background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '28px 32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
+            <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Psych profile</span>
+            <span style={{ fontSize: 11, color: '#999' }}>Based on journal text + trade data</span>
           </div>
 
-          <div style={{ textAlign: 'center', fontSize: 12, color: '#bbb', marginTop: 12 }}>
-            {analysis.psychScores.map((s, i) => (
-              <span key={s.abbr}>{s.abbr}: {s.value}{i < analysis.psychScores.length - 1 ? ' | ' : ''}</span>
-            ))}
+          <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+            {/* Radar chart */}
+            <div style={{ flex: '0 0 260px' }}>
+              <svg width={260} height={260} viewBox="-40 -40 360 360">
+                {(() => {
+                  const cx = 140, cy = 140, maxR = 120;
+                  const scores = analysis.psychScores;
+                  const n = scores.length;
+                  const angleStep = (2 * Math.PI) / n;
+                  const startAngle = -Math.PI / 2;
+
+                  const pt = (i: number, pct: number) => {
+                    const a = startAngle + i * angleStep;
+                    const d = (pct / 100) * maxR;
+                    return { x: cx + d * Math.cos(a), y: cy + d * Math.sin(a) };
+                  };
+
+                  const elements: React.ReactNode[] = [];
+
+                  [33, 66, 100].forEach(level => {
+                    const pts = scores.map((_, i) => pt(i, level));
+                    elements.push(<polygon key={`grid-${level}`} points={pts.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#2a2b32" strokeWidth={0.5} />);
+                  });
+
+                  scores.forEach((_, i) => {
+                    const p = pt(i, 100);
+                    elements.push(<line key={`axis-${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#2a2b32" strokeWidth={0.5} />);
+                  });
+
+                  const dataPts = scores.map((s, i) => pt(i, s.value));
+                  elements.push(<polygon key="data" points={dataPts.map(p => `${p.x},${p.y}`).join(' ')} fill="rgba(0,212,160,0.12)" stroke={teal} strokeWidth={2} />);
+
+                  dataPts.forEach((p, i) => {
+                    elements.push(<circle key={`dot-${i}`} cx={p.x} cy={p.y} r={4} fill={teal} stroke="#0e0f14" strokeWidth={2} />);
+                  });
+
+                  // Labels with smart anchoring
+                  const anchors: Array<'middle' | 'start' | 'end'> = ['middle', 'start', 'start', 'end', 'end'];
+                  const offsets = [135, 128, 128, 128, 128];
+                  scores.forEach((s, i) => {
+                    const p = pt(i, offsets[i]);
+                    elements.push(
+                      <text key={`label-${i}`} x={p.x} y={p.y} textAnchor={anchors[i]} dominantBaseline="middle" fill="#ccc" fontSize={12} fontFamily={fm}>{s.label}</text>
+                    );
+                  });
+
+                  return elements;
+                })()}
+              </svg>
+            </div>
+
+            {/* Score rows */}
+            <div style={{ flex: 1, minWidth: 200 }}>
+              {analysis.psychScores.map(s => {
+                const scoreColor = s.value >= 60 ? teal : s.value >= 40 ? '#ffb400' : red;
+                const scoreBg = s.value >= 60 ? 'rgba(0,212,160,0.15)' : s.value >= 40 ? 'rgba(255,180,0,0.15)' : 'rgba(255,68,68,0.15)';
+                const isExpanded = expandedAxis === s.key;
+                const isHovered = hoveredAxis === s.key;
+                const examples = analysis.psychExamples[s.key];
+                const insight = analysis.psychInsights[s.key];
+
+                return (
+                  <div key={s.key}>
+                    <div
+                      onClick={() => setExpandedAxis(isExpanded ? null : s.key)}
+                      onMouseEnter={() => setHoveredAxis(s.key)}
+                      onMouseLeave={() => setHoveredAxis(null)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 16,
+                        padding: '12px 16px', background: '#1a1c23', borderRadius: 8, marginBottom: 8,
+                        cursor: 'pointer', border: isHovered || isExpanded ? '1px solid #2a2b32' : '1px solid transparent',
+                        transition: 'border-color 0.15s ease',
+                      }}
+                    >
+                      {/* Score circle */}
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%', background: scoreBg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: scoreColor }}>{s.value}</span>
+                      </div>
+                      {/* Label + description */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{s.label}</div>
+                        <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{s.desc}</div>
+                      </div>
+                      {/* Bar */}
+                      <div style={{ width: 100, height: 6, borderRadius: 3, background: '#2a2b32', flexShrink: 0 }}>
+                        <div style={{ width: `${s.value}%`, height: '100%', borderRadius: 3, background: scoreColor, transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <div style={{
+                        marginTop: -4, marginBottom: 12, background: '#0e0f14', border: '1px solid #1e1f2a',
+                        borderRadius: 8, padding: 16, borderLeft: `3px solid ${scoreColor}`,
+                      }}>
+                        {/* Positive examples */}
+                        {examples.positive.map((t: Trade) => (
+                          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 8 }}>
+                            <span style={{ color: teal, fontSize: 10, flexShrink: 0 }}>●</span>
+                            <span style={{ fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>{t.ticker}</span>
+                            <span style={{ color: '#999', fontSize: 12, flexShrink: 0 }}>{t.date}</span>
+                            <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fmtDollar(t.pl)}</span>
+                            <span style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t.journal.length > 100 ? t.journal.slice(0, 100) + '...' : t.journal}
+                            </span>
+                          </div>
+                        ))}
+                        {/* Negative examples */}
+                        {examples.negative.map((t: Trade) => (
+                          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 8 }}>
+                            <span style={{ color: red, fontSize: 10, flexShrink: 0 }}>●</span>
+                            <span style={{ fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>{t.ticker}</span>
+                            <span style={{ color: '#999', fontSize: 12, flexShrink: 0 }}>{t.date}</span>
+                            <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fmtDollar(t.pl)}</span>
+                            <span style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {t.journal.length > 100 ? t.journal.slice(0, 100) + '...' : t.journal}
+                            </span>
+                          </div>
+                        ))}
+                        {examples.positive.length === 0 && examples.negative.length === 0 && (
+                          <div style={{ fontSize: 12, color: '#666', padding: '8px 0' }}>No matching trade examples found</div>
+                        )}
+                        {/* Insight line */}
+                        <div style={{
+                          marginTop: 8, padding: '10px 14px', borderRadius: 6,
+                          backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)', backgroundSize: '4px 4px',
+                          background: 'rgba(0,212,160,0.04)',
+                        }}>
+                          <span style={{ color: teal, fontSize: 12, fontStyle: 'italic' }}>{insight}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Right: WickCoach AI */}
+        {/* Right: WickCoach AI — 45% */}
         <div style={{
-          flex: 1, minWidth: 300,
+          flex: '0.8 1 300px',
           background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px',
           backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)',
           backgroundSize: '4px 4px',
