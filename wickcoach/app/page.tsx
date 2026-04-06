@@ -1443,6 +1443,282 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   );
 }
 
+// ═══ TRADING GOALS TAB ═══
+interface Goal {
+  id: string;
+  title: string;
+  description: string;
+  status: 'nominal' | 'monitoring' | 'breached';
+  sessionsHit: number;
+  totalSessions: number;
+  period: 'week' | 'month' | 'quarter';
+  createdAt: string;
+}
+
+const DEFAULT_GOALS: Goal[] = [
+  { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', description: 'Once a trade hits break-even, do not close early. Let it run for at least 3 candles before re-evaluating exit.', status: 'nominal', sessionsHit: 2, totalSessions: 3, period: 'week', createdAt: new Date().toISOString() },
+  { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', description: 'Do not enter any trade without confirmation on both the 5-minute and 13/15-minute timeframes aligned in the same direction.', status: 'monitoring', sessionsHit: 3, totalSessions: 5, period: 'week', createdAt: new Date().toISOString() },
+  { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', description: 'If price is extended from the 20MA, do not chase. Wait for a pullback to or near the moving average before entering.', status: 'breached', sessionsHit: 0, totalSessions: 5, period: 'week', createdAt: new Date().toISOString() },
+];
+
+function TradingGoalsContent({ trades }: { trades: Trade[] }) {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [activeView, setActiveView] = useState<'weekly' | 'monthly' | 'behavioral'>('weekly');
+  const [goalMessages, setGoalMessages] = useState<{ role: string; content: string }[]>([]);
+  const [goalInput, setGoalInput] = useState('');
+  const [goalAiLoading, setGoalAiLoading] = useState(false);
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const goalChatEndRef = useRef<HTMLDivElement>(null);
+
+  // Load goals from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('wickcoach_goals');
+    if (saved) {
+      try { setGoals(JSON.parse(saved)); } catch { setGoals(DEFAULT_GOALS); }
+    } else {
+      setGoals(DEFAULT_GOALS);
+      localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
+    }
+  }, []);
+
+  // Save goals to localStorage on change
+  useEffect(() => {
+    if (goals.length > 0) localStorage.setItem('wickcoach_goals', JSON.stringify(goals));
+  }, [goals]);
+
+  // Scroll chat to bottom
+  useEffect(() => {
+    goalChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [goalMessages]);
+
+  const statusColor = (s: Goal['status']) => s === 'nominal' ? '#00d4a0' : s === 'monitoring' ? '#f59e0b' : '#ef4444';
+  const statusLabel = (s: Goal['status']) => s === 'nominal' ? 'NOMINAL' : s === 'monitoring' ? 'MONITORING' : 'BREACHED';
+
+  const addNewGoal = () => {
+    const newGoal: Goal = {
+      id: `g${Date.now()}`,
+      title: 'NEW PARAMETER — CLICK TO EDIT',
+      description: 'Define your trading rule here.',
+      status: 'nominal',
+      sessionsHit: 0,
+      totalSessions: 5,
+      period: 'week',
+      createdAt: new Date().toISOString(),
+    };
+    setGoals(prev => [...prev, newGoal]);
+    setEditingGoalId(newGoal.id);
+    setEditTitle(newGoal.title);
+    setEditDesc(newGoal.description);
+  };
+
+  const saveEdit = (id: string) => {
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, title: editTitle.toUpperCase(), description: editDesc } : g));
+    setEditingGoalId(null);
+  };
+
+  const deleteGoal = (id: string) => {
+    setGoals(prev => prev.filter(g => g.id !== id));
+  };
+
+  const cycleStatus = (id: string) => {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const next = g.status === 'nominal' ? 'monitoring' : g.status === 'monitoring' ? 'breached' : 'nominal';
+      return { ...g, status: next };
+    }));
+  };
+
+  const incrementSession = (id: string) => {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      return { ...g, sessionsHit: Math.min(g.sessionsHit + 1, g.totalSessions) };
+    }));
+  };
+
+  const sendToGoalCoach = async () => {
+    if (!goalInput.trim() || goalAiLoading) return;
+    const userMsg = { role: 'user', content: goalInput };
+    const newMessages = [...goalMessages, userMsg];
+    setGoalMessages(newMessages);
+    setGoalInput('');
+    setGoalAiLoading(true);
+
+    const goalsContext = goals.map(g => `• ${g.title} — Status: ${g.status}, ${g.sessionsHit}/${g.totalSessions} sessions hit. ${g.description}`).join('\n');
+    const tradesContext = trades.slice(0, 20).map(t => `${t.ticker} ${t.direction} ${t.date} P/L: $${t.pl} | ${t.journal || 'no journal'}`).join('\n');
+
+    try {
+      const res = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages, tradesContext, goalsContext, mode: 'goals' })
+      });
+      const data = await res.json();
+      setGoalMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+    } catch {
+      setGoalMessages(prev => [...prev, { role: 'assistant', content: 'CONNECTION_ERROR: Failed to reach WickCoach_CORE.' }]);
+    }
+    setGoalAiLoading(false);
+  };
+
+  const nominalCount = goals.filter(g => g.status === 'nominal').length;
+  const monitoringCount = goals.filter(g => g.status === 'monitoring').length;
+  const breachedCount = goals.filter(g => g.status === 'breached').length;
+
+  return (
+    <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)', fontFamily: fm }}>
+      {/* LEFT SIDEBAR */}
+      <div style={{ width: 220, background: '#0e0f14', borderRight: '1px solid #1a1b22', padding: '24px 16px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ marginBottom: 28 }}>
+          <Logo size={22} showText />
+        </div>
+        <div style={{ fontSize: 10, color: '#6a6d78', letterSpacing: '0.15em', marginBottom: 20, fontFamily: fm }}>NAVIGATION</div>
+        {(['weekly', 'monthly', 'behavioral'] as const).map(v => (
+          <div key={v} onClick={() => setActiveView(v)} style={{ padding: '10px 12px', marginBottom: 4, borderRadius: 6, cursor: 'pointer', background: activeView === v ? 'rgba(0,212,160,0.1)' : 'transparent', borderLeft: activeView === v ? `2px solid ${teal}` : '2px solid transparent', color: activeView === v ? '#e8e8f0' : '#6a6d78', fontSize: 13, fontFamily: fm, letterSpacing: '0.04em', textTransform: 'capitalize', transition: 'all 0.15s ease' }}>
+            {v === 'weekly' ? '◆ Weekly Goals' : v === 'monthly' ? '◇ Monthly Goals' : '▣ Behavioral'}
+          </div>
+        ))}
+        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid #1a1b22' }}>
+          <div style={{ fontSize: 10, color: '#3a3d48', letterSpacing: '0.12em', fontFamily: fm }}>TRADER_092</div>
+          <div style={{ fontSize: 10, color: '#3a3d48', fontFamily: fm, marginTop: 4 }}>SESSION ACTIVE</div>
+        </div>
+      </div>
+
+      {/* CENTER CONTENT */}
+      <div style={{ flex: 1, padding: '32px 28px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: fd, fontSize: 20, color: '#e8e8f0', fontWeight: 700, margin: 0, letterSpacing: '0.04em' }}>
+              {activeView === 'weekly' ? 'WEEKLY PARAMETERS' : activeView === 'monthly' ? 'MONTHLY PARAMETERS' : 'BEHAVIORAL PARAMETERS'}
+            </h2>
+            <p style={{ fontFamily: fm, fontSize: 12, color: '#6a6d78', margin: '6px 0 0', letterSpacing: '0.04em' }}>
+              {goals.length} active parameters • {nominalCount} nominal • {monitoringCount} monitoring • {breachedCount} breached
+            </p>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
+          {[
+            { label: 'NOMINAL', value: nominalCount, color: '#00d4a0' },
+            { label: 'MONITORING', value: monitoringCount, color: '#f59e0b' },
+            { label: 'BREACHED', value: breachedCount, color: '#ef4444' },
+            { label: 'TOTAL', value: goals.length, color: '#9a9da8' },
+          ].map(s => (
+            <div key={s.label} style={{ flex: 1, background: '#0e0f14', borderRadius: 8, padding: '16px 14px', border: '1px solid #1a1b22' }}>
+              <div style={{ fontSize: 10, color: '#6a6d78', letterSpacing: '0.12em', marginBottom: 8, fontFamily: fm }}>{s.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: s.color, fontFamily: fd }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Goal cards */}
+        {goals.map(g => (
+          <div key={g.id} style={{ background: '#0e0f14', border: '1px solid #1a1b22', borderLeft: `3px solid ${statusColor(g.status)}`, borderRadius: 8, padding: '20px 20px 16px', marginBottom: 12 }}>
+            {editingGoalId === g.id ? (
+              <div>
+                <input value={editTitle} onChange={e => setEditTitle(e.target.value)} style={{ width: '100%', background: '#13141a', border: '1px solid #2a2b32', borderRadius: 4, padding: '8px 10px', color: '#e8e8f0', fontFamily: fm, fontSize: 13, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }} />
+                <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={2} style={{ width: '100%', background: '#13141a', border: '1px solid #2a2b32', borderRadius: 4, padding: '8px 10px', color: '#9a9da8', fontFamily: fm, fontSize: 12, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <span onClick={() => saveEdit(g.id)} style={{ fontSize: 12, color: teal, cursor: 'pointer', fontFamily: fm }}>SAVE</span>
+                  <span onClick={() => setEditingGoalId(null)} style={{ fontSize: 12, color: '#6a6d78', cursor: 'pointer', fontFamily: fm }}>CANCEL</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <span onClick={() => cycleStatus(g.id)} style={{ fontSize: 10, color: statusColor(g.status), background: `${statusColor(g.status)}15`, padding: '3px 8px', borderRadius: 4, cursor: 'pointer', fontFamily: fm, letterSpacing: '0.1em', fontWeight: 600 }}>{statusLabel(g.status)}</span>
+                      <span style={{ fontSize: 10, color: '#4a4d58', fontFamily: fm }}>{g.period.toUpperCase()}</span>
+                    </div>
+                    <h3 onClick={() => { setEditingGoalId(g.id); setEditTitle(g.title); setEditDesc(g.description); }} style={{ fontFamily: fd, fontSize: 15, color: '#e8e8f0', fontWeight: 600, margin: 0, cursor: 'pointer', letterSpacing: '0.03em' }}>{g.title}</h3>
+                  </div>
+                  <span onClick={() => deleteGoal(g.id)} style={{ fontSize: 14, color: '#3a3d48', cursor: 'pointer', marginLeft: 12, lineHeight: 1 }} title="Delete goal">✕</span>
+                </div>
+                <p style={{ fontFamily: fm, fontSize: 12, color: '#6a6d78', margin: '0 0 12px', lineHeight: 1.5 }}>{g.description}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, height: 4, background: '#1a1b22', borderRadius: 2, overflow: 'hidden' }}>
+                    <div style={{ width: `${g.totalSessions > 0 ? (g.sessionsHit / g.totalSessions) * 100 : 0}%`, height: '100%', background: statusColor(g.status), borderRadius: 2, transition: 'width 0.3s ease' }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: '#6a6d78', fontFamily: fm, flexShrink: 0 }}>{g.sessionsHit}/{g.totalSessions}</span>
+                  <span onClick={() => incrementSession(g.id)} style={{ fontSize: 11, color: teal, cursor: 'pointer', fontFamily: fm, flexShrink: 0 }} title="Log session hit">+1</span>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+
+        {/* Add new goal button */}
+        <div onClick={addNewGoal} style={{ border: '1px dashed #2a2b32', borderRadius: 8, padding: '16px 20px', textAlign: 'center', cursor: 'pointer', marginTop: 8, transition: 'border-color 0.15s ease' }} onMouseEnter={e => (e.currentTarget.style.borderColor = teal)} onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2b32')}>
+          <span style={{ fontSize: 13, color: '#6a6d78', fontFamily: fm, letterSpacing: '0.06em' }}>+ INITIALIZE NEW PARAMETER</span>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN — AI TERMINAL */}
+      <div style={{ width: 340, background: '#0e0f14', borderLeft: '1px solid #1a1b22', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #1a1b22' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: teal, boxShadow: `0 0 6px ${teal}` }} />
+            <span style={{ fontFamily: fm, fontSize: 12, color: '#e8e8f0', letterSpacing: '0.08em', fontWeight: 600 }}>WICKCOACH_CORE</span>
+          </div>
+          <span style={{ fontFamily: fm, fontSize: 10, color: '#4a4d58', letterSpacing: '0.06em' }}>GOAL ENFORCEMENT TERMINAL</span>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px' }}>
+          {goalMessages.length === 0 && (
+            <div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#4a4d58', marginBottom: 12, letterSpacing: '0.06em' }}>SYSTEM_INIT...</div>
+              <div style={{ fontFamily: fm, fontSize: 12, color: '#9a9da8', lineHeight: 1.6, marginBottom: 16 }}>
+                <span style={{ color: teal }}>{'>'}</span> {goals.length} parameters loaded.<br />
+                <span style={{ color: teal }}>{'>'}</span> {breachedCount > 0 ? `${breachedCount} parameter${breachedCount > 1 ? 's' : ''} in BREACH state. Recommend immediate review.` : 'All parameters within acceptable range.'}<br />
+                <span style={{ color: teal }}>{'>'}</span> Ready for input.
+              </div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#3a3d48', marginBottom: 8 }}>SUGGESTED QUERIES:</div>
+              {[
+                'Why do I keep breaking my pullback rule?',
+                'Review my goal adherence this week',
+                'Which goals need adjustment?',
+              ].map((q, i) => (
+                <div key={i} onClick={() => { setGoalInput(q); }} style={{ fontFamily: fm, fontSize: 11, color: '#6a6d78', padding: '6px 10px', background: '#13141a', borderRadius: 4, marginBottom: 4, cursor: 'pointer', border: '1px solid #1a1b22', transition: 'border-color 0.15s ease' }} onMouseEnter={e => (e.currentTarget.style.borderColor = '#2a2b32')} onMouseLeave={e => (e.currentTarget.style.borderColor = '#1a1b22')}>
+                  <span style={{ color: '#4a4d58' }}>{'>'}</span> {q}
+                </div>
+              ))}
+            </div>
+          )}
+          {goalMessages.map((m, i) => (
+            <div key={i} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: m.role === 'user' ? '#6a6d78' : teal, fontFamily: fm, marginBottom: 4, letterSpacing: '0.08em' }}>
+                {m.role === 'user' ? 'TRADER_INPUT:' : 'WICKCOACH_CORE:'}
+              </div>
+              <div style={{ fontFamily: fm, fontSize: 12, color: m.role === 'user' ? '#9a9da8' : '#c9cdd4', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{m.content}</div>
+            </div>
+          ))}
+          {goalAiLoading && (
+            <div style={{ fontFamily: fm, fontSize: 12, color: '#4a4d58' }}>
+              <span style={{ color: teal }}>{'>'}</span> PROCESSING<span style={{ animation: 'blink 1s step-end infinite' }}>_</span>
+            </div>
+          )}
+          <div ref={goalChatEndRef} />
+        </div>
+
+        {/* Terminal input */}
+        <div style={{ padding: '12px 14px', borderTop: '1px solid #1a1b22' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: teal, fontFamily: fm, fontSize: 13, flexShrink: 0 }}>{'>'}</span>
+            <input value={goalInput} onChange={e => setGoalInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') sendToGoalCoach(); }} placeholder="Enter query..." style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#c9cdd4', fontFamily: fm, fontSize: 12 }} />
+          </div>
+          <div onClick={sendToGoalCoach} style={{ marginTop: 10, background: goalAiLoading ? '#1a1b22' : teal, color: goalAiLoading ? '#4a4d58' : '#0e0f14', fontFamily: fm, fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', padding: '8px 0', textAlign: 'center', borderRadius: 4, cursor: goalAiLoading ? 'default' : 'pointer' }}>
+            {goalAiLoading ? 'PROCESSING...' : 'EXECUTE'}
+          </div>
+        </div>
+        <style>{`@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
+      </div>
+    </div>
+  );
+}
+
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
@@ -1840,7 +2116,10 @@ export default function WickCoachFull() {
         {activeTab === 'Past Trades' && (
           <PastTradesContent trades={trades} setActiveTab={setActiveTab} />
         )}
-        {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && (
+        {activeTab === 'Trading Goals' && (
+          <TradingGoalsContent trades={trades} />
+        )}
+        {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
           </div>
