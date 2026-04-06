@@ -73,10 +73,10 @@ const TBadge = ({ ticker }: { ticker: string }) => {
 };
 
 const tickerDomains: Record<string, string> = {
-  QQQ: 'invesco.com', SPY: 'ssga.com', AAPL: 'apple.com', NVDA: 'nvidia.com',
+  QQQ: 'invesco.com', SPY: 'spglobal.com', AAPL: 'apple.com', NVDA: 'nvidia.com',
   TSLA: 'tesla.com', AMZN: 'amazon.com', META: 'meta.com', MSFT: 'microsoft.com',
   GOOGL: 'google.com', GOOG: 'google.com', AMD: 'amd.com', NFLX: 'netflix.com',
-  BA: 'boeing.com', DIS: 'thewaltdisneycompany.com', JPM: 'jpmorganchase.com',
+  BA: 'boeing.com', DIS: 'disney.com', JPM: 'jpmorgan.com',
   V: 'visa.com', WMT: 'walmart.com', COIN: 'coinbase.com', PLTR: 'palantir.com',
   SOFI: 'sofi.com', CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com',
   UNH: 'unitedhealthgroup.com',

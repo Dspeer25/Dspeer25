@@ -70,8 +70,8 @@ function getViolationTag(journal: string): string {
 const TICKER_DOMAINS: Record<string, string> = {
   AAPL: 'apple.com', MSFT: 'microsoft.com', GOOGL: 'google.com', GOOG: 'google.com',
   AMZN: 'amazon.com', META: 'meta.com', NVDA: 'nvidia.com', TSLA: 'tesla.com',
-  AMD: 'amd.com', NFLX: 'netflix.com', SPY: 'ssga.com', QQQ: 'invesco.com',
-  DIS: 'disney.com', BA: 'boeing.com', JPM: 'jpmorganchase.com', V: 'visa.com',
+  AMD: 'amd.com', NFLX: 'netflix.com', SPY: 'spglobal.com', QQQ: 'invesco.com',
+  DIS: 'disney.com', BA: 'boeing.com', JPM: 'jpmorgan.com', V: 'visa.com',
   WMT: 'walmart.com', COIN: 'coinbase.com', PLTR: 'palantir.com', SOFI: 'sofi.com',
   CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com', UNH: 'unitedhealthgroup.com',
 };
