@@ -1450,13 +1450,14 @@ interface Goal {
   context: string[];
   aiResponses: string[];
   contextComplete: boolean;
+  actionItems: string[];
   createdAt: string;
 }
 
 const DEFAULT_GOALS: Goal[] = [
-  { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, createdAt: new Date().toISOString() },
-  { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, createdAt: new Date().toISOString() },
-  { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, createdAt: new Date().toISOString() },
+  { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString() },
+  { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString() },
+  { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString() },
 ];
 
 const MiniStickFigure = ({ size = 20 }: { size?: number }) => (
@@ -1480,6 +1481,8 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
   const [loadingGoalId, setLoadingGoalId] = useState<string | null>(null);
   const [hoveredGoalId, setHoveredGoalId] = useState<string | null>(null);
   const [hoveredContextBtn, setHoveredContextBtn] = useState<string | null>(null);
+  const [loggingGoalId, setLoggingGoalId] = useState<string | null>(null);
+  const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const saved = localStorage.getItem('wickcoach_goals');
@@ -1487,7 +1490,8 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0 && 'context' in parsed[0]) {
-          setGoals(parsed);
+          // Ensure actionItems field exists on loaded goals
+          setGoals(parsed.map((g: Goal) => ({ ...g, actionItems: g.actionItems || [] })));
         } else {
           setGoals(DEFAULT_GOALS);
           localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
@@ -1506,6 +1510,13 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     if (goals.length > 0) localStorage.setItem('wickcoach_goals', JSON.stringify(goals));
   }, [goals]);
 
+  // Auto-scroll chat to bottom when messages change
+  useEffect(() => {
+    if (expandedGoalId) {
+      chatEndRefs.current[expandedGoalId]?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [goals, expandedGoalId, loadingGoalId]);
+
   const addNewGoal = () => {
     const newGoal: Goal = {
       id: `g${Date.now()}`,
@@ -1513,6 +1524,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       context: [],
       aiResponses: [],
       contextComplete: false,
+      actionItems: [],
       createdAt: new Date().toISOString(),
     };
     setGoals(prev => [...prev, newGoal]);
@@ -1528,7 +1540,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
   };
 
   const clearGoalContext = (id: string) => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, context: [], aiResponses: [], contextComplete: false } : g));
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, context: [], aiResponses: [], contextComplete: false, actionItems: [] } : g));
   };
 
   const handleTextareaGrow = (e: React.ChangeEvent<HTMLTextAreaElement>, goalId: string) => {
@@ -1566,16 +1578,58 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       });
       const data = await res.json();
       const aiReply: string = data.reply;
-      // 5 exchanges always complete; at 3+ complete if AI response has no question mark
-      const isComplete = exchangeNumber >= 5 || (exchangeNumber >= 3 && !aiReply.includes('?'));
-      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply], contextComplete: isComplete } : g));
-      if (isComplete) {
-        setTimeout(() => setExpandedGoalId(prev => prev === goalId ? null : prev), 2000);
-      }
+      const readyToLog = exchangeNumber >= 5 || (exchangeNumber >= 3 && !aiReply.includes('?'));
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply] } : g));
+      // No auto-collapse — user clicks "Log & Exit"
+      void readyToLog; // completion state is determined by exchange count, shown via Log & Exit button
     } catch {
       setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, 'Failed to connect to WickCoach.'] } : g));
     }
     setLoadingGoalId(null);
+  };
+
+  const handleLogAndExit = async (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+
+    setLoggingGoalId(goalId);
+
+    // Build the full conversation thread for the action items prompt
+    let thread = '';
+    for (let i = 0; i < goal.context.length; i++) {
+      thread += `User: ${goal.context[i]}\n`;
+      if (goal.aiResponses[i]) thread += `WickCoach: ${goal.aiResponses[i]}\n`;
+    }
+
+    const actionPrompt = `Based on this conversation about the trader's goal "${goal.title}":\n\n${thread}\nGenerate exactly 3 concise action items (max 10 words each) that the trader should follow this week. Format as:\n1. [action item]\n2. [action item]\n3. [action item]\n\nNothing else. No intro, no explanation. Just the 3 numbered items.`;
+
+    try {
+      const res = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: actionPrompt }], mode: 'trades' })
+      });
+      const data = await res.json();
+      const reply: string = data.reply || '';
+      // Parse "1. ...\n2. ...\n3. ..."
+      const items = reply.split('\n').map((line: string) => line.replace(/^\d+\.\s*/, '').trim()).filter((line: string) => line.length > 0).slice(0, 3);
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, contextComplete: true, actionItems: items } : g));
+    } catch {
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, contextComplete: true, actionItems: [] } : g));
+    }
+
+    setLoggingGoalId(null);
+    setExpandedGoalId(null);
+  };
+
+  const isReadyToLog = (g: Goal) => {
+    const exchanges = g.context.length;
+    if (exchanges >= 5) return true;
+    if (exchanges >= 3 && g.aiResponses.length > 0) {
+      const lastReply = g.aiResponses[g.aiResponses.length - 1];
+      return !lastReply.includes('?');
+    }
+    return false;
   };
 
   const getProgressPercent = (g: Goal) => Math.min(g.context.length * 20, 100);
@@ -1643,8 +1697,17 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
               <span onClick={() => deleteGoal(g.id)} style={{ fontSize: 14, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4 }} title="Delete goal">✕</span>
             </div>
 
+            {/* Action items — shown when completed and collapsed */}
+            {g.contextComplete && g.actionItems.length > 0 && !isExpanded && (
+              <div style={{ marginTop: 8, marginLeft: 44 }}>
+                {g.actionItems.map((item, i) => (
+                  <div key={i} style={{ fontFamily: fm, fontSize: 12, color: teal, opacity: 0.85, fontStyle: 'italic', lineHeight: 1.8 }}>• {item}</div>
+                ))}
+              </div>
+            )}
+
             {/* "type" hint */}
-            {!g.contextComplete && !isExpanded && (
+            {!g.contextComplete && !isExpanded && g.actionItems.length === 0 && (
               <div style={{ marginTop: 6, paddingLeft: 36 }}>
                 <span style={{ fontSize: 11, color: teal, fontFamily: fm, fontStyle: 'italic', opacity: 0.6 }}>type</span>
               </div>
@@ -1654,7 +1717,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
             {isExpanded && (
               <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
                 <div style={{ flex: 2 }} />
-                <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, maxHeight: 300, display: 'flex', flexDirection: 'column' }}>
                   {/* Progress bar */}
                   <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
                     <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
@@ -1663,15 +1726,13 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                     <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context provided ✓</div>
                   )}
 
-                  {/* iMessage-style chat thread */}
+                  {/* iMessage-style chat thread — scrollable */}
                   <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
                     {g.context.map((msg, i) => (
                       <div key={i}>
-                        {/* User bubble — right-aligned */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: '#e8e8f0', lineHeight: 1.6, background: '#2a2b32', borderRadius: '16px 16px 4px 16px', padding: '12px 16px' }}>{msg}</div>
                         </div>
-                        {/* AI bubble — left-aligned */}
                         {g.aiResponses[i] && (
                           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
                             <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.6, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>{g.aiResponses[i]}</div>
@@ -1686,10 +1747,11 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                         </div>
                       </div>
                     )}
+                    <div ref={el => { chatEndRefs.current[g.id] = el; }} />
                   </div>
 
-                  {/* Textarea input */}
-                  {!g.contextComplete && (
+                  {/* Textarea input — pinned to bottom */}
+                  {!g.contextComplete && !isReadyToLog(g) && (
                     <div style={{ flexShrink: 0 }}>
                       <textarea
                         value={contextInputs[g.id] || ''}
@@ -1702,6 +1764,32 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                       {(contextInputs[g.id] || '').length > 0 && (
                         <div style={{ fontSize: 10, color: teal, fontFamily: fm, fontStyle: 'italic', marginTop: 4 }}>Keep going — the more context, the better...</div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Still allow typing if ready to log but not yet complete — user might want more exchanges */}
+                  {!g.contextComplete && isReadyToLog(g) && (
+                    <div style={{ flexShrink: 0 }}>
+                      <textarea
+                        value={contextInputs[g.id] || ''}
+                        onChange={e => handleTextareaGrow(e, g.id)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
+                        placeholder="Add more context or click Log & Exit..."
+                        rows={1}
+                        style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: '#00d4a0', boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Log & Exit button — shown when AI reaches conclusion */}
+                  {!g.contextComplete && isReadyToLog(g) && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, flexShrink: 0 }}>
+                      <div
+                        onClick={() => !loggingGoalId && handleLogAndExit(g.id)}
+                        style={{ background: loggingGoalId === g.id ? '#1a1b22' : teal, color: loggingGoalId === g.id ? '#4a4d58' : '#0e0f14', fontFamily: fm, fontSize: 12, fontWeight: 700, padding: '8px 20px', borderRadius: 6, cursor: loggingGoalId === g.id ? 'default' : 'pointer' }}
+                      >
+                        {loggingGoalId === g.id ? 'Logging...' : 'Log & Exit'}
+                      </div>
                     </div>
                   )}
 
