@@ -1063,7 +1063,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   }
 
   return (
-    <div style={{ minHeight: '80vh', background: 'linear-gradient(180deg, #0e0f14 0%, #0f1210 40%, #0e0f14 100%)', position: 'relative' }}>
+    <div style={{ minHeight: '80vh', background: '#1a1c23', position: 'relative' }}>
       {/* ── MAIN CONTENT — FULL WIDTH CENTERED ── */}
       <div style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 40px', position: 'relative' }}>
         {/* Page header */}
