@@ -1545,24 +1545,26 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     }
 
     const goalsContext = goals.map(g => `• ${g.title}`).join('\n');
-    const tradesContext = trades.slice(0, 20).map(t => `${t.ticker} ${t.direction} ${t.date} P/L: $${t.pl} | ${t.journal || 'no journal'}`).join('\n');
 
     try {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, tradesContext, goalsContext, mode: 'goals' })
+        body: JSON.stringify({ messages, goalsContext, mode: 'goals', goalTitle: goal.title })
       });
       const data = await res.json();
-      const exchanges = updatedContext.length;
-      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, data.reply], contextComplete: exchanges >= 4 } : g));
+      const isComplete = updatedContext.length >= 2;
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, data.reply], contextComplete: isComplete } : g));
+      if (isComplete) {
+        setTimeout(() => setExpandedGoalId(prev => prev === goalId ? null : prev), 2000);
+      }
     } catch {
-      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, 'CONNECTION_ERROR: Failed to reach WickCoach_CORE.'] } : g));
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, 'Failed to connect to WickCoach.'] } : g));
     }
     setLoadingGoalId(null);
   };
 
-  const getProgressPercent = (g: Goal) => Math.min(g.context.length * 25, 100);
+  const getProgressPercent = (g: Goal) => Math.min(g.context.length * 50, 100);
 
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)', fontFamily: fm, background: '#1a1c23' }}>
@@ -1582,7 +1584,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
         </div>
       </div>
 
-      {/* CENTER CONTENT — full width, no right sidebar */}
+      {/* CENTER CONTENT */}
       <div style={{ flex: 1, padding: '40px 28px 32px', overflowY: 'auto' }}>
         <h2 style={{ fontFamily: fd, fontSize: 28, color: '#ffffff', fontWeight: 700, margin: '0 0 28px', letterSpacing: '0.02em' }}>
           {activeView === 'weekly' ? 'Weekly Goals' : activeView === 'monthly' ? 'Monthly Goals' : 'Behavioral Goals'}
@@ -1590,14 +1592,12 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
 
         {/* Goal cards */}
         {goals.map((g, idx) => (
-          <div key={g.id} style={{ marginBottom: 12 }}>
-            {/* Main card */}
-            <div style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: expandedGoalId === g.id ? '10px 10px 0 0' : 10, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-              {/* Green numbered circle */}
+          <div key={g.id} style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 10, padding: '20px 24px', marginBottom: 12 }}>
+            {/* Top row: number + title + context button + delete */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ width: 20, height: 20, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', fontFamily: fm, lineHeight: 1 }}>{idx + 1}</span>
               </div>
-              {/* Editable title input */}
               <input
                 value={g.title}
                 onChange={e => updateGoalTitle(g.id, e.target.value)}
@@ -1606,61 +1606,61 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                 onMouseLeave={() => setHoveredGoalId(null)}
                 style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent', outline: 'none', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, cursor: 'text', padding: '2px 0', transition: 'border-color 0.15s ease' }}
               />
-              {/* Click to give context — stick figure + text */}
-              <div onClick={() => setExpandedGoalId(expandedGoalId === g.id ? null : g.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0, gap: 4, opacity: g.contextComplete ? 0.5 : 1 }}>
+              <div onClick={() => !g.contextComplete && setExpandedGoalId(expandedGoalId === g.id ? null : g.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: g.contextComplete ? 'default' : 'pointer', flexShrink: 0, gap: 4 }}>
                 <MiniStickFigure />
-                <span style={{ fontSize: 10, color: '#6b7280', fontFamily: fm, whiteSpace: 'nowrap' }}>{g.contextComplete ? 'context complete' : 'click to give context'}</span>
+                <span style={{ fontSize: 10, color: g.contextComplete ? teal : '#6b7280', fontFamily: fm, whiteSpace: 'nowrap' }}>{g.contextComplete ? 'context provided ✓' : 'click to give context'}</span>
               </div>
-              {/* Delete button */}
               <span onClick={() => deleteGoal(g.id)} style={{ fontSize: 14, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4 }} title="Delete goal">✕</span>
             </div>
 
-            {/* Expanded context area */}
+            {/* Expanded: 2/3 title area + 1/3 chat */}
             {expandedGoalId === g.id && (
-              <div style={{ background: '#0a0b0f', border: '1px solid #1e1f2a', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: 16 }}>
-                {/* Progress bar */}
-                <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 14, overflow: 'hidden' }}>
-                  <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
-                </div>
-                {g.contextComplete && (
-                  <div style={{ fontSize: 12, color: teal, fontFamily: fm, marginBottom: 12, fontWeight: 600 }}>Goal context complete ✓</div>
-                )}
+              <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                {/* Left 2/3 — goal info */}
+                <div style={{ flex: 2 }} />
+                {/* Right 1/3 — compact AI chat */}
+                <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                  {/* Progress bar */}
+                  <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
+                  </div>
+                  {g.contextComplete && (
+                    <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context loaded ✓</div>
+                  )}
 
-                {/* Chat thread */}
-                {g.context.map((msg, i) => (
-                  <div key={i} style={{ marginBottom: 12 }}>
-                    <div style={{ fontFamily: fm, fontSize: 12, color: '#9a9da8', marginBottom: 6, padding: '6px 10px', background: '#0e0f14', borderRadius: 6 }}>{msg}</div>
-                    {g.aiResponses[i] && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 6 }}>
-                        <div style={{ flexShrink: 0, marginTop: 2 }}><MiniStickFigure /></div>
-                        <div style={{ fontFamily: fm, fontSize: 12, color: teal, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{g.aiResponses[i]}</div>
+                  {/* Chat thread */}
+                  <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
+                    {g.context.map((msg, i) => (
+                      <div key={i} style={{ marginBottom: 10 }}>
+                        <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', textAlign: 'right', marginBottom: 4 }}>{msg}</div>
+                        {g.aiResponses[i] && (
+                          <div style={{ fontFamily: fm, fontSize: 13, color: teal, lineHeight: 1.5 }}>{g.aiResponses[i]}</div>
+                        )}
+                      </div>
+                    ))}
+                    {loadingGoalId === g.id && (
+                      <div style={{ fontFamily: fm, fontSize: 12, color: '#4a4d58' }}>
+                        <span style={{ animation: 'blink 1s step-end infinite' }}>...</span>
                       </div>
                     )}
                   </div>
-                ))}
 
-                {/* Loading state */}
-                {loadingGoalId === g.id && (
-                  <div style={{ fontFamily: fm, fontSize: 12, color: '#4a4d58', marginBottom: 12 }}>
-                    <span style={{ color: teal }}>{'>'}</span> PROCESSING<span style={{ animation: 'blink 1s step-end infinite' }}>_</span>
-                  </div>
-                )}
-
-                {/* Context input */}
-                {!g.contextComplete && (
-                  <div>
-                    <input
-                      value={contextInputs[g.id] || ''}
-                      onChange={e => setContextInputs(prev => ({ ...prev, [g.id]: e.target.value }))}
-                      onKeyDown={e => { if (e.key === 'Enter') sendGoalContext(g.id); }}
-                      placeholder="Tell WickCoach why this goal matters to you..."
-                      style={{ width: '100%', background: '#0e0f14', border: '1px solid #2a2b32', borderRadius: 8, padding: '10px 14px', color: '#c9cdd4', fontFamily: fm, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
-                    />
-                    {(contextInputs[g.id] || '').length > 0 && (
-                      <div style={{ fontSize: 10, color: teal, fontFamily: fm, fontStyle: 'italic', marginTop: 6, paddingLeft: 2 }}>Keep going — the more context you give, the better I can coach you...</div>
-                    )}
-                  </div>
-                )}
+                  {/* Input */}
+                  {!g.contextComplete && (
+                    <div style={{ flexShrink: 0 }}>
+                      <input
+                        value={contextInputs[g.id] || ''}
+                        onChange={e => setContextInputs(prev => ({ ...prev, [g.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') sendGoalContext(g.id); }}
+                        placeholder="Tell WickCoach why this goal matters..."
+                        style={{ width: '100%', background: '#0e0f14', border: '1px solid #2a2b32', borderRadius: 6, padding: '8px 10px', color: '#c9cdd4', fontFamily: fm, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                      />
+                      {(contextInputs[g.id] || '').length > 0 && (
+                        <div style={{ fontSize: 10, color: teal, fontFamily: fm, fontStyle: 'italic', marginTop: 4 }}>Keep going — the more context, the better...</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
