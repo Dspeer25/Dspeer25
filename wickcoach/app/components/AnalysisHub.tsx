@@ -458,8 +458,11 @@ export default function AnalysisContent() {
               const r = t.riskAmount ? t.pl / t.riskAmount : 0;
               return (
                 <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, padding: 16, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src={`https://www.google.com/s2/favicons?domain=${TICKER_DOMAINS[t.ticker] || t.ticker.toLowerCase() + '.com'}&sz=64`} width={24} height={24} style={{ borderRadius: 4, background: '#1e1f2a', objectFit: 'cover' }} onError={e => { e.currentTarget.style.display = 'none'; }} alt={t.ticker} />
+                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
+                    </div>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 700, color: teal }}>{fmtDollar(t.pl)}</span>
                       <span style={{ fontSize: 12, color: '#bbb', marginLeft: 8 }}>{fmtR(r)}</span>
@@ -496,8 +499,11 @@ export default function AnalysisContent() {
               const r = t.riskAmount ? t.pl / t.riskAmount : 0;
               return (
                 <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, padding: 16, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <img src={`https://www.google.com/s2/favicons?domain=${TICKER_DOMAINS[t.ticker] || t.ticker.toLowerCase() + '.com'}&sz=64`} width={24} height={24} style={{ borderRadius: 4, background: '#1e1f2a', objectFit: 'cover' }} onError={e => { e.currentTarget.style.display = 'none'; }} alt={t.ticker} />
+                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
+                    </div>
                     <div>
                       <span style={{ fontSize: 14, fontWeight: 700, color: red }}>{fmtDollar(t.pl)}</span>
                       <span style={{ fontSize: 12, color: '#bbb', marginLeft: 8 }}>{fmtR(r)}</span>
