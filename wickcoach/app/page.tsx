@@ -1603,7 +1603,7 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
       if (goal.aiResponses[i]) thread += `WickCoach: ${goal.aiResponses[i]}\n`;
     }
 
-    const actionPrompt = `Based on this conversation about the trader's goal "${goal.title}":\n\n${thread}\nGenerate exactly 3 concise action items (max 10 words each) that the trader should follow this week. Format as:\n1. [action item]\n2. [action item]\n3. [action item]\n\nNothing else. No intro, no explanation. Just the 3 numbered items.`;
+    const actionPrompt = `Based on this conversation about the trader's goal "${goal.title}":\n\n${thread}\nGenerate exactly 3 concrete action items the trader must DO this week. Each must:\n- Start with a verb (Track, Record, Stop, Wait, Write, Measure, etc.)\n- Be specific enough to verify at end of week (yes/no, did I do it?)\n- Be under 10 words\n\nFormat:\n1. [action]\n2. [action]\n3. [action]\n\nNothing else. No intro. No explanation. Just 3 actionable items.`;
 
     try {
       const res = await fetch('/api/coach', {
@@ -1719,7 +1719,7 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
             {isExpanded && (
               <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
                 <div style={{ flex: 2 }} />
-                <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, maxHeight: 300, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, minHeight: 450, maxHeight: 500, display: 'flex', flexDirection: 'column' }}>
                   {/* Progress bar */}
                   <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
                     <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
@@ -1729,7 +1729,7 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
                   )}
 
                   {/* iMessage-style chat thread — scrollable */}
-                  <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
+                  <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8, minHeight: 300 }}>
                     {g.context.map((msg, i) => (
                       <div key={i}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
@@ -1737,7 +1737,12 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
                         </div>
                         {g.aiResponses[i] && (
                           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
-                            <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.6, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>{g.aiResponses[i]}</div>
+                            <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.6, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
+                              {g.aiResponses[i].split('\n').filter((ln: string) => ln.trim()).map((ln: string, li: number) => {
+                                const isBullet = /^[•\-\d]/.test(ln.trim());
+                                return <div key={li} style={{ marginBottom: 8, paddingLeft: isBullet ? 16 : 0 }}>{ln.trim()}</div>;
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
