@@ -1459,8 +1459,8 @@ const DEFAULT_GOALS: Goal[] = [
   { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, createdAt: new Date().toISOString() },
 ];
 
-const MiniStickFigure = () => (
-  <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+const MiniStickFigure = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size * 1.2} viewBox="0 0 20 24" fill="none">
     <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
     <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
     <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
@@ -1479,6 +1479,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
   const [contextInputs, setContextInputs] = useState<Record<string, string>>({});
   const [loadingGoalId, setLoadingGoalId] = useState<string | null>(null);
   const [hoveredGoalId, setHoveredGoalId] = useState<string | null>(null);
+  const [hoveredContextBtn, setHoveredContextBtn] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('wickcoach_goals');
@@ -1486,7 +1487,10 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0 && 'context' in parsed[0]) {
-          setGoals(parsed);
+          // ONE-TIME cleanup: clear any prior context data
+          const cleaned = parsed.map((g: Goal) => ({ ...g, context: [], aiResponses: [], contextComplete: false }));
+          setGoals(cleaned);
+          localStorage.setItem('wickcoach_goals', JSON.stringify(cleaned));
         } else {
           setGoals(DEFAULT_GOALS);
           localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
@@ -1526,6 +1530,10 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     if (expandedGoalId === id) setExpandedGoalId(null);
   };
 
+  const clearGoalContext = (id: string) => {
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, context: [], aiResponses: [], contextComplete: false } : g));
+  };
+
   const sendGoalContext = async (goalId: string) => {
     const input = contextInputs[goalId]?.trim();
     if (!input || loadingGoalId) return;
@@ -1544,7 +1552,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       if (goal.aiResponses[i]) messages.push({ role: 'assistant', content: goal.aiResponses[i] });
     }
 
-    const goalsContext = goals.map(g => `• ${g.title}`).join('\n');
+    const goalsContext = updatedContext.join(' | ');
 
     try {
       const res = await fetch('/api/coach', {
@@ -1553,7 +1561,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
         body: JSON.stringify({ messages, goalsContext, mode: 'goals', goalTitle: goal.title })
       });
       const data = await res.json();
-      const isComplete = updatedContext.length >= 2;
+      const isComplete = updatedContext.length >= 3;
       setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, data.reply], contextComplete: isComplete } : g));
       if (isComplete) {
         setTimeout(() => setExpandedGoalId(prev => prev === goalId ? null : prev), 2000);
@@ -1564,7 +1572,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     setLoadingGoalId(null);
   };
 
-  const getProgressPercent = (g: Goal) => Math.min(g.context.length * 50, 100);
+  const getProgressPercent = (g: Goal) => Math.min(Math.round(g.context.length * 33.33), 100);
 
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)', fontFamily: fm, background: '#1a1c23' }}>
@@ -1606,33 +1614,45 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                 onMouseLeave={() => setHoveredGoalId(null)}
                 style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent', outline: 'none', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, cursor: 'text', padding: '2px 0', transition: 'border-color 0.15s ease' }}
               />
-              <div onClick={() => !g.contextComplete && setExpandedGoalId(expandedGoalId === g.id ? null : g.id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: g.contextComplete ? 'default' : 'pointer', flexShrink: 0, gap: 4 }}>
-                <MiniStickFigure />
-                <span style={{ fontSize: 10, color: g.contextComplete ? teal : '#6b7280', fontFamily: fm, whiteSpace: 'nowrap' }}>{g.contextComplete ? 'context provided ✓' : 'click to give context'}</span>
+              {/* Context button — big and clear */}
+              <div
+                onClick={() => setExpandedGoalId(expandedGoalId === g.id ? null : g.id)}
+                onMouseEnter={() => setHoveredContextBtn(g.id)}
+                onMouseLeave={() => setHoveredContextBtn(null)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0, gap: 6, minWidth: 180, padding: 12, borderRadius: 8, background: hoveredContextBtn === g.id ? 'rgba(0,212,160,0.06)' : 'transparent', transition: 'background 0.15s ease' }}
+              >
+                <MiniStickFigure size={40} />
+                <span style={{ fontSize: 15, color: g.contextComplete ? teal : (hoveredContextBtn === g.id ? teal : '#9ca3af'), fontFamily: fm, fontWeight: 500, whiteSpace: 'nowrap', transition: 'color 0.15s ease' }}>
+                  {g.contextComplete ? 'context provided ✓' : 'click to give context'}
+                </span>
+                {g.contextComplete && (
+                  <span
+                    onClick={e => { e.stopPropagation(); setExpandedGoalId(expandedGoalId === g.id ? null : g.id); }}
+                    style={{ fontSize: 11, color: hoveredContextBtn === g.id ? teal : '#6b7280', cursor: 'pointer', fontFamily: fm, transition: 'color 0.15s ease' }}
+                  >view / edit</span>
+                )}
               </div>
               <span onClick={() => deleteGoal(g.id)} style={{ fontSize: 14, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4 }} title="Delete goal">✕</span>
             </div>
 
-            {/* Expanded: 2/3 title area + 1/3 chat */}
+            {/* Expanded: 2/3 space + 1/3 chat */}
             {expandedGoalId === g.id && (
               <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                {/* Left 2/3 — goal info */}
                 <div style={{ flex: 2 }} />
-                {/* Right 1/3 — compact AI chat */}
                 <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                   {/* Progress bar */}
                   <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
                     <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
                   </div>
                   {g.contextComplete && (
-                    <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context loaded ✓</div>
+                    <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context provided ✓</div>
                   )}
 
                   {/* Chat thread */}
                   <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
                     {g.context.map((msg, i) => (
                       <div key={i} style={{ marginBottom: 10 }}>
-                        <div style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', textAlign: 'right', marginBottom: 4 }}>{msg}</div>
+                        <div style={{ fontFamily: fm, fontSize: 15, color: '#e8e8f0', fontWeight: 400, lineHeight: 1.6, background: '#1a1b22', borderRadius: 8, padding: 12, marginBottom: 8 }}>{msg}</div>
                         {g.aiResponses[i] && (
                           <div style={{ fontFamily: fm, fontSize: 13, color: teal, lineHeight: 1.5 }}>{g.aiResponses[i]}</div>
                         )}
@@ -1652,12 +1672,19 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                         value={contextInputs[g.id] || ''}
                         onChange={e => setContextInputs(prev => ({ ...prev, [g.id]: e.target.value }))}
                         onKeyDown={e => { if (e.key === 'Enter') sendGoalContext(g.id); }}
-                        placeholder="Tell WickCoach why this goal matters..."
-                        style={{ width: '100%', background: '#0e0f14', border: '1px solid #2a2b32', borderRadius: 6, padding: '8px 10px', color: '#c9cdd4', fontFamily: fm, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                        placeholder="Tell WickCoach why this matters..."
+                        style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, caretColor: '#00d4a0', boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)' }}
                       />
                       {(contextInputs[g.id] || '').length > 0 && (
                         <div style={{ fontSize: 10, color: teal, fontFamily: fm, fontStyle: 'italic', marginTop: 4 }}>Keep going — the more context, the better...</div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Clear context link for completed goals */}
+                  {g.contextComplete && (
+                    <div style={{ flexShrink: 0, marginTop: 4 }}>
+                      <span onClick={() => clearGoalContext(g.id)} style={{ fontSize: 10, color: '#ef4444', cursor: 'pointer', fontFamily: fm }}>clear context</span>
                     </div>
                   )}
                 </div>

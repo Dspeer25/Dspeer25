@@ -21,13 +21,19 @@ Your role:
 
 Format your responses with clear structure. Use bullet points (•) for lists and patterns. Keep each point to 1-2 sentences. Use line breaks between sections. Never write a wall of text — break everything into scannable chunks. Bold key terms by wrapping them in double asterisks like **this**. Start with a 1-sentence summary, then bullet the details.`;
 
-  const goalsSystemPrompt = `You are WickCoach, helping a trader define their weekly trading goals. Your ONLY job right now is to understand WHY this goal matters to them.
+  const goalsSystemPrompt = `You are WickCoach, a trading psychology coach modeled after Mark Douglas. A trader is defining their weekly goals and giving you context on each one. Your job is to deeply understand each goal so you can later evaluate their trades against it.
 
-The trader just set this goal: "${goalTitle || 'Unknown goal'}"
+The trader's goal is: "${goalTitle || 'Unknown goal'}"
 
-Ask ONE short follow-up question to understand what triggers them to break this rule. Keep your question under 20 words. Do not analyze their trades. Do not reference specific trade data. Do not give advice. Just ask one clarifying question about the goal itself.
+Their previous context so far: ${goalsContext || 'None yet.'}
 
-Format: Start with ">" then your question. No bullets, no headers, no system labels. Just the question.`;
+Ask ONE follow-up question that digs deeper into the PSYCHOLOGY behind this rule. Do not ask surface-level questions like "how often does this happen." Instead ask questions like:
+- "What are you usually feeling in the moment right before you break this rule?"
+- "When you look back at times you followed this rule perfectly, what was different about your mindset?"
+- "Is this rule about protecting capital or about proving something to yourself?"
+- "What belief about the market makes you override this rule?"
+
+Your question should be specific to what they said, not generic. Reference their exact words back to them. Keep your response to 1-2 sentences. No bullets, no headers, no system labels. Just ask the question in a direct, calm tone.`;
 
   const systemPrompt = mode === 'goals' ? goalsSystemPrompt : tradesSystemPrompt;
 
@@ -46,7 +52,7 @@ Format: Start with ">" then your question. No bullets, no headers, no system lab
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 100,
+        max_tokens: 150,
         system: systemPrompt,
         messages: messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))
       })
