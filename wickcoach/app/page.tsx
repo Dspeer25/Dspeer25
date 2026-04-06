@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
 import { Lock, Eye, ShieldCheck } from "lucide-react";
+import AnalysisContent from "./components/AnalysisHub";
 
 const fm = "'DM Mono', monospace";
 const fd = "'Chakra Petch', sans-serif";
@@ -2248,7 +2249,10 @@ export default function WickCoachFull() {
         {activeTab === 'Trading Goals' && (
           <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />
         )}
-        {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && (
+        {activeTab === 'Analysis' && (
+          <AnalysisContent trades={trades} />
+        )}
+        {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && activeTab !== 'Analysis' && (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
           </div>
