@@ -1487,10 +1487,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0 && 'context' in parsed[0]) {
-          // ONE-TIME cleanup: clear any prior context data
-          const cleaned = parsed.map((g: Goal) => ({ ...g, context: [], aiResponses: [], contextComplete: false }));
-          setGoals(cleaned);
-          localStorage.setItem('wickcoach_goals', JSON.stringify(cleaned));
+          setGoals(parsed);
         } else {
           setGoals(DEFAULT_GOALS);
           localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
@@ -1534,6 +1531,12 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     setGoals(prev => prev.map(g => g.id === id ? { ...g, context: [], aiResponses: [], contextComplete: false } : g));
   };
 
+  const handleTextareaGrow = (e: React.ChangeEvent<HTMLTextAreaElement>, goalId: string) => {
+    setContextInputs(prev => ({ ...prev, [goalId]: e.target.value }));
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  };
+
   const sendGoalContext = async (goalId: string) => {
     const input = contextInputs[goalId]?.trim();
     if (!input || loadingGoalId) return;
@@ -1553,16 +1556,19 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     }
 
     const goalsContext = updatedContext.join(' | ');
+    const exchangeNumber = updatedContext.length;
 
     try {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, goalsContext, mode: 'goals', goalTitle: goal.title })
+        body: JSON.stringify({ messages, goalsContext, mode: 'goals', goalTitle: goal.title, exchangeNumber })
       });
       const data = await res.json();
-      const isComplete = updatedContext.length >= 3;
-      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, data.reply], contextComplete: isComplete } : g));
+      const aiReply: string = data.reply;
+      // 5 exchanges always complete; at 3+ complete if AI response has no question mark
+      const isComplete = exchangeNumber >= 5 || (exchangeNumber >= 3 && !aiReply.includes('?'));
+      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply], contextComplete: isComplete } : g));
       if (isComplete) {
         setTimeout(() => setExpandedGoalId(prev => prev === goalId ? null : prev), 2000);
       }
@@ -1572,7 +1578,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     setLoadingGoalId(null);
   };
 
-  const getProgressPercent = (g: Goal) => Math.min(Math.round(g.context.length * 33.33), 100);
+  const getProgressPercent = (g: Goal) => Math.min(g.context.length * 20, 100);
 
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)', fontFamily: fm, background: '#1a1c23' }}>
@@ -1599,8 +1605,10 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
         </h2>
 
         {/* Goal cards */}
-        {goals.map((g, idx) => (
-          <div key={g.id} style={{ background: '#13141a', border: '1px solid #1e1f2a', borderRadius: 10, padding: '20px 24px', marginBottom: 12 }}>
+        {goals.map((g, idx) => {
+          const isExpanded = expandedGoalId === g.id;
+          return (
+          <div key={g.id} style={{ background: '#13141a', border: isExpanded ? '1px solid rgba(0,212,160,0.35)' : '1px solid #1e1f2a', borderRadius: 10, padding: '20px 24px', marginBottom: 12, boxShadow: isExpanded ? '0 0 15px rgba(0,212,160,0.12), 0 0 30px rgba(0,212,160,0.06)' : 'none', transition: 'all 0.3s ease' }}>
             {/* Top row: number + title + context button + delete */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ width: 20, height: 20, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -1614,9 +1622,9 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                 onMouseLeave={() => setHoveredGoalId(null)}
                 style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent', outline: 'none', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, cursor: 'text', padding: '2px 0', transition: 'border-color 0.15s ease' }}
               />
-              {/* Context button — big and clear */}
+              {/* Context button */}
               <div
-                onClick={() => setExpandedGoalId(expandedGoalId === g.id ? null : g.id)}
+                onClick={() => setExpandedGoalId(isExpanded ? null : g.id)}
                 onMouseEnter={() => setHoveredContextBtn(g.id)}
                 onMouseLeave={() => setHoveredContextBtn(null)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0, gap: 6, minWidth: 180, padding: 12, borderRadius: 8, background: hoveredContextBtn === g.id ? 'rgba(0,212,160,0.06)' : 'transparent', transition: 'background 0.15s ease' }}
@@ -1627,7 +1635,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                 </span>
                 {g.contextComplete && (
                   <span
-                    onClick={e => { e.stopPropagation(); setExpandedGoalId(expandedGoalId === g.id ? null : g.id); }}
+                    onClick={e => { e.stopPropagation(); setExpandedGoalId(isExpanded ? null : g.id); }}
                     style={{ fontSize: 11, color: hoveredContextBtn === g.id ? teal : '#6b7280', cursor: 'pointer', fontFamily: fm, transition: 'color 0.15s ease' }}
                   >view / edit</span>
                 )}
@@ -1635,8 +1643,15 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
               <span onClick={() => deleteGoal(g.id)} style={{ fontSize: 14, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4 }} title="Delete goal">✕</span>
             </div>
 
+            {/* "type" hint */}
+            {!g.contextComplete && !isExpanded && (
+              <div style={{ marginTop: 6, paddingLeft: 36 }}>
+                <span style={{ fontSize: 11, color: teal, fontFamily: fm, fontStyle: 'italic', opacity: 0.6 }}>type</span>
+              </div>
+            )}
+
             {/* Expanded: 2/3 space + 1/3 chat */}
-            {expandedGoalId === g.id && (
+            {isExpanded && (
               <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
                 <div style={{ flex: 2 }} />
                 <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, maxHeight: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -1648,32 +1663,41 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                     <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context provided ✓</div>
                   )}
 
-                  {/* Chat thread */}
+                  {/* iMessage-style chat thread */}
                   <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8 }}>
                     {g.context.map((msg, i) => (
-                      <div key={i} style={{ marginBottom: 10 }}>
-                        <div style={{ fontFamily: fm, fontSize: 15, color: '#e8e8f0', fontWeight: 400, lineHeight: 1.6, background: '#1a1b22', borderRadius: 8, padding: 12, marginBottom: 8 }}>{msg}</div>
+                      <div key={i}>
+                        {/* User bubble — right-aligned */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                          <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: '#e8e8f0', lineHeight: 1.6, background: '#2a2b32', borderRadius: '16px 16px 4px 16px', padding: '12px 16px' }}>{msg}</div>
+                        </div>
+                        {/* AI bubble — left-aligned */}
                         {g.aiResponses[i] && (
-                          <div style={{ fontFamily: fm, fontSize: 13, color: teal, lineHeight: 1.5 }}>{g.aiResponses[i]}</div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
+                            <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.6, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>{g.aiResponses[i]}</div>
+                          </div>
                         )}
                       </div>
                     ))}
                     {loadingGoalId === g.id && (
-                      <div style={{ fontFamily: fm, fontSize: 12, color: '#4a4d58' }}>
-                        <span style={{ animation: 'blink 1s step-end infinite' }}>...</span>
+                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
+                        <div style={{ fontFamily: fm, fontSize: 14, color: teal, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
+                          <span style={{ animation: 'blink 1s step-end infinite' }}>...</span>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Input */}
+                  {/* Textarea input */}
                   {!g.contextComplete && (
                     <div style={{ flexShrink: 0 }}>
-                      <input
+                      <textarea
                         value={contextInputs[g.id] || ''}
-                        onChange={e => setContextInputs(prev => ({ ...prev, [g.id]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') sendGoalContext(g.id); }}
+                        onChange={e => handleTextareaGrow(e, g.id)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
                         placeholder="Tell WickCoach why this matters..."
-                        style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, caretColor: '#00d4a0', boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)' }}
+                        rows={1}
+                        style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: '#00d4a0', boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
                       />
                       {(contextInputs[g.id] || '').length > 0 && (
                         <div style={{ fontSize: 10, color: teal, fontFamily: fm, fontStyle: 'italic', marginTop: 4 }}>Keep going — the more context, the better...</div>
@@ -1681,7 +1705,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                     </div>
                   )}
 
-                  {/* Clear context link for completed goals */}
+                  {/* Clear context link */}
                   {g.contextComplete && (
                     <div style={{ flexShrink: 0, marginTop: 4 }}>
                       <span onClick={() => clearGoalContext(g.id)} style={{ fontSize: 10, color: '#ef4444', cursor: 'pointer', fontFamily: fm }}>clear context</span>
@@ -1691,7 +1715,8 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* Add new goal button */}
         <div onClick={addNewGoal} style={{ border: '1px dashed #2a2b32', borderRadius: 10, padding: '16px 20px', textAlign: 'center', cursor: 'pointer', marginTop: 8, transition: 'border-color 0.15s ease' }} onMouseEnter={e => (e.currentTarget.style.borderColor = teal)} onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2b32')}>
