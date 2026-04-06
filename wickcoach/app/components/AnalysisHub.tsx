@@ -739,7 +739,7 @@ export default function AnalysisContent() {
                   });
 
                   const dataPts = scores.map((s, i) => pt(i, s.value));
-                  elements.push(<polygon key="data" points={dataPts.map(p => `${p.x},${p.y}`).join(' ')} fill="rgba(0,212,160,0.12)" stroke={teal} strokeWidth={2} />);
+                  elements.push(<polygon key="data" points={dataPts.map(p => `${p.x},${p.y}`).join(' ')} fill="rgba(0,212,160,0.18)" stroke={teal} strokeWidth={2} />);
 
                   dataPts.forEach((p, i) => {
                     elements.push(<circle key={`dot-${i}`} cx={p.x} cy={p.y} r={4} fill={teal} stroke="#0e0f14" strokeWidth={2} />);
@@ -837,7 +837,7 @@ export default function AnalysisContent() {
                         {/* Insight line */}
                         <div style={{
                           marginTop: 8, padding: '10px 14px', borderRadius: 6,
-                          backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)', backgroundSize: '4px 4px',
+                          backgroundImage: 'radial-gradient(rgba(0,212,160,0.18) 1px, transparent 1px)', backgroundSize: '4px 4px',
                           background: 'rgba(0,212,160,0.04)',
                         }}>
                           <span style={{ color: teal, fontSize: 12, fontStyle: 'italic' }}>{insight}</span>
@@ -855,7 +855,7 @@ export default function AnalysisContent() {
         <div style={{
           flex: '0.8 1 300px',
           background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: 0,
-          backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(rgba(0,212,160,0.18) 1px, transparent 1px)',
           backgroundSize: '4px 4px',
           display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500,
         }}>
@@ -882,7 +882,7 @@ export default function AnalysisContent() {
                 )}
                 <div style={{
                   background: msg.role === 'assistant' ? 'rgba(0,212,160,0.08)' : '#1a1c23',
-                  border: msg.role === 'assistant' ? '1px solid rgba(0,212,160,0.12)' : '1px solid #2a2b32',
+                  border: msg.role === 'assistant' ? '1px solid rgba(0,212,160,0.18)' : '1px solid #2a2b32',
                   borderRadius: 12, padding: msg.role === 'assistant' ? '14px 18px' : '12px 16px',
                   color: msg.role === 'assistant' && msg.content.startsWith('Unable to connect') ? red : '#ccc',
                   fontSize: 13, fontFamily: fm, lineHeight: '1.6', whiteSpace: 'pre-wrap',
@@ -923,7 +923,7 @@ export default function AnalysisContent() {
               <div style={{ alignSelf: 'flex-start' }}>
                 <div style={{ color: teal, fontSize: 11, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
                 <div style={{
-                  background: 'rgba(0,212,160,0.08)', border: '1px solid rgba(0,212,160,0.12)',
+                  background: 'rgba(0,212,160,0.08)', border: '1px solid rgba(0,212,160,0.18)',
                   borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 4,
                 }}>
                   {[0, 1, 2].map(d => (
