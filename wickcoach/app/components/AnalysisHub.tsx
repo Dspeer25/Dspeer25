@@ -837,7 +837,7 @@ export default function AnalysisContent() {
                         {/* Insight line */}
                         <div style={{
                           marginTop: 8, padding: '10px 14px', borderRadius: 6,
-                          backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)', backgroundSize: '4px 4px',
+                          backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)', backgroundSize: '4px 4px',
                           background: 'rgba(0,212,160,0.04)',
                         }}>
                           <span style={{ color: teal, fontSize: 12, fontStyle: 'italic' }}>{insight}</span>
@@ -855,7 +855,7 @@ export default function AnalysisContent() {
         <div style={{
           flex: '0.8 1 300px',
           background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: 0,
-          backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)',
           backgroundSize: '4px 4px',
           display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500,
         }}>

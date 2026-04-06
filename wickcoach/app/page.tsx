@@ -1340,7 +1340,7 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
 
       {/* ── FLOATING AI PANEL — GLASSMORPHISM ── */}
       {aiOpen && (
-        <div style={{ position: 'fixed', bottom: 88, right: 24, width: 380, maxHeight: 520, borderRadius: 16, display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden', background: 'rgba(14,15,20,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(0,212,160,0.08)', backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)', backgroundSize: '4px 4px' }}>
+        <div style={{ position: 'fixed', bottom: 88, right: 24, width: 380, maxHeight: 520, borderRadius: 16, display: 'flex', flexDirection: 'column', zIndex: 1000, overflow: 'hidden', background: 'rgba(14,15,20,0.85)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,212,160,0.2)', borderRight: '1px solid rgba(0,212,160,0.2)', borderBottom: '1px solid rgba(0,212,160,0.2)', borderLeft: '1px solid rgba(0,212,160,0.2)', boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(0,212,160,0.08)', backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)', backgroundSize: '4px 4px' }}>
           {/* Header */}
           <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1858,7 +1858,7 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
                     )}
 
                     {/* iMessage-style chat thread */}
-                    <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8, minHeight: 300, backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)', backgroundSize: '4px 4px' }}>
+                    <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8, minHeight: 300, backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)', backgroundSize: '4px 4px' }}>
                       {g.context.map((msg, i) => (
                         <div key={i}>
                           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
