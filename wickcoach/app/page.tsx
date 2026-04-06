@@ -2238,6 +2238,7 @@ export default function WickCoachFull() {
             ))}
           </div>
         </nav>
+        <div style={{ background: '#1a1c23', minHeight: 'calc(100vh - 140px)' }}>
         {activeTab === 'Log a Trade' && (
           <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
             <LogATradeContent setActiveTab={setActiveTab} />
@@ -2250,13 +2251,16 @@ export default function WickCoachFull() {
           <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />
         )}
         {activeTab === 'Analysis' && (
-          <AnalysisContent trades={trades} />
+          <div style={{ padding: '24px 32px' }}>
+            <AnalysisContent trades={trades} />
+          </div>
         )}
         {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && activeTab !== 'Analysis' && (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
           </div>
         )}
+        </div>
         {/* Floating +1 animations */}
         {floatingPlusOnes.map(f => (
           <div key={f.id} style={{ position: 'fixed', left: f.startX, top: f.startY, transform: f.animated ? `translate(${f.endX - f.startX}px, ${f.endY - f.startY}px) scale(0.4)` : 'translate(0,0) scale(1)', opacity: f.animated ? 0 : 1, transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)', zIndex: 9999, pointerEvents: 'none' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
