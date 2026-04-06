@@ -98,6 +98,7 @@ export default function AnalysisContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [expandedAxis, setExpandedAxis] = useState<string | null>(null);
   const [hoveredAxis, setHoveredAxis] = useState<string | null>(null);
+  const [heatmapMode, setHeatmapMode] = useState<'best' | 'worst'>('best');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -139,13 +140,16 @@ export default function AnalysisContent() {
     const disciplineDividend = abidingPL - totalPL;
 
     // Time-of-day data (hours 9-15)
-    const hourData: Record<number, { pl: number; count: number }> = {};
-    for (let h = 9; h <= 15; h++) hourData[h] = { pl: 0, count: 0 };
+    const hourData: Record<number, { pl: number; count: number; wins: number; losses: number; ruleBreaking: number }> = {};
+    for (let h = 9; h <= 15; h++) hourData[h] = { pl: 0, count: 0, wins: 0, losses: 0, ruleBreaking: 0 };
     trades.forEach(t => {
       const h = parseHour(t.time);
       if (h >= 9 && h <= 15) {
         hourData[h].pl += t.pl;
         hourData[h].count += 1;
+        if (t.result === 'WIN') hourData[h].wins += 1;
+        if (t.result === 'LOSS') hourData[h].losses += 1;
+        if (isRuleBreaking(t.journal)) hourData[h].ruleBreaking += 1;
       }
     });
     const maxAbsHourPL = Math.max(...Object.values(hourData).map(d => Math.abs(d.pl)), 1);
@@ -445,46 +449,87 @@ export default function AnalysisContent() {
 
       {/* ═══ SECTION 2: TIME-OF-DAY HEATMAP ═══ */}
       <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
-        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Time-of-day performance</div>
-        <div style={{ fontSize: 13, color: '#999', marginBottom: 20 }}>When your edge is sharpest — and when it bleeds</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>
+            <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Time-of-day performance</div>
+            <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>When your edge is sharpest — and when it bleeds</div>
+          </div>
+          <div style={{ display: 'flex', background: '#1a1c23', borderRadius: 8, padding: 3, gap: 2 }}>
+            <button
+              onClick={() => setHeatmapMode('best')}
+              style={{
+                padding: '6px 16px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
+                transition: 'all 0.2s',
+                background: heatmapMode === 'best' ? teal : 'transparent',
+                color: heatmapMode === 'best' ? '#0e0f14' : '#999',
+                fontWeight: heatmapMode === 'best' ? 'bold' : 'normal',
+              }}
+            >Best hours</button>
+            <button
+              onClick={() => setHeatmapMode('worst')}
+              style={{
+                padding: '6px 16px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
+                transition: 'all 0.2s',
+                background: heatmapMode === 'worst' ? red : 'transparent',
+                color: heatmapMode === 'worst' ? '#fff' : '#999',
+                fontWeight: heatmapMode === 'worst' ? 'bold' : 'normal',
+              }}
+            >Worst hours</button>
+          </div>
+        </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
-          {[9, 10, 11, 12, 13, 14, 15].map(h => {
-            const d = analysis.hourData[h];
-            const pl = d.pl;
-            const opacity = d.count === 0 ? 0 : 0.1 + (Math.abs(pl) / analysis.maxAbsHourPL) * 0.4;
-            const bg = d.count === 0
-              ? '#1a1c23'
-              : pl >= 0
-                ? `rgba(0,212,160,${opacity.toFixed(2)})`
-                : `rgba(255,68,68,${opacity.toFixed(2)})`;
+          {(() => {
+            const hours = [9, 10, 11, 12, 13, 14, 15];
+            const sorted = heatmapMode === 'best'
+              ? [...hours].sort((a, b) => analysis.hourData[b].pl - analysis.hourData[a].pl)
+              : [...hours].sort((a, b) => analysis.hourData[a].pl - analysis.hourData[b].pl);
 
-            return (
-              <div key={h} style={{
-                flex: 1,
-                height: 80,
-                borderRadius: 8,
-                background: bg,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 4,
-              }}>
-                <span style={{ fontSize: 12, color: '#ccc' }}>{hourLabels[h]}</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: d.count === 0 ? '#444' : '#fff' }}>
-                  {d.count === 0 ? '—' : fmtDollar(pl)}
-                </span>
-                <span style={{ fontSize: 12, color: '#999' }}>{d.count} trade{d.count !== 1 ? 's' : ''}</span>
-              </div>
-            );
-          })}
+            return sorted.map(h => {
+              const d = analysis.hourData[h];
+              const pl = d.pl;
+              const opacity = d.count === 0 ? 0 : 0.15 + (Math.abs(pl) / analysis.maxAbsHourPL) * 0.35;
+              const bg = d.count === 0
+                ? '#1a1c23'
+                : heatmapMode === 'best'
+                  ? `rgba(0,212,160,${opacity.toFixed(2)})`
+                  : `rgba(255,68,68,${opacity.toFixed(2)})`;
+
+              return (
+                <div key={h} style={{
+                  flex: 1, height: 80, borderRadius: 8, background: bg,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                }}>
+                  <span style={{ fontSize: 12, color: '#ccc' }}>{hourLabels[h]}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: d.count === 0 ? '#444' : '#fff' }}>
+                    {d.count === 0 ? '—' : fmtDollar(pl)}
+                  </span>
+                  <span style={{ fontSize: 12, color: '#999' }}>{d.count} trade{d.count !== 1 ? 's' : ''}</span>
+                  {d.count > 0 && (
+                    <span style={{ fontSize: 11, color: heatmapMode === 'worst' ? red : '#999' }}>
+                      {d.wins}W / {d.losses}L
+                    </span>
+                  )}
+                </div>
+              );
+            });
+          })()}
         </div>
 
         <div style={{ fontSize: 13, color: '#bbb', marginTop: 14 }}>
-          Best hour: <span style={{ color: teal }}>{hourLabels[analysis.bestHour]} ({fmtDollar(analysis.hourData[analysis.bestHour].pl)})</span>
-          {' · '}
-          Worst hour: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
+          {heatmapMode === 'best' ? (
+            <>
+              Best hour: <span style={{ color: teal }}>{hourLabels[analysis.bestHour]} ({fmtDollar(analysis.hourData[analysis.bestHour].pl)})</span>
+              {' · '}
+              Worst hour: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
+            </>
+          ) : (
+            <>
+              Biggest bleed: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
+              {' · '}
+              <span style={{ color: red }}>{analysis.hourData[analysis.worstHour].ruleBreaking} of {analysis.hourData[analysis.worstHour].count}</span> trades were rule-breaking
+            </>
+          )}
         </div>
       </div>
 
