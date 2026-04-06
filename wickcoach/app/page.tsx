@@ -1435,12 +1435,15 @@ interface Goal {
   contextComplete: boolean;
   actionItems: string[];
   createdAt: string;
+  goalType: string;
 }
 
+const GOAL_TYPES = ['Trade Management', 'Entry Criteria', 'Patience / Setup', 'Risk Management', 'Psychology', 'General'];
+
 const DEFAULT_GOALS: Goal[] = [
-  { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString() },
-  { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString() },
-  { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString() },
+  { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Trade Management' },
+  { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Entry Criteria' },
+  { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Patience / Setup' },
 ];
 
 const MiniStickFigure = ({ size = 20 }: { size?: number }) => (
@@ -1465,8 +1468,11 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
   const [hoveredGoalId, setHoveredGoalId] = useState<string | null>(null);
   const [hoveredContextBtn, setHoveredContextBtn] = useState<string | null>(null);
   const [loggingGoalId, setLoggingGoalId] = useState<string | null>(null);
+  const [hoveredAddBtn, setHoveredAddBtn] = useState(false);
   const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+
+  void trades;
 
   useEffect(() => {
     const saved = localStorage.getItem('wickcoach_goals');
@@ -1474,8 +1480,7 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0 && 'context' in parsed[0]) {
-          // Ensure actionItems field exists on loaded goals
-          setGoals(parsed.map((g: Goal) => ({ ...g, actionItems: g.actionItems || [] })));
+          setGoals(parsed.map((g: Goal) => ({ ...g, actionItems: g.actionItems || [], goalType: g.goalType || 'General' })));
         } else {
           setGoals(DEFAULT_GOALS);
           localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
@@ -1494,7 +1499,6 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
     if (goals.length > 0) localStorage.setItem('wickcoach_goals', JSON.stringify(goals));
   }, [goals]);
 
-  // Auto-scroll chat to bottom when messages change
   useEffect(() => {
     if (expandedGoalId) {
       chatEndRefs.current[expandedGoalId]?.scrollIntoView({ behavior: 'smooth' });
@@ -1510,12 +1514,22 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
       contextComplete: false,
       actionItems: [],
       createdAt: new Date().toISOString(),
+      goalType: 'General',
     };
     setGoals(prev => [...prev, newGoal]);
   };
 
   const updateGoalTitle = (id: string, title: string) => {
     setGoals(prev => prev.map(g => g.id === id ? { ...g, title } : g));
+  };
+
+  const cycleGoalType = (id: string) => {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const currentIdx = GOAL_TYPES.indexOf(g.goalType);
+      const nextIdx = (currentIdx + 1) % GOAL_TYPES.length;
+      return { ...g, goalType: GOAL_TYPES[nextIdx] };
+    }));
   };
 
   const deleteGoal = (id: string) => {
@@ -1545,7 +1559,6 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
     setContextInputs(prev => ({ ...prev, [goalId]: '' }));
     setLoadingGoalId(goalId);
 
-    // Trigger floating +1 animation
     const textareaEl = textareaRefs.current[goalId];
     if (textareaEl && onMessageSent) {
       onMessageSent(textareaEl.getBoundingClientRect());
@@ -1571,7 +1584,6 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
       const readyToLog = exchangeNumber >= 5 || (exchangeNumber >= 3 && !aiReply.includes('?'));
       setGoals(prev => {
         const next = prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply] } : g);
-        // Save to trader profile
         const profileData = JSON.parse(localStorage.getItem('wickcoach_trader_profile') || '{"goalContexts":[],"totalExchanges":0}');
         profileData.goalContexts = next.filter(g => g.context.length > 0).map(g => ({
           goalTitle: g.title,
@@ -1597,7 +1609,6 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
 
     setLoggingGoalId(goalId);
 
-    // Build the full conversation thread for the action items prompt
     let thread = '';
     for (let i = 0; i < goal.context.length; i++) {
       thread += `User: ${goal.context[i]}\n`;
@@ -1614,7 +1625,6 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
       });
       const data = await res.json();
       const reply: string = data.reply || '';
-      // Parse "1. ...\n2. ...\n3. ..."
       const items = reply.split('\n').map((line: string) => line.replace(/^\d+\.\s*/, '').trim()).filter((line: string) => line.length > 0).slice(0, 3);
       setGoals(prev => prev.map(g => g.id === goalId ? { ...g, contextComplete: true, actionItems: items } : g));
     } catch {
@@ -1638,187 +1648,307 @@ function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMes
   const getProgressPercent = (g: Goal) => Math.min(g.context.length * 20, 100);
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 120px)', fontFamily: fm, background: '#1a1c23' }}>
-      {/* LEFT SIDEBAR */}
-      <div style={{ width: 220, background: '#0e0f14', borderRight: '1px solid #1a1b22', padding: '24px 16px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ marginBottom: 28 }}>
-          <Logo size={22} showText />
-        </div>
-        <div style={{ fontSize: 10, color: '#6a6d78', letterSpacing: '0.15em', marginBottom: 20, fontFamily: fm }}>NAVIGATION</div>
-        {(['weekly', 'monthly', 'behavioral'] as const).map(v => (
-          <div key={v} onClick={() => setActiveView(v)} style={{ padding: '10px 12px', marginBottom: 4, borderRadius: 6, cursor: 'pointer', background: activeView === v ? 'rgba(0,212,160,0.1)' : 'transparent', borderLeft: activeView === v ? `2px solid ${teal}` : '2px solid transparent', color: activeView === v ? '#e8e8f0' : '#6a6d78', fontSize: 13, fontFamily: fm, letterSpacing: '0.04em', transition: 'all 0.15s ease' }}>
-            {v === 'weekly' ? '◆ Weekly Goals' : v === 'monthly' ? '◇ Monthly Goals' : '▣ Behavioral'}
-          </div>
-        ))}
-        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid #1a1b22' }}>
-          <div style={{ fontSize: 10, color: '#3a3d48', letterSpacing: '0.12em', fontFamily: fm }}>TRADER_092 • SYS.ACTIVE</div>
-        </div>
+    <div style={{ display: 'flex', minHeight: 'calc(100vh - 140px)', fontFamily: fm, background: '#1a1c23' }}>
+      {/* ═══ LEFT SIDEBAR ═══ */}
+      <div style={{ width: 220, background: '#0e0f14', borderRight: '1px solid #1e1f2a', padding: '28px 20px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ fontFamily: fm, fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Navigation</div>
+        <div style={{ fontFamily: fm, fontSize: 13, color: teal, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700, marginBottom: 16 }}>Goals Hierarchy</div>
+        <div style={{ height: 1, background: '#2a2b32', marginBottom: 20 }} />
+
+        {(['weekly', 'monthly', 'behavioral'] as const).map(v => {
+          const isActive = activeView === v;
+          const label = v === 'weekly' ? 'Weekly Goals' : v === 'monthly' ? 'Monthly Goals' : 'Behavioral';
+          return (
+            <div
+              key={v}
+              onClick={() => setActiveView(v)}
+              style={{
+                padding: '12px 14px',
+                marginBottom: 4,
+                borderRadius: 6,
+                cursor: 'pointer',
+                background: isActive ? '#1a1c23' : 'transparent',
+                borderLeft: isActive ? `3px solid ${teal}` : '3px solid transparent',
+                color: isActive ? '#ffffff' : '#6b7280',
+                fontSize: 14,
+                fontFamily: fm,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{label}</span>
+              {isActive && <span style={{ color: teal, fontSize: 12 }}>›</span>}
+            </div>
+          );
+        })}
       </div>
 
-      {/* CENTER CONTENT */}
-      <div style={{ flex: 1, padding: '40px 28px 32px', overflowY: 'auto' }}>
-        <h2 style={{ fontFamily: fd, fontSize: 28, color: '#ffffff', fontWeight: 700, margin: '0 0 28px', letterSpacing: '0.02em' }}>
-          {activeView === 'weekly' ? 'Weekly Goals' : activeView === 'monthly' ? 'Monthly Goals' : 'Behavioral Goals'}
-        </h2>
+      {/* ═══ MAIN CONTENT ═══ */}
+      <div style={{ flex: 1, padding: '40px 36px 32px', overflowY: 'auto' }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+          <div>
+            <h2 style={{ fontFamily: fd, fontSize: 28, color: '#ffffff', fontWeight: 700, margin: 0, letterSpacing: '0.02em' }}>
+              {activeView === 'weekly' ? 'Weekly Goals' : activeView === 'monthly' ? 'Monthly Goals' : 'Behavioral'}
+            </h2>
+            <p style={{ fontFamily: fm, fontSize: 14, color: '#888', margin: '8px 0 0' }}>
+              Active behavioral and technical parameters for the current week.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginTop: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: teal }} />
+            <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>{goals.length} Active Rule{goals.length !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
 
-        {/* Goal cards */}
+        {/* ═══ GOAL CARDS ═══ */}
         {goals.map((g, idx) => {
           const isExpanded = expandedGoalId === g.id;
           return (
-          <div key={g.id} style={{ background: '#13141a', border: isExpanded ? '1px solid rgba(0,212,160,0.35)' : '1px solid #1e1f2a', borderRadius: 10, padding: '20px 24px', marginBottom: 12, boxShadow: isExpanded ? '0 0 15px rgba(0,212,160,0.12), 0 0 30px rgba(0,212,160,0.06)' : 'none', transition: 'all 0.3s ease' }}>
-            {/* Top row: number + title + context button + delete */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 20, height: 20, borderRadius: '50%', background: teal, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#ffffff', fontFamily: fm, lineHeight: 1 }}>{idx + 1}</span>
-              </div>
-              <input
-                value={g.title}
-                onChange={e => updateGoalTitle(g.id, e.target.value)}
-                placeholder="Type your goal here..."
-                onMouseEnter={() => setHoveredGoalId(g.id)}
-                onMouseLeave={() => setHoveredGoalId(null)}
-                style={{ flex: 1, background: 'transparent', border: 'none', borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent', outline: 'none', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, cursor: 'text', padding: '2px 0', transition: 'border-color 0.15s ease' }}
-              />
-              {/* Context button */}
-              <div
-                onClick={() => setExpandedGoalId(isExpanded ? null : g.id)}
-                onMouseEnter={() => setHoveredContextBtn(g.id)}
-                onMouseLeave={() => setHoveredContextBtn(null)}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', flexShrink: 0, gap: 6, minWidth: 180, padding: 12, borderRadius: 8, background: hoveredContextBtn === g.id ? 'rgba(0,212,160,0.06)' : 'transparent', transition: 'background 0.15s ease' }}
-              >
-                <MiniStickFigure size={40} />
-                <span style={{ fontSize: 15, color: g.contextComplete ? teal : (hoveredContextBtn === g.id ? teal : '#9ca3af'), fontFamily: fm, fontWeight: 500, whiteSpace: 'nowrap', transition: 'color 0.15s ease' }}>
-                  {g.contextComplete ? 'context provided ✓' : 'click to give context'}
-                </span>
-                {g.contextComplete && (
-                  <span
-                    onClick={e => { e.stopPropagation(); setExpandedGoalId(isExpanded ? null : g.id); }}
-                    style={{ fontSize: 11, color: hoveredContextBtn === g.id ? teal : '#6b7280', cursor: 'pointer', fontFamily: fm, transition: 'color 0.15s ease' }}
-                  >view / edit</span>
-                )}
-              </div>
-              <span onClick={() => deleteGoal(g.id)} style={{ fontSize: 14, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4 }} title="Delete goal">✕</span>
-            </div>
+            <div key={g.id} style={{
+              background: '#0e0f14',
+              border: isExpanded ? '1px solid rgba(0,212,160,0.35)' : '1px solid #1e1f2a',
+              borderRadius: 12,
+              padding: '24px 28px',
+              marginBottom: 16,
+              boxShadow: isExpanded ? '0 0 15px rgba(0,212,160,0.12), 0 0 30px rgba(0,212,160,0.06)' : 'none',
+              transition: 'all 0.3s ease',
+            }}>
+              {/* Top row: number + title area + context button + delete */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                {/* Green numbered circle */}
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  border: `2px solid ${teal}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: teal, fontFamily: fm, lineHeight: 1 }}>{idx + 1}</span>
+                </div>
 
-            {/* Action items — shown when completed and collapsed */}
-            {g.contextComplete && g.actionItems.length > 0 && !isExpanded && (
-              <div style={{ marginTop: 8, marginLeft: 44 }}>
-                {g.actionItems.map((item, i) => (
-                  <div key={i} style={{ fontFamily: fm, fontSize: 15, color: teal, fontWeight: 400, lineHeight: 1.6, marginBottom: 6 }}>• {item}</div>
-                ))}
-              </div>
-            )}
-
-            {/* "type" hint */}
-            {!g.contextComplete && !isExpanded && g.actionItems.length === 0 && (
-              <div style={{ marginTop: 6, paddingLeft: 36 }}>
-                <span style={{ fontSize: 11, color: teal, fontFamily: fm, fontStyle: 'italic', opacity: 0.6 }}>type</span>
-              </div>
-            )}
-
-            {/* Expanded: 2/3 space + 1/3 chat */}
-            {isExpanded && (
-              <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                <div style={{ flex: 2 }} />
-                <div style={{ flex: 1, background: '#0a0b0f', border: '1px solid #1e1f2a', borderRadius: 8, padding: 14, minHeight: 450, maxHeight: 500, display: 'flex', flexDirection: 'column' }}>
-                  {/* Progress bar */}
-                  <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
-                    <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
-                  </div>
-                  {g.contextComplete && (
-                    <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context provided ✓</div>
-                  )}
-
-                  {/* iMessage-style chat thread — scrollable */}
-                  <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8, minHeight: 300 }}>
-                    {g.context.map((msg, i) => (
-                      <div key={i}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                          <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: '#e8e8f0', lineHeight: 1.6, background: '#2a2b32', borderRadius: '16px 16px 4px 16px', padding: '12px 16px' }}>{msg}</div>
-                        </div>
-                        {g.aiResponses[i] && (
-                          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
-                            <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.6, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
-                              {g.aiResponses[i].split('\n').filter((ln: string) => ln.trim()).map((ln: string, li: number) => {
-                                const isBullet = /^[•\-\d]/.test(ln.trim());
-                                return <div key={li} style={{ marginBottom: 8, paddingLeft: isBullet ? 16 : 0 }}>{ln.trim()}</div>;
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {loadingGoalId === g.id && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
-                        <div style={{ fontFamily: fm, fontSize: 14, color: teal, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
-                          <span style={{ animation: 'blink 1s step-end infinite' }}>...</span>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={el => { chatEndRefs.current[g.id] = el; }} />
+                {/* Title + TYPE tag */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <input
+                    value={g.title}
+                    onChange={e => updateGoalTitle(g.id, e.target.value.toUpperCase())}
+                    placeholder="TYPE YOUR GOAL HERE..."
+                    onMouseEnter={() => setHoveredGoalId(g.id)}
+                    onMouseLeave={() => setHoveredGoalId(null)}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent',
+                      outline: 'none',
+                      color: '#ffffff',
+                      fontFamily: fd,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      letterSpacing: 1,
+                      cursor: 'text',
+                      padding: '2px 0',
+                      textTransform: 'uppercase',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                    <span
+                      onClick={() => cycleGoalType(g.id)}
+                      style={{
+                        fontFamily: fm,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: teal,
+                        background: 'rgba(0,212,160,0.12)',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        letterSpacing: 1,
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                      }}
+                    >TYPE</span>
+                    <span style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>{g.goalType}</span>
                   </div>
 
-                  {/* Textarea input — pinned to bottom */}
-                  {!g.contextComplete && !isReadyToLog(g) && (
-                    <div style={{ flexShrink: 0 }}>
-                      <textarea
-                        ref={el => { textareaRefs.current[g.id] = el; }}
-                        value={contextInputs[g.id] || ''}
-                        onChange={e => handleTextareaGrow(e, g.id)}
-                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
-                        placeholder="Tell WickCoach why this matters..."
-                        rows={1}
-                        style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: '#00d4a0', boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
-                      />
-                      {(contextInputs[g.id] || '').length > 0 && (
-                        <div style={{ fontSize: 10, color: teal, fontFamily: fm, fontStyle: 'italic', marginTop: 4 }}>Keep going — the more context, the better...</div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Still allow typing if ready to log but not yet complete — user might want more exchanges */}
-                  {!g.contextComplete && isReadyToLog(g) && (
-                    <div style={{ flexShrink: 0 }}>
-                      <textarea
-                        ref={el => { textareaRefs.current[g.id] = el; }}
-                        value={contextInputs[g.id] || ''}
-                        onChange={e => handleTextareaGrow(e, g.id)}
-                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
-                        placeholder="Add more context or click Log & Exit..."
-                        rows={1}
-                        style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: '#00d4a0', boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Log & Exit button — shown when AI reaches conclusion */}
-                  {!g.contextComplete && isReadyToLog(g) && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, flexShrink: 0 }}>
-                      <div
-                        onClick={() => !loggingGoalId && handleLogAndExit(g.id)}
-                        style={{ background: loggingGoalId === g.id ? '#1a1b22' : teal, color: loggingGoalId === g.id ? '#4a4d58' : '#0e0f14', fontFamily: fm, fontSize: 12, fontWeight: 700, padding: '8px 20px', borderRadius: 6, cursor: loggingGoalId === g.id ? 'default' : 'pointer' }}
-                      >
-                        {loggingGoalId === g.id ? 'Logging...' : 'Log & Exit'}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Clear context link */}
-                  {g.contextComplete && (
-                    <div style={{ flexShrink: 0, marginTop: 4 }}>
-                      <span onClick={() => clearGoalContext(g.id)} style={{ fontSize: 10, color: '#ef4444', cursor: 'pointer', fontFamily: fm }}>clear context</span>
+                  {/* Action items below type tag */}
+                  {g.contextComplete && g.actionItems.length > 0 && !isExpanded && (
+                    <div style={{ marginTop: 10 }}>
+                      {g.actionItems.map((item, i) => (
+                        <div key={i} style={{ fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.7, marginBottom: 2 }}>
+                          ↳ {item}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
+
+                {/* Context button area */}
+                <div
+                  onClick={() => setExpandedGoalId(isExpanded ? null : g.id)}
+                  onMouseEnter={() => setHoveredContextBtn(g.id)}
+                  onMouseLeave={() => setHoveredContextBtn(null)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    border: '1px solid #2a2b32',
+                    background: hoveredContextBtn === g.id ? 'rgba(0,212,160,0.06)' : '#13141a',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <MiniStickFigure size={28} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{
+                      fontSize: 12,
+                      color: g.contextComplete ? teal : (hoveredContextBtn === g.id ? teal : '#9ca3af'),
+                      fontFamily: fm,
+                      whiteSpace: 'nowrap',
+                      transition: 'color 0.15s ease',
+                    }}>
+                      {g.contextComplete ? 'context provided ✓' : 'click to give context'}
+                    </span>
+                    {g.contextComplete && (
+                      <span
+                        onClick={e => { e.stopPropagation(); setExpandedGoalId(isExpanded ? null : g.id); }}
+                        style={{ fontSize: 10, color: hoveredContextBtn === g.id ? teal : '#6b7280', cursor: 'pointer', fontFamily: fm, marginTop: 2, transition: 'color 0.15s ease' }}
+                      >view / edit</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Delete button */}
+                <span
+                  onClick={() => deleteGoal(g.id)}
+                  style={{ fontSize: 16, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4, padding: '4px' }}
+                  title="Delete goal"
+                >✕</span>
               </div>
-            )}
-          </div>
+
+              {/* ═══ Expanded Chat Area ═══ */}
+              {isExpanded && (
+                <div style={{ display: 'flex', gap: 16, marginTop: 20 }}>
+                  <div style={{ flex: 2 }} />
+                  <div style={{
+                    flex: 1,
+                    background: '#0a0b0f',
+                    border: '1px solid #1e1f2a',
+                    borderRadius: 8,
+                    padding: 14,
+                    minHeight: 450,
+                    maxHeight: 500,
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}>
+                    {/* Progress bar */}
+                    <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
+                      <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
+                    </div>
+                    {g.contextComplete && (
+                      <div style={{ fontSize: 11, color: teal, fontFamily: fm, marginBottom: 8, fontWeight: 600, flexShrink: 0 }}>Context provided ✓</div>
+                    )}
+
+                    {/* iMessage-style chat thread */}
+                    <div style={{ flex: 1, overflowY: 'auto', marginBottom: 8, minHeight: 300 }}>
+                      {g.context.map((msg, i) => (
+                        <div key={i}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                            <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: '#e8e8f0', lineHeight: 1.6, background: '#2a2b32', borderRadius: '16px 16px 4px 16px', padding: '12px 16px' }}>{msg}</div>
+                          </div>
+                          {g.aiResponses[i] && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
+                              <div style={{ maxWidth: '80%', fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.6, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
+                                {g.aiResponses[i].split('\n').filter((ln: string) => ln.trim()).map((ln: string, li: number) => {
+                                  const isBullet = /^[•\-\d]/.test(ln.trim());
+                                  return <div key={li} style={{ marginBottom: 8, paddingLeft: isBullet ? 16 : 0 }}>{ln.trim()}</div>;
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {loadingGoalId === g.id && (
+                        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 8 }}>
+                          <div style={{ fontFamily: fm, fontSize: 14, color: teal, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
+                            <span style={{ animation: 'blink 1s step-end infinite' }}>...</span>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={el => { chatEndRefs.current[g.id] = el; }} />
+                    </div>
+
+                    {/* Textarea input */}
+                    {!g.contextComplete && (
+                      <div style={{ flexShrink: 0 }}>
+                        <textarea
+                          ref={el => { textareaRefs.current[g.id] = el; }}
+                          value={contextInputs[g.id] || ''}
+                          onChange={e => handleTextareaGrow(e, g.id)}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
+                          placeholder={isReadyToLog(g) ? 'Add more context or click Log & Exit...' : 'Tell WickCoach why this matters...'}
+                          rows={1}
+                          style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: teal, boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Log & Exit button */}
+                    {!g.contextComplete && isReadyToLog(g) && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8, flexShrink: 0 }}>
+                        <div
+                          onClick={() => !loggingGoalId && handleLogAndExit(g.id)}
+                          style={{ background: loggingGoalId === g.id ? '#1a1b22' : teal, color: loggingGoalId === g.id ? '#4a4d58' : '#0e0f14', fontFamily: fm, fontSize: 12, fontWeight: 700, padding: '8px 20px', borderRadius: 6, cursor: loggingGoalId === g.id ? 'default' : 'pointer' }}
+                        >
+                          {loggingGoalId === g.id ? 'Logging...' : 'Log & Exit'}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Clear context */}
+                    {g.contextComplete && (
+                      <div style={{ flexShrink: 0, marginTop: 4 }}>
+                        <span onClick={() => clearGoalContext(g.id)} style={{ fontSize: 10, color: '#ef4444', cursor: 'pointer', fontFamily: fm }}>clear context</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
 
-        {/* Add new goal button */}
-        <div onClick={addNewGoal} style={{ border: '1px dashed #2a2b32', borderRadius: 10, padding: '16px 20px', textAlign: 'center', cursor: 'pointer', marginTop: 8, transition: 'border-color 0.15s ease' }} onMouseEnter={e => (e.currentTarget.style.borderColor = teal)} onMouseLeave={e => (e.currentTarget.style.borderColor = '#2a2b32')}>
-          <span style={{ fontSize: 13, color: '#6a6d78', fontFamily: fm, letterSpacing: '0.06em' }}>+ INITIALIZE NEW PARAMETER</span>
+        {/* ═══ Add New Goal Button ═══ */}
+        <div
+          onClick={addNewGoal}
+          onMouseEnter={() => setHoveredAddBtn(true)}
+          onMouseLeave={() => setHoveredAddBtn(false)}
+          style={{
+            border: `1px dashed ${hoveredAddBtn ? teal : '#2a2b32'}`,
+            borderRadius: 12,
+            padding: '22px 20px',
+            textAlign: 'center',
+            cursor: 'pointer',
+            marginTop: 8,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{
+            fontSize: 14,
+            color: hoveredAddBtn ? teal : '#666',
+            fontFamily: fm,
+            letterSpacing: 2,
+            textTransform: 'uppercase',
+            transition: 'color 0.15s ease',
+          }}>+ Initialize New Parameter</span>
         </div>
       </div>
       <style>{`@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
