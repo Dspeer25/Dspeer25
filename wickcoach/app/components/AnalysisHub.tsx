@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 const fm = "'DM Mono', monospace";
 const fd = "'Chakra Petch', sans-serif";
@@ -98,6 +98,11 @@ export default function AnalysisContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [expandedAxis, setExpandedAxis] = useState<string | null>(null);
   const [hoveredAxis, setHoveredAxis] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatInitialized, setChatInitialized] = useState(false);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -307,6 +312,68 @@ export default function AnalysisContent() {
       psychScores, psychExamples, psychInsights,
     };
   }, [trades]);
+
+  // Generate initial WickCoach message when analysis is ready
+  useEffect(() => {
+    if (analysis && !chatInitialized) {
+      const cost = Math.abs(analysis.abidingPL - analysis.totalPL);
+      const costStr = '$' + cost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      const msg = `${analysis.ruleBreaking.length} of your ${analysis.total} trades broke your rules, costing you ${costStr} in potential gains. Your edge lives in ${analysis.topSetupTag} and ${analysis.secondSetupTag} setups — ${fmtPct(analysis.abidingWinRate)} win rate when disciplined. What pattern do you want to dig into?`;
+      setChatMessages([{ role: 'assistant', content: msg }]);
+      setChatInitialized(true);
+    }
+  }, [analysis, chatInitialized]);
+
+  // Auto-scroll chat to bottom on new messages
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages.length, chatLoading]);
+
+  const sendChatMessage = async (text: string) => {
+    if (!text.trim() || chatLoading) return;
+    const userMsg = text.trim();
+    setChatInput('');
+    const updatedMessages = [...chatMessages, { role: 'user' as const, content: userMsg }];
+    setChatMessages(updatedMessages);
+    setChatLoading(true);
+    try {
+      // Build trades context string for the API
+      const tradesContext = trades.map(t =>
+        `${t.date} ${t.time} | ${t.ticker} ${t.direction} ${t.strategy} | ${t.contracts} contracts | Entry $${t.entryPrice} → Exit $${t.exitPrice} | P/L: $${t.pl.toFixed(2)} | R:R ${t.riskReward} | Journal: ${t.journal}`
+      ).join('\n');
+      const goals = JSON.parse(localStorage.getItem('wickcoach_goals') || '[]');
+      const goalsContext = goals.length > 0 ? goals.map((g: { title: string }) => g.title).join(', ') : '';
+
+      // Send only user/assistant messages (skip the pre-loaded initial message from the messages array)
+      const apiMessages = updatedMessages
+        .filter(m => m.role === 'user' || (m.role === 'assistant' && updatedMessages.indexOf(m) > 0))
+        .map(m => ({ role: m.role, content: m.content }));
+      // Always include at least the current user message
+      if (apiMessages.length === 0 || apiMessages[apiMessages.length - 1].role !== 'user') {
+        apiMessages.push({ role: 'user', content: userMsg });
+      }
+
+      const res = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'trades',
+          messages: apiMessages,
+          tradesContext,
+          goalsContext,
+        }),
+      });
+      const data = await res.json();
+      const reply = data.reply || 'No response received.';
+      setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Unable to connect to WickCoach. Check your API key in .env.local' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   if (!analysis) {
     return (
@@ -739,82 +806,113 @@ export default function AnalysisContent() {
           </div>
         </div>
 
-        {/* Right: WickCoach AI — 45% */}
+        {/* Right: WickCoach AI Chat — 45% */}
         <div style={{
           flex: '0.8 1 300px',
-          background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px',
+          background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: 0,
           backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)',
           backgroundSize: '4px 4px',
+          display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: teal, fontSize: 16 }}>✦</span>
-            <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>WickCoach AI</span>
-          </div>
-          <div style={{ fontSize: 11, color: '#aaa', letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: 6 }}>
-            Dataset Analysis ({analysis.total} Executions)
-          </div>
+          <style>{`@keyframes wickDotPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }`}</style>
 
-          {/* AI Summary */}
-          <div style={{
-            background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.15)',
-            borderRadius: 8, padding: 16, marginTop: 16,
-            fontSize: 13, color: '#ccc', lineHeight: '1.6',
-          }}>
-            I&apos;ve reviewed your latest {analysis.total} trades. Your isolated edge is highly profitable: <span style={{ color: teal, fontWeight: 700 }}>{analysis.topSetupTag}</span> and <span style={{ color: teal, fontWeight: 700 }}>{analysis.secondSetupTag}</span> entries yield a {fmtPct(analysis.abidingWinRate)} win rate. However, total expectancy is bleeding out due to poor discipline when wrong — {analysis.ruleBreaking.length} rule-breaking trades account for <span style={{ color: red, fontWeight: 700 }}>{fmtR(analysis.breakingR)}</span> in capital destruction.
-          </div>
-
-          {/* Critical Behavioral Flag */}
-          <div style={{
-            marginTop: 20, borderLeft: `4px solid ${red}`,
-            background: 'rgba(255,68,68,0.05)', padding: 16,
-          }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: red, marginBottom: 8 }}>
-              The &quot;{analysis.dominantFlawName}&quot; Pattern
+          {/* Header */}
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: teal, fontSize: 16 }}>✦</span>
+              <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>WickCoach AI</span>
             </div>
-            <div style={{ fontSize: 13, color: '#ccc', lineHeight: '1.6' }}>
-              Your journals repeatedly flag <span style={{ fontWeight: 700 }}>{analysis.dominantFlawName}</span>. This pattern appears most frequently on {analysis.dominantTickers.length > 0 ? (
-                <>{analysis.dominantTickers.map((tk, i) => (
-                  <span key={tk} style={{ fontWeight: 700 }}>{tk}{i < analysis.dominantTickers.length - 1 ? ' and ' : ''}</span>
-                ))}</>
-              ) : 'multiple tickers'}, accounting for <span style={{ color: red, fontWeight: 700 }}>{fmtR(analysis.dominantFlawData.totalR)}</span> in capital destruction.
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: teal }} />
+              <span style={{ color: teal, fontSize: 12 }}>Active</span>
             </div>
           </div>
 
-          {/* Dominant Flaw */}
-          <div style={{
-            marginTop: 16, background: '#1a1c23', border: '1px solid rgba(255,68,68,0.3)',
-            borderRadius: 8, padding: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-          }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,68,68,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <span style={{ color: red, fontSize: 14, fontWeight: 700 }}>!</span>
-            </div>
-            <span style={{ fontSize: 12, color: '#bbb' }}>Dominant flaw</span>
-            <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: red }}>{analysis.dominantFlawName}</span>
-            <span style={{
-              background: 'rgba(255,68,68,0.15)', color: red,
-              padding: '3px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: '1px',
-            }}>CRITICAL LEAK</span>
+          {/* Chat messages area */}
+          <div ref={chatContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {chatMessages.map((msg, i) => (
+              <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: msg.role === 'user' ? '80%' : '90%' }}>
+                {msg.role === 'assistant' && (
+                  <div style={{ color: teal, fontSize: 11, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
+                )}
+                <div style={{
+                  background: msg.role === 'assistant' ? 'rgba(0,212,160,0.08)' : '#1a1c23',
+                  border: msg.role === 'assistant' ? '1px solid rgba(0,212,160,0.12)' : '1px solid #2a2b32',
+                  borderRadius: 12, padding: msg.role === 'assistant' ? '14px 18px' : '12px 16px',
+                  color: msg.role === 'assistant' && msg.content.startsWith('Unable to connect') ? red : '#ccc',
+                  fontSize: 13, fontFamily: fm, lineHeight: '1.6', whiteSpace: 'pre-wrap',
+                }}>
+                  {msg.content}
+                </div>
+                {/* Suggestion chips after the first AI message only */}
+                {msg.role === 'assistant' && i === 0 && chatMessages.length === 1 && (() => {
+                  const worstTicker = analysis.tickers.length > 0 ? analysis.tickers[analysis.tickers.length - 1].name : 'SPY';
+                  const chips = [
+                    `Why do I lose on ${worstTicker}?`,
+                    'Best time of day to trade?',
+                    `Break down my ${analysis.dominantFlawName} pattern`,
+                  ];
+                  return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                      {chips.map((chip) => (
+                        <button
+                          key={chip}
+                          onClick={() => sendChatMessage(chip)}
+                          style={{
+                            background: '#1a1c23', border: '1px solid #2a2b32', borderRadius: 20,
+                            padding: '6px 14px', color: '#bbb', fontSize: 12, cursor: 'pointer',
+                            fontFamily: fm, transition: 'border-color 0.2s, color 0.2s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#bbb'; }}
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            ))}
+            {chatLoading && (
+              <div style={{ alignSelf: 'flex-start' }}>
+                <div style={{ color: teal, fontSize: 11, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
+                <div style={{
+                  background: 'rgba(0,212,160,0.08)', border: '1px solid rgba(0,212,160,0.12)',
+                  borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 4,
+                }}>
+                  {[0, 1, 2].map(d => (
+                    <span key={d} style={{ color: teal, fontSize: 18, fontWeight: 700, animation: `wickDotPulse 1.2s ${d * 0.2}s infinite` }}>.</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Chat Input (non-functional) */}
-          <div style={{ marginTop: 20, display: 'flex' }}>
+          {/* Input bar */}
+          <div style={{ padding: '16px 24px', borderTop: '1px solid #1e1f2a', display: 'flex', gap: 8 }}>
             <input
-              readOnly
-              placeholder="Ask WickCoach..."
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(chatInput); }}
+              placeholder="Ask about your trading patterns..."
               style={{
-                flex: 1, background: '#1a1c23', border: '1px solid #2a2b32',
-                borderRadius: '8px 0 0 8px', padding: '10px 14px',
-                color: '#fff', fontSize: 13, fontFamily: fm, outline: 'none',
+                flex: 1, background: '#1a1c23', border: '1px solid #2a2b32', borderRadius: 8,
+                padding: '10px 14px', color: '#fff', fontSize: 13, fontFamily: fm, outline: 'none',
               }}
+              onFocus={e => { e.currentTarget.style.borderColor = teal; }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#2a2b32'; }}
             />
-            <div style={{
-              background: teal, borderRadius: '0 8px 8px 0', padding: '10px 16px',
-              color: '#0e0f14', fontSize: 16, cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-            }}>→</div>
+            <button
+              onClick={() => sendChatMessage(chatInput)}
+              style={{
+                background: teal, border: 'none', borderRadius: 8, width: 40, height: 40,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#0e0f14', fontSize: 18, flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+            >→</button>
           </div>
         </div>
       </div>

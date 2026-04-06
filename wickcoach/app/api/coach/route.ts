@@ -57,7 +57,7 @@ How you speak:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 150,
+        max_tokens: 500,
         system: systemPrompt,
         messages: messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))
       })
