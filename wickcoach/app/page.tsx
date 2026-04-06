@@ -1037,26 +1037,8 @@ function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiv
   }
 
   function autoFitColumn(colIndex: number) {
-    const headerLen = colHeaders[colIndex].length;
-    let maxLen = headerLen;
-    pagedTrades.forEach(t => {
-      let cellText = '';
-      switch (colIndex) {
-        case 0: cellText = t.ticker; break;
-        case 1: { const d = new Date(t.date); cellText = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`; break; }
-        case 2: cellText = formatTime(t.time); break;
-        case 3: cellText = t.strategy; break;
-        case 4: cellText = t.direction; break;
-        case 5: cellText = String(t.contracts); break;
-        case 6: cellText = '$' + t.entryPrice.toFixed(2) + ' → $' + t.exitPrice.toFixed(2); break;
-        case 7: cellText = formatDollar(t.pl); break;
-        case 8: cellText = t.riskReward.replace(/(\d+):(\d)/, '$1 : $2'); break;
-        case 9: cellText = t.journal || '—'; break;
-      }
-      if (cellText.length > maxLen) maxLen = cellText.length;
-    });
-    const newWidth = Math.min(300, Math.max(50, Math.round(maxLen * 9) + 40));
-    setColWidths(prev => { const next = [...prev]; next[colIndex] = newWidth; return next; });
+    const targetWidth = colWidths[colIndex];
+    setColWidths(prev => prev.map(() => targetWidth));
   }
 
   function formatAiText(text: string): React.ReactNode[] {
@@ -1473,7 +1455,7 @@ const MiniStickFigure = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-function TradingGoalsContent({ trades }: { trades: Trade[] }) {
+function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activeView, setActiveView] = useState<'weekly' | 'monthly' | 'behavioral'>('weekly');
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
@@ -1483,6 +1465,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
   const [hoveredContextBtn, setHoveredContextBtn] = useState<string | null>(null);
   const [loggingGoalId, setLoggingGoalId] = useState<string | null>(null);
   const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   useEffect(() => {
     const saved = localStorage.getItem('wickcoach_goals');
@@ -1561,6 +1544,12 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
     setContextInputs(prev => ({ ...prev, [goalId]: '' }));
     setLoadingGoalId(goalId);
 
+    // Trigger floating +1 animation
+    const textareaEl = textareaRefs.current[goalId];
+    if (textareaEl && onMessageSent) {
+      onMessageSent(textareaEl.getBoundingClientRect());
+    }
+
     const messages: { role: string; content: string }[] = [];
     for (let i = 0; i < updatedContext.length; i++) {
       messages.push({ role: 'user', content: updatedContext[i] });
@@ -1579,9 +1568,22 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
       const data = await res.json();
       const aiReply: string = data.reply;
       const readyToLog = exchangeNumber >= 5 || (exchangeNumber >= 3 && !aiReply.includes('?'));
-      setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply] } : g));
-      // No auto-collapse — user clicks "Log & Exit"
-      void readyToLog; // completion state is determined by exchange count, shown via Log & Exit button
+      setGoals(prev => {
+        const next = prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply] } : g);
+        // Save to trader profile
+        const profileData = JSON.parse(localStorage.getItem('wickcoach_trader_profile') || '{"goalContexts":[],"totalExchanges":0}');
+        profileData.goalContexts = next.filter(g => g.context.length > 0).map(g => ({
+          goalTitle: g.title,
+          exchanges: g.context.map((c, i) => ({ user: c, ai: g.aiResponses[i] || '' })),
+          actionItems: g.actionItems || [],
+          complete: g.contextComplete
+        }));
+        profileData.totalExchanges = profileData.goalContexts.reduce((sum: number, g: { exchanges: unknown[] }) => sum + g.exchanges.length, 0);
+        profileData.lastUpdated = new Date().toISOString();
+        localStorage.setItem('wickcoach_trader_profile', JSON.stringify(profileData));
+        return next;
+      });
+      void readyToLog;
     } catch {
       setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, 'Failed to connect to WickCoach.'] } : g));
     }
@@ -1701,7 +1703,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
             {g.contextComplete && g.actionItems.length > 0 && !isExpanded && (
               <div style={{ marginTop: 8, marginLeft: 44 }}>
                 {g.actionItems.map((item, i) => (
-                  <div key={i} style={{ fontFamily: fm, fontSize: 12, color: teal, opacity: 0.85, fontStyle: 'italic', lineHeight: 1.8 }}>• {item}</div>
+                  <div key={i} style={{ fontFamily: fm, fontSize: 15, color: teal, fontWeight: 400, lineHeight: 1.6, marginBottom: 6 }}>• {item}</div>
                 ))}
               </div>
             )}
@@ -1754,6 +1756,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                   {!g.contextComplete && !isReadyToLog(g) && (
                     <div style={{ flexShrink: 0 }}>
                       <textarea
+                        ref={el => { textareaRefs.current[g.id] = el; }}
                         value={contextInputs[g.id] || ''}
                         onChange={e => handleTextareaGrow(e, g.id)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
@@ -1771,6 +1774,7 @@ function TradingGoalsContent({ trades }: { trades: Trade[] }) {
                   {!g.contextComplete && isReadyToLog(g) && (
                     <div style={{ flexShrink: 0 }}>
                       <textarea
+                        ref={el => { textareaRefs.current[g.id] = el; }}
                         value={contextInputs[g.id] || ''}
                         onChange={e => handleTextareaGrow(e, g.id)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
@@ -1826,6 +1830,29 @@ export default function WickCoachFull() {
   const [showClickHint, setShowClickHint] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const traderProfileTabRef = useRef<HTMLSpanElement>(null);
+  const [floatingPlusOnes, setFloatingPlusOnes] = useState<{ id: string; startX: number; startY: number; endX: number; endY: number; animated: boolean }[]>([]);
+  const [profileTabGlow, setProfileTabGlow] = useState(false);
+
+  const triggerFloatingPlusOne = (inputRect: DOMRect) => {
+    const tabEl = traderProfileTabRef.current;
+    if (!tabEl) return;
+    const tabRect = tabEl.getBoundingClientRect();
+    const startX = inputRect.left + inputRect.width / 2 - 20;
+    const startY = inputRect.top - 10;
+    const endX = tabRect.left + tabRect.width / 2 - 20;
+    const endY = tabRect.top + tabRect.height / 2 - 10;
+    const id = `fp_${Date.now()}_${Math.random()}`;
+    setFloatingPlusOnes(prev => [...prev, { id, startX, startY, endX, endY, animated: false }]);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFloatingPlusOnes(prev => prev.map(f => f.id === id ? { ...f, animated: true } : f));
+      });
+    });
+    setTimeout(() => { setProfileTabGlow(true); }, 1300);
+    setTimeout(() => { setProfileTabGlow(false); }, 2100);
+    setTimeout(() => { setFloatingPlusOnes(prev => prev.filter(f => f.id !== id)); }, 1600);
+  };
 
   // Load trades from localStorage on mount, fallback to fake-trades.json
   React.useEffect(() => {
@@ -2201,7 +2228,7 @@ export default function WickCoachFull() {
           <span style={{ position: 'absolute', top: 28, right: 40, color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Login</span>
           <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
             {tabs.map(t => (
-              <span key={t} onClick={() => setActiveTab(t)} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: activeTab === t ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.05)", borderTop: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderRight: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderBottom: "none", borderLeft: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", flex: 1, textAlign: "center", lineHeight: 1.5 }}>{t}</span>
+              <span ref={t === 'Trader Profile' ? traderProfileTabRef : undefined} key={t} onClick={() => setActiveTab(t)} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: activeTab === t ? "rgba(0,212,160,0.12)" : "rgba(0,212,160,0.05)", borderTop: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderRight: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", borderBottom: "none", borderLeft: activeTab === t ? `1px solid ${teal}` : "1px solid rgba(0,212,160,0.12)", flex: 1, textAlign: "center", lineHeight: 1.5, boxShadow: t === 'Trader Profile' && profileTabGlow ? '0 0 15px rgba(0,212,160,0.4)' : 'none', transition: 'box-shadow 0.3s ease' }}>{t}</span>
             ))}
           </div>
         </nav>
@@ -2214,13 +2241,20 @@ export default function WickCoachFull() {
           <PastTradesContent trades={trades} setActiveTab={setActiveTab} />
         )}
         {activeTab === 'Trading Goals' && (
-          <TradingGoalsContent trades={trades} />
+          <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />
         )}
         {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p>
           </div>
         )}
+        {/* Floating +1 animations */}
+        {floatingPlusOnes.map(f => (
+          <div key={f.id} style={{ position: 'fixed', left: f.startX, top: f.startY, transform: f.animated ? `translate(${f.endX - f.startX}px, ${f.endY - f.startY}px) scale(0.4)` : 'translate(0,0) scale(1)', opacity: f.animated ? 0 : 1, transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)', zIndex: 9999, pointerEvents: 'none' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: teal, fontFamily: fm, textShadow: '0 0 12px rgba(0,212,160,0.5)' }}>+1</span>
+            <span style={{ fontSize: 9, color: '#6b7280', fontFamily: fm }}>Trader Profile</span>
+          </div>
+        ))}
       </>)}
 
       {/* ═══ HOME VIEW ═══ */}
