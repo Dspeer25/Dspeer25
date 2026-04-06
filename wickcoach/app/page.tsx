@@ -2381,9 +2381,7 @@ export default function WickCoachFull() {
           <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />
         )}
         {activeTab === 'Analysis' && (
-          <div style={{ padding: '24px 32px' }}>
-            <AnalysisContent trades={trades} />
-          </div>
+          <AnalysisContent />
         )}
         {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && activeTab !== 'Analysis' && (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
