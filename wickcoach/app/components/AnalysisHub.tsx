@@ -398,7 +398,277 @@ export default function AnalysisContent() {
         })}
       </div>
 
-      {/* ═══ SECTIONS 4-6 PLACEHOLDER — will be added in prompt 2 ═══ */}
+      {/* ═══ SECTION 4: TICKER PERFORMANCE GRID ═══ */}
+      <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
+        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
+        <div style={{ fontSize: 12, color: '#666', marginBottom: 16 }}>P/L by asset — find your kryptonite</div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          {analysis.tickers.map(tk => {
+            const domain = TICKER_DOMAINS[tk.name] || tk.name.toLowerCase() + '.com';
+            const positive = tk.totalPL >= 0;
+            return (
+              <div key={tk.name} style={{
+                minWidth: 90,
+                maxWidth: 140,
+                flex: '1 1 calc(16.66% - 12px)',
+                background: '#1a1c23',
+                borderRadius: 8,
+                padding: '12px 16px',
+                textAlign: 'center',
+                borderLeft: `3px solid ${positive ? teal : red}`,
+              }}>
+                <img
+                  src={`https://img.logo.dev/${domain}?token=pk_anonymous`}
+                  width={24}
+                  height={24}
+                  style={{ borderRadius: 4, marginBottom: 6 }}
+                  onError={e => { e.currentTarget.style.display = 'none'; }}
+                  alt={tk.name}
+                />
+                <div style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff' }}>{tk.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: positive ? teal : red, marginTop: 4 }}>{fmtDollar(tk.totalPL)}</div>
+                <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{fmtPct(tk.winRate)} win</div>
+                <div style={{ fontSize: 11, color: '#666' }}>{tk.count} trade{tk.count !== 1 ? 's' : ''}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ═══ SECTION 5: FORENSIC DISSECTION ═══ */}
+      <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
+        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Forensic dissection</div>
+        <div style={{ fontSize: 12, color: '#666', marginBottom: 20 }}>Your best executions vs your worst violations</div>
+
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          {/* Left: High Integrity */}
+          <div style={{ flex: 1, minWidth: 300 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <span style={{ color: teal, fontSize: 10 }}>●</span>
+              <span style={{ fontSize: 12, color: teal, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>High Integrity Executions</span>
+            </div>
+
+            {analysis.topWins.length === 0 && (
+              <div style={{ fontSize: 12, color: '#555', padding: '12px 0' }}>No qualifying trades found</div>
+            )}
+
+            {analysis.topWins.map(t => {
+              const r = t.riskAmount ? t.pl / t.riskAmount : 0;
+              return (
+                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: teal }}>{fmtDollar(t.pl)}</span>
+                      <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>{fmtR(r)}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>{t.date} · {t.time}</div>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{t.strategy}</div>
+                  <span style={{
+                    display: 'inline-block', marginTop: 6,
+                    background: 'rgba(0,212,160,0.15)', color: teal,
+                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '1px',
+                  }}>{getSetupTag(t.journal)}</span>
+                  <div style={{ fontSize: 12, color: '#777', fontStyle: 'italic', marginTop: 8, maxHeight: 80, overflow: 'hidden' }}>
+                    &quot;{t.journal.length > 150 ? t.journal.slice(0, 150) + '...' : t.journal}&quot;
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Right: Protocol Violations */}
+          <div style={{ flex: 1, minWidth: 300 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <span style={{ color: red, fontSize: 10 }}>▲</span>
+              <span style={{ fontSize: 12, color: red, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Protocol Violations</span>
+            </div>
+
+            {analysis.worstLosses.length === 0 && (
+              <div style={{ fontSize: 12, color: '#555', padding: '12px 0' }}>No violations detected</div>
+            )}
+
+            {analysis.worstLosses.map(t => {
+              const r = t.riskAmount ? t.pl / t.riskAmount : 0;
+              return (
+                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: red }}>{fmtDollar(t.pl)}</span>
+                      <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>{fmtR(r)}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>{t.date} · {t.time}</div>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{t.strategy}</div>
+                  <span style={{
+                    display: 'inline-block', marginTop: 6,
+                    background: 'rgba(255,68,68,0.15)', color: red,
+                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                    textTransform: 'uppercase', letterSpacing: '1px',
+                  }}>{getViolationTag(t.journal)}</span>
+                  <div style={{ fontSize: 12, color: '#777', fontStyle: 'italic', marginTop: 8, maxHeight: 80, overflow: 'hidden' }}>
+                    &quot;{t.journal.length > 150 ? t.journal.slice(0, 150) + '...' : t.journal}&quot;
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ SECTION 6: PSYCH PROFILE + WICKCOACH AI ═══ */}
+      <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+
+        {/* Left: Psych Profile Radar */}
+        <div style={{ flex: 1, minWidth: 300, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
+          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 16 }}>Psych profile</div>
+
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <svg width={280} height={280} viewBox="-30 -30 340 340">
+              {(() => {
+                const cx = 140, cy = 140, maxR = 120;
+                const scores = analysis.psychScores;
+                const n = scores.length;
+                const angleStep = (2 * Math.PI) / n;
+                const startAngle = -Math.PI / 2;
+
+                const pt = (i: number, pct: number) => {
+                  const a = startAngle + i * angleStep;
+                  const d = (pct / 100) * maxR;
+                  return { x: cx + d * Math.cos(a), y: cy + d * Math.sin(a) };
+                };
+
+                const gridLevels = [33, 66, 100];
+                const elements: React.ReactNode[] = [];
+
+                // Grid pentagons
+                gridLevels.forEach(level => {
+                  const pts = scores.map((_, i) => pt(i, level));
+                  elements.push(
+                    <polygon key={`grid-${level}`} points={pts.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#1e1f2a" strokeWidth={0.5} />
+                  );
+                });
+
+                // Axis lines
+                scores.forEach((_, i) => {
+                  const p = pt(i, 100);
+                  elements.push(<line key={`axis-${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#1e1f2a" strokeWidth={0.5} />);
+                });
+
+                // Data polygon
+                const dataPts = scores.map((s, i) => pt(i, s.value));
+                elements.push(
+                  <polygon key="data" points={dataPts.map(p => `${p.x},${p.y}`).join(' ')} fill="rgba(0,212,160,0.15)" stroke={teal} strokeWidth={1.5} />
+                );
+
+                // Data dots
+                dataPts.forEach((p, i) => {
+                  elements.push(<circle key={`dot-${i}`} cx={p.x} cy={p.y} r={3} fill={teal} />);
+                });
+
+                // Labels
+                scores.forEach((s, i) => {
+                  const p = pt(i, 130);
+                  elements.push(
+                    <text key={`label-${i}`} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" fill="#fff" fontSize={12} fontFamily={fm}>{s.label}</text>
+                  );
+                });
+
+                return elements;
+              })()}
+            </svg>
+          </div>
+
+          <div style={{ textAlign: 'center', fontSize: 11, color: '#888', marginTop: 12 }}>
+            {analysis.psychScores.map((s, i) => (
+              <span key={s.abbr}>{s.abbr}: {s.value}{i < analysis.psychScores.length - 1 ? ' | ' : ''}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: WickCoach AI */}
+        <div style={{
+          flex: 1, minWidth: 300,
+          background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px',
+          backgroundImage: 'radial-gradient(rgba(0,212,160,0.07) 1px, transparent 1px)',
+          backgroundSize: '4px 4px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: teal, fontSize: 16 }}>✦</span>
+            <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>WickCoach AI</span>
+          </div>
+          <div style={{ fontSize: 11, color: '#666', letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: 6 }}>
+            Dataset Analysis ({analysis.total} Executions)
+          </div>
+
+          {/* AI Summary */}
+          <div style={{
+            background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.15)',
+            borderRadius: 8, padding: 16, marginTop: 16,
+            fontSize: 13, color: '#ccc', lineHeight: '1.6',
+          }}>
+            I&apos;ve reviewed your latest {analysis.total} trades. Your isolated edge is highly profitable: <span style={{ color: teal, fontWeight: 700 }}>{analysis.topSetupTag}</span> and <span style={{ color: teal, fontWeight: 700 }}>{analysis.secondSetupTag}</span> entries yield a {fmtPct(analysis.abidingWinRate)} win rate. However, total expectancy is bleeding out due to poor discipline when wrong — {analysis.ruleBreaking.length} rule-breaking trades account for <span style={{ color: red, fontWeight: 700 }}>{fmtR(analysis.breakingR)}</span> in capital destruction.
+          </div>
+
+          {/* Critical Behavioral Flag */}
+          <div style={{
+            marginTop: 20, borderLeft: `4px solid ${red}`,
+            background: 'rgba(255,68,68,0.05)', padding: 16,
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: red, marginBottom: 8 }}>
+              The &quot;{analysis.dominantFlawName}&quot; Pattern
+            </div>
+            <div style={{ fontSize: 13, color: '#ccc', lineHeight: '1.6' }}>
+              Your journals repeatedly flag <span style={{ fontWeight: 700 }}>{analysis.dominantFlawName}</span>. This pattern appears most frequently on {analysis.dominantTickers.length > 0 ? (
+                <>{analysis.dominantTickers.map((tk, i) => (
+                  <span key={tk} style={{ fontWeight: 700 }}>{tk}{i < analysis.dominantTickers.length - 1 ? ' and ' : ''}</span>
+                ))}</>
+              ) : 'multiple tickers'}, accounting for <span style={{ color: red, fontWeight: 700 }}>{fmtR(analysis.dominantFlawData.totalR)}</span> in capital destruction.
+            </div>
+          </div>
+
+          {/* Dominant Flaw */}
+          <div style={{
+            marginTop: 16, background: '#1a1c23', border: '1px solid rgba(255,68,68,0.3)',
+            borderRadius: 8, padding: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,68,68,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <span style={{ color: red, fontSize: 14, fontWeight: 700 }}>!</span>
+            </div>
+            <span style={{ fontSize: 12, color: '#888' }}>Dominant flaw</span>
+            <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: red }}>{analysis.dominantFlawName}</span>
+            <span style={{
+              background: 'rgba(255,68,68,0.15)', color: red,
+              padding: '3px 10px', borderRadius: 4, fontSize: 10, fontWeight: 700, letterSpacing: '1px',
+            }}>CRITICAL LEAK</span>
+          </div>
+
+          {/* Chat Input (non-functional) */}
+          <div style={{ marginTop: 20, display: 'flex' }}>
+            <input
+              readOnly
+              placeholder="Ask WickCoach..."
+              style={{
+                flex: 1, background: '#1a1c23', border: '1px solid #2a2b32',
+                borderRadius: '8px 0 0 8px', padding: '10px 14px',
+                color: '#fff', fontSize: 13, fontFamily: fm, outline: 'none',
+              }}
+            />
+            <div style={{
+              background: teal, borderRadius: '0 8px 8px 0', padding: '10px 16px',
+              color: '#0e0f14', fontSize: 16, cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+            }}>→</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
