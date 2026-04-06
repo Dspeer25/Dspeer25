@@ -420,10 +420,10 @@ export default function AnalysisContent() {
                 borderLeft: `3px solid ${positive ? teal : red}`,
               }}>
                 <img
-                  src={`https://img.logo.dev/${domain}?token=pk_anonymous`}
+                  src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
                   width={32}
                   height={32}
-                  style={{ borderRadius: 6, marginBottom: 6, display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
+                  style={{ borderRadius: 6, marginBottom: 6, display: 'block', marginLeft: 'auto', marginRight: 'auto', background: '#1e1f2a', objectFit: 'cover' }}
                   onError={e => { e.currentTarget.style.display = 'none'; }}
                   alt={tk.name}
                 />
