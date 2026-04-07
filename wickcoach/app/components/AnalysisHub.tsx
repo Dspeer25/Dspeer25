@@ -70,11 +70,31 @@ function getViolationTag(journal: string): string {
 const TICKER_DOMAINS: Record<string, string> = {
   AAPL: 'apple.com', MSFT: 'microsoft.com', GOOGL: 'google.com', GOOG: 'google.com',
   AMZN: 'amazon.com', META: 'meta.com', NVDA: 'nvidia.com', TSLA: 'tesla.com',
-  AMD: 'amd.com', NFLX: 'netflix.com', SPY: 'spglobal.com', QQQ: 'invesco.com',
+  AMD: 'amd.com', NFLX: 'netflix.com', SPY: 'ssga.com', QQQ: 'invesco.com',
   DIS: 'disney.com', BA: 'boeing.com', JPM: 'jpmorgan.com', V: 'visa.com',
   WMT: 'walmart.com', COIN: 'coinbase.com', PLTR: 'palantir.com', SOFI: 'sofi.com',
   CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com', UNH: 'unitedhealthgroup.com',
+  INTC: 'intel.com', PYPL: 'paypal.com', UBER: 'uber.com', SQ: 'squareup.com',
+  SHOP: 'shopify.com', SNAP: 'snap.com', ROKU: 'roku.com', ZM: 'zoom.us',
+  ABNB: 'airbnb.com', LYFT: 'lyft.com', PINS: 'pinterest.com', RBLX: 'roblox.com',
+  NET: 'cloudflare.com', CRWD: 'crowdstrike.com', DDOG: 'datadoghq.com', SNOW: 'snowflake.com',
+  RIVN: 'rivian.com', LCID: 'lucidmotors.com', NIO: 'nio.com', HOOD: 'robinhood.com',
+  MARA: 'mara.com', RIOT: 'riotplatforms.com', IWM: 'ishares.com', ARKK: 'ark-invest.com',
+  XOM: 'exxonmobil.com', CVX: 'chevron.com', KO: 'coca-cola.com', PEP: 'pepsico.com',
+  MCD: 'mcdonalds.com', NKE: 'nike.com', SBUX: 'starbucks.com', TGT: 'target.com',
+  BABA: 'alibaba.com', JD: 'jd.com', PDD: 'pinduoduo.com', LI: 'lixiang.com',
+  F: 'ford.com', GM: 'gm.com', AAL: 'aa.com', DAL: 'delta.com', UAL: 'united.com',
+  GS: 'goldmansachs.com', MS: 'morganstanley.com', C: 'citigroup.com', BAC: 'bankofamerica.com',
+  WFC: 'wellsfargo.com', SCHW: 'schwab.com', T: 'att.com', VZ: 'verizon.com',
+  TMUS: 't-mobile.com', PANW: 'paloaltonetworks.com', ZS: 'zscaler.com',
+  SMCI: 'supermicro.com', ARM: 'arm.com', AVGO: 'broadcom.com', MU: 'micron.com',
+  QCOM: 'qualcomm.com', TXN: 'ti.com', MRVL: 'marvell.com', ON: 'onsemi.com',
 };
+
+function getTickerLogoUrl(ticker: string, size: number = 64): string {
+  const domain = TICKER_DOMAINS[ticker] || ticker.toLowerCase() + '.com';
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+}
 
 function fmtDollar(n: number): string {
   const sign = n >= 0 ? '+' : '-';
@@ -432,9 +452,9 @@ export default function AnalysisContent() {
                 <div style={{ width: 28, height: 28, flexShrink: 0, position: 'relative' }}>
                   {failLevel < 1 && (
                     <img
-                      src={`https://eodhd.com/img/logos/US/${tk.name}.png`}
+                      src={getTickerLogoUrl(tk.name)}
                       width={28} height={28}
-                      style={{ borderRadius: 6, objectFit: 'cover', display: 'block' }}
+                      style={{ borderRadius: 6, objectFit: 'cover', display: 'block', background: '#1a1c23' }}
                       onError={() => setLogoFails(prev => ({ ...prev, [tk.name]: 1 }))}
                       alt={tk.name}
                     />
@@ -854,17 +874,13 @@ export default function AnalysisContent() {
                         const eFail = evidenceLogoFails[t.ticker] || 0;
                         return (
                           <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 6, borderLeft: `3px solid ${accentColor}` }}>
-                            {/* Triple-fallback logo */}
+                            {/* Logo with fallback */}
                             <div style={{ width: 22, height: 22, flexShrink: 0, position: 'relative' }}>
                               {eFail < 1 && (
-                                <img src={`https://eodhd.com/img/logos/US/${t.ticker}.png`} width={22} height={22} style={{ borderRadius: 4, objectFit: 'cover', display: 'block' }}
+                                <img src={getTickerLogoUrl(t.ticker)} width={22} height={22} style={{ borderRadius: 4, objectFit: 'cover', display: 'block', background: '#1a1c23' }}
                                   onError={() => setEvidenceLogoFails(prev => ({ ...prev, [t.ticker]: 1 }))} alt={t.ticker} />
                               )}
-                              {eFail === 1 && TICKER_DOMAINS[t.ticker] && (
-                                <img src={`https://logo.dev/${TICKER_DOMAINS[t.ticker]}?token=pk_abc123`} width={22} height={22} style={{ borderRadius: 4, objectFit: 'cover', display: 'block' }}
-                                  onError={() => setEvidenceLogoFails(prev => ({ ...prev, [t.ticker]: 2 }))} alt={t.ticker} />
-                              )}
-                              {(eFail >= 2 || (eFail === 1 && !TICKER_DOMAINS[t.ticker])) && (
+                              {eFail >= 1 && (
                                 <div style={{ width: 22, height: 22, borderRadius: 4, background: 'rgba(0,212,160,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, color: teal }}>{t.ticker.charAt(0)}</span>
                                 </div>
