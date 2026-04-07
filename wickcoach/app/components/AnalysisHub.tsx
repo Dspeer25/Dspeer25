@@ -105,6 +105,7 @@ export default function AnalysisContent() {
   const [chatInitialized, setChatInitialized] = useState(false);
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
+  const [obsWindow, setObsWindow] = useState<number>(0); // 0 = All
   const [logoFails, setLogoFails] = useState<Record<string, number>>({});
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -666,75 +667,178 @@ export default function AnalysisContent() {
         </div>
       </div>
 
-      {/* ═══ SECTION 4: FORENSIC DISSECTION ═══ */}
-      <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
-        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Forensic dissection</div>
-        <div style={{ fontSize: 13, color: '#999', marginBottom: 20 }}>Your best executions vs your worst violations</div>
+      {/* ═══ SECTION 4: AI OBSERVATIONS ═══ */}
+      {(() => {
+        const windowOptions = [30, 50, 100, 0] as const;
+        const windowLabels: Record<number, string> = { 30: 'Last 30', 50: 'Last 50', 100: 'Last 100', 0: 'All' };
+        const sortedByDate = [...trades].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const windowTrades = obsWindow > 0 ? sortedByDate.slice(0, obsWindow) : sortedByDate;
+        const wTotal = windowTrades.length;
 
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          {/* Left: High Integrity */}
-          <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <span style={{ color: teal, fontSize: 10 }}>●</span>
-              <span style={{ fontSize: 12, color: teal, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>High Integrity Executions</span>
+        // Process (non-rule-breaking) trades for comparison stats
+        const processTrades = windowTrades.filter(t => !isRuleBreaking(t.journal));
+        const processWinRate = processTrades.length > 0 ? (processTrades.filter(t => t.result === 'WIN').length / processTrades.length) * 100 : 0;
+        const processAvgR = processTrades.length > 0 ? processTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / processTrades.length : 0;
+
+        // --- NEGATIVE PATTERNS ---
+        const negPatterns: Array<{ name: string; key: string; keywords: string[]; trades: Trade[] }> = [
+          { name: 'FOMO / Chasing', key: 'fomo', keywords: ['fomo', 'chased', 'afraid to miss', 'too eager'], trades: [] },
+          { name: 'Revenge Trading', key: 'revenge', keywords: ['revenge', 'spite', 'after my last loss', 'dig out of the hole'], trades: [] },
+          { name: 'Stubborn Holds', key: 'stubborn', keywords: ['stubborn', 'doubled down', 'held hoping', 'froze instead'], trades: [] },
+          { name: 'Impulse Entries', key: 'impulse', keywords: ['frustrated', 'impatient', 'forced the trade', 'anxiety'], trades: [] },
+          { name: 'Oversizing', key: 'oversize', keywords: ['sized up 3x', 'bigger than planned', 'doubled my normal size', 'outsized'], trades: [] },
+          { name: 'Ignoring Rules', key: 'ignoring', keywords: ['ignored my own rule', 'ignored the', 'without waiting', 'before full confirmation'], trades: [] },
+        ];
+        negPatterns.forEach(p => {
+          p.trades = windowTrades.filter(t => {
+            const l = t.journal.toLowerCase();
+            return p.keywords.some(kw => l.includes(kw));
+          });
+        });
+        const activeNeg = negPatterns.filter(p => p.trades.length >= 3).sort((a, b) => b.trades.length - a.trades.length).slice(0, 4);
+
+        // --- POSITIVE PATTERNS ---
+        const posPatterns: Array<{ name: string; key: string; keywords: string[]; trades: Trade[] }> = [
+          { name: 'Patience', key: 'patience', keywords: ['waited', 'patient', 'patiently', 'waited for the full signal', 'waited for clearing bars'], trades: [] },
+          { name: 'Clean Execution', key: 'clean', keywords: ['textbook', 'defined risk', 'pre-planned', 'followed every rule', 'per my rules', 'zero emotions', 'pure process'], trades: [] },
+          { name: 'Stop Discipline', key: 'stops', keywords: ['took the loss cleanly', 'stopped out at', 'cut the loss', 'cut it fast', 'stayed within risk'], trades: [] },
+          { name: 'Trusting Process', key: 'trust', keywords: ['trusting the process', 'followed the playbook', 'discipline is slowly returning', 'rebuild trust'], trades: [] },
+          { name: 'Emotional Awareness', key: 'awareness', keywords: ['no anxiety', 'no regrets', 'confidence was high', 'clean mind'], trades: [] },
+        ];
+        posPatterns.forEach(p => {
+          p.trades = windowTrades.filter(t => {
+            const l = t.journal.toLowerCase();
+            return p.keywords.some(kw => l.includes(kw));
+          });
+        });
+        const activePos = posPatterns.filter(p => p.trades.length >= 3).sort((a, b) => b.trades.length - a.trades.length).slice(0, 4);
+
+        // Insight generators
+        const negInsight = (p: { key: string; trades: Trade[] }) => {
+          const count = p.trades.length;
+          const wins = p.trades.filter(t => t.result === 'WIN').length;
+          const winRate = count > 0 ? Math.round((wins / count) * 100) : 0;
+          const totalPL = p.trades.reduce((s, t) => s + t.pl, 0);
+          const avgLoss = p.trades.filter(t => t.pl < 0).length > 0
+            ? Math.abs(p.trades.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0) / p.trades.filter(t => t.pl < 0).length)
+            : 0;
+          const cleanLosses = processTrades.filter(t => t.pl < 0);
+          const cleanAvgLoss = cleanLosses.length > 0 ? Math.abs(cleanLosses.reduce((s, t) => s + t.pl, 0) / cleanLosses.length) : 0;
+          const avgR = count > 0 ? p.trades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / count : 0;
+
+          switch (p.key) {
+            case 'fomo': return `You chased entries on ${count} trades. Win rate drops to ${winRate}% when you chase vs ${Math.round(processWinRate)}% on process trades.`;
+            case 'revenge': return `Revenge trades appeared ${count} times. Total cost: ${fmtDollar(totalPL)} in P/L destruction.`;
+            case 'stubborn': return `You held through your stop ${count} times. Average loss on stubborn holds: $${avgLoss.toFixed(0)} vs $${cleanAvgLoss.toFixed(0)} on clean exits.`;
+            case 'impulse': return `Impatience drove ${count} entries. Win rate on impulse: ${winRate}% vs ${Math.round(processWinRate)}% when you wait.`;
+            case 'oversize': return `Position sizing violations on ${count} trades. Average loss when oversized: $${avgLoss.toFixed(0)}.`;
+            case 'ignoring': return `Rule violations on ${count} trades. These had ${fmtR(avgR)} expectancy vs ${fmtR(processAvgR)} for confirmed entries.`;
+            default: return '';
+          }
+        };
+
+        const posInsight = (p: { key: string; trades: Trade[] }) => {
+          const count = p.trades.length;
+          const wins = p.trades.filter(t => t.result === 'WIN').length;
+          const winRate = count > 0 ? Math.round((wins / count) * 100) : 0;
+          const impatientTrades = windowTrades.filter(t => /impatient|chased|too eager|before.*confirm/i.test(t.journal));
+          const rushWinRate = impatientTrades.length > 0 ? Math.round((impatientTrades.filter(t => t.result === 'WIN').length / impatientTrades.length) * 100) : 0;
+          const avgR = count > 0 ? p.trades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / count : 0;
+          const lossTrades = p.trades.filter(t => t.pl < 0);
+          const avgLoss = lossTrades.length > 0 ? Math.abs(lossTrades.reduce((s, t) => s + t.pl, 0) / lossTrades.length) : 0;
+
+          switch (p.key) {
+            case 'patience': return `You waited for confirmation on ${count} trades. Win rate when patient: ${winRate}% vs ${rushWinRate}% when you rush.`;
+            case 'clean': return `${count} trades had textbook entries. These average ${fmtR(avgR)} — your best category.`;
+            case 'stops': return `Stops honored on ${count} losing trades. Average loss: $${avgLoss.toFixed(0)} — within risk parameters.`;
+            case 'trust': return `${count} entries noted trusting your system despite losses. This resilience is your edge.`;
+            case 'awareness': return `${count} trades logged with clear emotional states. Self-awareness is step one.`;
+            default: return '';
+          }
+        };
+
+        return (
+          <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>WickCoach observations</div>
+                <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>Behavioral pattern tracking across your trade history</div>
+              </div>
+              <div style={{ display: 'flex', background: '#1a1c23', borderRadius: 8, padding: 3, gap: 2 }}>
+                {windowOptions.map(w => (
+                  <button key={w} onClick={() => setObsWindow(w)} style={{
+                    padding: '5px 14px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
+                    background: obsWindow === w ? '#2a2b32' : 'transparent',
+                    color: obsWindow === w ? '#fff' : '#999',
+                    fontWeight: obsWindow === w ? 'bold' : 'normal',
+                  }}>{windowLabels[w]}</button>
+                ))}
+              </div>
             </div>
 
-            {analysis.topWins.length === 0 && (
-              <div style={{ fontSize: 12, color: '#555', padding: '12px 0' }}>No qualifying trades found</div>
-            )}
+            {/* Two columns */}
+            <div style={{ display: 'flex', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
 
-            {analysis.topWins.map(t => {
-              const r = t.riskAmount ? t.pl / t.riskAmount : 0;
-              return (
-                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, borderRadius: 0, padding: '12px 14px', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>{t.ticker}</span><span style={{ color: '#999' }}> · </span><span style={{ fontSize: 12, color: '#999' }}>{t.strategy}</span></span>
-                    <span><span style={{ fontSize: 13, fontWeight: 700, color: teal }}>{fmtDollar(t.pl)}</span><span style={{ fontSize: 12, color: '#999', marginLeft: 6 }}>{fmtR(r)}</span></span>
-                  </div>
-                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 12, color: '#999' }}>{t.date} · {t.time}</span>
-                    <span style={{ background: 'rgba(0,212,160,0.15)', color: teal, padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{getSetupTag(t.journal)}</span>
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#999', fontStyle: 'italic', maxHeight: 36, overflow: 'hidden' }}>
-                    &quot;{t.journal.length > 120 ? t.journal.slice(0, 120) + '...' : t.journal}&quot;
-                  </div>
+              {/* LEFT: Needs Work */}
+              <div style={{ flex: 1, minWidth: 300 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <span style={{ color: red, fontSize: 10 }}>●</span>
+                  <span style={{ fontSize: 12, color: red, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Needs Work</span>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Right: Protocol Violations */}
-          <div style={{ flex: 1, minWidth: 300 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <span style={{ color: red, fontSize: 10 }}>▲</span>
-              <span style={{ fontSize: 12, color: red, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Protocol Violations</span>
+                {activeNeg.length === 0 && (
+                  <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic', padding: '20px 0' }}>No significant problem patterns detected in this window.</div>
+                )}
+
+                {activeNeg.map(p => {
+                  const pct = wTotal > 0 ? Math.min((p.trades.length / wTotal) * 100, 100) : 0;
+                  return (
+                    <div key={p.key} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, borderRadius: 0, padding: '14px 16px', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{p.name}</span>
+                        <span style={{ background: 'rgba(255,68,68,0.15)', color: red, padding: '2px 10px', borderRadius: 4, fontSize: 11 }}>{p.trades.length} trades</span>
+                      </div>
+                      <div style={{ marginTop: 8, height: 6, borderRadius: 3, background: '#2a2b32' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: red, opacity: pct > 30 ? undefined : 1, animation: pct > 30 ? 'wickDotPulse 2s ease-in-out infinite' : 'none' }} />
+                      </div>
+                      <div style={{ marginTop: 10, fontSize: 13, color: '#bbb', lineHeight: '1.5' }}>{negInsight(p)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* RIGHT: Making Progress */}
+              <div style={{ flex: 1, minWidth: 300 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <span style={{ color: teal, fontSize: 10 }}>●</span>
+                  <span style={{ fontSize: 12, color: teal, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Making Progress</span>
+                </div>
+
+                {activePos.length === 0 && (
+                  <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic', padding: '20px 0' }}>Keep journaling with behavioral notes. WickCoach needs detailed entries to detect patterns.</div>
+                )}
+
+                {activePos.map(p => {
+                  const pct = wTotal > 0 ? Math.min((p.trades.length / wTotal) * 100, 100) : 0;
+                  return (
+                    <div key={p.key} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, borderRadius: 0, padding: '14px 16px', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{p.name}</span>
+                        <span style={{ background: 'rgba(0,212,160,0.15)', color: teal, padding: '2px 10px', borderRadius: 4, fontSize: 11 }}>{p.trades.length} trades</span>
+                      </div>
+                      <div style={{ marginTop: 8, height: 6, borderRadius: 3, background: '#2a2b32' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: teal }} />
+                      </div>
+                      <div style={{ marginTop: 10, fontSize: 13, color: '#bbb', lineHeight: '1.5' }}>{posInsight(p)}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-
-            {analysis.worstLosses.length === 0 && (
-              <div style={{ fontSize: 12, color: '#555', padding: '12px 0' }}>No violations detected</div>
-            )}
-
-            {analysis.worstLosses.map(t => {
-              const r = t.riskAmount ? t.pl / t.riskAmount : 0;
-              return (
-                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, borderRadius: 0, padding: '12px 14px', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span><span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>{t.ticker}</span><span style={{ color: '#999' }}> · </span><span style={{ fontSize: 12, color: '#999' }}>{t.strategy}</span></span>
-                    <span><span style={{ fontSize: 13, fontWeight: 700, color: red }}>{fmtDollar(t.pl)}</span><span style={{ fontSize: 12, color: '#999', marginLeft: 6 }}>{fmtR(r)}</span></span>
-                  </div>
-                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 12, color: '#999' }}>{t.date} · {t.time}</span>
-                    <span style={{ background: 'rgba(255,68,68,0.15)', color: red, padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{getViolationTag(t.journal)}</span>
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#999', fontStyle: 'italic', maxHeight: 36, overflow: 'hidden' }}>
-                    &quot;{t.journal.length > 120 ? t.journal.slice(0, 120) + '...' : t.journal}&quot;
-                  </div>
-                </div>
-              );
-            })}
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ═══ SECTION 5: PSYCH PROFILE + WICKCOACH AI ═══ */}
       <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
