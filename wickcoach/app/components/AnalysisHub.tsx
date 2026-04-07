@@ -450,7 +450,112 @@ export default function AnalysisContent() {
         </div>
       </div>
 
-      {/* ═══ SECTION 2: TIME-OF-DAY HEATMAP ═══ */}
+      {/* ═══ SECTION 2: STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
+      <div style={{ marginTop: 24, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+
+        {/* LEFT: Strategy Breakdown — 60% */}
+        <div style={{ flex: '0 0 60%', minWidth: 300, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
+          <div style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>Performance by setup type</div>
+
+          {/* Table header */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #1e1f2a', padding: '12px 16px' }}>
+            <div style={{ flex: 2, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase' }}>Strategy</div>
+            <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Trades</div>
+            <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Win Rate</div>
+            <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Avg P/L</div>
+            <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Total P/L</div>
+            <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Avg R</div>
+          </div>
+
+          {/* Table rows */}
+          {(showAllStrategies ? analysis.strategies : analysis.strategies.slice(0, 6)).map((s, i) => {
+            const isTop = i === 0;
+            const visibleStrategies = showAllStrategies ? analysis.strategies : analysis.strategies.slice(0, 6);
+            const isBottom = i === visibleStrategies.length - 1 && visibleStrategies.length > 1;
+            return (
+              <div key={s.name} style={{
+                display: 'flex',
+                padding: '12px 16px',
+                borderBottom: '1px solid #1e1f2a',
+                background: i % 2 === 0 ? '#0e0f14' : '#12131a',
+                borderLeft: isTop ? `3px solid ${teal}` : isBottom ? `3px solid ${red}` : '3px solid transparent',
+              }}>
+                <div style={{ flex: 2, fontSize: 14, color: '#fff' }}>{s.name}</div>
+                <div style={{ flex: 1, fontSize: 13, color: '#bbb', textAlign: 'right' }}>{s.count}</div>
+                <div style={{ flex: 1, fontSize: 14, color: s.winRate >= 50 ? teal : red, textAlign: 'right' }}>{fmtPct(s.winRate)}</div>
+                <div style={{ flex: 1, fontSize: 13, color: s.avgPL >= 0 ? teal : red, textAlign: 'right' }}>{fmtDollar(s.avgPL)}</div>
+                <div style={{ flex: 1, fontSize: 14, color: s.totalPL >= 0 ? teal : red, textAlign: 'right', fontWeight: 700 }}>{fmtDollar(s.totalPL)}</div>
+                <div style={{ flex: 1, fontSize: 13, color: s.avgR >= 0 ? teal : red, textAlign: 'right' }}>{fmtR(s.avgR)}</div>
+              </div>
+            );
+          })}
+          {analysis.strategies.length > 6 && (
+            <div onClick={() => setShowAllStrategies(!showAllStrategies)} style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center' }}>
+              {showAllStrategies ? 'Show less ↑' : 'Show all ↓'}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: Ticker Performance — 40% */}
+        <div style={{ flex: 1, minWidth: 300, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
+          <div style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>P/L by asset</div>
+
+          {(showAllTickers ? analysis.tickers : analysis.tickers.slice(0, 8)).map((tk, i, arr) => {
+            const positive = tk.totalPL >= 0;
+            const failLevel = logoFails[tk.name] || 0;
+            return (
+              <div
+                key={tk.name}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 12px',
+                  borderBottom: i < arr.length - 1 ? '1px solid #1e1f2a' : 'none',
+                  borderLeft: `3px solid ${positive ? teal : red}`,
+                  borderRadius: 0,
+                  cursor: 'default',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#1a1c23'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                {/* Logo with fallback */}
+                <div style={{ width: 28, height: 28, flexShrink: 0, position: 'relative' }}>
+                  {failLevel < 1 && (
+                    <img
+                      src={`https://eodhd.com/img/logos/US/${tk.name}.png`}
+                      width={28} height={28}
+                      style={{ borderRadius: 6, objectFit: 'cover', display: 'block' }}
+                      onError={() => setLogoFails(prev => ({ ...prev, [tk.name]: 1 }))}
+                      alt={tk.name}
+                    />
+                  )}
+                  {failLevel >= 1 && (
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 6,
+                      background: 'rgba(0,212,160,0.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal }}>{tk.name.charAt(0)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', width: 50, flexShrink: 0 }}>{tk.name}</div>
+                <div style={{ fontSize: 12, color: '#999', flex: 1 }}>{tk.count} trades · {fmtPct(tk.winRate)} win</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: positive ? teal : red, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.totalPL)}</div>
+              </div>
+            );
+          })}
+          {analysis.tickers.length > 8 && (
+            <div onClick={() => setShowAllTickers(!showAllTickers)} style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center' }}>
+              {showAllTickers ? 'Show less ↑' : 'Show all ↓'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ SECTION 3: TIME-OF-DAY HEATMAP ═══ */}
       <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
@@ -458,6 +563,16 @@ export default function AnalysisContent() {
             <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>When your edge is sharpest — and when it bleeds</div>
           </div>
           <div style={{ display: 'flex', background: '#1a1c23', borderRadius: 8, padding: 3, gap: 2 }}>
+            <button
+              onClick={() => setHeatmapMode('timeline')}
+              style={{
+                padding: '6px 16px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
+                transition: 'all 0.2s',
+                background: heatmapMode === 'timeline' ? '#2a2b32' : 'transparent',
+                color: heatmapMode === 'timeline' ? '#fff' : '#999',
+                fontWeight: heatmapMode === 'timeline' ? 'bold' : 'normal',
+              }}
+            >Timeline</button>
             <button
               onClick={() => setHeatmapMode('best')}
               style={{
@@ -486,7 +601,9 @@ export default function AnalysisContent() {
             const hours = [9, 10, 11, 12, 13, 14, 15];
             const sorted = heatmapMode === 'best'
               ? [...hours].sort((a, b) => analysis.hourData[b].pl - analysis.hourData[a].pl)
-              : [...hours].sort((a, b) => analysis.hourData[a].pl - analysis.hourData[b].pl);
+              : heatmapMode === 'worst'
+                ? [...hours].sort((a, b) => analysis.hourData[a].pl - analysis.hourData[b].pl)
+                : hours;
 
             return sorted.map(h => {
               const d = analysis.hourData[h];
@@ -496,11 +613,15 @@ export default function AnalysisContent() {
                 ? '#1a1c23'
                 : heatmapMode === 'best'
                   ? `rgba(0,212,160,${opacity.toFixed(2)})`
-                  : `rgba(255,68,68,${opacity.toFixed(2)})`;
+                  : heatmapMode === 'worst'
+                    ? `rgba(255,68,68,${opacity.toFixed(2)})`
+                    : pl >= 0
+                      ? `rgba(0,212,160,${opacity.toFixed(2)})`
+                      : `rgba(255,68,68,${opacity.toFixed(2)})`;
 
               return (
                 <div key={h} style={{
-                  flex: 1, height: 80, borderRadius: 8, background: bg,
+                  flex: 1, height: 65, borderRadius: 8, background: bg,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                 }}>
                   <span style={{ fontSize: 12, color: '#ccc' }}>{hourLabels[h]}</span>
@@ -519,100 +640,33 @@ export default function AnalysisContent() {
           })()}
         </div>
 
+        {/* Session labels — only in timeline mode */}
+        {heatmapMode === 'timeline' && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '0 4px' }}>
+            <span style={{ color: teal, fontSize: 10, letterSpacing: '1px' }}>OPEN</span>
+            <span style={{ color: '#999', fontSize: 10, letterSpacing: '1px' }}>MIDDAY</span>
+            <span style={{ color: '#ffb400', fontSize: 10, letterSpacing: '1px' }}>CLOSE</span>
+          </div>
+        )}
+
         <div style={{ fontSize: 13, color: '#bbb', marginTop: 14 }}>
-          {heatmapMode === 'best' ? (
-            <>
-              Best hour: <span style={{ color: teal }}>{hourLabels[analysis.bestHour]} ({fmtDollar(analysis.hourData[analysis.bestHour].pl)})</span>
-              {' · '}
-              Worst hour: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
-            </>
-          ) : (
+          {heatmapMode === 'worst' ? (
             <>
               Biggest bleed: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
               {' · '}
               <span style={{ color: red }}>{analysis.hourData[analysis.worstHour].ruleBreaking} of {analysis.hourData[analysis.worstHour].count}</span> trades were impulse
             </>
+          ) : (
+            <>
+              Best hour: <span style={{ color: teal }}>{hourLabels[analysis.bestHour]} ({fmtDollar(analysis.hourData[analysis.bestHour].pl)})</span>
+              {' · '}
+              Worst hour: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
+            </>
           )}
         </div>
       </div>
 
-      {/* ═══ SECTION 3: STRATEGY BREAKDOWN ═══ */}
-      <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
-        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
-        <div style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>Performance by setup type</div>
-
-        {/* Table header */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #1e1f2a', padding: '12px 16px' }}>
-          <div style={{ flex: 2, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase' }}>Strategy</div>
-          <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Trades</div>
-          <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Win Rate</div>
-          <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Avg P/L</div>
-          <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Total P/L</div>
-          <div style={{ flex: 1, fontSize: 12, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Avg R</div>
-        </div>
-
-        {/* Table rows */}
-        {analysis.strategies.map((s, i) => {
-          const isTop = i === 0;
-          const isBottom = i === analysis.strategies.length - 1 && analysis.strategies.length > 1;
-          return (
-            <div key={s.name} style={{
-              display: 'flex',
-              padding: '12px 16px',
-              borderBottom: '1px solid #1e1f2a',
-              background: i % 2 === 0 ? '#0e0f14' : '#12131a',
-              borderLeft: isTop ? `3px solid ${teal}` : isBottom ? `3px solid ${red}` : '3px solid transparent',
-            }}>
-              <div style={{ flex: 2, fontSize: 14, color: '#fff' }}>{s.name}</div>
-              <div style={{ flex: 1, fontSize: 13, color: '#bbb', textAlign: 'right' }}>{s.count}</div>
-              <div style={{ flex: 1, fontSize: 14, color: s.winRate >= 50 ? teal : red, textAlign: 'right' }}>{fmtPct(s.winRate)}</div>
-              <div style={{ flex: 1, fontSize: 13, color: s.avgPL >= 0 ? teal : red, textAlign: 'right' }}>{fmtDollar(s.avgPL)}</div>
-              <div style={{ flex: 1, fontSize: 14, color: s.totalPL >= 0 ? teal : red, textAlign: 'right', fontWeight: 700 }}>{fmtDollar(s.totalPL)}</div>
-              <div style={{ flex: 1, fontSize: 13, color: s.avgR >= 0 ? teal : red, textAlign: 'right' }}>{fmtR(s.avgR)}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ═══ SECTION 4: TICKER PERFORMANCE GRID ═══ */}
-      <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
-        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
-        <div style={{ fontSize: 13, color: '#999', marginBottom: 16 }}>P/L by asset — find your kryptonite</div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {analysis.tickers.map(tk => {
-            const domain = TICKER_DOMAINS[tk.name] || tk.name.toLowerCase() + '.com';
-            const positive = tk.totalPL >= 0;
-            return (
-              <div key={tk.name} style={{
-                minWidth: 90,
-                maxWidth: 140,
-                flex: '1 1 calc(16.66% - 12px)',
-                background: '#1a1c23',
-                borderRadius: 8,
-                padding: '12px 16px',
-                textAlign: 'center',
-                borderLeft: `3px solid ${positive ? teal : red}`,
-              }}>
-                <img
-                  src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-                  width={32}
-                  height={32}
-                  style={{ borderRadius: 6, marginBottom: 6, display: 'block', marginLeft: 'auto', marginRight: 'auto', background: '#1e1f2a', objectFit: 'cover' }}
-                  onError={e => { e.currentTarget.style.display = 'none'; }}
-                  alt={tk.name}
-                />
-                <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>{tk.name}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: positive ? teal : red, marginTop: 4 }}>{fmtDollar(tk.totalPL)}</div>
-                <div style={{ fontSize: 13, color: '#bbb', marginTop: 2 }}>{fmtPct(tk.winRate)} win</div>
-                <div style={{ fontSize: 12, color: '#999' }}>{tk.count} trade{tk.count !== 1 ? 's' : ''}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ═══ SECTION 5: FORENSIC DISSECTION ═══ */}
+      {/* ═══ SECTION 4: FORENSIC DISSECTION ═══ */}
       <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
         <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Forensic dissection</div>
         <div style={{ fontSize: 13, color: '#999', marginBottom: 20 }}>Your best executions vs your worst violations</div>
@@ -702,7 +756,7 @@ export default function AnalysisContent() {
         </div>
       </div>
 
-      {/* ═══ SECTION 6: PSYCH PROFILE + WICKCOACH AI ═══ */}
+      {/* ═══ SECTION 5: PSYCH PROFILE + WICKCOACH AI ═══ */}
       <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
 
         {/* Left: Psych Profile — 55% */}
