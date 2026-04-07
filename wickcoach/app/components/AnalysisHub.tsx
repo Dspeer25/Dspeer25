@@ -96,13 +96,10 @@ function parseHour(time: string): number {
 
 export default function AnalysisContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [expandedAxis, setExpandedAxis] = useState<string | null>(null);
-  const [hoveredAxis, setHoveredAxis] = useState<string | null>(null);
   const [heatmapMode, setHeatmapMode] = useState<'timeline' | 'best' | 'worst'>('timeline');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const [chatInitialized, setChatInitialized] = useState(false);
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [obsWindow, setObsWindow] = useState<number>(0); // 0 = All
@@ -230,85 +227,6 @@ export default function AnalysisContent() {
     const topSetupTag = topSetups[0]?.[0] || 'Clean entries';
     const secondSetupTag = topSetups[1]?.[0] || 'disciplined setups';
 
-    // Psych scores — smarter calculation
-    const patientTrades = trades.filter(t => /waited|patient|patiently|entered at pre-planned|waited for the full signal|waited for the breakout|waited for clearing bars/i.test(t.journal));
-    const impatientTrades = trades.filter(t => /impatient|before the clearing bars|jumped in before|chased|too eager|anxious about missing|before volume confirmed|before full confirmation/i.test(t.journal));
-    const patienceScore = (patientTrades.length + impatientTrades.length) > 0
-      ? Math.min(100, Math.round((patientTrades.length / (patientTrades.length + impatientTrades.length)) * 100))
-      : 50;
-
-    const disciplineScore = Math.min(100, Math.round((ruleAbiding.length / trades.length) * 100));
-
-    const cleanEntryTrades = trades.filter(t => /textbook|defined risk|pre-planned|clean entry|clean exit|followed every rule|followed my rules|per my rules|per the rules|zero emotions|pure process/i.test(t.journal));
-    const sloppyEntryTrades = trades.filter(t => /froze|no clearing bars|chased|front-run|jumped in|forced the trade|no 2min confirmation/i.test(t.journal));
-    const executionScore = (cleanEntryTrades.length + sloppyEntryTrades.length) > 0
-      ? Math.min(100, Math.round((cleanEntryTrades.length / (cleanEntryTrades.length + sloppyEntryTrades.length)) * 100))
-      : 50;
-
-    const fearExitTrades = trades.filter(t => /panicked|fear|scared|bailed|playing scared|closed flat|fear-based exit|anxiety building/i.test(t.journal));
-    const heldTrades = trades.filter(t => /rode it|let the trade work|let the edge play out|no anxiety|without hesitation|maximum conviction|full send/i.test(t.journal));
-    const convictionScore = (fearExitTrades.length + heldTrades.length) > 0
-      ? Math.min(100, Math.round((heldTrades.length / (fearExitTrades.length + heldTrades.length)) * 100))
-      : 50;
-
-    const goodRiskTrades = trades.filter(t => /took the loss cleanly|pre-planned level|defined risk|risk was defined|stayed within risk|cut the loss|cut it fast|stopped out at|small loss|per my rules/i.test(t.journal));
-    const badRiskTrades = trades.filter(t => /doubled down|sized up 3x|loss was double|2x what it should|outsized loss|held through a stop level|added to the position out of frustration/i.test(t.journal));
-    const riskMgmtScore = (goodRiskTrades.length + badRiskTrades.length) > 0
-      ? Math.min(100, Math.round((goodRiskTrades.length / (goodRiskTrades.length + badRiskTrades.length)) * 100))
-      : 50;
-
-    // Psych example trades for expanded panels
-    const psychExamples = {
-      patience: {
-        positive: patientTrades.slice(0, 2),
-        negative: impatientTrades.slice(0, 1),
-      },
-      discipline: {
-        positive: ruleAbiding.filter(t => t.result === 'WIN').sort((a, b) => b.pl - a.pl).slice(0, 2),
-        negative: ruleBreaking.filter(t => t.result === 'LOSS').sort((a, b) => a.pl - b.pl).slice(0, 1),
-      },
-      execution: {
-        positive: cleanEntryTrades.slice(0, 2),
-        negative: sloppyEntryTrades.slice(0, 1),
-      },
-      conviction: {
-        positive: heldTrades.slice(0, 1),
-        negative: fearExitTrades.slice(0, 2),
-      },
-      riskMgmt: {
-        positive: goodRiskTrades.slice(0, 2),
-        negative: badRiskTrades.slice(0, 1),
-      },
-    };
-
-    // Psych insights
-    const patientWinRate = patientTrades.length > 0 ? (patientTrades.filter(t => t.result === 'WIN').length / patientTrades.length) * 100 : 0;
-    const impatientWinRate = impatientTrades.length > 0 ? (impatientTrades.filter(t => t.result === 'WIN').length / impatientTrades.length) * 100 : 0;
-    const abidingAvgR = ruleAbiding.length > 0 ? ruleAbiding.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / ruleAbiding.length : 0;
-    const breakingAvgR = ruleBreaking.length > 0 ? ruleBreaking.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / ruleBreaking.length : 0;
-    const cleanAvgR = cleanEntryTrades.length > 0 ? cleanEntryTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / cleanEntryTrades.length : 0;
-    const sloppyAvgR = sloppyEntryTrades.length > 0 ? sloppyEntryTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / sloppyEntryTrades.length : 0;
-    const goodRiskAvgR = goodRiskTrades.length > 0 ? goodRiskTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / goodRiskTrades.length : 0;
-    const badRiskAvgR = badRiskTrades.length > 0 ? badRiskTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / badRiskTrades.length : 0;
-    const losers = trades.filter(t => t.result === 'LOSS');
-    const stopsHonoredPct = losers.length > 0 ? (goodRiskTrades.filter(t => t.result === 'LOSS').length / losers.length) * 100 : 0;
-
-    const psychInsights = {
-      patience: `You waited for confirmation on ${fmtPct((patientTrades.length / trades.length) * 100)} of your trades. When you wait, your win rate is ${fmtPct(patientWinRate)} vs ${fmtPct(impatientWinRate)} when you don't.`,
-      discipline: `${fmtPct(disciplineScore)} of your trades followed your rules. Process trades have a ${fmtR(abidingAvgR)} expectancy vs ${fmtR(breakingAvgR)} for impulse trades.`,
-      execution: `${cleanEntryTrades.length} trades had clean, pre-planned entries. These averaged ${fmtR(cleanAvgR)} vs ${fmtR(sloppyAvgR)} for reactive entries.`,
-      conviction: `You exited ${fearExitTrades.length} trades at breakeven citing fear or anxiety. Your average R on held trades is significantly higher.`,
-      riskMgmt: `You honored your stops on ${fmtPct(stopsHonoredPct)} of losing trades. Clean losses averaged ${fmtR(goodRiskAvgR)} vs ${fmtR(badRiskAvgR)} for undisciplined exits.`,
-    };
-
-    const psychScores = [
-      { label: 'Patience', value: patienceScore, abbr: 'PAT', key: 'patience' as const, desc: 'Waited for confirmation before entering' },
-      { label: 'Discipline', value: disciplineScore, abbr: 'DIS', key: 'discipline' as const, desc: 'Followed trading rules consistently' },
-      { label: 'Execution', value: executionScore, abbr: 'EXE', key: 'execution' as const, desc: 'Clean entries with defined risk' },
-      { label: 'Conviction', value: convictionScore, abbr: 'CON', key: 'conviction' as const, desc: 'Held winners, didn\'t bail at breakeven' },
-      { label: 'Risk Mgmt', value: riskMgmtScore, abbr: 'RSK', key: 'riskMgmt' as const, desc: 'Honored stops and cut losses cleanly' },
-    ];
-
     return {
       total: trades.length, totalPL, totalWins, totalLosses, totalBE, totalWinRate,
       ruleAbiding, ruleBreaking,
@@ -319,20 +237,8 @@ export default function AnalysisContent() {
       topWins, worstLosses,
       dominantFlawName, dominantFlawData, dominantTickers,
       topSetupTag, secondSetupTag,
-      psychScores, psychExamples, psychInsights,
     };
   }, [trades]);
-
-  // Generate initial WickCoach message when analysis is ready
-  useEffect(() => {
-    if (analysis && !chatInitialized) {
-      const cost = Math.abs(analysis.abidingPL - analysis.totalPL);
-      const costStr = '$' + cost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-      const msg = `${analysis.ruleBreaking.length} of your ${analysis.total} trades broke your rules, costing you ${costStr} in potential gains. Your edge lives in ${analysis.topSetupTag} and ${analysis.secondSetupTag} setups — ${fmtPct(analysis.abidingWinRate)} win rate when disciplined. What pattern do you want to dig into?`;
-      setChatMessages([{ role: 'assistant', content: msg }]);
-      setChatInitialized(true);
-    }
-  }, [analysis, chatInitialized]);
 
   // Auto-scroll chat to bottom on new messages
   useEffect(() => {
@@ -671,10 +577,21 @@ export default function AnalysisContent() {
 
       {/* ═══ SECTION 4: AI OBSERVATIONS — TENSION DIAGRAM ═══ */}
       {(() => {
-        const windowOptions = [5, 10, 15, 30, 50, 100, 0] as const;
-        const windowLabels: Record<number, string> = { 5: '5', 10: '10', 15: '15', 30: '30', 50: '50', 100: '100', 0: 'All' };
+        const windowOptions = [-1, 5, 10, 15, 30, 50, 100, 0] as const;
+        const windowLabels: Record<number, string> = { '-1': 'This week', 5: '5', 10: '10', 15: '15', 30: '30', 50: '50', 100: '100', 0: 'All' };
         const sortedByDate = [...trades].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        const windowTrades = obsWindow > 0 ? sortedByDate.slice(0, obsWindow) : sortedByDate;
+        const windowTrades = (() => {
+          if (obsWindow === -1) {
+            const today = new Date();
+            const day = today.getDay();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - ((day === 0 ? 7 : day) - 1));
+            monday.setHours(0, 0, 0, 0);
+            return sortedByDate.filter(t => new Date(t.date) >= monday);
+          }
+          return obsWindow > 0 ? sortedByDate.slice(0, obsWindow) : sortedByDate;
+        })();
+        const isThisWeek = obsWindow === -1;
 
         const processTrades = windowTrades.filter(t => !isRuleBreaking(t.journal));
         const processWinRate = processTrades.length > 0 ? (processTrades.filter(t => t.result.toUpperCase() === 'WIN').length / processTrades.length) * 100 : 0;
@@ -773,19 +690,30 @@ export default function AnalysisContent() {
                 <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>AI-detected behavioral themes vs your stated goals</div>
               </div>
               <div style={{ display: 'flex', background: '#1a1c23', borderRadius: 8, padding: 3, gap: 2 }}>
-                {windowOptions.map(w => (
-                  <button key={w} onClick={() => setObsWindow(w)} style={{
-                    padding: '4px 10px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none', minWidth: 32, textAlign: 'center',
-                    background: obsWindow === w ? '#2a2b32' : 'transparent',
-                    color: obsWindow === w ? '#fff' : '#999',
-                    fontWeight: obsWindow === w ? 'bold' : 'normal',
-                  }}>{windowLabels[w]}</button>
-                ))}
+                {windowOptions.map(w => {
+                  const isActive = obsWindow === w;
+                  const isWeekPill = w === -1;
+                  return (
+                    <button key={w} onClick={() => setObsWindow(w)} style={{
+                      padding: '4px 10px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none', minWidth: 32, textAlign: 'center',
+                      background: isActive ? (isWeekPill ? teal : '#2a2b32') : 'transparent',
+                      color: isActive ? (isWeekPill ? '#0e0f14' : '#fff') : '#999',
+                      fontWeight: isActive ? 'bold' : 'normal',
+                    }}>{windowLabels[w]}</button>
+                  );
+                })}
               </div>
             </div>
 
+            {/* Empty state for This week */}
+            {isThisWeek && windowTrades.length === 0 && (
+              <div style={{ marginTop: 24, padding: '40px 20px', textAlign: 'center' }}>
+                <div style={{ color: '#999', fontSize: 14 }}>No trades logged this week yet. Start trading and journaling to see your weekly psychology snapshot.</div>
+              </div>
+            )}
+
             {/* SVG Tension Diagram */}
-            <svg width="100%" height="420" viewBox="0 0 900 420" style={{ marginTop: 24 }}>
+            {(!isThisWeek || windowTrades.length > 0) && <svg width="100%" height="420" viewBox="0 0 900 420" style={{ marginTop: 24 }}>
               {/* Side labels */}
               <text x={100} y={30} fill={red} fontSize={12} fontFamily={fm} letterSpacing={2}>FRICTION</text>
               <text x={700} y={30} fill={teal} fontSize={12} fontFamily={fm} letterSpacing={2}>MOMENTUM</text>
@@ -845,7 +773,7 @@ export default function AnalysisContent() {
               <circle cx={cx} cy={cy} r={24} fill={balanceFill} stroke={balanceColor} strokeWidth={2} />
               <text x={cx} y={cy + 5} fill="#fff" fontSize={14} fontFamily={fd} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{psyScore}</text>
               <text x={cx} y={cy + 42} fill="#999" fontSize={12} fontFamily={fm} textAnchor="middle">Psychology score</text>
-            </svg>
+            </svg>}
 
             {/* Evidence panel — shown when a pattern bar is clicked */}
             {selectedPattern && (() => {
@@ -966,7 +894,8 @@ export default function AnalysisContent() {
 
             {/* Goals alignment */}
             <div style={{ marginTop: 20, padding: '16px 20px', background: '#1a1c23', borderRadius: 8, border: '1px solid #1e1f2a' }}>
-              <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Goals alignment</div>
+              <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: isThisWeek ? 4 : 12 }}>Goals alignment</div>
+              {isThisWeek && <div style={{ color: '#999', fontSize: 12, marginBottom: 12 }}>Weekly goals vs this week&apos;s behavior</div>}
               {goals.length > 0 ? goals.map((g, i) => {
                 const tl = (g.title || '').toLowerCase();
                 const ignoringActive = activeNeg.some(p => p.key === 'ignoring' && p.trades.length >= 3);
@@ -994,272 +923,98 @@ export default function AnalysisContent() {
                 <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic' }}>Set weekly goals in the Trading Goals tab to see alignment with your behavioral patterns.</div>
               )}
             </div>
-          </div>
-        );
-      })()}
 
-      {/* ═══ SECTION 5: PSYCH PROFILE + WICKCOACH AI ═══ */}
-      <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-
-        {/* Left: Psych Profile — 55% */}
-        <div style={{ flex: '1.2 1 340px', background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '28px 32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-            <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Psych profile</span>
-            <span style={{ fontSize: 12, color: '#999' }}>Based on journal text + trade data</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
-            {/* Radar chart */}
-            <div style={{ flex: '0 0 260px' }}>
-              <svg width={260} height={260} viewBox="-40 -40 360 360">
-                {(() => {
-                  const cx = 140, cy = 140, maxR = 120;
-                  const scores = analysis.psychScores;
-                  const n = scores.length;
-                  const angleStep = (2 * Math.PI) / n;
-                  const startAngle = -Math.PI / 2;
-
-                  const pt = (i: number, pct: number) => {
-                    const a = startAngle + i * angleStep;
-                    const d = (pct / 100) * maxR;
-                    return { x: cx + d * Math.cos(a), y: cy + d * Math.sin(a) };
-                  };
-
-                  const elements: React.ReactNode[] = [];
-
-                  [33, 66, 100].forEach(level => {
-                    const pts = scores.map((_, i) => pt(i, level));
-                    elements.push(<polygon key={`grid-${level}`} points={pts.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#2a2b32" strokeWidth={0.5} />);
-                  });
-
-                  scores.forEach((_, i) => {
-                    const p = pt(i, 100);
-                    elements.push(<line key={`axis-${i}`} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#2a2b32" strokeWidth={0.5} />);
-                  });
-
-                  const dataPts = scores.map((s, i) => pt(i, s.value));
-                  elements.push(<polygon key="data" points={dataPts.map(p => `${p.x},${p.y}`).join(' ')} fill="rgba(0,212,160,0.18)" stroke={teal} strokeWidth={2} />);
-
-                  dataPts.forEach((p, i) => {
-                    elements.push(<circle key={`dot-${i}`} cx={p.x} cy={p.y} r={4} fill={teal} stroke="#0e0f14" strokeWidth={2} />);
-                  });
-
-                  // Labels with smart anchoring
-                  const anchors: Array<'middle' | 'start' | 'end'> = ['middle', 'start', 'start', 'end', 'end'];
-                  const offsets = [135, 128, 128, 128, 128];
-                  scores.forEach((s, i) => {
-                    const p = pt(i, offsets[i]);
-                    elements.push(
-                      <text key={`label-${i}`} x={p.x} y={p.y} textAnchor={anchors[i]} dominantBaseline="middle" fill="#ccc" fontSize={12} fontFamily={fm}>{s.label}</text>
-                    );
-                  });
-
-                  return elements;
-                })()}
-              </svg>
-            </div>
-
-            {/* Score rows */}
-            <div style={{ flex: 1, minWidth: 200 }}>
-              {analysis.psychScores.map(s => {
-                const scoreColor = s.value >= 60 ? teal : s.value >= 40 ? '#ffb400' : red;
-                const scoreBg = s.value >= 60 ? 'rgba(0,212,160,0.15)' : s.value >= 40 ? 'rgba(255,180,0,0.15)' : 'rgba(255,68,68,0.15)';
-                const isExpanded = expandedAxis === s.key;
-                const isHovered = hoveredAxis === s.key;
-                const examples = analysis.psychExamples[s.key];
-                const insight = analysis.psychInsights[s.key];
-
-                return (
-                  <div key={s.key}>
-                    <div
-                      onClick={() => setExpandedAxis(isExpanded ? null : s.key)}
-                      onMouseEnter={() => setHoveredAxis(s.key)}
-                      onMouseLeave={() => setHoveredAxis(null)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 16,
-                        padding: '12px 16px', background: '#1a1c23', borderRadius: 8, marginBottom: 8,
-                        cursor: 'pointer', border: isHovered || isExpanded ? '1px solid #2a2b32' : '1px solid transparent',
-                        transition: 'border-color 0.15s ease',
-                      }}
-                    >
-                      {/* Score circle */}
-                      <div style={{
-                        width: 40, height: 40, borderRadius: '50%', background: scoreBg,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                      }}>
-                        <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: scoreColor }}>{s.value}</span>
-                      </div>
-                      {/* Label + description */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{s.label}</div>
-                        <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{s.desc}</div>
-                      </div>
-                      {/* Bar */}
-                      <div style={{ width: 100, height: 6, borderRadius: 3, background: '#2a2b32', flexShrink: 0 }}>
-                        <div style={{ width: `${s.value}%`, height: '100%', borderRadius: 3, background: scoreColor, transition: 'width 0.3s ease' }} />
-                      </div>
-                    </div>
-
-                    {/* Expanded detail panel */}
-                    {isExpanded && (
-                      <div style={{
-                        marginTop: -4, marginBottom: 12, background: '#0e0f14', border: '1px solid #1e1f2a',
-                        borderRadius: 8, padding: 16, borderLeft: `3px solid ${scoreColor}`,
-                      }}>
-                        {/* Positive examples */}
-                        {examples.positive.map((t: Trade) => (
-                          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 8 }}>
-                            <span style={{ color: teal, fontSize: 12, flexShrink: 0 }}>●</span>
-                            <span style={{ fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>{t.ticker}</span>
-                            <span style={{ color: '#999', fontSize: 12, flexShrink: 0 }}>{t.date}</span>
-                            <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fmtDollar(t.pl)}</span>
-                            <span style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {t.journal.length > 100 ? t.journal.slice(0, 100) + '...' : t.journal}
-                            </span>
-                          </div>
-                        ))}
-                        {/* Negative examples */}
-                        {examples.negative.map((t: Trade) => (
-                          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 8 }}>
-                            <span style={{ color: red, fontSize: 12, flexShrink: 0 }}>●</span>
-                            <span style={{ fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>{t.ticker}</span>
-                            <span style={{ color: '#999', fontSize: 12, flexShrink: 0 }}>{t.date}</span>
-                            <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fmtDollar(t.pl)}</span>
-                            <span style={{ color: '#bbb', fontSize: 12, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {t.journal.length > 100 ? t.journal.slice(0, 100) + '...' : t.journal}
-                            </span>
-                          </div>
-                        ))}
-                        {examples.positive.length === 0 && examples.negative.length === 0 && (
-                          <div style={{ fontSize: 12, color: '#999', padding: '8px 0' }}>No matching trade examples found</div>
-                        )}
-                        {/* Insight line */}
-                        <div style={{
-                          marginTop: 8, padding: '10px 14px', borderRadius: 6,
-                          backgroundImage: 'radial-gradient(rgba(0,212,160,0.18) 1px, transparent 1px)', backgroundSize: '4px 4px',
-                          background: 'rgba(0,212,160,0.04)',
-                        }}>
-                          <span style={{ color: teal, fontSize: 12, fontStyle: 'italic' }}>{insight}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Right: WickCoach AI Chat — 45% */}
-        <div style={{
-          flex: '0.8 1 300px',
-          background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: 0,
-          backgroundImage: 'radial-gradient(rgba(0,212,160,0.18) 1px, transparent 1px)',
-          backgroundSize: '4px 4px',
-          display: 'flex', flexDirection: 'column', height: '100%', minHeight: 500,
-        }}>
-          <style>{`@keyframes wickDotPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }`}</style>
-
-          {/* Header */}
-          <div style={{ padding: '16px 24px', borderBottom: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: teal, fontSize: 16 }}>✦</span>
-              <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>WickCoach AI</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: teal }} />
-              <span style={{ color: teal, fontSize: 12 }}>Active</span>
-            </div>
-          </div>
-
-          {/* Chat messages area */}
-          <div ref={chatContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {chatMessages.map((msg, i) => (
-              <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: msg.role === 'user' ? '80%' : '90%' }}>
-                {msg.role === 'assistant' && (
-                  <div style={{ color: teal, fontSize: 12, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
-                )}
-                <div style={{
-                  background: msg.role === 'assistant' ? 'rgba(0,212,160,0.08)' : '#1a1c23',
-                  border: msg.role === 'assistant' ? '1px solid rgba(0,212,160,0.18)' : '1px solid #2a2b32',
-                  borderRadius: 12, padding: msg.role === 'assistant' ? '14px 18px' : '12px 16px',
-                  color: msg.role === 'assistant' && msg.content.startsWith('Unable to connect') ? red : '#ccc',
-                  fontSize: 13, fontFamily: fm, lineHeight: '1.6', whiteSpace: 'pre-wrap',
-                }}>
-                  {msg.content}
+            {/* WickCoach AI Chat */}
+            <div style={{ marginTop: 20, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, overflow: 'hidden' }}>
+              <style>{`@keyframes wickDotPulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }`}</style>
+              <div style={{ padding: '12px 20px', background: '#1a1c23', borderBottom: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: teal, fontSize: 14 }}>✦</span>
+                  <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>Ask WickCoach</span>
                 </div>
-                {/* Suggestion chips after the first AI message only */}
-                {msg.role === 'assistant' && i === 0 && chatMessages.length === 1 && (() => {
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: teal }} />
+                  <span style={{ color: teal, fontSize: 12 }}>Active</span>
+                </div>
+              </div>
+              <div ref={chatContainerRef} style={{
+                padding: '16px 20px', minHeight: 80, maxHeight: 300, overflowY: 'auto',
+                backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)', backgroundSize: '4px 4px',
+                display: 'flex', flexDirection: 'column', gap: 12,
+              }}>
+                {chatMessages.length === 0 && !chatLoading && (() => {
                   const worstTicker = analysis.tickers.length > 0 ? analysis.tickers[analysis.tickers.length - 1].name : 'SPY';
                   const chips = [
                     `Why do I lose on ${worstTicker}?`,
-                    'Best time of day to trade?',
-                    `Break down my ${analysis.dominantFlawName} pattern`,
+                    "What's my best setup?",
+                    `Analyze my ${analysis.dominantFlawName} pattern`,
                   ];
                   return (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                      {chips.map((chip) => (
-                        <button
-                          key={chip}
-                          onClick={() => sendChatMessage(chip)}
-                          style={{
-                            background: '#1a1c23', border: '1px solid #2a2b32', borderRadius: 20,
-                            padding: '6px 14px', color: '#bbb', fontSize: 12, cursor: 'pointer',
-                            fontFamily: fm, transition: 'border-color 0.2s, color 0.2s',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#bbb'; }}
-                        >
-                          {chip}
-                        </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {chips.map(chip => (
+                        <button key={chip} onClick={() => sendChatMessage(chip)} style={{
+                          background: '#1a1c23', border: '1px solid #2a2b32', borderRadius: 20,
+                          padding: '6px 14px', color: '#bbb', fontSize: 12, cursor: 'pointer', fontFamily: fm,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#bbb'; }}
+                        >{chip}</button>
                       ))}
                     </div>
                   );
                 })()}
+                {chatMessages.map((msg, i) => (
+                  <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: msg.role === 'user' ? '80%' : '90%' }}>
+                    <div style={{
+                      background: msg.role === 'assistant' ? 'rgba(0,212,160,0.08)' : '#1a1c23',
+                      border: msg.role === 'assistant' ? '1px solid rgba(0,212,160,0.12)' : '1px solid #2a2b32',
+                      borderRadius: 12, padding: '12px 16px',
+                      color: msg.content.startsWith('Unable to connect') ? red : '#ccc',
+                      fontSize: 13, fontFamily: fm, lineHeight: '1.6', whiteSpace: 'pre-wrap',
+                    }}>{msg.content}</div>
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div style={{ alignSelf: 'flex-start' }}>
+                    <div style={{
+                      background: 'rgba(0,212,160,0.08)', border: '1px solid rgba(0,212,160,0.12)',
+                      borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 4,
+                    }}>
+                      {[0, 1, 2].map(d => (
+                        <span key={d} style={{ color: teal, fontSize: 18, fontWeight: 700, animation: `wickDotPulse 1.2s ${d * 0.2}s infinite` }}>.</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
-            {chatLoading && (
-              <div style={{ alignSelf: 'flex-start' }}>
-                <div style={{ color: teal, fontSize: 12, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
-                <div style={{
-                  background: 'rgba(0,212,160,0.08)', border: '1px solid rgba(0,212,160,0.18)',
-                  borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 4,
-                }}>
-                  {[0, 1, 2].map(d => (
-                    <span key={d} style={{ color: teal, fontSize: 18, fontWeight: 700, animation: `wickDotPulse 1.2s ${d * 0.2}s infinite` }}>.</span>
-                  ))}
-                </div>
+              <div style={{ padding: '12px 20px', borderTop: '1px solid #1e1f2a', display: 'flex', gap: 8 }}>
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(chatInput); }}
+                  placeholder="Ask about your patterns..."
+                  style={{
+                    flex: 1, background: '#1a1c23', border: '1px solid #2a2b32', borderRadius: 8,
+                    padding: '10px 14px', color: '#fff', fontSize: 13, fontFamily: fm, outline: 'none',
+                  }}
+                  onFocus={e => { e.currentTarget.style.borderColor = teal; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = '#2a2b32'; }}
+                />
+                <button
+                  onClick={() => sendChatMessage(chatInput)}
+                  style={{
+                    background: teal, border: 'none', borderRadius: 8, width: 38, height: 38,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: '#0e0f14', fontSize: 16, flexShrink: 0,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                >→</button>
               </div>
-            )}
+            </div>
           </div>
-
-          {/* Input bar */}
-          <div style={{ padding: '16px 24px', borderTop: '1px solid #1e1f2a', display: 'flex', gap: 8 }}>
-            <input
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(chatInput); }}
-              placeholder="Ask about your trading patterns..."
-              style={{
-                flex: 1, background: '#1a1c23', border: '1px solid #2a2b32', borderRadius: 8,
-                padding: '10px 14px', color: '#fff', fontSize: 13, fontFamily: fm, outline: 'none',
-              }}
-              onFocus={e => { e.currentTarget.style.borderColor = teal; }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#2a2b32'; }}
-            />
-            <button
-              onClick={() => sendChatMessage(chatInput)}
-              style={{
-                background: teal, border: 'none', borderRadius: 8, width: 40, height: 40,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#0e0f14', fontSize: 18, flexShrink: 0,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-            >→</button>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
     </div>
   );
 }
