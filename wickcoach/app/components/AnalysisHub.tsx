@@ -200,8 +200,8 @@ export default function AnalysisContent() {
       .sort((a, b) => b.totalPL - a.totalPL);
 
     // Top wins (process) and worst losses (impulse)
-    const topWins = [...ruleAbiding].filter(t => t.result === 'WIN').sort((a, b) => b.pl - a.pl).slice(0, 3);
-    const worstLosses = [...ruleBreaking].filter(t => t.result === 'LOSS').sort((a, b) => a.pl - b.pl).slice(0, 3);
+    const topWins = [...ruleAbiding].filter(t => t.result === 'WIN').sort((a, b) => b.pl - a.pl).slice(0, 2);
+    const worstLosses = [...ruleBreaking].filter(t => t.result === 'LOSS').sort((a, b) => a.pl - b.pl).slice(0, 2);
 
     // Violation frequency
     const violationCounts: Record<string, { count: number; tickers: Record<string, number>; totalR: number }> = {};
@@ -686,27 +686,17 @@ export default function AnalysisContent() {
             {analysis.topWins.map(t => {
               const r = t.riskAmount ? t.pl / t.riskAmount : 0;
               return (
-                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, padding: 16, marginBottom: 12 }}>
+                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, borderRadius: 0, padding: '12px 14px', marginBottom: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <img src={`https://www.google.com/s2/favicons?domain=${TICKER_DOMAINS[t.ticker] || t.ticker.toLowerCase() + '.com'}&sz=64`} width={24} height={24} style={{ borderRadius: 4, background: '#1e1f2a', objectFit: 'cover' }} onError={e => { e.currentTarget.style.display = 'none'; }} alt={t.ticker} />
-                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: teal }}>{fmtDollar(t.pl)}</span>
-                      <span style={{ fontSize: 12, color: '#bbb', marginLeft: 8 }}>{fmtR(r)}</span>
-                    </div>
+                    <span><span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>{t.ticker}</span><span style={{ color: '#999' }}> · </span><span style={{ fontSize: 12, color: '#999' }}>{t.strategy}</span></span>
+                    <span><span style={{ fontSize: 13, fontWeight: 700, color: teal }}>{fmtDollar(t.pl)}</span><span style={{ fontSize: 12, color: '#999', marginLeft: 6 }}>{fmtR(r)}</span></span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{t.date} · {t.time}</div>
-                  <div style={{ fontSize: 13, color: '#bbb', marginTop: 4 }}>{t.strategy}</div>
-                  <span style={{
-                    display: 'inline-block', marginTop: 6,
-                    background: 'rgba(0,212,160,0.15)', color: teal,
-                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '1px',
-                  }}>{getSetupTag(t.journal)}</span>
-                  <div style={{ fontSize: 12, color: '#aaa', fontStyle: 'italic', marginTop: 8, maxHeight: 80, overflow: 'hidden' }}>
-                    &quot;{t.journal.length > 150 ? t.journal.slice(0, 150) + '...' : t.journal}&quot;
+                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: '#999' }}>{t.date} · {t.time}</span>
+                    <span style={{ background: 'rgba(0,212,160,0.15)', color: teal, padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{getSetupTag(t.journal)}</span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#999', fontStyle: 'italic', maxHeight: 36, overflow: 'hidden' }}>
+                    &quot;{t.journal.length > 120 ? t.journal.slice(0, 120) + '...' : t.journal}&quot;
                   </div>
                 </div>
               );
@@ -727,27 +717,17 @@ export default function AnalysisContent() {
             {analysis.worstLosses.map(t => {
               const r = t.riskAmount ? t.pl / t.riskAmount : 0;
               return (
-                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, padding: 16, marginBottom: 12 }}>
+                <div key={t.id} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, borderRadius: 0, padding: '12px 14px', marginBottom: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <img src={`https://www.google.com/s2/favicons?domain=${TICKER_DOMAINS[t.ticker] || t.ticker.toLowerCase() + '.com'}&sz=64`} width={24} height={24} style={{ borderRadius: 4, background: '#1e1f2a', objectFit: 'cover' }} onError={e => { e.currentTarget.style.display = 'none'; }} alt={t.ticker} />
-                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{t.ticker}</span>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: red }}>{fmtDollar(t.pl)}</span>
-                      <span style={{ fontSize: 12, color: '#bbb', marginLeft: 8 }}>{fmtR(r)}</span>
-                    </div>
+                    <span><span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>{t.ticker}</span><span style={{ color: '#999' }}> · </span><span style={{ fontSize: 12, color: '#999' }}>{t.strategy}</span></span>
+                    <span><span style={{ fontSize: 13, fontWeight: 700, color: red }}>{fmtDollar(t.pl)}</span><span style={{ fontSize: 12, color: '#999', marginLeft: 6 }}>{fmtR(r)}</span></span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{t.date} · {t.time}</div>
-                  <div style={{ fontSize: 13, color: '#bbb', marginTop: 4 }}>{t.strategy}</div>
-                  <span style={{
-                    display: 'inline-block', marginTop: 6,
-                    background: 'rgba(255,68,68,0.15)', color: red,
-                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '1px',
-                  }}>{getViolationTag(t.journal)}</span>
-                  <div style={{ fontSize: 12, color: '#aaa', fontStyle: 'italic', marginTop: 8, maxHeight: 80, overflow: 'hidden' }}>
-                    &quot;{t.journal.length > 150 ? t.journal.slice(0, 150) + '...' : t.journal}&quot;
+                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: '#999' }}>{t.date} · {t.time}</span>
+                    <span style={{ background: 'rgba(255,68,68,0.15)', color: red, padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{getViolationTag(t.journal)}</span>
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#999', fontStyle: 'italic', maxHeight: 36, overflow: 'hidden' }}>
+                    &quot;{t.journal.length > 120 ? t.journal.slice(0, 120) + '...' : t.journal}&quot;
                   </div>
                 </div>
               );

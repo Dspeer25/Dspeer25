@@ -87,29 +87,24 @@ const CLogo = ({ t }: { t: string }) => <img src={`https://www.google.com/s2/fav
 const tickerBgColors: Record<string, string> = { QQQ: '#7b3fe4', TSLA: '#cc0000', SPY: '#1a4a8a', NVDA: '#76b900', AAPL: '#555', META: '#0668E1', AMZN: '#ff9900', MSFT: '#00a4ef', GOOGL: '#4285f4', AMD: '#ed1c24', NFLX: '#e50914', BA: '#0039a6', DIS: '#113ccf', JPM: '#006cb7', V: '#1a1f71', WMT: '#0071dc', COIN: '#0052ff', GOOG: '#4285f4' };
 
 const TickerLogo = ({ ticker }: { ticker: string }) => {
-  const [srcIdx, setSrcIdx] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-  const domain = tickerDomains[ticker] || ticker.toLowerCase() + '.com';
-  const sources = [
-    `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-    `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-  ];
-  const allFailed = srcIdx >= sources.length;
+  const [failed, setFailed] = useState(false);
   return (
-    <div style={{ width: 24, height: 24, borderRadius: 6, background: tickerBgColors[ticker] || '#2a2b32', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-      {!allFailed && (
+    <div style={{ width: 24, height: 24, flexShrink: 0, position: 'relative' }}>
+      {!failed && (
         <img
-          key={srcIdx}
-          src={sources[srcIdx]}
+          src={`https://eodhd.com/img/logos/US/${ticker}.png`}
           alt={ticker}
           width={24}
           height={24}
-          style={{ objectFit: 'contain', borderRadius: 6, display: loaded ? 'block' : 'none' }}
-          onLoad={() => setLoaded(true)}
-          onError={() => { setLoaded(false); setSrcIdx(i => i + 1); }}
+          style={{ objectFit: 'cover', borderRadius: 6, display: 'block' }}
+          onError={() => setFailed(true)}
         />
       )}
-      {(allFailed || !loaded) && <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: fm }}>{ticker.slice(0, 3)}</span>}
+      {failed && (
+        <div style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(0,212,160,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#00d4a0', fontFamily: fd }}>{ticker.charAt(0)}</span>
+        </div>
+      )}
     </div>
   );
 };
