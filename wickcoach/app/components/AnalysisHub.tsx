@@ -107,6 +107,8 @@ export default function AnalysisContent() {
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [obsWindow, setObsWindow] = useState<number>(0); // 0 = All
   const [logoFails, setLogoFails] = useState<Record<string, number>>({});
+  const [selectedPattern, setSelectedPattern] = useState<{ side: 'friction' | 'momentum'; name: string; key: string } | null>(null);
+  const [evidenceLogoFails, setEvidenceLogoFails] = useState<Record<string, number>>({});
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -806,18 +808,17 @@ export default function AnalysisContent() {
               {activeNeg.map((p, i) => {
                 const barY = negStartY + i * negSpacing;
                 const barW = Math.max((p.trades.length / maxNegCount) * 240, 30);
-                const opacity = 0.3 + (p.trades.length / maxNegCount) * 0.5;
+                const baseOpacity = 0.3 + (p.trades.length / maxNegCount) * 0.5;
                 const barX = cx - 10 - barW;
+                const isSelected = selectedPattern?.key === p.key && selectedPattern?.side === 'friction';
+                const isDimmed = selectedPattern !== null && !isSelected;
+                const gOpacity = isDimmed ? 0.3 : 1;
                 return (
-                  <g key={p.key}>
-                    {/* Connecting line */}
+                  <g key={p.key} style={{ cursor: 'pointer', opacity: gOpacity }} onClick={() => setSelectedPattern(isSelected ? null : { side: 'friction', name: p.name, key: p.key })}>
                     <line x1={cx - 10} y1={barY + 14} x2={cx} y2={cy} stroke={red} strokeWidth={0.5} opacity={0.3} />
-                    {/* Bar */}
-                    <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={red} opacity={opacity} />
-                    {/* Pattern label */}
+                    <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={red} opacity={isSelected ? 1 : baseOpacity} stroke={isSelected ? red : 'none'} strokeWidth={isSelected ? 2 : 0} />
                     <text x={barX - 8} y={barY + 12} fill={red} fontSize={12} fontFamily={fd} fontWeight={700} textAnchor="end">{p.name}</text>
                     <text x={barX - 8} y={barY + 24} fill="#999" fontSize={10} fontFamily={fm} textAnchor="end">{p.trades.length} trades</text>
-                    {/* Short insight below bar */}
                     <text x={barX} y={barY + 46} fill="#999" fontSize={10} fontFamily={fm}>{negShort(p)}</text>
                   </g>
                 );
@@ -827,18 +828,17 @@ export default function AnalysisContent() {
               {activePos.map((p, i) => {
                 const barY = posStartY + i * posSpacing;
                 const barW = Math.max((p.trades.length / maxPosCount) * 240, 30);
-                const opacity = 0.3 + (p.trades.length / maxPosCount) * 0.5;
+                const baseOpacity = 0.3 + (p.trades.length / maxPosCount) * 0.5;
                 const barX = cx + 10;
+                const isSelected = selectedPattern?.key === p.key && selectedPattern?.side === 'momentum';
+                const isDimmed = selectedPattern !== null && !isSelected;
+                const gOpacity = isDimmed ? 0.3 : 1;
                 return (
-                  <g key={p.key}>
-                    {/* Connecting line */}
+                  <g key={p.key} style={{ cursor: 'pointer', opacity: gOpacity }} onClick={() => setSelectedPattern(isSelected ? null : { side: 'momentum', name: p.name, key: p.key })}>
                     <line x1={cx + 10} y1={barY + 14} x2={cx} y2={cy} stroke={teal} strokeWidth={0.5} opacity={0.3} />
-                    {/* Bar */}
-                    <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={teal} opacity={opacity} />
-                    {/* Pattern label */}
+                    <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={teal} opacity={isSelected ? 1 : baseOpacity} stroke={isSelected ? teal : 'none'} strokeWidth={isSelected ? 2 : 0} />
                     <text x={barX + barW + 8} y={barY + 12} fill={teal} fontSize={12} fontFamily={fd} fontWeight={700} textAnchor="start">{p.name}</text>
                     <text x={barX + barW + 8} y={barY + 24} fill="#999" fontSize={10} fontFamily={fm} textAnchor="start">{p.trades.length} trades</text>
-                    {/* Short insight below bar */}
                     <text x={barX + barW + 8} y={barY + 38} fill="#999" fontSize={10} fontFamily={fm}>{posShort(p)}</text>
                   </g>
                 );
@@ -857,6 +857,123 @@ export default function AnalysisContent() {
               <text x={cx} y={cy + 5} fill="#fff" fontSize={14} fontFamily={fd} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{psyScore}</text>
               <text x={cx} y={cy + 42} fill="#999" fontSize={10} fontFamily={fm} textAnchor="middle">Psychology score</text>
             </svg>
+
+            {/* Evidence panel — shown when a pattern bar is clicked */}
+            {selectedPattern && (() => {
+              const allPatterns = [...activeNeg.map(p => ({ ...p, side: 'friction' as const })), ...activePos.map(p => ({ ...p, side: 'momentum' as const }))];
+              const match = allPatterns.find(p => p.key === selectedPattern.key && p.side === selectedPattern.side);
+              if (!match) return null;
+              const isFriction = selectedPattern.side === 'friction';
+              const accentColor = isFriction ? red : teal;
+              const matchedTrades = match.trades;
+              const sorted = [...matchedTrades].sort((a, b) => isFriction ? a.pl - b.pl : b.pl - a.pl);
+              const shown = sorted.slice(0, 5);
+              const totalMatched = matchedTrades.length;
+
+              // Compute stats for analysis paragraph
+              const mWins = matchedTrades.filter(t => t.result.toUpperCase() === 'WIN').length;
+              const mWinRate = totalMatched > 0 ? (mWins / totalMatched) * 100 : 0;
+              const mAvgR = totalMatched > 0 ? matchedTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / totalMatched : 0;
+              const mTotalPL = matchedTrades.reduce((s, t) => s + t.pl, 0);
+              const pWins = processTrades.filter(t => t.result.toUpperCase() === 'WIN').length;
+              const pWinRate = processTrades.length > 0 ? (pWins / processTrades.length) * 100 : 0;
+              const pAvgR = processAvgR;
+
+              // Stubborn hold stats for stop discipline comparison
+              const stubbornPattern = negPatterns.find(np => np.key === 'stubborn');
+              const stubbornTrades = stubbornPattern ? stubbornPattern.trades : [];
+              const stubbornAvgLoss = stubbornTrades.length > 0 ? Math.abs(stubbornTrades.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0) / Math.max(stubbornTrades.filter(t => t.pl < 0).length, 1)) : 0;
+              const matchLosers = matchedTrades.filter(t => t.pl < 0);
+              const matchAvgLoss = matchLosers.length > 0 ? Math.abs(matchLosers.reduce((s, t) => s + t.pl, 0) / matchLosers.length) : 0;
+
+              // Overall stats for comparison
+              const overallWins = windowTrades.filter(t => t.result.toUpperCase() === 'WIN').length;
+              const overallWinRate = windowTrades.length > 0 ? (overallWins / windowTrades.length) * 100 : 0;
+              const overallAvgR = windowTrades.length > 0 ? windowTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / windowTrades.length : 0;
+
+              const dollarDiff = Math.abs(mTotalPL - (totalMatched * (processTrades.length > 0 ? processTrades.reduce((s, t) => s + t.pl, 0) / processTrades.length : 0)));
+
+              const hl = (v: string) => <span style={{ color: accentColor, fontWeight: 'bold' }}>{v}</span>;
+
+              const analysisMap: Record<string, React.ReactNode> = {
+                ignoring: <>You entered {hl(String(totalMatched))} trades without waiting for confirmation. Expectancy drops to {hl(fmtR(mAvgR))} vs {hl(fmtR(pAvgR))} on confirmed entries. That gap represents {hl(fmtCost(dollarDiff))} across these trades.</>,
+                impulse: <>Frustration drove {hl(String(totalMatched))} entries in this window. Win rate: {hl(fmtPct(mWinRate))} vs {hl(fmtPct(pWinRate))} on patient trades. Average R: {hl(fmtR(mAvgR))} vs {hl(fmtR(pAvgR))}. The market doesn&apos;t care that you&apos;re frustrated — it only rewards the setup.</>,
+                revenge: <>Revenge trades appeared {hl(String(totalMatched))} times — trades taken to recover from recent losses. Cost you {hl(fmtCost(mTotalPL))} with a {hl(fmtPct(mWinRate))} win rate. These are trades where your journal admits you already knew it was wrong.</>,
+                fomo: <>You chased {hl(String(totalMatched))} entries — jumping in before your setup confirmed. Win rate when chasing: {hl(fmtPct(mWinRate))} vs {hl(fmtPct(pWinRate))} when you wait. Every chase is a bet against your own edge.</>,
+                stubborn: <>You held through your stop {hl(String(totalMatched))} times. Average loss on stubborn holds: {hl(fmtCost(matchAvgLoss))}. Holding past your stop isn&apos;t conviction — it&apos;s hope.</>,
+                oversize: <>You oversized on {hl(String(totalMatched))} trades. When you size up emotionally, your average loss balloons to {hl(fmtCost(matchAvgLoss))}. Win rate: {hl(fmtPct(mWinRate))}. Size should follow conviction, not frustration.</>,
+                patience: <>You waited for confirmation on {hl(String(totalMatched))} trades. Win rate: {hl(fmtPct(mWinRate))} with avg {hl(fmtR(mAvgR))}. Compare to your overall {hl(fmtPct(overallWinRate))} and {hl(fmtR(overallAvgR))}. This IS your edge.</>,
+                clean: <>{hl(String(totalMatched))} textbook trades averaged {hl(fmtR(mAvgR))} with {hl(fmtPct(mWinRate))} win rate — your best category by expectancy. When you remove emotion and just execute, this is the result.</>,
+                stops: <>Clean exits on {hl(String(totalMatched))} trades. Avg loss: {hl(fmtCost(matchAvgLoss))} vs {hl(fmtCost(stubbornAvgLoss))} when you hold past stops. Professional trading is about losing well.</>,
+                trust: <>{hl(String(totalMatched))} entries where you trusted your system despite losses or shaky confidence. Win rate: {hl(fmtPct(mWinRate))}. This resilience compounds over time — it&apos;s not a single trade edge, it&apos;s a career edge.</>,
+                awareness: <>You were self-aware on {hl(String(totalMatched))} trades — recognizing your emotional state before entering. Win rate: {hl(fmtPct(mWinRate))} with avg {hl(fmtR(mAvgR))}. Awareness is the foundation of discipline.</>,
+              };
+
+              return (
+                <div style={{ marginTop: 16, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, overflow: 'hidden' }}>
+                  {/* Top bar */}
+                  <div style={{ padding: '14px 20px', background: '#1a1c23', borderBottom: '1px solid #1e1f2a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ color: teal, fontSize: 14 }}>✦</span>
+                      <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>WickCoach analysis: {selectedPattern.name}</span>
+                    </div>
+                    <span
+                      onClick={() => setSelectedPattern(null)}
+                      style={{ color: '#999', fontSize: 14, cursor: 'pointer', padding: '4px 8px', borderRadius: 4 }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#2a2b32'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >✕</span>
+                  </div>
+
+                  {/* Content */}
+                  <div style={{
+                    padding: '20px 24px', display: 'flex', gap: 24,
+                    backgroundImage: 'radial-gradient(rgba(0,212,160,0.12) 1px, transparent 1px)', backgroundSize: '4px 4px',
+                  }}>
+                    {/* Left: Cited trades */}
+                    <div style={{ flex: '0 0 50%' }}>
+                      <div style={{ color: '#999', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Trades cited</div>
+                      {shown.map(t => {
+                        const eFail = evidenceLogoFails[t.ticker] || 0;
+                        return (
+                          <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 6, borderLeft: `3px solid ${accentColor}` }}>
+                            {/* Triple-fallback logo */}
+                            <div style={{ width: 22, height: 22, flexShrink: 0, position: 'relative' }}>
+                              {eFail < 1 && (
+                                <img src={`https://eodhd.com/img/logos/US/${t.ticker}.png`} width={22} height={22} style={{ borderRadius: 4, objectFit: 'cover', display: 'block' }}
+                                  onError={() => setEvidenceLogoFails(prev => ({ ...prev, [t.ticker]: 1 }))} alt={t.ticker} />
+                              )}
+                              {eFail === 1 && TICKER_DOMAINS[t.ticker] && (
+                                <img src={`https://logo.dev/${TICKER_DOMAINS[t.ticker]}?token=pk_abc123`} width={22} height={22} style={{ borderRadius: 4, objectFit: 'cover', display: 'block' }}
+                                  onError={() => setEvidenceLogoFails(prev => ({ ...prev, [t.ticker]: 2 }))} alt={t.ticker} />
+                              )}
+                              {(eFail >= 2 || (eFail === 1 && !TICKER_DOMAINS[t.ticker])) && (
+                                <div style={{ width: 22, height: 22, borderRadius: 4, background: 'rgba(0,212,160,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span style={{ fontFamily: fd, fontSize: 11, fontWeight: 700, color: teal }}>{t.ticker.charAt(0)}</span>
+                                </div>
+                              )}
+                            </div>
+                            <span style={{ color: '#fff', fontFamily: fd, fontSize: 13, fontWeight: 700 }}>{t.ticker}</span>
+                            <span style={{ color: '#999', fontSize: 11 }}>{t.date}</span>
+                            <span style={{ color: '#999', fontSize: 11 }}>{t.strategy}</span>
+                            <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>{fmtDollar(t.pl)}</span>
+                          </div>
+                        );
+                      })}
+                      <div style={{ color: '#999', fontSize: 11, marginTop: 8 }}>{shown.length} of {totalMatched} matching trades</div>
+                    </div>
+
+                    {/* Right: Pattern analysis */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: '#999', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Pattern analysis</div>
+                      <div style={{ color: '#ccc', fontSize: 13, lineHeight: '1.8', fontFamily: fm }}>
+                        {analysisMap[selectedPattern.key] || <>Analysis for {selectedPattern.name}: {hl(String(totalMatched))} trades detected with a {hl(fmtPct(mWinRate))} win rate and {hl(fmtR(mAvgR))} average R.</>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Goals connection */}
             {goals.length > 0 ? (
