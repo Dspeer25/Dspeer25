@@ -764,17 +764,6 @@ export default function AnalysisContent() {
         let goals: Array<{ id: string; title: string; goalType: string }> = [];
         try { const g = localStorage.getItem('wickcoach_goals'); if (g) goals = JSON.parse(g); } catch { /* empty */ }
 
-        const getGoalStatus = (title: string) => {
-          const tl = title.toLowerCase();
-          const riskKws = ['confirmation', '5m', '13m', 'stop', 'rule', 'size', 'risk'];
-          const progressKws = ['patience', 'wait', 'pullback', 'breathe', 'process', 'discipline'];
-          const hasRiskMatch = activeNeg.length > 0 && riskKws.some(kw => tl.includes(kw));
-          const hasProgressMatch = activePos.length > 0 && progressKws.some(kw => tl.includes(kw));
-          if (hasProgressMatch && !hasRiskMatch) return 'on-track';
-          if (hasRiskMatch) return 'at-risk';
-          return 'monitoring';
-        };
-
         return (
           <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '28px 32px' }}>
             {/* Header */}
@@ -975,33 +964,36 @@ export default function AnalysisContent() {
               );
             })()}
 
-            {/* Goals connection */}
-            {goals.length > 0 ? (
-              <div style={{ marginTop: 20, padding: '16px 20px', background: '#1a1c23', borderRadius: 8, border: '1px solid #1e1f2a' }}>
-                <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 12 }}>How these patterns relate to your goals</div>
-                {goals.map((g, i) => {
-                  const status = getGoalStatus(g.title);
-                  const statusConfig = status === 'on-track'
-                    ? { label: 'On track', bg: 'rgba(0,212,160,0.15)', color: teal }
-                    : status === 'at-risk'
-                      ? { label: 'At risk', bg: 'rgba(255,68,68,0.15)', color: red }
-                      : { label: 'Monitoring', bg: 'rgba(255,255,255,0.05)', color: '#999' };
-                  return (
-                    <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < goals.length - 1 ? '1px solid #1e1f2a' : 'none' }}>
-                      <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <span style={{ color: teal, fontSize: 12, fontFamily: fm }}>{i + 1}</span>
-                      </div>
-                      <span style={{ color: '#fff', fontSize: 13, flex: 1 }}>{g.title}</span>
-                      <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 4, background: statusConfig.bg, color: statusConfig.color }}>{statusConfig.label}</span>
+            {/* Goals alignment */}
+            <div style={{ marginTop: 20, padding: '16px 20px', background: '#1a1c23', borderRadius: 8, border: '1px solid #1e1f2a' }}>
+              <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Goals alignment</div>
+              {goals.length > 0 ? goals.map((g, i) => {
+                const tl = (g.title || '').toLowerCase();
+                const ignoringActive = activeNeg.some(p => p.key === 'ignoring' && p.trades.length >= 3);
+                const stubbornActive = activeNeg.some(p => p.key === 'stubborn' && p.trades.length >= 3);
+                const patienceActive = activePos.some(p => p.key === 'patience' && p.trades.length >= 3);
+                let status: 'on-track' | 'at-risk' | 'monitoring' = 'monitoring';
+                if ((/confirmation|5m|13m|13\/15m/i).test(tl) && ignoringActive) status = 'at-risk';
+                else if ((/breathe|break-even|break even/i).test(tl) && stubbornActive) status = 'at-risk';
+                else if ((/wait|patience|pullback|20ma/i).test(tl) && patienceActive) status = 'on-track';
+                const badge = status === 'on-track'
+                  ? { label: 'On track', bg: 'rgba(0,212,160,0.15)', color: teal }
+                  : status === 'at-risk'
+                    ? { label: 'At risk', bg: 'rgba(255,68,68,0.15)', color: red }
+                    : { label: 'Monitoring', bg: 'rgba(255,255,255,0.05)', color: '#999' };
+                return (
+                  <div key={g.id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < goals.length - 1 ? '1px solid #1e1f2a' : 'none' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ color: teal, fontSize: 11, fontWeight: 'bold', fontFamily: fm }}>{i + 1}</span>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ marginTop: 20, padding: '16px 20px', background: '#1a1c23', borderRadius: 8, border: '1px solid #1e1f2a' }}>
-                <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic' }}>Set weekly goals in the Trading Goals tab to see how your patterns relate to your targets.</div>
-              </div>
-            )}
+                    <span style={{ color: '#fff', fontSize: 13, flex: 1 }}>{g.title}</span>
+                    <span style={{ fontSize: 11, fontWeight: 'bold', padding: '3px 12px', borderRadius: 4, background: badge.bg, color: badge.color }}>{badge.label}</span>
+                  </div>
+                );
+              }) : (
+                <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic' }}>Set weekly goals in the Trading Goals tab to see alignment with your behavioral patterns.</div>
+              )}
+            </div>
           </div>
         );
       })()}
