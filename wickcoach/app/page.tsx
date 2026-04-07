@@ -2414,19 +2414,153 @@ export default function WickCoachFull() {
         <style>{`@keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }`}</style>
       </nav>
 
+      {/* ═══ HERO SECTION ═══ */}
+      <section style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: '#131318', display: 'flex', flexDirection: 'column' }}>
+        <style>{`
+          @media (prefers-reduced-motion: no-preference) {
+            @keyframes hCandle1 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.18); } }
+            @keyframes hCandle2 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.82); } }
+            @keyframes hCandle3 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.22); } }
+            @keyframes hCandle4 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.88); } }
+            @keyframes hCandle5 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.15); } }
+            @keyframes hCandle6 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.85); } }
+            @keyframes hCandle7 { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.12); } }
+            @keyframes hFloat1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+            @keyframes hFloat2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+            @keyframes hFloat3 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+          }
+        `}</style>
+
+        {/* Layer 1: Animated Candlestick Chart */}
+        <div style={{ position: 'absolute', top: '5%', right: '-5%', width: '65%', height: '90%', opacity: 0.85 }}>
+          <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+            {/* Uptrend line */}
+            <line x1={40} y1={520} x2={760} y2={100} stroke={teal} strokeWidth={1} opacity={0.3} strokeDasharray="4 4" />
+            {/* Candlesticks */}
+            {[
+              { x: 40, h: 60, w: 32, bull: true, base: 480, anim: 'hCandle1', dur: '4.2s', del: '0s' },
+              { x: 95, h: 40, w: 28, bull: false, base: 470, anim: 'hCandle2', dur: '3.8s', del: '0.5s' },
+              { x: 150, h: 80, w: 34, bull: true, base: 440, anim: 'hCandle3', dur: '5.1s', del: '1.2s' },
+              { x: 205, h: 50, w: 28, bull: false, base: 450, anim: 'hCandle4', dur: '3.5s', del: '0.3s' },
+              { x: 260, h: 100, w: 36, bull: true, base: 400, anim: 'hCandle5', dur: '6.2s', del: '1.8s' },
+              { x: 320, h: 70, w: 30, bull: false, base: 420, anim: 'hCandle6', dur: '4.8s', del: '0.7s' },
+              { x: 375, h: 45, w: 26, bull: false, base: 440, anim: 'hCandle2', dur: '3.3s', del: '2.1s' },
+              { x: 430, h: 140, w: 38, bull: true, base: 340, anim: 'hCandle1', dur: '5.8s', del: '0.4s' },
+              { x: 495, h: 110, w: 36, bull: true, base: 320, anim: 'hCandle7', dur: '6.5s', del: '1.5s' },
+              { x: 555, h: 160, w: 40, bull: true, base: 260, anim: 'hCandle3', dur: '7s', del: '0.9s' },
+              { x: 620, h: 120, w: 36, bull: true, base: 290, anim: 'hCandle5', dur: '5.5s', del: '2.3s' },
+              { x: 675, h: 55, w: 28, bull: false, base: 370, anim: 'hCandle4', dur: '4s', del: '1.1s' },
+              { x: 730, h: 130, w: 36, bull: true, base: 270, anim: 'hCandle7', dur: '6s', del: '0.2s' },
+            ].map((c, i) => {
+              const color = c.bull ? teal : '#ff4444';
+              const wickTop = c.base - c.h - 15;
+              const wickBot = c.base + 10;
+              return (
+                <g key={i} style={{ transformOrigin: `${c.x + c.w / 2}px ${c.base}px`, animation: `${c.anim} ${c.dur} ease-in-out ${c.del} infinite` }}>
+                  <rect x={c.x - 2} y={c.base - c.h - 2} width={c.w + 4} height={c.h + 4} rx={4} fill={color} opacity={0.08} />
+                  <line x1={c.x + c.w / 2} y1={wickTop} x2={c.x + c.w / 2} y2={wickBot} stroke={color} strokeWidth={2} />
+                  <rect x={c.x} y={c.base - c.h} width={c.w} height={c.h} rx={3} fill={color} opacity={0.7} />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Layer 2: Text Content */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '140px 0 0 80px', maxWidth: 600 }}>
+          <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center' }}>
+            <div style={{ width: 40, height: 2, background: teal, display: 'inline-block', marginRight: 12 }} />
+            <span style={{ color: teal, fontSize: 12, letterSpacing: '3px', fontFamily: fm, textTransform: 'uppercase', fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
+          </div>
+          <h1 style={{ fontFamily: fd, fontSize: 56, fontWeight: 'bold', lineHeight: 1.1, color: '#fff', marginBottom: 28, margin: '0 0 28px 0' }}>
+            The Trading Journal That Fixes Your Psychology.
+          </h1>
+          <p style={{ color: '#999', fontSize: 16, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 40 }}>
+            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
+          </p>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <button
+              onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
+              style={{ background: teal, color: '#0e0f14', border: 'none', padding: '16px 36px', fontSize: 14, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer', textTransform: 'uppercase' }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+            >START JOURNALING</button>
+            <button
+              style={{ background: 'transparent', color: '#fff', border: '1px solid #2a2b32', padding: '16px 36px', fontSize: 14, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer', textTransform: 'uppercase' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#fff'; }}
+            >▶ WATCH DEMO</button>
+          </div>
+        </div>
+
+        {/* Layer 3: AI Annotation Callouts */}
+        <div style={{ animation: 'hFloat1 5s ease-in-out infinite' }}>
+          <div style={{ position: 'absolute', top: '22%', right: '32%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', zIndex: 3 }} />
+          <svg style={{ position: 'absolute', top: '20%', right: '3%', width: '30%', height: '10%', zIndex: 2, overflow: 'visible' }}>
+            <line x1="0%" y1="90%" x2="85%" y2="20%" stroke="#ff4444" strokeWidth={1} strokeDasharray="4 3" opacity={0.5} />
+          </svg>
+          <div style={{ position: 'absolute', top: '18%', right: '3%', maxWidth: 250, zIndex: 3 }}>
+            <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
+            <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
+          </div>
+        </div>
+        <div style={{ animation: 'hFloat2 6s ease-in-out 0.5s infinite' }}>
+          <div style={{ position: 'absolute', top: '42%', right: '20%', width: 8, height: 8, borderRadius: '50%', background: '#fff', zIndex: 3 }} />
+          <svg style={{ position: 'absolute', top: '38%', right: '1%', width: '20%', height: '8%', zIndex: 2, overflow: 'visible' }}>
+            <line x1="0%" y1="80%" x2="90%" y2="30%" stroke="#666" strokeWidth={1} strokeDasharray="4 3" opacity={0.4} />
+          </svg>
+          <div style={{ position: 'absolute', top: '38%', right: '1%', maxWidth: 250, zIndex: 3 }}>
+            <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>PATTERN EXTRACTION</div>
+            <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
+          </div>
+        </div>
+        <div style={{ animation: 'hFloat3 7s ease-in-out 1s infinite' }}>
+          <div style={{ position: 'absolute', top: '58%', right: '25%', width: 8, height: 8, borderRadius: '50%', background: teal, zIndex: 3 }} />
+          <svg style={{ position: 'absolute', top: '55%', right: '1%', width: '25%', height: '8%', zIndex: 2, overflow: 'visible' }}>
+            <line x1="0%" y1="80%" x2="90%" y2="20%" stroke={teal} strokeWidth={1} strokeDasharray="4 3" opacity={0.4} />
+          </svg>
+          <div style={{ position: 'absolute', top: '55%', right: '1%', maxWidth: 250, zIndex: 3 }}>
+            <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
+            <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+          </div>
+        </div>
+
+        {/* Stat Cards */}
+        <div style={{ position: 'absolute', bottom: 60, right: 80, display: 'flex', gap: 2, zIndex: 3 }}>
+          <div style={{ background: 'rgba(14,15,20,0.85)', border: '1px solid #1e1f2a', padding: '20px 28px', minWidth: 140, textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: teal }}>+42%</div>
+            <div style={{ color: '#999', fontSize: 10, letterSpacing: '1.5px', marginTop: 6 }}>AVG. EXPECTANCY INCREASE</div>
+          </div>
+          <div style={{ background: 'rgba(14,15,20,0.85)', border: '1px solid #1e1f2a', padding: '20px 28px', minWidth: 140, textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
+            <div style={{ color: '#999', fontSize: 10, letterSpacing: '1.5px', marginTop: 6 }}>EXECUTIONS ANALYZED</div>
+          </div>
+          <div style={{ background: 'rgba(14,15,20,0.85)', border: '1px solid #1e1f2a', padding: '20px 28px', minWidth: 140, textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
+            <div style={{ color: '#ff4444', fontSize: 10, letterSpacing: '1.5px', marginTop: 6 }}>REDUCTION IN REVENGE TRADES</div>
+          </div>
+        </div>
+
+        {/* WickCoach stick figure */}
+        <div style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)', opacity: 0.5, zIndex: 3 }}>
+          <svg width="20" height="40" viewBox="0 0 20 24" fill="none">
+            <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+            <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+            <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+          </svg>
+        </div>
+      </section>
+
       {/* ═══ FEATURE CAROUSEL ═══ */}
       <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '80px 20px 100px', background: '#0e0f14' }}>
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
-            {/* Hero animation video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, }} />
-            {/* Heading */}
-            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
-            {/* Subtitle */}
-            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>AI-enhanced behavioral and trading pattern recognition</p>
-          </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
               { label: "Trading Goals", d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" },
