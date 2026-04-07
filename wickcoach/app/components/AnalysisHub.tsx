@@ -667,20 +667,18 @@ export default function AnalysisContent() {
         </div>
       </div>
 
-      {/* ═══ SECTION 4: AI OBSERVATIONS ═══ */}
+      {/* ═══ SECTION 4: AI OBSERVATIONS — TENSION DIAGRAM ═══ */}
       {(() => {
-        const windowOptions = [30, 50, 100, 0] as const;
-        const windowLabels: Record<number, string> = { 30: 'Last 30', 50: 'Last 50', 100: 'Last 100', 0: 'All' };
+        const windowOptions = [5, 10, 15, 30, 50, 100, 0] as const;
+        const windowLabels: Record<number, string> = { 5: '5', 10: '10', 15: '15', 30: '30', 50: '50', 100: '100', 0: 'All' };
         const sortedByDate = [...trades].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         const windowTrades = obsWindow > 0 ? sortedByDate.slice(0, obsWindow) : sortedByDate;
         const wTotal = windowTrades.length;
 
-        // Process (non-rule-breaking) trades for comparison stats
         const processTrades = windowTrades.filter(t => !isRuleBreaking(t.journal));
         const processWinRate = processTrades.length > 0 ? (processTrades.filter(t => t.result === 'WIN').length / processTrades.length) * 100 : 0;
         const processAvgR = processTrades.length > 0 ? processTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / processTrades.length : 0;
 
-        // --- NEGATIVE PATTERNS ---
         const negPatterns: Array<{ name: string; key: string; keywords: string[]; trades: Trade[] }> = [
           { name: 'FOMO / Chasing', key: 'fomo', keywords: ['fomo', 'chased', 'afraid to miss', 'too eager'], trades: [] },
           { name: 'Revenge Trading', key: 'revenge', keywords: ['revenge', 'spite', 'after my last loss', 'dig out of the hole'], trades: [] },
@@ -689,15 +687,9 @@ export default function AnalysisContent() {
           { name: 'Oversizing', key: 'oversize', keywords: ['sized up 3x', 'bigger than planned', 'doubled my normal size', 'outsized'], trades: [] },
           { name: 'Ignoring Rules', key: 'ignoring', keywords: ['ignored my own rule', 'ignored the', 'without waiting', 'before full confirmation'], trades: [] },
         ];
-        negPatterns.forEach(p => {
-          p.trades = windowTrades.filter(t => {
-            const l = t.journal.toLowerCase();
-            return p.keywords.some(kw => l.includes(kw));
-          });
-        });
+        negPatterns.forEach(p => { p.trades = windowTrades.filter(t => { const l = t.journal.toLowerCase(); return p.keywords.some(kw => l.includes(kw)); }); });
         const activeNeg = negPatterns.filter(p => p.trades.length >= 3).sort((a, b) => b.trades.length - a.trades.length).slice(0, 4);
 
-        // --- POSITIVE PATTERNS ---
         const posPatterns: Array<{ name: string; key: string; keywords: string[]; trades: Trade[] }> = [
           { name: 'Patience', key: 'patience', keywords: ['waited', 'patient', 'patiently', 'waited for the full signal', 'waited for clearing bars'], trades: [] },
           { name: 'Clean Execution', key: 'clean', keywords: ['textbook', 'defined risk', 'pre-planned', 'followed every rule', 'per my rules', 'zero emotions', 'pure process'], trades: [] },
@@ -705,70 +697,89 @@ export default function AnalysisContent() {
           { name: 'Trusting Process', key: 'trust', keywords: ['trusting the process', 'followed the playbook', 'discipline is slowly returning', 'rebuild trust'], trades: [] },
           { name: 'Emotional Awareness', key: 'awareness', keywords: ['no anxiety', 'no regrets', 'confidence was high', 'clean mind'], trades: [] },
         ];
-        posPatterns.forEach(p => {
-          p.trades = windowTrades.filter(t => {
-            const l = t.journal.toLowerCase();
-            return p.keywords.some(kw => l.includes(kw));
-          });
-        });
+        posPatterns.forEach(p => { p.trades = windowTrades.filter(t => { const l = t.journal.toLowerCase(); return p.keywords.some(kw => l.includes(kw)); }); });
         const activePos = posPatterns.filter(p => p.trades.length >= 3).sort((a, b) => b.trades.length - a.trades.length).slice(0, 4);
 
-        // Insight generators
-        const negInsight = (p: { key: string; trades: Trade[] }) => {
+        const maxCount = Math.max(...[...activeNeg, ...activePos].map(p => p.trades.length), 1);
+        const greenTotal = activePos.reduce((s, p) => s + p.trades.length, 0);
+        const redTotal = activeNeg.reduce((s, p) => s + p.trades.length, 0);
+        const psyScore = (greenTotal + redTotal) > 0 ? Math.round((greenTotal / (greenTotal + redTotal)) * 100) : 50;
+        const balanceColor = psyScore >= 55 ? teal : psyScore <= 45 ? red : '#ffb400';
+        const balanceFill = psyScore >= 55 ? 'rgba(0,212,160,0.3)' : psyScore <= 45 ? 'rgba(255,68,68,0.3)' : 'rgba(255,180,0,0.3)';
+
+        // Short insight generators
+        const negShort = (p: { key: string; trades: Trade[] }) => {
           const count = p.trades.length;
           const wins = p.trades.filter(t => t.result === 'WIN').length;
           const winRate = count > 0 ? Math.round((wins / count) * 100) : 0;
           const totalPL = p.trades.reduce((s, t) => s + t.pl, 0);
-          const avgLoss = p.trades.filter(t => t.pl < 0).length > 0
-            ? Math.abs(p.trades.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0) / p.trades.filter(t => t.pl < 0).length)
-            : 0;
+          const losers = p.trades.filter(t => t.pl < 0);
+          const avgLoss = losers.length > 0 ? Math.abs(losers.reduce((s, t) => s + t.pl, 0) / losers.length) : 0;
           const cleanLosses = processTrades.filter(t => t.pl < 0);
           const cleanAvgLoss = cleanLosses.length > 0 ? Math.abs(cleanLosses.reduce((s, t) => s + t.pl, 0) / cleanLosses.length) : 0;
           const avgR = count > 0 ? p.trades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / count : 0;
-
+          const ratio = cleanAvgLoss > 0 ? (avgLoss / cleanAvgLoss).toFixed(1) : '?';
           switch (p.key) {
-            case 'fomo': return `You chased entries on ${count} trades. Win rate drops to ${winRate}% when you chase vs ${Math.round(processWinRate)}% on process trades.`;
-            case 'revenge': return `Revenge trades appeared ${count} times. Total cost: ${fmtDollar(totalPL)} in P/L destruction.`;
-            case 'stubborn': return `You held through your stop ${count} times. Average loss on stubborn holds: $${avgLoss.toFixed(0)} vs $${cleanAvgLoss.toFixed(0)} on clean exits.`;
-            case 'impulse': return `Impatience drove ${count} entries. Win rate on impulse: ${winRate}% vs ${Math.round(processWinRate)}% when you wait.`;
-            case 'oversize': return `Position sizing violations on ${count} trades. Average loss when oversized: $${avgLoss.toFixed(0)}.`;
-            case 'ignoring': return `Rule violations on ${count} trades. These had ${fmtR(avgR)} expectancy vs ${fmtR(processAvgR)} for confirmed entries.`;
+            case 'fomo': return `Win rate drops to ${winRate}% when chasing`;
+            case 'revenge': return `Cost you ${fmtDollar(totalPL)} this window`;
+            case 'stubborn': return `Avg loss ${ratio}x worse than clean exits`;
+            case 'impulse': return `${winRate}% win rate vs ${Math.round(processWinRate)}% patient`;
+            case 'oversize': return `Avg loss $${avgLoss.toFixed(0)} when oversized`;
+            case 'ignoring': return `${fmtR(avgR)} vs ${fmtR(processAvgR)} expectancy gap`;
             default: return '';
           }
         };
-
-        const posInsight = (p: { key: string; trades: Trade[] }) => {
+        const posShort = (p: { key: string; trades: Trade[] }) => {
           const count = p.trades.length;
           const wins = p.trades.filter(t => t.result === 'WIN').length;
           const winRate = count > 0 ? Math.round((wins / count) * 100) : 0;
-          const impatientTrades = windowTrades.filter(t => /impatient|chased|too eager|before.*confirm/i.test(t.journal));
-          const rushWinRate = impatientTrades.length > 0 ? Math.round((impatientTrades.filter(t => t.result === 'WIN').length / impatientTrades.length) * 100) : 0;
           const avgR = count > 0 ? p.trades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / count : 0;
-          const lossTrades = p.trades.filter(t => t.pl < 0);
-          const avgLoss = lossTrades.length > 0 ? Math.abs(lossTrades.reduce((s, t) => s + t.pl, 0) / lossTrades.length) : 0;
-
+          const losers = p.trades.filter(t => t.pl < 0);
+          const avgLoss = losers.length > 0 ? Math.abs(losers.reduce((s, t) => s + t.pl, 0) / losers.length) : 0;
           switch (p.key) {
-            case 'patience': return `You waited for confirmation on ${count} trades. Win rate when patient: ${winRate}% vs ${rushWinRate}% when you rush.`;
-            case 'clean': return `${count} trades had textbook entries. These average ${fmtR(avgR)} — your best category.`;
-            case 'stops': return `Stops honored on ${count} losing trades. Average loss: $${avgLoss.toFixed(0)} — within risk parameters.`;
-            case 'trust': return `${count} entries noted trusting your system despite losses. This resilience is your edge.`;
-            case 'awareness': return `${count} trades logged with clear emotional states. Self-awareness is step one.`;
+            case 'patience': return `${winRate}% win rate when you wait`;
+            case 'clean': return `Avg ${fmtR(avgR)} per textbook trade`;
+            case 'stops': return `Clean losses avg $${avgLoss.toFixed(0)}`;
+            case 'trust': return `${count} entries, resilience building`;
+            case 'awareness': return `Self-aware on ${count} trades`;
             default: return '';
           }
         };
 
+        // SVG layout constants
+        const cx = 450, cy = 210;
+        const negSpacing = activeNeg.length > 0 ? Math.min(70, 280 / activeNeg.length) : 70;
+        const posSpacing = activePos.length > 0 ? Math.min(70, 280 / activePos.length) : 70;
+        const negStartY = cy - ((activeNeg.length - 1) * negSpacing) / 2;
+        const posStartY = cy - ((activePos.length - 1) * posSpacing) / 2;
+
+        // Goals connection
+        let goals: Array<{ id: string; title: string; goalType: string }> = [];
+        try { const g = localStorage.getItem('wickcoach_goals'); if (g) goals = JSON.parse(g); } catch { /* empty */ }
+
+        const getGoalStatus = (title: string) => {
+          const tl = title.toLowerCase();
+          const riskKws = ['confirmation', '5m', '13m', 'stop', 'rule', 'size', 'risk'];
+          const progressKws = ['patience', 'wait', 'pullback', 'breathe', 'process', 'discipline'];
+          const hasRiskMatch = activeNeg.length > 0 && riskKws.some(kw => tl.includes(kw));
+          const hasProgressMatch = activePos.length > 0 && progressKws.some(kw => tl.includes(kw));
+          if (hasProgressMatch && !hasRiskMatch) return 'on-track';
+          if (hasRiskMatch) return 'at-risk';
+          return 'monitoring';
+        };
+
         return (
-          <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '24px 28px' }}>
+          <div style={{ marginTop: 24, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '28px 32px' }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>WickCoach observations</div>
-                <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>Behavioral pattern tracking across your trade history</div>
+                <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>AI-detected behavioral themes vs your stated goals</div>
               </div>
               <div style={{ display: 'flex', background: '#1a1c23', borderRadius: 8, padding: 3, gap: 2 }}>
                 {windowOptions.map(w => (
                   <button key={w} onClick={() => setObsWindow(w)} style={{
-                    padding: '5px 14px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
+                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontFamily: fm, cursor: 'pointer', border: 'none', minWidth: 32, textAlign: 'center',
                     background: obsWindow === w ? '#2a2b32' : 'transparent',
                     color: obsWindow === w ? '#fff' : '#999',
                     fontWeight: obsWindow === w ? 'bold' : 'normal',
@@ -777,65 +788,98 @@ export default function AnalysisContent() {
               </div>
             </div>
 
-            {/* Two columns */}
-            <div style={{ display: 'flex', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
+            {/* SVG Tension Diagram */}
+            <svg width="100%" height="420" viewBox="0 0 900 420" style={{ marginTop: 24 }}>
+              {/* Side labels */}
+              <text x={100} y={30} fill={red} fontSize={11} fontFamily={fm} letterSpacing={2}>FRICTION</text>
+              <text x={700} y={30} fill={teal} fontSize={11} fontFamily={fm} letterSpacing={2}>MOMENTUM</text>
 
-              {/* LEFT: Needs Work */}
-              <div style={{ flex: 1, minWidth: 300 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <span style={{ color: red, fontSize: 10 }}>●</span>
-                  <span style={{ fontSize: 12, color: red, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Needs Work</span>
-                </div>
+              {/* Center line */}
+              <line x1={100} y1={cy} x2={800} y2={cy} stroke="#2a2b32" strokeWidth={1} />
 
-                {activeNeg.length === 0 && (
-                  <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic', padding: '20px 0' }}>No significant problem patterns detected in this window.</div>
-                )}
+              {/* RED BARS — extend left from center */}
+              {activeNeg.map((p, i) => {
+                const barY = negStartY + i * negSpacing;
+                const barW = Math.max((p.trades.length / wTotal) * 300, 30);
+                const opacity = 0.3 + (p.trades.length / maxCount) * 0.5;
+                const barX = cx - 10 - barW;
+                return (
+                  <g key={p.key}>
+                    {/* Connecting line */}
+                    <line x1={cx - 10} y1={barY + 14} x2={cx} y2={cy} stroke={red} strokeWidth={0.5} opacity={0.3} />
+                    {/* Bar */}
+                    <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={red} opacity={opacity} />
+                    {/* Pattern label */}
+                    <text x={barX - 8} y={barY + 12} fill={red} fontSize={12} fontFamily={fd} fontWeight={700} textAnchor="end">{p.name}</text>
+                    <text x={barX - 8} y={barY + 24} fill="#999" fontSize={10} fontFamily={fm} textAnchor="end">{p.trades.length} trades</text>
+                    {/* Short insight below bar */}
+                    <text x={barX} y={barY + 46} fill="#999" fontSize={10} fontFamily={fm}>{negShort(p)}</text>
+                  </g>
+                );
+              })}
 
-                {activeNeg.map(p => {
-                  const pct = wTotal > 0 ? Math.min((p.trades.length / wTotal) * 100, 100) : 0;
+              {/* GREEN BARS — extend right from center */}
+              {activePos.map((p, i) => {
+                const barY = posStartY + i * posSpacing;
+                const barW = Math.max((p.trades.length / wTotal) * 300, 30);
+                const opacity = 0.3 + (p.trades.length / maxCount) * 0.5;
+                const barX = cx + 10;
+                return (
+                  <g key={p.key}>
+                    {/* Connecting line */}
+                    <line x1={cx + 10} y1={barY + 14} x2={cx} y2={cy} stroke={teal} strokeWidth={0.5} opacity={0.3} />
+                    {/* Bar */}
+                    <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={teal} opacity={opacity} />
+                    {/* Pattern label */}
+                    <text x={barX + barW + 8} y={barY + 12} fill={teal} fontSize={12} fontFamily={fd} fontWeight={700} textAnchor="start">{p.name}</text>
+                    <text x={barX + barW + 8} y={barY + 24} fill="#999" fontSize={10} fontFamily={fm} textAnchor="start">{p.trades.length} trades</text>
+                    {/* Short insight below bar */}
+                    <text x={barX + barW + 8} y={barY + 38} fill="#999" fontSize={10} fontFamily={fm}>{posShort(p)}</text>
+                  </g>
+                );
+              })}
+
+              {/* Empty state text */}
+              {activeNeg.length === 0 && (
+                <text x={cx - 120} y={cy - 10} fill="#666" fontSize={11} fontFamily={fm} textAnchor="middle" fontStyle="italic">No friction detected</text>
+              )}
+              {activePos.length === 0 && (
+                <text x={cx + 120} y={cy - 10} fill="#666" fontSize={11} fontFamily={fm} textAnchor="middle" fontStyle="italic">Keep journaling for patterns</text>
+              )}
+
+              {/* Balance circle */}
+              <circle cx={cx} cy={cy} r={24} fill={balanceFill} stroke={balanceColor} strokeWidth={2} />
+              <text x={cx} y={cy + 5} fill="#fff" fontSize={14} fontFamily={fd} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{psyScore}</text>
+              <text x={cx} y={cy + 42} fill="#999" fontSize={10} fontFamily={fm} textAnchor="middle">Psychology score</text>
+            </svg>
+
+            {/* Goals connection */}
+            {goals.length > 0 ? (
+              <div style={{ marginTop: 20, padding: '16px 20px', background: '#1a1c23', borderRadius: 8, border: '1px solid #1e1f2a' }}>
+                <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 12 }}>How these patterns relate to your goals</div>
+                {goals.map((g, i) => {
+                  const status = getGoalStatus(g.title);
+                  const statusConfig = status === 'on-track'
+                    ? { label: 'On track', bg: 'rgba(0,212,160,0.15)', color: teal }
+                    : status === 'at-risk'
+                      ? { label: 'At risk', bg: 'rgba(255,68,68,0.15)', color: red }
+                      : { label: 'Monitoring', bg: 'rgba(255,255,255,0.05)', color: '#999' };
                   return (
-                    <div key={p.key} style={{ background: '#1a1c23', borderLeft: `3px solid ${red}`, borderRadius: 0, padding: '14px 16px', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{p.name}</span>
-                        <span style={{ background: 'rgba(255,68,68,0.15)', color: red, padding: '2px 10px', borderRadius: 4, fontSize: 11 }}>{p.trades.length} trades</span>
+                    <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < goals.length - 1 ? '1px solid #1e1f2a' : 'none' }}>
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ color: teal, fontSize: 12, fontFamily: fm }}>{i + 1}</span>
                       </div>
-                      <div style={{ marginTop: 8, height: 6, borderRadius: 3, background: '#2a2b32' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: red, opacity: pct > 30 ? undefined : 1, animation: pct > 30 ? 'wickDotPulse 2s ease-in-out infinite' : 'none' }} />
-                      </div>
-                      <div style={{ marginTop: 10, fontSize: 13, color: '#bbb', lineHeight: '1.5' }}>{negInsight(p)}</div>
+                      <span style={{ color: '#fff', fontSize: 13, flex: 1 }}>{g.title}</span>
+                      <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 4, background: statusConfig.bg, color: statusConfig.color }}>{statusConfig.label}</span>
                     </div>
                   );
                 })}
               </div>
-
-              {/* RIGHT: Making Progress */}
-              <div style={{ flex: 1, minWidth: 300 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <span style={{ color: teal, fontSize: 10 }}>●</span>
-                  <span style={{ fontSize: 12, color: teal, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700 }}>Making Progress</span>
-                </div>
-
-                {activePos.length === 0 && (
-                  <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic', padding: '20px 0' }}>Keep journaling with behavioral notes. WickCoach needs detailed entries to detect patterns.</div>
-                )}
-
-                {activePos.map(p => {
-                  const pct = wTotal > 0 ? Math.min((p.trades.length / wTotal) * 100, 100) : 0;
-                  return (
-                    <div key={p.key} style={{ background: '#1a1c23', borderLeft: `3px solid ${teal}`, borderRadius: 0, padding: '14px 16px', marginBottom: 12 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{p.name}</span>
-                        <span style={{ background: 'rgba(0,212,160,0.15)', color: teal, padding: '2px 10px', borderRadius: 4, fontSize: 11 }}>{p.trades.length} trades</span>
-                      </div>
-                      <div style={{ marginTop: 8, height: 6, borderRadius: 3, background: '#2a2b32' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: teal }} />
-                      </div>
-                      <div style={{ marginTop: 10, fontSize: 13, color: '#bbb', lineHeight: '1.5' }}>{posInsight(p)}</div>
-                    </div>
-                  );
-                })}
+            ) : (
+              <div style={{ marginTop: 20, padding: '16px 20px', background: '#1a1c23', borderRadius: 8, border: '1px solid #1e1f2a' }}>
+                <div style={{ fontSize: 13, color: '#999', fontStyle: 'italic' }}>Set weekly goals in the Trading Goals tab to see how your patterns relate to your targets.</div>
               </div>
-            </div>
+            )}
           </div>
         );
       })()}
