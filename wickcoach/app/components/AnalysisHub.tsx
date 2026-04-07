@@ -409,7 +409,7 @@ export default function AnalysisContent() {
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {/* Card 1: Total Trades */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '20px 24px' }}>
-          <div style={{ fontSize: 11, color: '#aaa', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
+          <div style={{ fontSize: 12, color: '#aaa', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{analysis.total}</div>
           <div style={{ fontSize: 14, color: '#bbb', marginTop: 6 }}>Win Rate: {fmtPct(analysis.totalWinRate)}</div>
           {/* Win/Loss/BE bar */}
@@ -422,7 +422,7 @@ export default function AnalysisContent() {
 
         {/* Card 2: Process */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
-          <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Process</div>
+          <div style={{ fontSize: 12, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Process</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{analysis.ruleAbiding.length}</div>
           <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(analysis.abidingWinRate)}</div>
           <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(analysis.abidingR)} total</div>
@@ -430,7 +430,7 @@ export default function AnalysisContent() {
 
         {/* Card 3: Impulse */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
-          <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Impulse</div>
+          <div style={{ fontSize: 12, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Impulse</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{analysis.ruleBreaking.length}</div>
           <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(analysis.breakingWinRate)}</div>
           <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(analysis.breakingR)} total</div>
@@ -438,7 +438,7 @@ export default function AnalysisContent() {
 
         {/* Card 4: What If? */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
-          <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
+          <div style={{ fontSize: 12, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
           <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took process trades</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 12, color: '#bbb' }}>Actual P/L</span>
@@ -633,7 +633,7 @@ export default function AnalysisContent() {
                   </span>
                   <span style={{ fontSize: 12, color: '#999' }}>{d.count} trade{d.count !== 1 ? 's' : ''}</span>
                   {d.count > 0 && (
-                    <span style={{ fontSize: 11, color: heatmapMode === 'worst' ? red : '#999' }}>
+                    <span style={{ fontSize: 12, color: heatmapMode === 'worst' ? red : '#999' }}>
                       {d.wins}W / {d.losses}L
                     </span>
                   )}
@@ -646,9 +646,9 @@ export default function AnalysisContent() {
         {/* Session labels — only in timeline mode */}
         {heatmapMode === 'timeline' && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, padding: '0 4px' }}>
-            <span style={{ color: teal, fontSize: 10, letterSpacing: '1px' }}>OPEN</span>
-            <span style={{ color: '#999', fontSize: 10, letterSpacing: '1px' }}>MIDDAY</span>
-            <span style={{ color: '#ffb400', fontSize: 10, letterSpacing: '1px' }}>CLOSE</span>
+            <span style={{ color: teal, fontSize: 12, letterSpacing: '1px' }}>OPEN</span>
+            <span style={{ color: '#999', fontSize: 12, letterSpacing: '1px' }}>MIDDAY</span>
+            <span style={{ color: '#ffb400', fontSize: 12, letterSpacing: '1px' }}>CLOSE</span>
           </div>
         )}
 
@@ -775,7 +775,7 @@ export default function AnalysisContent() {
               <div style={{ display: 'flex', background: '#1a1c23', borderRadius: 8, padding: 3, gap: 2 }}>
                 {windowOptions.map(w => (
                   <button key={w} onClick={() => setObsWindow(w)} style={{
-                    padding: '4px 10px', borderRadius: 6, fontSize: 11, fontFamily: fm, cursor: 'pointer', border: 'none', minWidth: 32, textAlign: 'center',
+                    padding: '4px 10px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none', minWidth: 32, textAlign: 'center',
                     background: obsWindow === w ? '#2a2b32' : 'transparent',
                     color: obsWindow === w ? '#fff' : '#999',
                     fontWeight: obsWindow === w ? 'bold' : 'normal',
@@ -787,8 +787,8 @@ export default function AnalysisContent() {
             {/* SVG Tension Diagram */}
             <svg width="100%" height="420" viewBox="0 0 900 420" style={{ marginTop: 24 }}>
               {/* Side labels */}
-              <text x={100} y={30} fill={red} fontSize={11} fontFamily={fm} letterSpacing={2}>FRICTION</text>
-              <text x={700} y={30} fill={teal} fontSize={11} fontFamily={fm} letterSpacing={2}>MOMENTUM</text>
+              <text x={100} y={30} fill={red} fontSize={12} fontFamily={fm} letterSpacing={2}>FRICTION</text>
+              <text x={700} y={30} fill={teal} fontSize={12} fontFamily={fm} letterSpacing={2}>MOMENTUM</text>
 
               {/* Center line */}
               <line x1={100} y1={cy} x2={800} y2={cy} stroke="#2a2b32" strokeWidth={1} />
@@ -807,8 +807,8 @@ export default function AnalysisContent() {
                     <line x1={cx - 10} y1={barY + 14} x2={cx} y2={cy} stroke={red} strokeWidth={0.5} opacity={0.3} />
                     <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={red} opacity={isSelected ? 1 : baseOpacity} stroke={isSelected ? red : 'none'} strokeWidth={isSelected ? 2 : 0} />
                     <text x={barX - 8} y={barY + 12} fill={red} fontSize={12} fontFamily={fd} fontWeight={700} textAnchor="end">{p.name}</text>
-                    <text x={barX - 8} y={barY + 24} fill="#999" fontSize={10} fontFamily={fm} textAnchor="end">{p.trades.length} trades</text>
-                    <text x={barX} y={barY + 46} fill="#999" fontSize={10} fontFamily={fm}>{negShort(p)}</text>
+                    <text x={barX - 8} y={barY + 24} fill="#999" fontSize={12} fontFamily={fm} textAnchor="end">{p.trades.length} trades</text>
+                    <text x={barX} y={barY + 46} fill="#bbb" fontSize={12} fontFamily={fm}>{negShort(p)}</text>
                   </g>
                 );
               })}
@@ -827,24 +827,24 @@ export default function AnalysisContent() {
                     <line x1={cx + 10} y1={barY + 14} x2={cx} y2={cy} stroke={teal} strokeWidth={0.5} opacity={0.3} />
                     <rect x={barX} y={barY} width={barW} height={28} rx={4} fill={teal} opacity={isSelected ? 1 : baseOpacity} stroke={isSelected ? teal : 'none'} strokeWidth={isSelected ? 2 : 0} />
                     <text x={barX + barW + 8} y={barY + 12} fill={teal} fontSize={12} fontFamily={fd} fontWeight={700} textAnchor="start">{p.name}</text>
-                    <text x={barX + barW + 8} y={barY + 24} fill="#999" fontSize={10} fontFamily={fm} textAnchor="start">{p.trades.length} trades</text>
-                    <text x={barX + barW + 8} y={barY + 38} fill="#999" fontSize={10} fontFamily={fm}>{posShort(p)}</text>
+                    <text x={barX + barW + 8} y={barY + 24} fill="#999" fontSize={12} fontFamily={fm} textAnchor="start">{p.trades.length} trades</text>
+                    <text x={barX + barW + 8} y={barY + 38} fill="#bbb" fontSize={12} fontFamily={fm}>{posShort(p)}</text>
                   </g>
                 );
               })}
 
               {/* Empty state text */}
               {activeNeg.length === 0 && (
-                <text x={cx - 120} y={cy - 10} fill="#666" fontSize={11} fontFamily={fm} textAnchor="middle" fontStyle="italic">No friction detected</text>
+                <text x={cx - 120} y={cy - 10} fill="#999" fontSize={12} fontFamily={fm} textAnchor="middle" fontStyle="italic">No friction detected</text>
               )}
               {activePos.length === 0 && (
-                <text x={cx + 120} y={cy - 10} fill="#666" fontSize={11} fontFamily={fm} textAnchor="middle" fontStyle="italic">Keep journaling for patterns</text>
+                <text x={cx + 120} y={cy - 10} fill="#999" fontSize={12} fontFamily={fm} textAnchor="middle" fontStyle="italic">Keep journaling for patterns</text>
               )}
 
               {/* Balance circle */}
               <circle cx={cx} cy={cy} r={24} fill={balanceFill} stroke={balanceColor} strokeWidth={2} />
               <text x={cx} y={cy + 5} fill="#fff" fontSize={14} fontFamily={fd} fontWeight={700} textAnchor="middle" dominantBaseline="middle">{psyScore}</text>
-              <text x={cx} y={cy + 42} fill="#999" fontSize={10} fontFamily={fm} textAnchor="middle">Psychology score</text>
+              <text x={cx} y={cy + 42} fill="#999" fontSize={12} fontFamily={fm} textAnchor="middle">Psychology score</text>
             </svg>
 
             {/* Evidence panel — shown when a pattern bar is clicked */}
@@ -921,7 +921,7 @@ export default function AnalysisContent() {
                   }}>
                     {/* Left: Cited trades */}
                     <div style={{ flex: '0 0 50%' }}>
-                      <div style={{ color: '#999', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Trades cited</div>
+                      <div style={{ color: '#999', fontSize: 12, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Trades cited</div>
                       {shown.map(t => {
                         const eFail = evidenceLogoFails[t.ticker] || 0;
                         return (
@@ -938,23 +938,23 @@ export default function AnalysisContent() {
                               )}
                               {(eFail >= 2 || (eFail === 1 && !TICKER_DOMAINS[t.ticker])) && (
                                 <div style={{ width: 22, height: 22, borderRadius: 4, background: 'rgba(0,212,160,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <span style={{ fontFamily: fd, fontSize: 11, fontWeight: 700, color: teal }}>{t.ticker.charAt(0)}</span>
+                                  <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, color: teal }}>{t.ticker.charAt(0)}</span>
                                 </div>
                               )}
                             </div>
                             <span style={{ color: '#fff', fontFamily: fd, fontSize: 13, fontWeight: 700 }}>{t.ticker}</span>
-                            <span style={{ color: '#999', fontSize: 11 }}>{t.date}</span>
-                            <span style={{ color: '#999', fontSize: 11 }}>{t.strategy}</span>
+                            <span style={{ color: '#999', fontSize: 12 }}>{t.date}</span>
+                            <span style={{ color: '#999', fontSize: 12 }}>{t.strategy}</span>
                             <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>{fmtDollar(t.pl)}</span>
                           </div>
                         );
                       })}
-                      <div style={{ color: '#999', fontSize: 11, marginTop: 8 }}>{shown.length} of {totalMatched} matching trades</div>
+                      <div style={{ color: '#999', fontSize: 12, marginTop: 8 }}>{shown.length} of {totalMatched} matching trades</div>
                     </div>
 
                     {/* Right: Pattern analysis */}
                     <div style={{ flex: 1 }}>
-                      <div style={{ color: '#999', fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Pattern analysis</div>
+                      <div style={{ color: '#999', fontSize: 12, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 12 }}>Pattern analysis</div>
                       <div style={{ color: '#ccc', fontSize: 13, lineHeight: '1.8', fontFamily: fm }}>
                         {analysisMap[selectedPattern.key] || <>Analysis for {selectedPattern.name}: {hl(String(totalMatched))} trades detected with a {hl(fmtPct(mWinRate))} win rate and {hl(fmtR(mAvgR))} average R.</>}
                       </div>
@@ -984,10 +984,10 @@ export default function AnalysisContent() {
                 return (
                   <div key={g.id || i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: i < goals.length - 1 ? '1px solid #1e1f2a' : 'none' }}>
                     <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <span style={{ color: teal, fontSize: 11, fontWeight: 'bold', fontFamily: fm }}>{i + 1}</span>
+                      <span style={{ color: teal, fontSize: 12, fontWeight: 'bold', fontFamily: fm }}>{i + 1}</span>
                     </div>
                     <span style={{ color: '#fff', fontSize: 13, flex: 1 }}>{g.title}</span>
-                    <span style={{ fontSize: 11, fontWeight: 'bold', padding: '3px 12px', borderRadius: 4, background: badge.bg, color: badge.color }}>{badge.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 'bold', padding: '3px 12px', borderRadius: 4, background: badge.bg, color: badge.color }}>{badge.label}</span>
                   </div>
                 );
               }) : (
@@ -1005,7 +1005,7 @@ export default function AnalysisContent() {
         <div style={{ flex: '1.2 1 340px', background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '28px 32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
             <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Psych profile</span>
-            <span style={{ fontSize: 11, color: '#999' }}>Based on journal text + trade data</span>
+            <span style={{ fontSize: 12, color: '#999' }}>Based on journal text + trade data</span>
           </div>
 
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
@@ -1109,7 +1109,7 @@ export default function AnalysisContent() {
                         {/* Positive examples */}
                         {examples.positive.map((t: Trade) => (
                           <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 8 }}>
-                            <span style={{ color: teal, fontSize: 10, flexShrink: 0 }}>●</span>
+                            <span style={{ color: teal, fontSize: 12, flexShrink: 0 }}>●</span>
                             <span style={{ fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>{t.ticker}</span>
                             <span style={{ color: '#999', fontSize: 12, flexShrink: 0 }}>{t.date}</span>
                             <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fmtDollar(t.pl)}</span>
@@ -1121,7 +1121,7 @@ export default function AnalysisContent() {
                         {/* Negative examples */}
                         {examples.negative.map((t: Trade) => (
                           <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#1a1c23', borderRadius: 6, marginBottom: 8 }}>
-                            <span style={{ color: red, fontSize: 10, flexShrink: 0 }}>●</span>
+                            <span style={{ color: red, fontSize: 12, flexShrink: 0 }}>●</span>
                             <span style={{ fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>{t.ticker}</span>
                             <span style={{ color: '#999', fontSize: 12, flexShrink: 0 }}>{t.date}</span>
                             <span style={{ color: t.pl >= 0 ? teal : red, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{fmtDollar(t.pl)}</span>
@@ -1131,7 +1131,7 @@ export default function AnalysisContent() {
                           </div>
                         ))}
                         {examples.positive.length === 0 && examples.negative.length === 0 && (
-                          <div style={{ fontSize: 12, color: '#666', padding: '8px 0' }}>No matching trade examples found</div>
+                          <div style={{ fontSize: 12, color: '#999', padding: '8px 0' }}>No matching trade examples found</div>
                         )}
                         {/* Insight line */}
                         <div style={{
@@ -1177,7 +1177,7 @@ export default function AnalysisContent() {
             {chatMessages.map((msg, i) => (
               <div key={i} style={{ alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: msg.role === 'user' ? '80%' : '90%' }}>
                 {msg.role === 'assistant' && (
-                  <div style={{ color: teal, fontSize: 11, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
+                  <div style={{ color: teal, fontSize: 12, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
                 )}
                 <div style={{
                   background: msg.role === 'assistant' ? 'rgba(0,212,160,0.08)' : '#1a1c23',
@@ -1220,7 +1220,7 @@ export default function AnalysisContent() {
             ))}
             {chatLoading && (
               <div style={{ alignSelf: 'flex-start' }}>
-                <div style={{ color: teal, fontSize: 11, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
+                <div style={{ color: teal, fontSize: 12, marginBottom: 4, fontFamily: fm }}>WickCoach</div>
                 <div style={{
                   background: 'rgba(0,212,160,0.08)', border: '1px solid rgba(0,212,160,0.18)',
                   borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 4,
