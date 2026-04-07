@@ -673,10 +673,9 @@ export default function AnalysisContent() {
         const windowLabels: Record<number, string> = { 5: '5', 10: '10', 15: '15', 30: '30', 50: '50', 100: '100', 0: 'All' };
         const sortedByDate = [...trades].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         const windowTrades = obsWindow > 0 ? sortedByDate.slice(0, obsWindow) : sortedByDate;
-        const wTotal = windowTrades.length;
 
         const processTrades = windowTrades.filter(t => !isRuleBreaking(t.journal));
-        const processWinRate = processTrades.length > 0 ? (processTrades.filter(t => t.result === 'WIN').length / processTrades.length) * 100 : 0;
+        const processWinRate = processTrades.length > 0 ? (processTrades.filter(t => t.result.toUpperCase() === 'WIN').length / processTrades.length) * 100 : 0;
         const processAvgR = processTrades.length > 0 ? processTrades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / processTrades.length : 0;
 
         const negPatterns: Array<{ name: string; key: string; keywords: string[]; trades: Trade[] }> = [
@@ -700,17 +699,23 @@ export default function AnalysisContent() {
         posPatterns.forEach(p => { p.trades = windowTrades.filter(t => { const l = t.journal.toLowerCase(); return p.keywords.some(kw => l.includes(kw)); }); });
         const activePos = posPatterns.filter(p => p.trades.length >= 3).sort((a, b) => b.trades.length - a.trades.length).slice(0, 4);
 
-        const maxCount = Math.max(...[...activeNeg, ...activePos].map(p => p.trades.length), 1);
+        const maxNegCount = Math.max(...activeNeg.map(p => p.trades.length), 1);
+        const maxPosCount = Math.max(...activePos.map(p => p.trades.length), 1);
         const greenTotal = activePos.reduce((s, p) => s + p.trades.length, 0);
         const redTotal = activeNeg.reduce((s, p) => s + p.trades.length, 0);
         const psyScore = (greenTotal + redTotal) > 0 ? Math.round((greenTotal / (greenTotal + redTotal)) * 100) : 50;
         const balanceColor = psyScore >= 55 ? teal : psyScore <= 45 ? red : '#ffb400';
         const balanceFill = psyScore >= 55 ? 'rgba(0,212,160,0.3)' : psyScore <= 45 ? 'rgba(255,68,68,0.3)' : 'rgba(255,180,0,0.3)';
 
+        // Helper: case-insensitive win check
+        const isWin = (t: Trade) => t.result.toUpperCase() === 'WIN';
+        // Helper: cost dollar (always positive, no sign prefix)
+        const fmtCost = (n: number) => '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
         // Short insight generators
         const negShort = (p: { key: string; trades: Trade[] }) => {
           const count = p.trades.length;
-          const wins = p.trades.filter(t => t.result === 'WIN').length;
+          const wins = p.trades.filter(isWin).length;
           const winRate = count > 0 ? Math.round((wins / count) * 100) : 0;
           const totalPL = p.trades.reduce((s, t) => s + t.pl, 0);
           const losers = p.trades.filter(t => t.pl < 0);
@@ -721,17 +726,17 @@ export default function AnalysisContent() {
           const ratio = cleanAvgLoss > 0 ? (avgLoss / cleanAvgLoss).toFixed(1) : '?';
           switch (p.key) {
             case 'fomo': return `Win rate drops to ${winRate}% when chasing`;
-            case 'revenge': return `Cost you ${fmtDollar(totalPL)} this window`;
+            case 'revenge': return totalPL <= 0 ? `Cost you ${fmtCost(totalPL)} this window` : `Made ${fmtCost(totalPL)} — but process was broken`;
             case 'stubborn': return `Avg loss ${ratio}x worse than clean exits`;
             case 'impulse': return `${winRate}% win rate vs ${Math.round(processWinRate)}% patient`;
-            case 'oversize': return `Avg loss $${avgLoss.toFixed(0)} when oversized`;
+            case 'oversize': return `Avg loss ${fmtCost(avgLoss)} when oversized`;
             case 'ignoring': return `${fmtR(avgR)} vs ${fmtR(processAvgR)} expectancy gap`;
             default: return '';
           }
         };
         const posShort = (p: { key: string; trades: Trade[] }) => {
           const count = p.trades.length;
-          const wins = p.trades.filter(t => t.result === 'WIN').length;
+          const wins = p.trades.filter(isWin).length;
           const winRate = count > 0 ? Math.round((wins / count) * 100) : 0;
           const avgR = count > 0 ? p.trades.reduce((s, t) => s + (t.riskAmount ? t.pl / t.riskAmount : 0), 0) / count : 0;
           const losers = p.trades.filter(t => t.pl < 0);
@@ -739,7 +744,7 @@ export default function AnalysisContent() {
           switch (p.key) {
             case 'patience': return `${winRate}% win rate when you wait`;
             case 'clean': return `Avg ${fmtR(avgR)} per textbook trade`;
-            case 'stops': return `Clean losses avg $${avgLoss.toFixed(0)}`;
+            case 'stops': return `Clean losses avg ${fmtCost(avgLoss)}`;
             case 'trust': return `${count} entries, resilience building`;
             case 'awareness': return `Self-aware on ${count} trades`;
             default: return '';
@@ -800,8 +805,8 @@ export default function AnalysisContent() {
               {/* RED BARS — extend left from center */}
               {activeNeg.map((p, i) => {
                 const barY = negStartY + i * negSpacing;
-                const barW = Math.max((p.trades.length / wTotal) * 300, 30);
-                const opacity = 0.3 + (p.trades.length / maxCount) * 0.5;
+                const barW = Math.max((p.trades.length / maxNegCount) * 240, 30);
+                const opacity = 0.3 + (p.trades.length / maxNegCount) * 0.5;
                 const barX = cx - 10 - barW;
                 return (
                   <g key={p.key}>
@@ -821,8 +826,8 @@ export default function AnalysisContent() {
               {/* GREEN BARS — extend right from center */}
               {activePos.map((p, i) => {
                 const barY = posStartY + i * posSpacing;
-                const barW = Math.max((p.trades.length / wTotal) * 300, 30);
-                const opacity = 0.3 + (p.trades.length / maxCount) * 0.5;
+                const barW = Math.max((p.trades.length / maxPosCount) * 240, 30);
+                const opacity = 0.3 + (p.trades.length / maxPosCount) * 0.5;
                 const barX = cx + 10;
                 return (
                   <g key={p.key}>
