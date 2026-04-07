@@ -98,11 +98,14 @@ export default function AnalysisContent() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [expandedAxis, setExpandedAxis] = useState<string | null>(null);
   const [hoveredAxis, setHoveredAxis] = useState<string | null>(null);
-  const [heatmapMode, setHeatmapMode] = useState<'best' | 'worst'>('best');
+  const [heatmapMode, setHeatmapMode] = useState<'timeline' | 'best' | 'worst'>('timeline');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [chatInitialized, setChatInitialized] = useState(false);
+  const [showAllStrategies, setShowAllStrategies] = useState(false);
+  const [showAllTickers, setShowAllTickers] = useState(false);
+  const [logoFails, setLogoFails] = useState<Record<string, number>>({});
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -289,7 +292,7 @@ export default function AnalysisContent() {
 
     const psychInsights = {
       patience: `You waited for confirmation on ${fmtPct((patientTrades.length / trades.length) * 100)} of your trades. When you wait, your win rate is ${fmtPct(patientWinRate)} vs ${fmtPct(impatientWinRate)} when you don't.`,
-      discipline: `${fmtPct(disciplineScore)} of your trades followed your rules. Rule-following trades have a ${fmtR(abidingAvgR)} expectancy vs ${fmtR(breakingAvgR)} for rule-breaking.`,
+      discipline: `${fmtPct(disciplineScore)} of your trades followed your rules. Process trades have a ${fmtR(abidingAvgR)} expectancy vs ${fmtR(breakingAvgR)} for impulse trades.`,
       execution: `${cleanEntryTrades.length} trades had clean, pre-planned entries. These averaged ${fmtR(cleanAvgR)} vs ${fmtR(sloppyAvgR)} for reactive entries.`,
       conviction: `You exited ${fearExitTrades.length} trades at breakeven citing fear or anxiety. Your average R on held trades is significantly higher.`,
       riskMgmt: `You honored your stops on ${fmtPct(stopsHonoredPct)} of losing trades. Clean losses averaged ${fmtR(goodRiskAvgR)} vs ${fmtR(badRiskAvgR)} for undisciplined exits.`,
@@ -382,7 +385,7 @@ export default function AnalysisContent() {
   if (!analysis) {
     return (
       <div style={{ background: '#1a1c23', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: fm }}>
-        <p style={{ color: '#bbb', fontFamily: fd, fontSize: 20 }}>Log trades to unlock your Analysis Hub</p>
+        <p style={{ color: '#bbb', fontFamily: fd, fontSize: 20 }}>Log trades to unlock Analysis</p>
         <p style={{ color: '#999', fontSize: 14, marginTop: 8 }}>Your behavioral patterns will appear here after you&apos;ve logged enough trades.</p>
       </div>
     );
