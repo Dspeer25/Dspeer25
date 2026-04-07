@@ -582,7 +582,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
           <Logo size={16} />
           <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
         </div>
-        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120 }}>
+        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120, backgroundImage: 'radial-gradient(rgba(0,212,160,0.18) 1px, transparent 1px)', backgroundSize: '4px 4px' }}>
           <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 13, lineHeight: '1.7', fontStyle: 'italic' }}>
             {renderedBullets.map((line, idx) => (
               <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
