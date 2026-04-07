@@ -199,7 +199,7 @@ export default function AnalysisContent() {
       }))
       .sort((a, b) => b.totalPL - a.totalPL);
 
-    // Top wins (rule-abiding) and worst losses (rule-breaking)
+    // Top wins (process) and worst losses (impulse)
     const topWins = [...ruleAbiding].filter(t => t.result === 'WIN').sort((a, b) => b.pl - a.pl).slice(0, 3);
     const worstLosses = [...ruleBreaking].filter(t => t.result === 'LOSS').sort((a, b) => a.pl - b.pl).slice(0, 3);
 
@@ -417,26 +417,26 @@ export default function AnalysisContent() {
           </div>
         </div>
 
-        {/* Card 2: Rule-Abiding */}
+        {/* Card 2: Process */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
-          <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Rule-Abiding</div>
+          <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Process</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{analysis.ruleAbiding.length}</div>
           <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(analysis.abidingWinRate)}</div>
           <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(analysis.abidingR)} total</div>
         </div>
 
-        {/* Card 3: Rule-Breaking */}
+        {/* Card 3: Impulse */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid #1e1f2a', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
-          <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Rule-Breaking</div>
+          <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Impulse</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{analysis.ruleBreaking.length}</div>
           <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(analysis.breakingWinRate)}</div>
           <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(analysis.breakingR)} total</div>
         </div>
 
-        {/* Card 4: Discipline Dividend */}
+        {/* Card 4: What If? */}
         <div style={{ flex: 1, minWidth: 200, background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
           <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
-          <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took disciplined trades</div>
+          <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took process trades</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 12, color: '#bbb' }}>Actual P/L</span>
             <span style={{ fontSize: 14, color: '#fff' }}>{fmtDollar(analysis.totalPL)}</span>
@@ -445,7 +445,7 @@ export default function AnalysisContent() {
           <div style={{ fontSize: 12, color: analysis.disciplineDividend > 0 ? red : '#bbb', marginTop: 4 }}>
             {analysis.disciplineDividend > 0
               ? `Indiscipline cost you $${Math.abs(analysis.disciplineDividend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-              : `Rule-breaking trades added $${Math.abs(analysis.disciplineDividend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              : `Impulse trades added $${Math.abs(analysis.disciplineDividend).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </div>
         </div>
       </div>
@@ -530,7 +530,7 @@ export default function AnalysisContent() {
             <>
               Biggest bleed: <span style={{ color: red }}>{hourLabels[analysis.worstHour]} ({fmtDollar(analysis.hourData[analysis.worstHour].pl)})</span>
               {' · '}
-              <span style={{ color: red }}>{analysis.hourData[analysis.worstHour].ruleBreaking} of {analysis.hourData[analysis.worstHour].count}</span> trades were rule-breaking
+              <span style={{ color: red }}>{analysis.hourData[analysis.worstHour].ruleBreaking} of {analysis.hourData[analysis.worstHour].count}</span> trades were impulse
             </>
           )}
         </div>
