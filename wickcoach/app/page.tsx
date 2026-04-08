@@ -2415,7 +2415,7 @@ export default function WickCoachFull() {
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', minHeight: '100vh', position: 'relative', overflow: 'hidden', background: '#131318', display: 'flex', alignItems: 'center' }}>
+      <section style={{ width: '100%', minHeight: '100vh', position: 'relative', overflow: 'hidden', background: '#131318', display: 'flex', alignItems: 'flex-start', paddingTop: '12%' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             @keyframes hc1 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.12); } }
@@ -2470,15 +2470,15 @@ export default function WickCoachFull() {
         </div>
 
         {/* Text content — left side */}
-        <div style={{ position: 'relative', zIndex: 2, paddingLeft: 80, maxWidth: 580 }}>
+        <div style={{ position: 'relative', zIndex: 2, paddingLeft: 80, maxWidth: 620 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
             <div style={{ width: 40, height: 2, background: teal }} />
-            <span style={{ color: teal, fontSize: 13, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
+            <span style={{ color: teal, fontSize: 14, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
           </div>
-          <h1 style={{ fontFamily: fd, fontSize: 60, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 32px 0' }}>
+          <h1 style={{ fontFamily: fd, fontSize: 74, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 32px 0' }}>
             The Trading Journal That Fixes Your Psychology.
           </h1>
-          <p style={{ color: '#999', fontSize: 15, lineHeight: 1.7, fontFamily: fm, maxWidth: 480, marginBottom: 44 }}>
+          <p style={{ color: '#999', fontSize: 16, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 44 }}>
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
@@ -2497,42 +2497,42 @@ export default function WickCoachFull() {
         </div>
 
         {/* Annotation 1: IMPULSE DRAWDOWN — upper right */}
-        <div style={{ position: 'absolute', top: '20%', right: '28%', width: 10, height: 10, borderRadius: '50%', background: '#ff4444', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }} />
-        <svg style={{ position: 'absolute', top: '20%', right: '3%', width: '25%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-        <div style={{ position: 'absolute', top: '18%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
+        <div style={{ position: 'absolute', top: '26%', right: '25%', width: 10, height: 10, borderRadius: '50%', background: '#ff4444', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }} />
+        <svg style={{ position: 'absolute', top: '26%', right: '7%', width: '18%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '24%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
           <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
           <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
         </div>
 
         {/* Annotation 2: PATTERN EXTRACTION — middle right */}
-        <div style={{ position: 'absolute', top: '42%', right: '20%', width: 10, height: 10, borderRadius: '50%', background: '#fff', zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }} />
-        <svg style={{ position: 'absolute', top: '42%', right: '1%', width: '19%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.25)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-        <div style={{ position: 'absolute', top: '40%', right: '1%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
+        <div style={{ position: 'absolute', top: '44%', right: '16%', width: 10, height: 10, borderRadius: '50%', background: '#fff', zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }} />
+        <svg style={{ position: 'absolute', top: '44%', right: '3%', width: '13%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.25)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '42%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
           <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>PATTERN EXTRACTION</div>
           <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
         </div>
 
         {/* Annotation 3: MOMENTUM IGNITION — lower right */}
-        <div style={{ position: 'absolute', top: '60%', right: '24%', width: 10, height: 10, borderRadius: '50%', background: teal, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }} />
-        <svg style={{ position: 'absolute', top: '60%', right: '1%', width: '23%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-        <div style={{ position: 'absolute', top: '58%', right: '1%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
+        <div style={{ position: 'absolute', top: '62%', right: '18%', width: 10, height: 10, borderRadius: '50%', background: teal, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }} />
+        <svg style={{ position: 'absolute', top: '62%', right: '3%', width: '15%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '60%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
           <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
           <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
         </div>
 
         {/* Stat cards — bottom right */}
-        <div style={{ position: 'absolute', bottom: 50, right: 60, display: 'flex', gap: 3, zIndex: 2 }}>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
-            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: teal }}>+42%</div>
-            <div style={{ color: '#999', fontSize: 9, letterSpacing: '1.5px', marginTop: 6 }}>AVG. EXPECTANCY INCREASE</div>
+        <div style={{ position: 'absolute', bottom: 50, right: 40, display: 'flex', gap: 3, zIndex: 2 }}>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '20px 28px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
+            <div style={{ fontFamily: fd, fontSize: 30, fontWeight: 'bold', color: teal }}>+42%</div>
+            <div style={{ color: '#999', fontSize: 10, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>AVG. EXPECTANCY INCREASE</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center' }}>
-            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
-            <div style={{ color: '#999', fontSize: 9, letterSpacing: '1.5px', marginTop: 6 }}>EXECUTIONS ANALYZED</div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '20px 28px', textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 30, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
+            <div style={{ color: '#999', fontSize: 10, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>EXECUTIONS ANALYZED</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
-            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
-            <div style={{ color: '#ff4444', fontSize: 9, letterSpacing: '1.5px', marginTop: 6 }}>REDUCTION IN REVENGE TRADES</div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '20px 28px', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
+            <div style={{ fontFamily: fd, fontSize: 30, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
+            <div style={{ color: '#ff4444', fontSize: 10, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>REDUCTION IN REVENGE TRADES</div>
           </div>
         </div>
 
