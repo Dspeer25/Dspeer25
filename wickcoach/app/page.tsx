@@ -2396,166 +2396,129 @@ export default function WickCoachFull() {
       {/* ═══ HOME VIEW ═══ */}
       {view === 'home' && (<>
 
-      {/* ═══ NAV ═══ */}
-      <nav style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 5%', background: 'transparent' }}>
+      {/* ═══ NAV (dark bar) ═══ */}
+      <nav style={{ width: '100%', background: '#0e0f14', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(14px, 1.2vw, 20px) 5%', zIndex: 20 }}>
         <div onClick={() => setView('home')} style={{ cursor: 'pointer' }}>
-          <Logo size={34} showText />
+          <Logo size={30} showText />
         </div>
         <div style={{ display: 'flex', gap: 'clamp(16px, 2.5vw, 40px)', alignItems: 'center' }}>
           {tabs.map(t => (
-            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 'clamp(11px, 0.9vw, 14px)', color: activeTab === t ? '#fff' : '#888', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, textTransform: 'uppercase', borderBottom: activeTab === t ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase()}</span>
+            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 'clamp(10px, 0.85vw, 13px)', color: '#999', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, textTransform: 'uppercase', borderBottom: activeTab === t ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase()}</span>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <span style={{ color: '#888', fontFamily: fm, fontSize: 'clamp(11px, 0.9vw, 14px)', cursor: 'pointer', letterSpacing: '1.5px', fontWeight: 600 }}>LOGIN</span>
-          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: 'clamp(8px, 0.7vw, 12px) clamp(16px, 1.5vw, 28px)', fontSize: 'clamp(11px, 0.9vw, 14px)', fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <span style={{ color: '#999', fontFamily: fm, fontSize: 'clamp(10px, 0.85vw, 13px)', cursor: 'pointer', letterSpacing: '1.5px', fontWeight: 600 }}>LOGIN</span>
+          <button onClick={() => setView('app')} style={{ background: '#fff', color: '#0e0f14', border: 'none', padding: 'clamp(8px, 0.6vw, 12px) clamp(16px, 1.2vw, 24px)', fontSize: 'clamp(10px, 0.85vw, 13px)', fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
         </div>
       </nav>
 
-      {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#131318' }}>
+      {/* ═══ HERO SECTION (white) ═══ */}
+      <section style={{ width: '100%', minHeight: 'calc(100vh - 60px)', position: 'relative', overflow: 'hidden', background: '#fff' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
-            @keyframes hc1 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.12); } }
-            @keyframes hc2 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.88); } }
-            @keyframes hc3 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.10); } }
-            @keyframes hc4 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.90); } }
-            @keyframes hc5 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
-            @keyframes hc6 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
-            @keyframes hAn1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-            @keyframes hAn2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
-            @keyframes hAn3 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes hc1 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
+            @keyframes hc2 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
+            @keyframes hc3 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.06); } }
+            @keyframes hAn1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes hAn2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
           }
         `}</style>
 
-        {/* Atmospheric glow behind chart */}
-        <div style={{ position: 'absolute', top: '0%', left: '20%', width: '70%', height: '90%', background: 'radial-gradient(ellipse at 50% 40%, rgba(0,212,160,0.15) 0%, rgba(0,212,160,0.06) 30%, transparent 60%)', pointerEvents: 'none' }} />
+        {/* Text content — left side */}
+        <div style={{ position: 'absolute', top: '8%', left: '5.5%', zIndex: 2, maxWidth: '40%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '2.5vh' }}>
+            <div style={{ width: 40, height: 2, background: teal }} />
+            <span style={{ color: teal, fontSize: 'clamp(11px, 0.9vw, 15px)', letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
+          </div>
+          <h1 style={{ fontFamily: fd, fontSize: 'clamp(44px, 4.8vw, 86px)', fontWeight: 'bold', lineHeight: 1.05, color: '#1a1a1a', margin: '0 0 2.5vh 0' }}>
+            The Trading Journal That Fixes Your Psychology.
+          </h1>
+          <p style={{ color: '#777', fontSize: 'clamp(13px, 1.05vw, 17px)', lineHeight: 1.7, fontFamily: fm, maxWidth: '90%', marginBottom: '3vh' }}>
+            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
+          </p>
+          <button
+            onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
+            style={{ background: teal, color: '#fff', border: 'none', padding: 'clamp(14px, 1.2vw, 18px) clamp(32px, 3vw, 52px)', fontSize: 'clamp(12px, 0.95vw, 15px)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 30, cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+          >START JOURNALING</button>
+        </div>
 
-        {/* Candlestick chart SVG */}
-        <div style={{ position: 'absolute', top: '8%', left: '35%', width: '55%', height: '85%', opacity: 0.9, pointerEvents: 'none' }}>
-          <svg width="100%" height="100%" viewBox="0 0 800 700" preserveAspectRatio="xMidYMid meet">
-            {/* Trend line */}
-            <line x1={80} y1={580} x2={720} y2={200} stroke={teal} strokeWidth={1} opacity={0.2} strokeDasharray="6 6" />
-            {/* Candlesticks */}
+        {/* Candlestick chart — center/right */}
+        <div style={{ position: 'absolute', top: '5%', left: '32%', width: '58%', height: '75%', pointerEvents: 'none' }}>
+          <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+            <line x1={60} y1={520} x2={740} y2={150} stroke="#e0e0e0" strokeWidth={1} strokeDasharray="6 6" />
             {[
-              { x: 100, body: 45, wu: 15, wd: 20, bull: true, base: 540, anim: 'hc1', dur: '4.5s', del: '0s' },
-              { x: 145, body: 35, wu: 10, wd: 25, bull: false, base: 530, anim: 'hc2', dur: '3.8s', del: '0.6s' },
-              { x: 190, body: 50, wu: 20, wd: 15, bull: true, base: 520, anim: 'hc3', dur: '5.2s', del: '1.3s' },
-              { x: 235, body: 30, wu: 15, wd: 20, bull: false, base: 510, anim: 'hc4', dur: '3.5s', del: '0.3s' },
-              { x: 280, body: 55, wu: 25, wd: 10, bull: true, base: 490, anim: 'hc5', dur: '6.0s', del: '1.8s' },
-              { x: 325, body: 40, wu: 10, wd: 30, bull: false, base: 480, anim: 'hc6', dur: '4.2s', del: '0.9s' },
-              { x: 370, body: 35, wu: 15, wd: 20, bull: false, base: 470, anim: 'hc2', dur: '3.6s', del: '2.1s' },
-              { x: 415, body: 70, wu: 30, wd: 10, bull: true, base: 440, anim: 'hc1', dur: '5.8s', del: '0.4s' },
-              { x: 460, body: 60, wu: 20, wd: 15, bull: true, base: 410, anim: 'hc3', dur: '6.5s', del: '1.5s' },
-              { x: 505, body: 90, wu: 25, wd: 10, bull: true, base: 380, anim: 'hc5', dur: '7.0s', del: '0.7s' },
-              { x: 550, body: 80, wu: 30, wd: 15, bull: true, base: 350, anim: 'hc1', dur: '5.5s', del: '2.4s' },
-              { x: 595, body: 110, wu: 20, wd: 10, bull: true, base: 310, anim: 'hc3', dur: '6.8s', del: '1.0s' },
-              { x: 640, body: 45, wu: 15, wd: 25, bull: false, base: 330, anim: 'hc4', dur: '4.0s', del: '1.7s' },
-              { x: 685, body: 75, wu: 25, wd: 15, bull: true, base: 290, anim: 'hc5', dur: '5.3s', del: '0.2s' },
+              { x: 80, body: 40, wu: 12, wd: 18, bull: true, base: 480, anim: 'hc1', dur: '4.5s', del: '0s' },
+              { x: 130, body: 30, wu: 8, wd: 20, bull: false, base: 470, anim: 'hc2', dur: '3.8s', del: '0.6s' },
+              { x: 180, body: 45, wu: 15, wd: 12, bull: true, base: 450, anim: 'hc3', dur: '5.2s', del: '1.3s' },
+              { x: 230, body: 25, wu: 10, wd: 15, bull: false, base: 445, anim: 'hc2', dur: '3.5s', del: '0.3s' },
+              { x: 280, body: 50, wu: 20, wd: 8, bull: true, base: 420, anim: 'hc1', dur: '6.0s', del: '1.8s' },
+              { x: 330, body: 35, wu: 8, wd: 22, bull: false, base: 415, anim: 'hc2', dur: '4.2s', del: '0.9s' },
+              { x: 380, body: 30, wu: 12, wd: 15, bull: false, base: 410, anim: 'hc3', dur: '3.6s', del: '2.1s' },
+              { x: 430, body: 60, wu: 22, wd: 8, bull: true, base: 380, anim: 'hc1', dur: '5.8s', del: '0.4s' },
+              { x: 480, body: 50, wu: 15, wd: 10, bull: true, base: 350, anim: 'hc3', dur: '6.5s', del: '1.5s' },
+              { x: 530, body: 75, wu: 20, wd: 8, bull: true, base: 310, anim: 'hc1', dur: '7.0s', del: '0.7s' },
+              { x: 580, body: 65, wu: 25, wd: 12, bull: true, base: 280, anim: 'hc3', dur: '5.5s', del: '2.4s' },
+              { x: 630, body: 40, wu: 12, wd: 18, bull: false, base: 290, anim: 'hc2', dur: '4.0s', del: '1.7s' },
+              { x: 680, body: 60, wu: 18, wd: 10, bull: true, base: 240, anim: 'hc1', dur: '5.3s', del: '0.2s' },
+              { x: 730, body: 55, wu: 15, wd: 8, bull: true, base: 200, anim: 'hc3', dur: '6.2s', del: '1.1s' },
             ].map((c, i) => {
               const color = c.bull ? teal : '#ff4444';
-              const bw = 20;
+              const bw = 22;
               const bodyTop = c.base - c.body;
               return (
                 <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${c.anim} ${c.dur} ease-in-out ${c.del} infinite` }}>
-                  <rect x={c.x - 3} y={bodyTop - 3} width={bw + 6} height={c.body + 6} rx={3} fill={color} opacity={0.08} />
                   <line x1={c.x + bw / 2} y1={bodyTop - c.wu} x2={c.x + bw / 2} y2={c.base + c.wd} stroke={color} strokeWidth={2} />
-                  <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.75} />
+                  <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.85} />
                 </g>
               );
             })}
           </svg>
         </div>
 
-        {/* Text content — left side */}
-        <div style={{ position: 'absolute', top: '16%', left: '5.5%', zIndex: 2, maxWidth: '42%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '2.5vh' }}>
-            <div style={{ width: 40, height: 2, background: teal }} />
-            <span style={{ color: teal, fontSize: 'clamp(12px, 1vw, 16px)', letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
-          </div>
-          <h1 style={{ fontFamily: fd, fontSize: 'clamp(48px, 5vw, 90px)', fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 2.5vh 0' }}>
-            The Trading Journal That Fixes Your Psychology.
-          </h1>
-          <p style={{ color: '#999', fontSize: 'clamp(13px, 1.1vw, 18px)', lineHeight: 1.7, fontFamily: fm, maxWidth: '90%', marginBottom: '3vh' }}>
-            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
-          </p>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <button
-              onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-              style={{ background: teal, color: '#0e0f14', border: 'none', padding: 'clamp(12px, 1.2vw, 18px) clamp(28px, 2.8vw, 48px)', fontSize: 'clamp(11px, 0.9vw, 15px)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-            >START JOURNALING</button>
-            <button
-              style={{ background: 'transparent', color: '#fff', border: '1px solid #2a2b32', padding: 'clamp(12px, 1.2vw, 18px) clamp(28px, 2.8vw, 48px)', fontSize: 'clamp(11px, 0.9vw, 15px)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#fff'; }}
-            >▶ WATCH DEMO</button>
-          </div>
+        {/* Annotation 1: IMPULSE DRAWDOWN */}
+        <div style={{ position: 'absolute', top: '18%', right: '25%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }} />
+        <svg style={{ position: 'absolute', top: '19%', right: '4%', width: '21%', height: '1.5%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '15%', right: '2%', maxWidth: '18%', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
+          <div style={{ color: '#ff4444', fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
+          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
         </div>
 
-        {/* Annotation 1: IMPULSE DRAWDOWN — upper right */}
-        <div style={{ position: 'absolute', top: '26%', right: '25%', width: 10, height: 10, borderRadius: '50%', background: '#ff4444', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }} />
-        <svg style={{ position: 'absolute', top: '26%', right: '7%', width: '18%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-        <div style={{ position: 'absolute', top: '24%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
-          <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
-          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
+        {/* Annotation 2: micro-fractals text (no title, subtle) */}
+        <div style={{ position: 'absolute', top: '46%', right: '15%', width: 8, height: 8, borderRadius: '50%', background: '#aaa', zIndex: 3 }} />
+        <svg style={{ position: 'absolute', top: '47%', right: '2%', width: '13%', height: '1.5%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,0,0,0.15)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '44%', right: '2%', maxWidth: '18%', zIndex: 3 }}>
+          <div style={{ color: '#555', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Micro-fractals isolated perfectly from noise. Optimal entry conditions met.</div>
         </div>
 
-        {/* Annotation 2: PATTERN EXTRACTION — middle right */}
-        <div style={{ position: 'absolute', top: '44%', right: '16%', width: 10, height: 10, borderRadius: '50%', background: '#fff', zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }} />
-        <svg style={{ position: 'absolute', top: '44%', right: '3%', width: '13%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.25)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-        <div style={{ position: 'absolute', top: '42%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
-          <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>PATTERN EXTRACTION</div>
-          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
+        {/* Annotation 3: MOMENTUM IGNITION */}
+        <div style={{ position: 'absolute', top: '64%', right: '20%', width: 8, height: 8, borderRadius: '50%', background: teal, zIndex: 3, animation: 'hAn2 7s ease-in-out 1s infinite' }} />
+        <svg style={{ position: 'absolute', top: '65%', right: '2%', width: '18%', height: '1.5%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '62%', right: '2%', maxWidth: '18%', zIndex: 3, animation: 'hAn2 7s ease-in-out 1s infinite' }}>
+          <div style={{ color: teal, fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
+          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
         </div>
 
-        {/* Annotation 3: MOMENTUM IGNITION — lower right */}
-        <div style={{ position: 'absolute', top: '62%', right: '18%', width: 10, height: 10, borderRadius: '50%', background: teal, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }} />
-        <svg style={{ position: 'absolute', top: '62%', right: '3%', width: '15%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-        <div style={{ position: 'absolute', top: '60%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
-          <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
-          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+        {/* INTEGRATED WITH LEADING APIs — bottom left */}
+        <div style={{ position: 'absolute', bottom: '14%', left: '5.5%', zIndex: 2 }}>
+          <div style={{ color: '#555', fontSize: 'clamp(9px, 0.75vw, 12px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>INTEGRATED WITH LEADING APIS</div>
         </div>
 
-        {/* Stat cards — bottom right */}
-        <div style={{ position: 'absolute', bottom: '4%', right: '3%', display: 'flex', gap: 3, zIndex: 2 }}>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: 'clamp(14px, 1.4vw, 22px) clamp(18px, 1.8vw, 32px)', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
-            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2vw, 34px)', fontWeight: 'bold', color: teal }}>+42%</div>
-            <div style={{ color: '#999', fontSize: 'clamp(8px, 0.7vw, 11px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>AVG. EXPECTANCY INCREASE</div>
+        {/* Dark stat bar — bottom */}
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '55%', display: 'flex', zIndex: 2, borderRadius: '12px 0 0 0', overflow: 'hidden' }}>
+          <div style={{ flex: 1, background: '#3a3a3a', padding: 'clamp(16px, 1.5vw, 24px) clamp(16px, 1.5vw, 28px)', textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2.2vw, 36px)', fontWeight: 'bold', color: teal }}>+42%</div>
+            <div style={{ color: '#aaa', fontSize: 'clamp(7px, 0.6vw, 10px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm, textTransform: 'uppercase' }}>Avg. Expectancy Increase</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: 'clamp(14px, 1.4vw, 22px) clamp(18px, 1.8vw, 32px)', textAlign: 'center' }}>
-            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2vw, 34px)', fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
-            <div style={{ color: '#999', fontSize: 'clamp(8px, 0.7vw, 11px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>EXECUTIONS ANALYZED</div>
+          <div style={{ flex: 1, background: '#3a3a3a', padding: 'clamp(16px, 1.5vw, 24px) clamp(16px, 1.5vw, 28px)', textAlign: 'center', borderLeft: '1px solid #555' }}>
+            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2.2vw, 36px)', fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
+            <div style={{ color: '#aaa', fontSize: 'clamp(7px, 0.6vw, 10px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm, textTransform: 'uppercase' }}>Executions Analyzed</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: 'clamp(14px, 1.4vw, 22px) clamp(18px, 1.8vw, 32px)', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
-            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2vw, 34px)', fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
-            <div style={{ color: '#ff4444', fontSize: 'clamp(8px, 0.7vw, 11px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>REDUCTION IN REVENGE TRADES</div>
+          <div style={{ flex: 1, background: '#3a3a3a', padding: 'clamp(16px, 1.5vw, 24px) clamp(16px, 1.5vw, 28px)', textAlign: 'center', borderLeft: '1px solid #555' }}>
+            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2.2vw, 36px)', fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
+            <div style={{ color: '#ff4444', fontSize: 'clamp(7px, 0.6vw, 10px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm, textTransform: 'uppercase' }}>Reduction in Revenge Trades</div>
           </div>
-        </div>
-
-        {/* Integration logos — bottom left */}
-        <div style={{ position: 'absolute', bottom: '4%', left: '5.5%', zIndex: 2 }}>
-          <div style={{ color: '#666', fontSize: 'clamp(8px, 0.7vw, 12px)', letterSpacing: '2px', marginBottom: 8, fontFamily: fm }}>INTEGRATED WITH LEADING APIs</div>
-          <div style={{ display: 'flex', gap: 'clamp(12px, 1.5vw, 28px)', alignItems: 'center' }}>
-            <span style={{ color: '#666', fontSize: 'clamp(10px, 0.85vw, 14px)', fontFamily: fm }}>BINANCE</span>
-            <span style={{ color: '#666', fontSize: 'clamp(10px, 0.85vw, 14px)', fontFamily: fm }}>NINJATRADER</span>
-            <span style={{ color: '#666', fontSize: 'clamp(10px, 0.85vw, 14px)', fontFamily: fm }}>TRADINGVIEW</span>
-          </div>
-        </div>
-
-        {/* Stick figure — bottom center */}
-        <div style={{ position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 2, opacity: 0.4 }}>
-          <svg width="18" height="35" viewBox="0 0 20 24" fill="none">
-            <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-            <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-            <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-          </svg>
         </div>
       </section>
 
