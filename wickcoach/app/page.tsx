@@ -2444,62 +2444,82 @@ export default function WickCoachFull() {
           >START JOURNALING</button>
         </div>
 
-        {/* Candlestick chart — overlapping center */}
+        {/* Candlestick chart with 20MA and callout annotations */}
         <div style={{ position: 'absolute', top: '10%', left: '18%', width: '62%', height: '72%', pointerEvents: 'none' }}>
           <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+            {/* 20-period Moving Average — light blue smooth curve */}
+            <path d="M 92,495 C 130,488 160,478 202,468 S 270,450 312,438 S 380,425 422,415 S 460,395 477,380 S 520,355 532,340 S 570,310 587,295 S 630,280 642,275 S 690,255 710,245 S 740,235 752,225" fill="none" stroke="#5cb8ff" strokeWidth={2} strokeLinecap="round" opacity={0.6} />
+
+            {/* Candlesticks */}
             {[
-              { x: 80, body: 40, wu: 12, wd: 18, bull: true, base: 480, anim: 'hc1', dur: '4.5s', del: '0s' },
-              { x: 135, body: 30, wu: 8, wd: 20, bull: false, base: 470, anim: 'hc2', dur: '3.8s', del: '0.6s' },
-              { x: 190, body: 45, wu: 15, wd: 12, bull: true, base: 450, anim: 'hc3', dur: '5.2s', del: '1.3s' },
-              { x: 245, body: 28, wu: 10, wd: 15, bull: false, base: 445, anim: 'hc2', dur: '3.5s', del: '0.3s' },
-              { x: 300, body: 50, wu: 20, wd: 8, bull: true, base: 420, anim: 'hc1', dur: '6.0s', del: '1.8s' },
-              { x: 355, body: 35, wu: 8, wd: 22, bull: false, base: 415, anim: 'hc2', dur: '4.2s', del: '0.9s' },
-              { x: 410, body: 32, wu: 12, wd: 15, bull: false, base: 400, anim: 'hc3', dur: '3.6s', del: '2.1s' },
-              { x: 465, body: 60, wu: 22, wd: 8, bull: true, base: 370, anim: 'hc1', dur: '5.8s', del: '0.4s' },
-              { x: 520, body: 55, wu: 15, wd: 10, bull: true, base: 340, anim: 'hc3', dur: '6.5s', del: '1.5s' },
-              { x: 575, body: 75, wu: 20, wd: 8, bull: true, base: 300, anim: 'hc1', dur: '7.0s', del: '0.7s' },
-              { x: 630, body: 42, wu: 12, wd: 18, bull: false, base: 310, anim: 'hc2', dur: '4.0s', del: '1.7s' },
-              { x: 685, body: 65, wu: 25, wd: 12, bull: true, base: 260, anim: 'hc3', dur: '5.5s', del: '2.4s' },
-              { x: 740, body: 55, wu: 18, wd: 10, bull: true, base: 220, anim: 'hc1', dur: '5.3s', del: '0.2s' },
+              { x: 80, body: 40, wu: 12, wd: 18, bull: true, base: 480 },
+              { x: 135, body: 30, wu: 8, wd: 20, bull: false, base: 470 },
+              { x: 190, body: 45, wu: 15, wd: 12, bull: true, base: 450 },
+              { x: 245, body: 28, wu: 10, wd: 15, bull: false, base: 445 },
+              { x: 300, body: 50, wu: 20, wd: 8, bull: true, base: 420 },
+              { x: 355, body: 35, wu: 8, wd: 22, bull: false, base: 415 },
+              { x: 410, body: 32, wu: 12, wd: 15, bull: false, base: 400 },
+              { x: 465, body: 60, wu: 22, wd: 8, bull: true, base: 370 },
+              { x: 520, body: 55, wu: 15, wd: 10, bull: true, base: 340 },
+              { x: 575, body: 75, wu: 20, wd: 8, bull: true, base: 300 },
+              { x: 630, body: 42, wu: 12, wd: 18, bull: false, base: 310 },
+              { x: 685, body: 65, wu: 25, wd: 12, bull: true, base: 260 },
+              { x: 740, body: 55, wu: 18, wd: 10, bull: true, base: 220 },
             ].map((c, i) => {
               const color = c.bull ? teal : '#ff4444';
               const bw = 24;
               const bodyTop = c.base - c.body;
+              const anim = ['hc1','hc2','hc3'][i % 3];
+              const dur = [4.5, 3.8, 5.2, 3.5, 6.0, 4.2, 3.6, 5.8, 6.5, 7.0, 4.0, 5.5, 5.3][i];
+              const del = [0, 0.6, 1.3, 0.3, 1.8, 0.9, 2.1, 0.4, 1.5, 0.7, 1.7, 2.4, 0.2][i];
               return (
-                <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${c.anim} ${c.dur} ease-in-out ${c.del} infinite` }}>
+                <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${anim} ${dur}s ease-in-out ${del}s infinite` }}>
                   <line x1={c.x + bw / 2} y1={bodyTop - c.wu} x2={c.x + bw / 2} y2={c.base + c.wd} stroke={color} strokeWidth={2} />
                   <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.85} />
                 </g>
               );
             })}
-            {/* Annotation callout lines baked into the SVG pointing to specific candles */}
-            {/* IMPULSE DRAWDOWN — points to red candle at x:355 (index 5) */}
-            <circle cx={367} cy={385} r={4} fill="#ff4444" />
-            <line x1={371} y1={385} x2={590} y2={160} stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" />
-            {/* Micro-fractals — points to candle cluster at x:465 (index 7) */}
-            <circle cx={477} cy={315} r={4} fill="#aaa" />
-            <line x1={481} y1={315} x2={620} y2={365} stroke="rgba(0,0,0,0.15)" strokeWidth={1} strokeDasharray="4 3" />
-            {/* MOMENTUM IGNITION — points to green candle at x:685 (index 11) */}
-            <circle cx={697} cy={205} r={4} fill={teal} />
-            <line x1={701} y1={205} x2={720} y2={430} stroke="rgba(0,212,160,0.4)" strokeWidth={1} strokeDasharray="4 3" />
+
+            {/* Callout 1: PSYCHOLOGICAL CORRECTION → green candle index 4 (x:300) */}
+            <circle cx={312} cy={365} r={5} fill={teal} opacity={0.9} />
+            <line x1={317} y1={365} x2={470} y2={140} stroke={teal} strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
+
+            {/* Callout 2: PATTERN RECOGNITION → green candle index 9 (x:575) */}
+            <circle cx={587} cy={220} r={5} fill={teal} opacity={0.9} />
+            <line x1={592} y1={220} x2={650} y2={85} stroke={teal} strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
+
+            {/* Callout 3: REVENGE TRADING → red candle index 5 (x:355) */}
+            <circle cx={367} cy={418} r={5} fill="#ff4444" opacity={0.9} />
+            <line x1={372} y1={418} x2={510} y2={505} stroke="#ff4444" strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
+
+            {/* Callout 4: IMPULSE DRAWDOWN → red candle index 10 (x:630) */}
+            <circle cx={642} cy={313} r={5} fill="#ff4444" opacity={0.9} />
+            <line x1={647} y1={313} x2={700} y2={470} stroke="#ff4444" strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
           </svg>
         </div>
 
-        {/* Annotation 1: IMPULSE DRAWDOWN — callout from red candle */}
-        <div style={{ position: 'absolute', top: '13%', right: '8%', maxWidth: '18%', zIndex: 3 }}>
+        {/* Annotation 1: PSYCHOLOGICAL CORRECTION (green, upper) */}
+        <div style={{ position: 'absolute', top: '12%', left: '54%', maxWidth: '18%', zIndex: 3 }}>
+          <div style={{ color: teal, fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>PSYCHOLOGICAL CORRECTION</div>
+          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Discipline recovery detected after 3-trade drawdown sequence. Process score rebounding.</div>
+        </div>
+
+        {/* Annotation 2: PATTERN RECOGNITION (green, right) */}
+        <div style={{ position: 'absolute', top: '8%', right: '3%', maxWidth: '18%', zIndex: 3 }}>
+          <div style={{ color: teal, fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>PATTERN RECOGNITION</div>
+          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Micro-fractals isolated from noise. Optimal entry conditions confirmed.</div>
+        </div>
+
+        {/* Annotation 3: REVENGE TRADING DETECTED (red, lower-left) */}
+        <div style={{ position: 'absolute', top: '62%', left: '50%', maxWidth: '18%', zIndex: 3 }}>
+          <div style={{ color: '#ff4444', fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>REVENGE TRADING</div>
+          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Emotional re-entry detected 47s after stop-loss. 73% loss probability.</div>
+        </div>
+
+        {/* Annotation 4: IMPULSE DRAWDOWN (red, lower-right) */}
+        <div style={{ position: 'absolute', top: '58%', right: '3%', maxWidth: '18%', zIndex: 3 }}>
           <div style={{ color: '#ff4444', fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>IMPULSE DRAWDOWN</div>
-          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
-        </div>
-
-        {/* Annotation 2: micro-fractals — callout from candle cluster */}
-        <div style={{ position: 'absolute', top: '48%', right: '5%', maxWidth: '18%', zIndex: 3 }}>
-          <div style={{ color: '#555', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Micro-fractals isolated perfectly from noise. Optimal entry conditions met.</div>
-        </div>
-
-        {/* Annotation 3: MOMENTUM IGNITION — callout from green candle */}
-        <div style={{ position: 'absolute', top: '62%', right: '5%', maxWidth: '18%', zIndex: 3 }}>
-          <div style={{ color: teal, fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>MOMENTUM IGNITION</div>
-          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>68% probability of forced closure within 15 mins of this wick.</div>
         </div>
 
         {/* INTEGRATED WITH LEADING APIs — bottom left */}
