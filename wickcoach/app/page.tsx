@@ -2396,151 +2396,165 @@ export default function WickCoachFull() {
       {/* ═══ HOME VIEW ═══ */}
       {view === 'home' && (<>
 
-      {/* ═══ NAV (dark bar) ═══ */}
-      <nav style={{ width: '100%', background: '#0e0f14', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'clamp(14px, 1.2vw, 20px) 5%', zIndex: 20 }}>
+      {/* ═══ NAV ═══ */}
+      <nav style={{ width: '100%', background: '#0e0f14', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 40px', zIndex: 20 }}>
         <div onClick={() => setView('home')} style={{ cursor: 'pointer' }}>
           <Logo size={30} showText />
         </div>
-        <div style={{ display: 'flex', gap: 'clamp(16px, 2.5vw, 40px)', alignItems: 'center' }}>
-          {tabs.map(t => (
-            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 'clamp(10px, 0.85vw, 13px)', color: '#999', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, textTransform: 'uppercase', borderBottom: activeTab === t ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase()}</span>
-          ))}
+        <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+          {tabs.map(t => {
+            const label = t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase();
+            const isActive = t === 'Analysis';
+            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 12, color: isActive ? '#fff' : '#999', letterSpacing: '2px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, borderBottom: isActive ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{label}</span>;
+          })}
         </div>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <span style={{ color: '#999', fontFamily: fm, fontSize: 'clamp(10px, 0.85vw, 13px)', cursor: 'pointer', letterSpacing: '1.5px', fontWeight: 600 }}>LOGIN</span>
-          <button onClick={() => setView('app')} style={{ background: '#fff', color: '#0e0f14', border: 'none', padding: 'clamp(8px, 0.6vw, 12px) clamp(16px, 1.2vw, 24px)', fontSize: 'clamp(10px, 0.85vw, 13px)', fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+          <span style={{ color: '#fff', fontFamily: fm, fontSize: 12, cursor: 'pointer', letterSpacing: '2px', fontWeight: 600 }}>LOGIN</span>
+          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '10px 24px', fontSize: 12, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
         </div>
       </nav>
 
-      {/* ═══ HERO SECTION (white) ═══ */}
-      <section style={{ width: '100%', minHeight: 'calc(100vh - 60px)', position: 'relative', overflow: 'hidden', background: '#fff' }}>
+      {/* ═══ HERO SECTION ═══ */}
+      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#131318' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
-            @keyframes hc1 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
-            @keyframes hc2 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
-            @keyframes hc3 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.06); } }
-            @keyframes hAn1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-            @keyframes hAn2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+            @keyframes hc1 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.12); } }
+            @keyframes hc2 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.88); } }
+            @keyframes hc3 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.10); } }
+            @keyframes hc4 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
+            @keyframes hc5 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
+            @keyframes hc6 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.94); } }
+            @keyframes hAn1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+            @keyframes hAn2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+            @keyframes hAn3 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
           }
         `}</style>
 
-        {/* Text content — left side */}
-        <div style={{ position: 'absolute', top: '8%', left: '5.5%', zIndex: 2, maxWidth: '40%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '2.5vh' }}>
-            <div style={{ width: 40, height: 2, background: teal }} />
-            <span style={{ color: teal, fontSize: 'clamp(11px, 0.9vw, 15px)', letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
-          </div>
-          <h1 style={{ fontFamily: fd, fontSize: 'clamp(44px, 4.8vw, 86px)', fontWeight: 'bold', lineHeight: 1.05, color: '#1a1a1a', margin: '0 0 2.5vh 0' }}>
-            The Trading Journal That Fixes Your Psychology.
-          </h1>
-          <p style={{ color: '#777', fontSize: 'clamp(13px, 1.05vw, 17px)', lineHeight: 1.7, fontFamily: fm, maxWidth: '90%', marginBottom: '3vh' }}>
-            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
-          </p>
-          <button
-            onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-            style={{ background: teal, color: '#fff', border: 'none', padding: 'clamp(14px, 1.2vw, 18px) clamp(32px, 3vw, 52px)', fontSize: 'clamp(12px, 0.95vw, 15px)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 30, cursor: 'pointer' }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-          >START JOURNALING</button>
-        </div>
+        {/* Atmospheric glow */}
+        <div style={{ position: 'absolute', top: '0', left: '25%', width: '65%', height: '90%', background: 'radial-gradient(ellipse at 60% 50%, rgba(0,212,160,0.08) 0%, rgba(0,212,160,0.03) 30%, transparent 65%)', pointerEvents: 'none' }} />
 
-        {/* Candlestick chart with 20MA and callout annotations */}
-        <div style={{ position: 'absolute', top: '10%', left: '18%', width: '62%', height: '72%', pointerEvents: 'none' }}>
-          <svg width="100%" height="100%" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-            {/* 20-period Moving Average — light blue smooth curve */}
-            <path d="M 92,495 C 130,488 160,478 202,468 S 270,450 312,438 S 380,425 422,415 S 460,395 477,380 S 520,355 532,340 S 570,310 587,295 S 630,280 642,275 S 690,255 710,245 S 740,235 752,225" fill="none" stroke="#5cb8ff" strokeWidth={2} strokeLinecap="round" opacity={0.6} />
-
-            {/* Candlesticks */}
+        {/* Candlestick chart SVG */}
+        <div style={{ position: 'absolute', top: '5%', left: '30%', width: '60%', height: '82%', opacity: 0.9, pointerEvents: 'none' }}>
+          <svg width="100%" height="100%" viewBox="0 0 800 700" preserveAspectRatio="xMidYMid meet">
+            <line x1={60} y1={600} x2={740} y2={180} stroke={teal} strokeWidth={1} opacity={0.15} strokeDasharray="6 6" />
             {[
-              { x: 80, body: 40, wu: 12, wd: 18, bull: true, base: 480 },
-              { x: 135, body: 30, wu: 8, wd: 20, bull: false, base: 470 },
-              { x: 190, body: 45, wu: 15, wd: 12, bull: true, base: 450 },
-              { x: 245, body: 28, wu: 10, wd: 15, bull: false, base: 445 },
-              { x: 300, body: 50, wu: 20, wd: 8, bull: true, base: 420 },
-              { x: 355, body: 35, wu: 8, wd: 22, bull: false, base: 415 },
-              { x: 410, body: 32, wu: 12, wd: 15, bull: false, base: 400 },
-              { x: 465, body: 60, wu: 22, wd: 8, bull: true, base: 370 },
-              { x: 520, body: 55, wu: 15, wd: 10, bull: true, base: 340 },
-              { x: 575, body: 75, wu: 20, wd: 8, bull: true, base: 300 },
-              { x: 630, body: 42, wu: 12, wd: 18, bull: false, base: 310 },
-              { x: 685, body: 65, wu: 25, wd: 12, bull: true, base: 260 },
-              { x: 740, body: 55, wu: 18, wd: 10, bull: true, base: 220 },
+              { x: 80, body: 40, wu: 12, wd: 18, bull: true, base: 560, dur: 4.5, del: 0 },
+              { x: 130, body: 30, wu: 8, wd: 20, bull: false, base: 550, dur: 3.8, del: 0.6 },
+              { x: 180, body: 48, wu: 15, wd: 12, bull: true, base: 530, dur: 5.2, del: 1.3 },
+              { x: 230, body: 25, wu: 10, wd: 18, bull: false, base: 525, dur: 3.5, del: 0.3 },
+              { x: 280, body: 55, wu: 22, wd: 8, bull: true, base: 500, dur: 6.0, del: 1.8 },
+              { x: 330, body: 38, wu: 8, wd: 25, bull: false, base: 495, dur: 4.2, del: 0.9 },
+              { x: 380, body: 32, wu: 12, wd: 18, bull: false, base: 485, dur: 3.6, del: 2.1 },
+              { x: 430, body: 65, wu: 25, wd: 8, bull: true, base: 450, dur: 5.8, del: 0.4 },
+              { x: 480, body: 55, wu: 18, wd: 10, bull: true, base: 420, dur: 6.5, del: 1.5 },
+              { x: 530, body: 80, wu: 22, wd: 8, bull: true, base: 380, dur: 7.0, del: 0.7 },
+              { x: 580, body: 70, wu: 28, wd: 12, bull: true, base: 340, dur: 5.5, del: 2.4 },
+              { x: 630, body: 40, wu: 12, wd: 22, bull: false, base: 355, dur: 4.0, del: 1.7 },
+              { x: 680, body: 75, wu: 25, wd: 10, bull: true, base: 290, dur: 5.3, del: 0.2 },
+              { x: 730, body: 60, wu: 18, wd: 8, bull: true, base: 250, dur: 6.2, del: 1.1 },
             ].map((c, i) => {
               const color = c.bull ? teal : '#ff4444';
-              const bw = 24;
+              const bw = 20;
               const bodyTop = c.base - c.body;
-              const anim = ['hc1','hc2','hc3'][i % 3];
-              const dur = [4.5, 3.8, 5.2, 3.5, 6.0, 4.2, 3.6, 5.8, 6.5, 7.0, 4.0, 5.5, 5.3][i];
-              const del = [0, 0.6, 1.3, 0.3, 1.8, 0.9, 2.1, 0.4, 1.5, 0.7, 1.7, 2.4, 0.2][i];
+              const anim = ['hc1','hc2','hc3','hc4','hc5','hc6'][i % 6];
               return (
-                <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${anim} ${dur}s ease-in-out ${del}s infinite` }}>
+                <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${anim} ${c.dur}s ease-in-out ${c.del}s infinite` }}>
+                  <rect x={c.x - 4} y={bodyTop - 4} width={bw + 8} height={c.body + 8} rx={4} fill={color} opacity={0.1} />
                   <line x1={c.x + bw / 2} y1={bodyTop - c.wu} x2={c.x + bw / 2} y2={c.base + c.wd} stroke={color} strokeWidth={2} />
-                  <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.85} />
+                  <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.8} />
                 </g>
               );
             })}
-
-            {/* Callout 1: PSYCHOLOGICAL CORRECTION → green candle index 4 (x:300) */}
-            <circle cx={312} cy={365} r={5} fill={teal} opacity={0.9} />
-            <line x1={317} y1={365} x2={470} y2={140} stroke={teal} strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
-
-            {/* Callout 2: PATTERN RECOGNITION → green candle index 9 (x:575) */}
-            <circle cx={587} cy={220} r={5} fill={teal} opacity={0.9} />
-            <line x1={592} y1={220} x2={650} y2={85} stroke={teal} strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
-
-            {/* Callout 3: REVENGE TRADING → red candle index 5 (x:355) */}
-            <circle cx={367} cy={418} r={5} fill="#ff4444" opacity={0.9} />
-            <line x1={372} y1={418} x2={510} y2={505} stroke="#ff4444" strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
-
-            {/* Callout 4: IMPULSE DRAWDOWN → red candle index 10 (x:630) */}
-            <circle cx={642} cy={313} r={5} fill="#ff4444" opacity={0.9} />
-            <line x1={647} y1={313} x2={700} y2={470} stroke="#ff4444" strokeWidth={1.2} strokeDasharray="5 4" opacity={0.7} />
           </svg>
         </div>
 
-        {/* Annotation 1: PSYCHOLOGICAL CORRECTION (green, upper) */}
-        <div style={{ position: 'absolute', top: '12%', left: '54%', maxWidth: '18%', zIndex: 3 }}>
-          <div style={{ color: teal, fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>PSYCHOLOGICAL CORRECTION</div>
-          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Discipline recovery detected after 3-trade drawdown sequence. Process score rebounding.</div>
-        </div>
-
-        {/* Annotation 2: PATTERN RECOGNITION (green, right) */}
-        <div style={{ position: 'absolute', top: '8%', right: '3%', maxWidth: '18%', zIndex: 3 }}>
-          <div style={{ color: teal, fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>PATTERN RECOGNITION</div>
-          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Micro-fractals isolated from noise. Optimal entry conditions confirmed.</div>
-        </div>
-
-        {/* Annotation 3: REVENGE TRADING DETECTED (red, lower-left) */}
-        <div style={{ position: 'absolute', top: '62%', left: '50%', maxWidth: '18%', zIndex: 3 }}>
-          <div style={{ color: '#ff4444', fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>REVENGE TRADING</div>
-          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>Emotional re-entry detected 47s after stop-loss. 73% loss probability.</div>
-        </div>
-
-        {/* Annotation 4: IMPULSE DRAWDOWN (red, lower-right) */}
-        <div style={{ position: 'absolute', top: '58%', right: '3%', maxWidth: '18%', zIndex: 3 }}>
-          <div style={{ color: '#ff4444', fontSize: 'clamp(10px, 0.85vw, 14px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 6 }}>IMPULSE DRAWDOWN</div>
-          <div style={{ color: '#888', fontSize: 'clamp(11px, 0.8vw, 13px)', lineHeight: 1.5, fontFamily: fm }}>68% probability of forced closure within 15 mins of this wick.</div>
-        </div>
-
-        {/* INTEGRATED WITH LEADING APIs — bottom left */}
-        <div style={{ position: 'absolute', bottom: '14%', left: '5.5%', zIndex: 2 }}>
-          <div style={{ color: '#555', fontSize: 'clamp(9px, 0.75vw, 12px)', letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>INTEGRATED WITH LEADING APIS</div>
-        </div>
-
-        {/* Dark stat bar — bottom */}
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '55%', display: 'flex', zIndex: 2, borderRadius: '12px 0 0 0', overflow: 'hidden' }}>
-          <div style={{ flex: 1, background: '#3a3a3a', padding: 'clamp(16px, 1.5vw, 24px) clamp(16px, 1.5vw, 28px)', textAlign: 'center' }}>
-            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2.2vw, 36px)', fontWeight: 'bold', color: teal }}>+42%</div>
-            <div style={{ color: '#aaa', fontSize: 'clamp(7px, 0.6vw, 10px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm, textTransform: 'uppercase' }}>Avg. Expectancy Increase</div>
+        {/* Text content — left side */}
+        <div style={{ position: 'absolute', top: '15%', left: 80, zIndex: 2, maxWidth: 520 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+            <div style={{ width: 40, height: 2, background: teal }} />
+            <span style={{ color: teal, fontSize: 12, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
           </div>
-          <div style={{ flex: 1, background: '#3a3a3a', padding: 'clamp(16px, 1.5vw, 24px) clamp(16px, 1.5vw, 28px)', textAlign: 'center', borderLeft: '1px solid #555' }}>
-            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2.2vw, 36px)', fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
-            <div style={{ color: '#aaa', fontSize: 'clamp(7px, 0.6vw, 10px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm, textTransform: 'uppercase' }}>Executions Analyzed</div>
+          <h1 style={{ fontFamily: fd, fontSize: 64, fontWeight: 'bold', lineHeight: 1.0, color: '#fff', margin: '0 0 28px 0' }}>
+            The Trading Journal That Fixes Your Psychology.
+          </h1>
+          <p style={{ color: '#999', fontSize: 15, lineHeight: 1.7, fontFamily: fm, maxWidth: 480, marginBottom: 40 }}>
+            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
+          </p>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 40 }}>
+            <button
+              onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
+              style={{ background: teal, color: '#0e0f14', border: 'none', padding: '16px 40px', fontSize: 13, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+            >START JOURNALING</button>
+            <button
+              style={{ background: 'transparent', color: '#fff', border: '1px solid #2a2b32', padding: '16px 40px', fontSize: 13, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#fff'; }}
+            >&#9655; WATCH DEMO</button>
           </div>
-          <div style={{ flex: 1, background: '#3a3a3a', padding: 'clamp(16px, 1.5vw, 24px) clamp(16px, 1.5vw, 28px)', textAlign: 'center', borderLeft: '1px solid #555' }}>
-            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2.2vw, 36px)', fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
-            <div style={{ color: '#ff4444', fontSize: 'clamp(7px, 0.6vw, 10px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm, textTransform: 'uppercase' }}>Reduction in Revenge Trades</div>
+          <div>
+            <div style={{ color: '#666', fontSize: 10, letterSpacing: '2px', marginBottom: 8 }}>INTEGRATED WITH LEADING APIs</div>
+            <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+              <span style={{ color: '#666', fontSize: 11, fontFamily: fm }}>BINANCE</span>
+              <span style={{ color: '#666', fontSize: 11, fontFamily: fm }}>NINJATRADER</span>
+              <span style={{ color: '#666', fontSize: 11, fontFamily: fm }}>TRADINGVIEW</span>
+            </div>
           </div>
+        </div>
+
+        {/* Annotation 1: IMPULSE DRAWDOWN (red, top ~20%) */}
+        <div style={{ position: 'absolute', top: '18%', right: '28%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }} />
+        <svg style={{ position: 'absolute', top: '19%', right: '4%', width: '24%', height: '1.5%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '16%', right: '4%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
+          <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
+        </div>
+
+        {/* Annotation 2: PATTERN EXTRACTION (white, middle ~42%) */}
+        <div style={{ position: 'absolute', top: '42%', right: '20%', width: 8, height: 8, borderRadius: '50%', background: '#fff', zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }} />
+        <svg style={{ position: 'absolute', top: '43%', right: '4%', width: '16%', height: '1.5%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.25)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '40%', right: '4%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
+          <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>PATTERN EXTRACTION</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
+        </div>
+
+        {/* Annotation 3: MOMENTUM IGNITION (green, lower ~60%) */}
+        <div style={{ position: 'absolute', top: '60%', right: '24%', width: 8, height: 8, borderRadius: '50%', background: teal, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }} />
+        <svg style={{ position: 'absolute', top: '61%', right: '4%', width: '20%', height: '1.5%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '58%', right: '4%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
+          <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, marginTop: 8, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+        </div>
+
+        {/* Stat cards — bottom right */}
+        <div style={{ position: 'absolute', bottom: 40, right: 60, display: 'flex', gap: 2, zIndex: 2 }}>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
+            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: teal }}>+42%</div>
+            <div style={{ color: '#999', fontSize: 9, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>AVG. EXPECTANCY INCREASE</div>
+          </div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
+            <div style={{ color: '#999', fontSize: 9, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>EXECUTIONS ANALYZED</div>
+          </div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
+            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
+            <div style={{ color: '#ff4444', fontSize: 9, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>REDUCTION IN REVENGE TRADES</div>
+          </div>
+        </div>
+
+        {/* Stick figure — bottom center */}
+        <div style={{ position: 'absolute', bottom: 35, left: '50%', transform: 'translateX(-50%)', zIndex: 2, opacity: 0.4 }}>
+          <svg width="18" height="35" viewBox="0 0 20 24" fill="none">
+            <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+            <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+            <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+            <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+          </svg>
         </div>
       </section>
 
