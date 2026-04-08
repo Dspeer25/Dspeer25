@@ -2397,21 +2397,19 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
 
       {/* ═══ NAV ═══ */}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible", position: 'relative' }}>
-        <div style={{ marginBottom: 20 }}>
-          <Logo size={34} showText />
+      <nav style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 40px', background: 'transparent' }}>
+        <div onClick={() => setView('home')} style={{ cursor: 'pointer' }}>
+          <Logo size={30} showText />
         </div>
-        <span style={{ position: 'absolute', top: 28, right: 40, color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Login</span>
-        <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
+        <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
           {tabs.map(t => (
-            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", borderTop: "1px solid rgba(0,212,160,0.18)", borderRight: "1px solid rgba(0,212,160,0.18)", borderBottom: "none", borderLeft: "1px solid rgba(0,212,160,0.18)", flex: 1, textAlign: "center", lineHeight: 1.5, animation: showClickHint ? "iconGlowPulse 1s ease-in-out 3" : tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
+            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 12, color: activeTab === t ? '#fff' : '#888', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, textTransform: 'uppercase', borderBottom: activeTab === t ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase()}</span>
           ))}
         </div>
-        {/* "click these" hint below app tabs */}
-        <div style={{ textAlign: 'center', marginTop: 8, height: 16 }}>
-          <span style={{ fontFamily: fm, fontSize: 11, color: '#9ca3af', opacity: showClickHint ? 1 : 0, transition: 'opacity 0.5s ease' }}>click these ↑</span>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+          <span style={{ color: '#888', fontFamily: fm, fontSize: 12, cursor: 'pointer', letterSpacing: '1.5px', fontWeight: 600 }}>LOGIN</span>
+          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '10px 24px', fontSize: 12, fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
         </div>
-        <style>{`@keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }`}</style>
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
@@ -2475,7 +2473,7 @@ export default function WickCoachFull() {
             <div style={{ width: 40, height: 2, background: teal }} />
             <span style={{ color: teal, fontSize: 14, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
           </div>
-          <h1 style={{ fontFamily: fd, fontSize: 82, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 28px 0' }}>
+          <h1 style={{ fontFamily: fd, fontSize: 72, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 28px 0' }}>
             The Trading Journal That Fixes Your Psychology.
           </h1>
           <p style={{ color: '#999', fontSize: 16, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 36 }}>
