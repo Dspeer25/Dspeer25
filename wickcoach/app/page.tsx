@@ -2415,7 +2415,7 @@ export default function WickCoachFull() {
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', minHeight: '100vh', position: 'relative', overflow: 'hidden', background: '#131318', display: 'flex', alignItems: 'flex-start', paddingTop: '12%' }}>
+      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#131318' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             @keyframes hc1 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.12); } }
@@ -2431,7 +2431,7 @@ export default function WickCoachFull() {
         `}</style>
 
         {/* Atmospheric glow behind chart */}
-        <div style={{ position: 'absolute', top: '10%', left: '30%', width: '60%', height: '80%', background: 'radial-gradient(ellipse at center, rgba(0,212,160,0.06) 0%, rgba(0,212,160,0.02) 40%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '5%', left: '25%', width: '65%', height: '85%', background: 'radial-gradient(ellipse at center, rgba(0,212,160,0.10) 0%, rgba(0,212,160,0.04) 35%, transparent 65%)', pointerEvents: 'none' }} />
 
         {/* Candlestick chart SVG */}
         <div style={{ position: 'absolute', top: '8%', left: '35%', width: '55%', height: '85%', opacity: 0.9, pointerEvents: 'none' }}>
@@ -2470,15 +2470,15 @@ export default function WickCoachFull() {
         </div>
 
         {/* Text content — left side */}
-        <div style={{ position: 'relative', zIndex: 2, paddingLeft: 80, maxWidth: 620 }}>
+        <div style={{ position: 'absolute', top: '18%', left: 80, zIndex: 2, maxWidth: 620 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
             <div style={{ width: 40, height: 2, background: teal }} />
             <span style={{ color: teal, fontSize: 14, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
           </div>
-          <h1 style={{ fontFamily: fd, fontSize: 74, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 32px 0' }}>
+          <h1 style={{ fontFamily: fd, fontSize: 82, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 28px 0' }}>
             The Trading Journal That Fixes Your Psychology.
           </h1>
-          <p style={{ color: '#999', fontSize: 16, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 44 }}>
+          <p style={{ color: '#999', fontSize: 16, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 36 }}>
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
