@@ -2497,33 +2497,27 @@ export default function WickCoachFull() {
         </div>
 
         {/* Annotation 1: IMPULSE DRAWDOWN — upper right */}
-        <div style={{ animation: 'hAn1 5s ease-in-out infinite' }}>
-          <div style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: '#ff4444', top: '22%', right: '30%', zIndex: 3 }} />
-          <svg style={{ position: 'absolute', top: '22%', right: '4%', width: '26%', height: '2%', zIndex: 2, overflow: 'visible' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-          <div style={{ position: 'absolute', top: '20%', right: '4%', maxWidth: 220, zIndex: 3 }}>
-            <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
-            <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
-          </div>
+        <div style={{ position: 'absolute', top: '20%', right: '28%', width: 10, height: 10, borderRadius: '50%', background: '#ff4444', zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }} />
+        <svg style={{ position: 'absolute', top: '20%', right: '3%', width: '25%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,68,68,0.4)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '18%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
+          <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>IMPULSE DRAWDOWN</div>
+          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
         </div>
 
         {/* Annotation 2: PATTERN EXTRACTION — middle right */}
-        <div style={{ animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
-          <div style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: '#fff', top: '42%', right: '22%', zIndex: 3 }} />
-          <svg style={{ position: 'absolute', top: '42%', right: '2%', width: '20%', height: '2%', zIndex: 2, overflow: 'visible' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.25)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-          <div style={{ position: 'absolute', top: '40%', right: '2%', maxWidth: 220, zIndex: 3 }}>
-            <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>PATTERN EXTRACTION</div>
-            <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
-          </div>
+        <div style={{ position: 'absolute', top: '42%', right: '20%', width: 10, height: 10, borderRadius: '50%', background: '#fff', zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }} />
+        <svg style={{ position: 'absolute', top: '42%', right: '1%', width: '19%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.25)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '40%', right: '1%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
+          <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>PATTERN EXTRACTION</div>
+          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
         </div>
 
         {/* Annotation 3: MOMENTUM IGNITION — lower right */}
-        <div style={{ animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
-          <div style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: teal, top: '60%', right: '26%', zIndex: 3 }} />
-          <svg style={{ position: 'absolute', top: '60%', right: '2%', width: '24%', height: '2%', zIndex: 2, overflow: 'visible' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
-          <div style={{ position: 'absolute', top: '58%', right: '2%', maxWidth: 220, zIndex: 3 }}>
-            <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
-            <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
-          </div>
+        <div style={{ position: 'absolute', top: '60%', right: '24%', width: 10, height: 10, borderRadius: '50%', background: teal, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }} />
+        <svg style={{ position: 'absolute', top: '60%', right: '1%', width: '23%', height: '2%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}><line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(0,212,160,0.35)" strokeWidth={1} strokeDasharray="4 3" /></svg>
+        <div style={{ position: 'absolute', top: '58%', right: '1%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
+          <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm }}>MOMENTUM IGNITION</div>
+          <div style={{ color: '#999', fontSize: 13, lineHeight: 1.5, marginTop: 10, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
         </div>
 
         {/* Stat cards — bottom right */}
