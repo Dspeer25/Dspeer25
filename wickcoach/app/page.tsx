@@ -2397,18 +2397,18 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
 
       {/* ═══ NAV ═══ */}
-      <nav style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 40px', background: 'transparent' }}>
+      <nav style={{ position: 'absolute', top: 0, left: 0, width: '100%', zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 5%', background: 'transparent' }}>
         <div onClick={() => setView('home')} style={{ cursor: 'pointer' }}>
-          <Logo size={30} showText />
+          <Logo size={34} showText />
         </div>
-        <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 'clamp(16px, 2.5vw, 40px)', alignItems: 'center' }}>
           {tabs.map(t => (
-            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 12, color: activeTab === t ? '#fff' : '#888', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, textTransform: 'uppercase', borderBottom: activeTab === t ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase()}</span>
+            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 'clamp(11px, 0.9vw, 14px)', color: activeTab === t ? '#fff' : '#888', letterSpacing: '1.5px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, textTransform: 'uppercase', borderBottom: activeTab === t ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase()}</span>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <span style={{ color: '#888', fontFamily: fm, fontSize: 12, cursor: 'pointer', letterSpacing: '1.5px', fontWeight: 600 }}>LOGIN</span>
-          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '10px 24px', fontSize: 12, fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
+          <span style={{ color: '#888', fontFamily: fm, fontSize: 'clamp(11px, 0.9vw, 14px)', cursor: 'pointer', letterSpacing: '1.5px', fontWeight: 600 }}>LOGIN</span>
+          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: 'clamp(8px, 0.7vw, 12px) clamp(16px, 1.5vw, 28px)', fontSize: 'clamp(11px, 0.9vw, 14px)', fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
         </div>
       </nav>
 
@@ -2429,7 +2429,7 @@ export default function WickCoachFull() {
         `}</style>
 
         {/* Atmospheric glow behind chart */}
-        <div style={{ position: 'absolute', top: '5%', left: '25%', width: '65%', height: '85%', background: 'radial-gradient(ellipse at center, rgba(0,212,160,0.10) 0%, rgba(0,212,160,0.04) 35%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '0%', left: '20%', width: '70%', height: '90%', background: 'radial-gradient(ellipse at 50% 40%, rgba(0,212,160,0.15) 0%, rgba(0,212,160,0.06) 30%, transparent 60%)', pointerEvents: 'none' }} />
 
         {/* Candlestick chart SVG */}
         <div style={{ position: 'absolute', top: '8%', left: '35%', width: '55%', height: '85%', opacity: 0.9, pointerEvents: 'none' }}>
@@ -2468,26 +2468,26 @@ export default function WickCoachFull() {
         </div>
 
         {/* Text content — left side */}
-        <div style={{ position: 'absolute', top: '18%', left: 80, zIndex: 2, maxWidth: 620 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+        <div style={{ position: 'absolute', top: '16%', left: '5.5%', zIndex: 2, maxWidth: '42%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '2.5vh' }}>
             <div style={{ width: 40, height: 2, background: teal }} />
-            <span style={{ color: teal, fontSize: 14, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
+            <span style={{ color: teal, fontSize: 'clamp(12px, 1vw, 16px)', letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
           </div>
-          <h1 style={{ fontFamily: fd, fontSize: 72, fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 28px 0' }}>
+          <h1 style={{ fontFamily: fd, fontSize: 'clamp(48px, 5vw, 90px)', fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 2.5vh 0' }}>
             The Trading Journal That Fixes Your Psychology.
           </h1>
-          <p style={{ color: '#999', fontSize: 16, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 36 }}>
+          <p style={{ color: '#999', fontSize: 'clamp(13px, 1.1vw, 18px)', lineHeight: 1.7, fontFamily: fm, maxWidth: '90%', marginBottom: '3vh' }}>
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <button
               onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-              style={{ background: teal, color: '#0e0f14', border: 'none', padding: '16px 40px', fontSize: 13, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
+              style={{ background: teal, color: '#0e0f14', border: 'none', padding: 'clamp(12px, 1.2vw, 18px) clamp(28px, 2.8vw, 48px)', fontSize: 'clamp(11px, 0.9vw, 15px)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
               onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
             >START JOURNALING</button>
             <button
-              style={{ background: 'transparent', color: '#fff', border: '1px solid #2a2b32', padding: '16px 40px', fontSize: 13, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
+              style={{ background: 'transparent', color: '#fff', border: '1px solid #2a2b32', padding: 'clamp(12px, 1.2vw, 18px) clamp(28px, 2.8vw, 48px)', fontSize: 'clamp(11px, 0.9vw, 15px)', fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#fff'; }}
             >▶ WATCH DEMO</button>
@@ -2519,33 +2519,33 @@ export default function WickCoachFull() {
         </div>
 
         {/* Stat cards — bottom right */}
-        <div style={{ position: 'absolute', bottom: 50, right: 40, display: 'flex', gap: 3, zIndex: 2 }}>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '20px 28px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
-            <div style={{ fontFamily: fd, fontSize: 30, fontWeight: 'bold', color: teal }}>+42%</div>
-            <div style={{ color: '#999', fontSize: 10, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>AVG. EXPECTANCY INCREASE</div>
+        <div style={{ position: 'absolute', bottom: '4%', right: '3%', display: 'flex', gap: 3, zIndex: 2 }}>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: 'clamp(14px, 1.4vw, 22px) clamp(18px, 1.8vw, 32px)', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
+            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2vw, 34px)', fontWeight: 'bold', color: teal }}>+42%</div>
+            <div style={{ color: '#999', fontSize: 'clamp(8px, 0.7vw, 11px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>AVG. EXPECTANCY INCREASE</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '20px 28px', textAlign: 'center' }}>
-            <div style={{ fontFamily: fd, fontSize: 30, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
-            <div style={{ color: '#999', fontSize: 10, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>EXECUTIONS ANALYZED</div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: 'clamp(14px, 1.4vw, 22px) clamp(18px, 1.8vw, 32px)', textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2vw, 34px)', fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
+            <div style={{ color: '#999', fontSize: 'clamp(8px, 0.7vw, 11px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>EXECUTIONS ANALYZED</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '20px 28px', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
-            <div style={{ fontFamily: fd, fontSize: 30, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
-            <div style={{ color: '#ff4444', fontSize: 10, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>REDUCTION IN REVENGE TRADES</div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: 'clamp(14px, 1.4vw, 22px) clamp(18px, 1.8vw, 32px)', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
+            <div style={{ fontFamily: fd, fontSize: 'clamp(22px, 2vw, 34px)', fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
+            <div style={{ color: '#ff4444', fontSize: 'clamp(8px, 0.7vw, 11px)', letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>REDUCTION IN REVENGE TRADES</div>
           </div>
         </div>
 
         {/* Integration logos — bottom left */}
-        <div style={{ position: 'absolute', bottom: 50, left: 80, zIndex: 2 }}>
-          <div style={{ color: '#666', fontSize: 10, letterSpacing: '2px', marginBottom: 8 }}>INTEGRATED WITH LEADING APIs</div>
-          <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-            <span style={{ color: '#666', fontSize: 12, fontFamily: fm }}>BINANCE</span>
-            <span style={{ color: '#666', fontSize: 12, fontFamily: fm }}>NINJATRADER</span>
-            <span style={{ color: '#666', fontSize: 12, fontFamily: fm }}>TRADINGVIEW</span>
+        <div style={{ position: 'absolute', bottom: '4%', left: '5.5%', zIndex: 2 }}>
+          <div style={{ color: '#666', fontSize: 'clamp(8px, 0.7vw, 12px)', letterSpacing: '2px', marginBottom: 8, fontFamily: fm }}>INTEGRATED WITH LEADING APIs</div>
+          <div style={{ display: 'flex', gap: 'clamp(12px, 1.5vw, 28px)', alignItems: 'center' }}>
+            <span style={{ color: '#666', fontSize: 'clamp(10px, 0.85vw, 14px)', fontFamily: fm }}>BINANCE</span>
+            <span style={{ color: '#666', fontSize: 'clamp(10px, 0.85vw, 14px)', fontFamily: fm }}>NINJATRADER</span>
+            <span style={{ color: '#666', fontSize: 'clamp(10px, 0.85vw, 14px)', fontFamily: fm }}>TRADINGVIEW</span>
           </div>
         </div>
 
         {/* Stick figure — bottom center */}
-        <div style={{ position: 'absolute', bottom: 45, left: '50%', transform: 'translateX(-50%)', zIndex: 2, opacity: 0.4 }}>
+        <div style={{ position: 'absolute', bottom: '3%', left: '50%', transform: 'translateX(-50%)', zIndex: 2, opacity: 0.4 }}>
           <svg width="18" height="35" viewBox="0 0 20 24" fill="none">
             <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
             <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
