@@ -2404,13 +2404,12 @@ export default function WickCoachFull() {
         <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
           {tabs.map(t => {
             const label = t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase();
-            const isActive = t === 'Analysis';
-            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 12, color: isActive ? '#fff' : '#999', letterSpacing: '2px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, borderBottom: isActive ? `2px solid ${teal}` : '2px solid transparent', paddingBottom: 4 }}>{label}</span>;
+            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 12, color: '#999', letterSpacing: '2px', cursor: 'pointer', fontFamily: fm, fontWeight: 600, borderBottom: '2px solid transparent', paddingBottom: 4 }}>{label}</span>;
           })}
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
           <span style={{ color: '#fff', fontFamily: fm, fontSize: 12, cursor: 'pointer', letterSpacing: '2px', fontWeight: 600 }}>LOGIN</span>
-          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '10px 24px', fontSize: 12, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
+          <button onClick={() => setView('app')} style={{ background: 'transparent', color: '#fff', border: '1px solid #fff', padding: '10px 24px', fontSize: 12, fontWeight: 'bold', letterSpacing: '1.5px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}>START BUILDING FREE</button>
         </div>
       </nav>
 
@@ -2427,124 +2426,153 @@ export default function WickCoachFull() {
             @keyframes hAn1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
             @keyframes hAn2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
             @keyframes hAn3 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes heroScanLine { 0% { transform: translateY(-10px); opacity: 0; } 10% { opacity: 0.4; } 90% { opacity: 0.4; } 100% { transform: translateY(100vh); opacity: 0; } }
+            @keyframes heroPulseGlow { 0%,100% { opacity: 0.18; transform: scale(1); } 50% { opacity: 0.28; transform: scale(1.04); } }
           }
         `}</style>
 
-        {/* Atmospheric glow — primary behind candles */}
-        <div style={{ position: 'absolute', top: '-5%', left: '20%', width: '70%', height: '95%', background: 'radial-gradient(ellipse 70% 60% at 55% 40%, rgba(0,212,160,0.10) 0%, rgba(0,212,160,0.05) 25%, rgba(0,212,160,0.02) 50%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
-        {/* Secondary glow — tighter core */}
-        <div style={{ position: 'absolute', top: '5%', left: '30%', width: '45%', height: '65%', background: 'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(0,212,160,0.07) 0%, rgba(0,180,140,0.03) 40%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+        {/* Terminal grid background */}
+        <div style={{ position: 'absolute', inset: 0, backgroundSize: '32px 32px', backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)', maskImage: 'radial-gradient(ellipse at 60% 45%, black 30%, transparent 80%)', WebkitMaskImage: 'radial-gradient(ellipse at 60% 45%, black 30%, transparent 80%)', pointerEvents: 'none', zIndex: 0 }} />
+
+        {/* Atmospheric glow — green-to-pink haze behind candles */}
+        <div style={{ position: 'absolute', top: '0', left: '25%', width: '70%', height: '100%', background: 'radial-gradient(ellipse at 55% 45%, rgba(0,212,160,0.20) 0%, rgba(0,212,160,0.12) 25%, rgba(255,0,80,0.04) 40%, transparent 65%)', pointerEvents: 'none', zIndex: 0, animation: 'heroPulseGlow 8s ease-in-out infinite' }} />
+        {/* Secondary glow — brighter core bloom */}
+        <div style={{ position: 'absolute', top: '0', left: '25%', width: '70%', height: '100%', background: 'radial-gradient(ellipse at 55% 45%, rgba(0,255,160,0.08) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
+
+        {/* AI scanner line */}
+        <div style={{ position: 'absolute', top: 0, left: '20%', width: '68%', height: 2, background: `linear-gradient(90deg, transparent, ${teal}40, transparent)`, boxShadow: `0 0 12px ${teal}30`, animation: 'heroScanLine 5s ease-in-out infinite', pointerEvents: 'none', zIndex: 4 }} />
 
         {/* Candlestick chart SVG */}
-        <div style={{ position: 'absolute', top: '3%', left: '28%', width: '58%', height: '85%', opacity: 0.95, pointerEvents: 'none', zIndex: 1 }}>
+        <div style={{ position: 'absolute', top: '3%', left: '20%', width: '66%', height: '85%', opacity: 0.95, pointerEvents: 'none', zIndex: 1 }}>
           <svg width="100%" height="100%" viewBox="0 0 800 750" preserveAspectRatio="xMidYMid meet">
-            {/* Dashed trend line — subtle upward curve */}
-            <path d="M 40 620 Q 400 480 760 160" stroke={teal} strokeWidth={1} opacity={0.18} strokeDasharray="6 6" fill="none" />
-            {/* Candles */}
+            {/* Chart grid — fades at edges */}
             {[
-              { x: 60,  body: 50,  wu: 18, wd: 22, bull: true,  base: 600, dur: 4.5, del: 0 },
-              { x: 115, body: 35,  wu: 10, wd: 28, bull: false, base: 590, dur: 3.8, del: 0.6 },
-              { x: 170, body: 60,  wu: 20, wd: 14, bull: true,  base: 570, dur: 5.2, del: 1.3 },
-              { x: 225, body: 30,  wu: 12, wd: 24, bull: false, base: 565, dur: 3.5, del: 0.3 },
-              { x: 280, body: 72,  wu: 28, wd: 10, bull: true,  base: 540, dur: 6.0, del: 1.8 },
-              { x: 335, body: 45,  wu: 10, wd: 30, bull: false, base: 530, dur: 4.2, del: 0.9 },
-              { x: 390, body: 38,  wu: 15, wd: 22, bull: false, base: 520, dur: 3.6, del: 2.1 },
-              { x: 445, body: 85,  wu: 30, wd: 10, bull: true,  base: 475, dur: 5.8, del: 0.4 },
-              { x: 500, body: 70,  wu: 22, wd: 12, bull: true,  base: 440, dur: 6.5, del: 1.5 },
-              { x: 555, body: 110, wu: 28, wd: 10, bull: true,  base: 390, dur: 7.0, del: 0.7 },
-              { x: 610, body: 95,  wu: 35, wd: 15, bull: true,  base: 340, dur: 5.5, del: 2.4 },
-              { x: 665, body: 50,  wu: 15, wd: 28, bull: false, base: 360, dur: 4.0, del: 1.7 },
-              { x: 720, body: 100, wu: 30, wd: 12, bull: true,  base: 280, dur: 5.3, del: 0.2 },
+              { y: 150, op: 0.06 },
+              { y: 250, op: 0.15 },
+              { y: 350, op: 0.4 },
+              { y: 450, op: 0.35 },
+              { y: 550, op: 0.15 },
+              { y: 650, op: 0.06 },
+            ].map(({ y, op }) => (
+              <line key={`h${y}`} x1={30} y1={y} x2={770} y2={y} stroke="#1e1f2a" strokeWidth={0.5} opacity={op} />
+            ))}
+            {[
+              { x: 80, op: 0.05 },
+              { x: 160, op: 0.12 },
+              { x: 240, op: 0.25 },
+              { x: 320, op: 0.35 },
+              { x: 400, op: 0.4 },
+              { x: 480, op: 0.4 },
+              { x: 560, op: 0.35 },
+              { x: 640, op: 0.2 },
+              { x: 720, op: 0.1 },
+            ].map(({ x, op }) => (
+              <line key={`v${x}`} x1={x} y1={120} x2={x} y2={680} stroke="#1e1f2a" strokeWidth={0.5} opacity={op} />
+            ))}
+            {/* Blue moving average line */}
+            <path
+              d="M 50 600 C 100 590, 140 585, 180 570 C 220 555, 250 530, 290 490 C 330 460, 360 430, 400 410 C 440 395, 470 385, 510 380 C 550 385, 580 400, 620 415 C 660 425, 690 435, 730 445"
+              stroke="#3388ff"
+              strokeWidth={2}
+              fill="none"
+              opacity={0.6}
+            />
+            {/* Dashed trend line — mountain peak shape */}
+            <path d="M 40 580 Q 250 450 400 200 Q 550 350 760 420" stroke={teal} strokeWidth={1} opacity={0.18} strokeDasharray="6 6" fill="none" />
+            {/* Candles — mountain/peak arrangement: small left, TALL center, medium right */}
+            {[
+              { x: 60,  body: 49,  wu: 14, wd: 18, bull: true,  base: 590, dur: 4.5, del: 0 },
+              { x: 115, body: 42,  wu: 10, wd: 24, bull: false, base: 580, dur: 3.8, del: 0.6 },
+              { x: 170, body: 63,  wu: 18, wd: 12, bull: true,  base: 560, dur: 5.2, del: 1.3 },
+              { x: 225, body: 84,  wu: 22, wd: 10, bull: true,  base: 520, dur: 3.5, del: 0.3 },
+              { x: 280, body: 112, wu: 30, wd: 10, bull: true,  base: 470, dur: 6.0, del: 1.8 },
+              { x: 335, body: 63,  wu: 12, wd: 28, bull: false, base: 450, dur: 4.2, del: 0.9 },
+              { x: 390, body: 154, wu: 35, wd: 10, bull: true,  base: 400, dur: 3.6, del: 2.1 },
+              { x: 445, body: 140, wu: 32, wd: 12, bull: true,  base: 380, dur: 5.8, del: 0.4 },
+              { x: 500, body: 70,  wu: 18, wd: 30, bull: false, base: 360, dur: 6.5, del: 1.5 },
+              { x: 555, body: 98,  wu: 28, wd: 14, bull: true,  base: 400, dur: 7.0, del: 0.7 },
+              { x: 610, body: 56,  wu: 14, wd: 22, bull: false, base: 420, dur: 5.5, del: 2.4 },
+              { x: 665, body: 77,  wu: 20, wd: 16, bull: true,  base: 440, dur: 4.0, del: 1.7 },
+              { x: 720, body: 49,  wu: 12, wd: 20, bull: false, base: 450, dur: 5.3, del: 0.2 },
             ].map((c, i) => {
               const color = c.bull ? teal : '#ff4444';
-              const bw = 22;
-              const bodyTop = c.base - c.body;
+              const bw = 28;
+              const scaledBody = Math.round(c.body * 1.4);
+              const bodyTop = c.base - scaledBody;
               const anim = ['hc1','hc2','hc3','hc4','hc5','hc6'][i % 6];
               return (
                 <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${anim} ${c.dur}s ease-in-out ${c.del}s infinite` }}>
-                  {/* Glow rect behind candle */}
-                  <rect x={c.x - 5} y={bodyTop - 6} width={bw + 10} height={c.body + 12} rx={5} fill={color} opacity={0.08} />
+                  {/* Individual candle glow */}
+                  <rect x={c.x - 8} y={bodyTop - 8} width={bw + 16} height={scaledBody + 16} rx={4} fill={color} opacity={0.25} />
                   {/* Wick */}
                   <line x1={c.x + bw / 2} y1={bodyTop - c.wu} x2={c.x + bw / 2} y2={c.base + c.wd} stroke={color} strokeWidth={2} />
                   {/* Body */}
-                  <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.85} />
+                  <rect x={c.x} y={bodyTop} width={bw} height={scaledBody} rx={2} fill={color} opacity={0.85} />
                 </g>
               );
             })}
           </svg>
         </div>
 
-        {/* Faint watermark text decorations */}
-        <div style={{ position: 'absolute', top: '62%', left: '8%', color: 'rgba(255,255,255,0.04)', fontSize: 13, fontFamily: fm, letterSpacing: '1px', pointerEvents: 'none', zIndex: 1 }}>analyze the data</div>
-        <div style={{ position: 'absolute', top: '66%', left: '5%', color: 'rgba(255,255,255,0.03)', fontSize: 11, fontFamily: fm, letterSpacing: '1px', pointerEvents: 'none', zIndex: 1 }}>Continue to</div>
-        <div style={{ position: 'absolute', top: '68%', left: '12%', color: 'rgba(255,255,255,0.03)', fontSize: 11, fontFamily: fm, letterSpacing: '1px', pointerEvents: 'none', zIndex: 1 }}>rapid execution volume.</div>
-
         {/* Text content — left side */}
-        <div style={{ position: 'absolute', top: '13%', left: 'clamp(40px, 5vw, 80px)', zIndex: 2, maxWidth: 'clamp(380px, 38vw, 530px)' }}>
+        <div style={{ position: 'absolute', top: '18vh', left: 'clamp(40px, 5vw, 80px)', zIndex: 2, maxWidth: 'clamp(380px, 38vw, 530px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
             <div style={{ width: 40, height: 2, background: teal }} />
             <span style={{ color: teal, fontSize: 12, letterSpacing: '3px', fontFamily: fm, fontWeight: 'bold' }}>ENGINEERED FOR MASTERY</span>
           </div>
-          <h1 style={{ fontFamily: fd, fontSize: 'clamp(44px, 4.5vw, 64px)', fontWeight: 'bold', lineHeight: 1.05, color: '#fff', margin: '0 0 28px 0' }}>
-            The Trading Journal That Fixes Your Psychology.
+          <h1 style={{ fontFamily: fd, fontSize: '72px', fontWeight: 'bold', lineHeight: 1.0, color: '#fff', margin: '0 0 28px 0' }}>
+            The Trading Journal That <span style={{ color: teal }}>Fixes Your Psychology.</span>
           </h1>
-          <p style={{ color: '#999', fontSize: 15, lineHeight: 1.7, fontFamily: fm, maxWidth: 480, marginBottom: 40 }}>
+          <p style={{ color: '#999', fontSize: 15, lineHeight: 1.7, fontFamily: fm, maxWidth: 520, marginBottom: 40 }}>
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 40 }}>
+          <div>
             <button
               onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
               style={{ background: teal, color: '#0e0f14', border: 'none', padding: '16px 40px', fontSize: 13, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
               onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
             >START JOURNALING</button>
-            <button
-              style={{ background: 'transparent', color: '#fff', border: '1px solid #2a2b32', padding: '16px 40px', fontSize: 13, fontWeight: 'bold', letterSpacing: '2px', fontFamily: fm, borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = teal; e.currentTarget.style.color = teal; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; e.currentTarget.style.color = '#fff'; }}
-            >&#9679; WATCH DEMO</button>
-          </div>
-          <div>
-            <div style={{ color: '#666', fontSize: 10, letterSpacing: '2px', marginBottom: 10, fontFamily: fm }}>INTEGRATED WITH LEADING APIs</div>
-            <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
-              {['BINANCE', 'NINJATRADER', 'TRADINGVIEW'].map(name => (
-                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: 2, background: '#444' }} />
-                  <span style={{ color: '#666', fontSize: 11, fontFamily: fm, letterSpacing: '1px' }}>{name}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* Annotation 1: IMPULSE DRAWDOWN (red, top ~20%) */}
-        <div style={{ position: 'absolute', top: '20%', right: '30%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', boxShadow: '0 0 8px rgba(255,68,68,0.5)', zIndex: 3 }} />
-        <svg style={{ position: 'absolute', top: '15%', right: '5%', width: '28%', height: '10%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
-          <path d="M 0 100% Q 30% 80% 100% 15%" stroke="rgba(255,68,68,0.35)" strokeWidth={1} strokeDasharray="4 3" fill="none" />
-        </svg>
-        <div style={{ position: 'absolute', top: '14%', right: '4%', maxWidth: 240, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
-          <div style={{ color: '#ff4444', fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>IMPULSE DRAWDOWN</div>
-          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
+        {/* Broker integrations link — pinned bottom-left */}
+        <div style={{ position: 'absolute', bottom: 45, left: 60, zIndex: 2 }}>
+          <span
+            style={{ color: '#999', fontSize: 13, fontFamily: fm, cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.color = teal; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#999'; }}
+          >View the brokers we integrate with →</span>
         </div>
 
-        {/* Annotation 2: PATTERN EXTRACTION (white, middle ~42%) */}
-        <div style={{ position: 'absolute', top: '44%', right: '22%', width: 8, height: 8, borderRadius: '50%', background: '#fff', boxShadow: '0 0 8px rgba(255,255,255,0.3)', zIndex: 3 }} />
-        <svg style={{ position: 'absolute', top: '38%', right: '5%', width: '20%', height: '10%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
-          <path d="M 0 90% Q 25% 60% 100% 25%" stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" fill="none" />
+        {/* Annotation 1: PATTERN RECOGNITION — TOP-RIGHT of candles */}
+        <div style={{ position: 'absolute', top: '15%', right: '30%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', boxShadow: '0 0 8px rgba(255,68,68,0.5)', zIndex: 3 }} />
+        <svg style={{ position: 'absolute', top: '5%', right: '3%', width: '30%', height: '15%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
+          <line x1="95%" y1="15%" x2="5%" y2="85%" stroke="rgba(255,68,68,0.35)" strokeWidth={1} strokeDasharray="4 3" />
         </svg>
-        <div style={{ position: 'absolute', top: '38%', right: '4%', maxWidth: 240, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
-          <div style={{ color: '#fff', fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>PATTERN EXTRACTION</div>
-          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Micro-fractals isolated perfectly from noise.</div>
+        <div style={{ position: 'absolute', top: '10%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
+          <div style={{ color: '#ff4444', fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>PATTERN RECOGNITION</div>
+          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>AI-powered detection of recurring behavioral patterns across your trade history.</div>
         </div>
 
-        {/* Annotation 3: MOMENTUM IGNITION (green, lower ~60%) */}
-        <div style={{ position: 'absolute', top: '62%', right: '26%', width: 8, height: 8, borderRadius: '50%', background: teal, boxShadow: '0 0 8px rgba(0,212,160,0.5)', zIndex: 3 }} />
-        <svg style={{ position: 'absolute', top: '56%', right: '5%', width: '24%', height: '10%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
-          <path d="M 0 85% Q 20% 55% 100% 20%" stroke="rgba(0,212,160,0.3)" strokeWidth={1} strokeDasharray="4 3" fill="none" />
+        {/* Annotation 2: GOAL TRACKING — LEFT of candles */}
+        <div style={{ position: 'absolute', top: '45%', left: '28%', width: 8, height: 8, borderRadius: '50%', background: '#fff', boxShadow: '0 0 8px rgba(255,255,255,0.3)', zIndex: 3 }} />
+        <svg style={{ position: 'absolute', top: '35%', left: '5%', width: '25%', height: '15%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
+          <line x1="5%" y1="40%" x2="95%" y2="75%" stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" />
         </svg>
-        <div style={{ position: 'absolute', top: '56%', right: '4%', maxWidth: 240, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
-          <div style={{ color: teal, fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>MOMENTUM IGNITION</div>
-          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+        <div style={{ position: 'absolute', top: '35%', left: '5%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
+          <div style={{ color: '#fff', fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>GOAL TRACKING</div>
+          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Thoroughly understand your trading goals and measure progress weekly.</div>
+        </div>
+
+        {/* Annotation 3: JOURNAL ANALYSIS — BOTTOM-RIGHT of candles */}
+        <div style={{ position: 'absolute', top: '65%', right: '28%', width: 8, height: 8, borderRadius: '50%', background: teal, boxShadow: '0 0 8px rgba(0,212,160,0.5)', zIndex: 3 }} />
+        <svg style={{ position: 'absolute', top: '60%', right: '3%', width: '28%', height: '10%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
+          <line x1="95%" y1="20%" x2="5%" y2="60%" stroke="rgba(0,212,160,0.3)" strokeWidth={1} strokeDasharray="4 3" />
+        </svg>
+        <div style={{ position: 'absolute', top: '63%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
+          <div style={{ color: teal, fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>JOURNAL ANALYSIS</div>
+          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Reads what you write about your trades — not just the numbers, the psychology behind them.</div>
         </div>
 
         {/* Stat cards — bottom right */}
