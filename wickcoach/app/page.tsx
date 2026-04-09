@@ -2423,9 +2423,10 @@ export default function WickCoachFull() {
             @keyframes hc4 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
             @keyframes hc5 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.08); } }
             @keyframes hc6 { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.94); } }
-            @keyframes hAn1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-            @keyframes hAn2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
-            @keyframes hAn3 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes hBob1 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes hBob2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+            @keyframes hBob3 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes hBob4 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
             @keyframes heroScanLine { 0% { transform: translateY(-10px); opacity: 0; } 10% { opacity: 0.4; } 90% { opacity: 0.4; } 100% { transform: translateY(100vh); opacity: 0; } }
             @keyframes heroPulseGlow { 0%,100% { opacity: 0.18; transform: scale(1); } 50% { opacity: 0.28; transform: scale(1.04); } }
           }
@@ -2434,9 +2435,8 @@ export default function WickCoachFull() {
         {/* Terminal grid background */}
         <div style={{ position: 'absolute', inset: 0, backgroundSize: '32px 32px', backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)', maskImage: 'radial-gradient(ellipse at 60% 45%, black 30%, transparent 80%)', WebkitMaskImage: 'radial-gradient(ellipse at 60% 45%, black 30%, transparent 80%)', pointerEvents: 'none', zIndex: 0 }} />
 
-        {/* Atmospheric glow — green-to-pink haze behind candles */}
+        {/* Atmospheric glow */}
         <div style={{ position: 'absolute', top: '0', left: '25%', width: '70%', height: '100%', background: 'radial-gradient(ellipse at 55% 45%, rgba(0,212,160,0.20) 0%, rgba(0,212,160,0.12) 25%, rgba(255,0,80,0.04) 40%, transparent 65%)', pointerEvents: 'none', zIndex: 0, animation: 'heroPulseGlow 8s ease-in-out infinite' }} />
-        {/* Secondary glow — brighter core bloom */}
         <div style={{ position: 'absolute', top: '0', left: '25%', width: '70%', height: '100%', background: 'radial-gradient(ellipse at 55% 45%, rgba(0,255,160,0.08) 0%, transparent 50%)', pointerEvents: 'none', zIndex: 0 }} />
 
         {/* AI scanner line */}
@@ -2447,67 +2447,51 @@ export default function WickCoachFull() {
           <svg width="100%" height="100%" viewBox="0 0 800 750" preserveAspectRatio="xMidYMid meet">
             {/* Chart grid — fades at edges */}
             {[
-              { y: 150, op: 0.06 },
-              { y: 250, op: 0.15 },
-              { y: 350, op: 0.4 },
-              { y: 450, op: 0.35 },
-              { y: 550, op: 0.15 },
-              { y: 650, op: 0.06 },
+              { y: 150, op: 0.06 }, { y: 250, op: 0.15 }, { y: 350, op: 0.4 },
+              { y: 450, op: 0.35 }, { y: 550, op: 0.15 }, { y: 650, op: 0.06 },
             ].map(({ y, op }) => (
               <line key={`h${y}`} x1={30} y1={y} x2={770} y2={y} stroke="#1e1f2a" strokeWidth={0.5} opacity={op} />
             ))}
             {[
-              { x: 80, op: 0.05 },
-              { x: 160, op: 0.12 },
-              { x: 240, op: 0.25 },
-              { x: 320, op: 0.35 },
-              { x: 400, op: 0.4 },
-              { x: 480, op: 0.4 },
-              { x: 560, op: 0.35 },
-              { x: 640, op: 0.2 },
-              { x: 720, op: 0.1 },
+              { x: 80, op: 0.05 }, { x: 160, op: 0.12 }, { x: 240, op: 0.25 },
+              { x: 320, op: 0.35 }, { x: 400, op: 0.4 }, { x: 480, op: 0.4 },
+              { x: 560, op: 0.35 }, { x: 640, op: 0.2 }, { x: 720, op: 0.1 },
             ].map(({ x, op }) => (
               <line key={`v${x}`} x1={x} y1={120} x2={x} y2={680} stroke="#1e1f2a" strokeWidth={0.5} opacity={op} />
             ))}
             {/* Blue moving average line */}
-            <path
-              d="M 50 600 C 100 590, 140 585, 180 570 C 220 555, 250 530, 290 490 C 330 460, 360 430, 400 410 C 440 395, 470 385, 510 380 C 550 385, 580 400, 620 415 C 660 425, 690 435, 730 445"
-              stroke="#3388ff"
-              strokeWidth={2}
-              fill="none"
-              opacity={0.6}
-            />
-            {/* Dashed trend line — mountain peak shape */}
-            <path d="M 40 580 Q 250 450 400 200 Q 550 350 760 420" stroke={teal} strokeWidth={1} opacity={0.18} strokeDasharray="6 6" fill="none" />
-            {/* Candles — mountain/peak arrangement: small left, TALL center, medium right */}
+            <path d="M 50 560 C 120 555, 180 548, 240 540 C 300 530, 340 510, 380 470 C 420 430, 450 390, 490 350 C 530 340, 560 350, 600 370 C 640 380, 670 370, 730 340" stroke="#3388ff" strokeWidth={2} fill="none" opacity={0.6} />
+            {/* Dashed trend line */}
+            <path d="M 40 570 Q 300 480 500 300 Q 600 370 760 330" stroke={teal} strokeWidth={1} opacity={0.18} strokeDasharray="6 6" fill="none" />
+            {/* Candles — accumulation, breakout, pullback, push */}
             {[
-              { x: 60,  body: 49,  wu: 14, wd: 18, bull: true,  base: 590, dur: 4.5, del: 0 },
-              { x: 115, body: 42,  wu: 10, wd: 24, bull: false, base: 580, dur: 3.8, del: 0.6 },
-              { x: 170, body: 63,  wu: 18, wd: 12, bull: true,  base: 560, dur: 5.2, del: 1.3 },
-              { x: 225, body: 84,  wu: 22, wd: 10, bull: true,  base: 520, dur: 3.5, del: 0.3 },
-              { x: 280, body: 112, wu: 30, wd: 10, bull: true,  base: 470, dur: 6.0, del: 1.8 },
-              { x: 335, body: 63,  wu: 12, wd: 28, bull: false, base: 450, dur: 4.2, del: 0.9 },
-              { x: 390, body: 154, wu: 35, wd: 10, bull: true,  base: 400, dur: 3.6, del: 2.1 },
-              { x: 445, body: 140, wu: 32, wd: 12, bull: true,  base: 380, dur: 5.8, del: 0.4 },
-              { x: 500, body: 70,  wu: 18, wd: 30, bull: false, base: 360, dur: 6.5, del: 1.5 },
-              { x: 555, body: 98,  wu: 28, wd: 14, bull: true,  base: 400, dur: 7.0, del: 0.7 },
-              { x: 610, body: 56,  wu: 14, wd: 22, bull: false, base: 420, dur: 5.5, del: 2.4 },
-              { x: 665, body: 77,  wu: 20, wd: 16, bull: true,  base: 440, dur: 4.0, del: 1.7 },
-              { x: 720, body: 49,  wu: 12, wd: 20, bull: false, base: 450, dur: 5.3, del: 0.2 },
+              /* Consolidation (left) — similar heights, overlapping */
+              { x: 60,  body: 35, wu: 8,  wd: 15, bull: true,  base: 560, dur: 4.5, del: 0 },
+              { x: 110, body: 28, wu: 12, wd: 10, bull: false, base: 545, dur: 3.8, del: 0.6 },
+              { x: 160, body: 32, wu: 6,  wd: 14, bull: true,  base: 555, dur: 5.2, del: 1.3 },
+              { x: 210, body: 25, wu: 10, wd: 8,  bull: false, base: 548, dur: 3.5, del: 0.3 },
+              { x: 260, body: 38, wu: 7,  wd: 16, bull: true,  base: 545, dur: 6.0, del: 1.8 },
+              /* Breakout (center) — 3 large greens pushing up */
+              { x: 320, body: 80, wu: 10, wd: 20, bull: true,  base: 510, dur: 4.2, del: 0.9 },
+              { x: 380, body: 110,wu: 12, wd: 25, bull: true,  base: 440, dur: 3.6, del: 2.1 },
+              { x: 440, body: 95, wu: 8,  wd: 22, bull: true,  base: 360, dur: 5.8, del: 0.4 },
+              /* Pullback (right-center) — smaller reds */
+              { x: 500, body: 45, wu: 18, wd: 8,  bull: false, base: 390, dur: 6.5, del: 1.5 },
+              { x: 550, body: 35, wu: 14, wd: 6,  bull: false, base: 410, dur: 7.0, del: 0.7 },
+              /* Second push (right) — greens resuming */
+              { x: 610, body: 60, wu: 9,  wd: 18, bull: true,  base: 380, dur: 5.5, del: 2.4 },
+              { x: 670, body: 70, wu: 10, wd: 20, bull: true,  base: 330, dur: 4.0, del: 1.7 },
+              { x: 730, body: 30, wu: 12, wd: 7,  bull: false, base: 340, dur: 5.3, del: 0.2 },
             ].map((c, i) => {
               const color = c.bull ? teal : '#ff4444';
               const bw = 28;
-              const scaledBody = Math.round(c.body * 1.4);
-              const bodyTop = c.base - scaledBody;
+              const bodyTop = c.base - c.body;
               const anim = ['hc1','hc2','hc3','hc4','hc5','hc6'][i % 6];
               return (
                 <g key={i} style={{ transformOrigin: `${c.x + bw / 2}px ${c.base}px`, animation: `${anim} ${c.dur}s ease-in-out ${c.del}s infinite` }}>
-                  {/* Individual candle glow */}
-                  <rect x={c.x - 8} y={bodyTop - 8} width={bw + 16} height={scaledBody + 16} rx={4} fill={color} opacity={0.25} />
-                  {/* Wick */}
+                  <rect x={c.x - 8} y={bodyTop - 8} width={bw + 16} height={c.body + 16} rx={4} fill={color} opacity={0.25} />
                   <line x1={c.x + bw / 2} y1={bodyTop - c.wu} x2={c.x + bw / 2} y2={c.base + c.wd} stroke={color} strokeWidth={2} />
-                  {/* Body */}
-                  <rect x={c.x} y={bodyTop} width={bw} height={scaledBody} rx={2} fill={color} opacity={0.85} />
+                  <rect x={c.x} y={bodyTop} width={bw} height={c.body} rx={2} fill={color} opacity={0.85} />
                 </g>
               );
             })}
@@ -2536,73 +2520,66 @@ export default function WickCoachFull() {
           </div>
         </div>
 
-        {/* Broker integrations link — pinned bottom-left */}
-        <div style={{ position: 'absolute', bottom: 45, left: 60, zIndex: 2 }}>
-          <span
-            style={{ color: '#999', fontSize: 13, fontFamily: fm, cursor: 'pointer' }}
-            onMouseEnter={e => { e.currentTarget.style.color = teal; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#999'; }}
-          >View the brokers we integrate with →</span>
+        {/* === ANNOTATION DOTTED LINES — single SVG overlay === */}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }}>
+          {/* Line 1: dot on candle 7 (x=380, breakout green, top wick ~318) → card at top:5% left:32% ≈ (32%vw, 5%vh) */}
+          <line x1="52%" y1="28%" x2="42%" y2="10%" stroke={teal} strokeWidth={1.5} strokeDasharray="5 5" opacity={0.5} />
+          {/* Line 2: dot on candle 2 (x=110, consolidation, mid ~531) → card at top:58% left:2% */}
+          <line x1="28%" y1="52%" x2="12%" y2="62%" stroke="white" strokeWidth={1.5} strokeDasharray="5 5" opacity={0.5} />
+          {/* Line 3: dot on candle 9 (x=500, red pullback, top wick ~327) → card at top:8% right:2% ≈ (98%,8%) */}
+          <line x1="60%" y1="34%" x2="88%" y2="12%" stroke="#ff4444" strokeWidth={1.5} strokeDasharray="5 5" opacity={0.5} />
+          {/* Line 4: dot on candle 12 (x=670, right green, base area ~330) → card at top:60% right:2% ≈ (98%,60%) */}
+          <line x1="68%" y1="30%" x2="88%" y2="64%" stroke="#3388ff" strokeWidth={1.5} strokeDasharray="5 5" opacity={0.5} />
+        </svg>
+
+        {/* Annotation dots — ON specific candles */}
+        {/* Dot 1: top wick of candle 7 (breakout green, x=394, top=318) */}
+        <div style={{ position: 'absolute', top: '27%', left: '51.5%', width: 8, height: 8, borderRadius: '50%', background: teal, boxShadow: '0 0 8px rgba(0,212,160,0.6)', zIndex: 5 }} />
+        {/* Dot 2: body of candle 2 (consolidation, x=124, mid=531) */}
+        <div style={{ position: 'absolute', top: '51%', left: '27.5%', width: 8, height: 8, borderRadius: '50%', background: '#fff', boxShadow: '0 0 8px rgba(255,255,255,0.4)', zIndex: 5 }} />
+        {/* Dot 3: top wick of candle 9 (red pullback, x=514, top=327) */}
+        <div style={{ position: 'absolute', top: '33%', left: '59.5%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', boxShadow: '0 0 8px rgba(255,68,68,0.6)', zIndex: 5 }} />
+        {/* Dot 4: body of candle 12 (right green, x=684, top=260) */}
+        <div style={{ position: 'absolute', top: '29%', left: '67.5%', width: 8, height: 8, borderRadius: '50%', background: '#3388ff', boxShadow: '0 0 8px rgba(51,136,255,0.6)', zIndex: 5 }} />
+
+        {/* Annotation 1: READS YOUR WORDS — top-left of chart */}
+        <div style={{ position: 'absolute', top: '5%', left: '32%', maxWidth: 240, zIndex: 5, animation: 'hBob1 5s ease-in-out 0s infinite' }}>
+          <div style={{ color: teal, fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>READS YOUR WORDS</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, fontFamily: fm }}>Other journals track your P/L. WickCoach reads what you write — your frustrations, your excuses, the emotions behind every trade.</div>
         </div>
 
-        {/* Annotation 1: PATTERN RECOGNITION — TOP-RIGHT of candles */}
-        <div style={{ position: 'absolute', top: '15%', right: '30%', width: 8, height: 8, borderRadius: '50%', background: '#ff4444', boxShadow: '0 0 8px rgba(255,68,68,0.5)', zIndex: 3 }} />
-        <svg style={{ position: 'absolute', top: '5%', right: '3%', width: '30%', height: '15%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
-          <line x1="95%" y1="15%" x2="5%" y2="85%" stroke="rgba(255,68,68,0.35)" strokeWidth={1} strokeDasharray="4 3" />
-        </svg>
-        <div style={{ position: 'absolute', top: '10%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn1 5s ease-in-out infinite' }}>
-          <div style={{ color: '#ff4444', fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>PATTERN RECOGNITION</div>
-          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>AI-powered detection of recurring behavioral patterns across your trade history.</div>
+        {/* Annotation 2: IMPORT YOUR HISTORY — below button area, left */}
+        <div style={{ position: 'absolute', top: '58%', left: '2%', maxWidth: 240, zIndex: 5, animation: 'hBob2 6s ease-in-out 1.5s infinite' }}>
+          <div style={{ color: '#fff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>IMPORT YOUR HISTORY</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, fontFamily: fm }}>Upload years of existing trade data. Your psychology profile starts on day one, not month six.</div>
         </div>
 
-        {/* Annotation 2: GOAL TRACKING — LEFT of candles */}
-        <div style={{ position: 'absolute', top: '45%', left: '28%', width: 8, height: 8, borderRadius: '50%', background: '#fff', boxShadow: '0 0 8px rgba(255,255,255,0.3)', zIndex: 3 }} />
-        <svg style={{ position: 'absolute', top: '35%', left: '5%', width: '25%', height: '15%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
-          <line x1="5%" y1="40%" x2="95%" y2="75%" stroke="rgba(255,255,255,0.2)" strokeWidth={1} strokeDasharray="4 3" />
-        </svg>
-        <div style={{ position: 'absolute', top: '35%', left: '5%', maxWidth: 220, zIndex: 3, animation: 'hAn2 6.5s ease-in-out 1s infinite' }}>
-          <div style={{ color: '#fff', fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>GOAL TRACKING</div>
-          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Thoroughly understand your trading goals and measure progress weekly.</div>
+        {/* Annotation 3: FIND YOUR PSYCH EDGE — top-right */}
+        <div style={{ position: 'absolute', top: '8%', right: '2%', maxWidth: 240, zIndex: 5, animation: 'hBob3 7s ease-in-out 0.5s infinite' }}>
+          <div style={{ color: '#ff4444', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>FIND YOUR PSYCH EDGE</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, fontFamily: fm }}>Your setups work on paper. WickCoach shows you exactly where your psychology destroys your edge — and how to fix it.</div>
         </div>
 
-        {/* Annotation 3: JOURNAL ANALYSIS — BOTTOM-RIGHT of candles */}
-        <div style={{ position: 'absolute', top: '65%', right: '28%', width: 8, height: 8, borderRadius: '50%', background: teal, boxShadow: '0 0 8px rgba(0,212,160,0.5)', zIndex: 3 }} />
-        <svg style={{ position: 'absolute', top: '60%', right: '3%', width: '28%', height: '10%', zIndex: 2, overflow: 'visible', pointerEvents: 'none' }}>
-          <line x1="95%" y1="20%" x2="5%" y2="60%" stroke="rgba(0,212,160,0.3)" strokeWidth={1} strokeDasharray="4 3" />
-        </svg>
-        <div style={{ position: 'absolute', top: '63%', right: '3%', maxWidth: 220, zIndex: 3, animation: 'hAn3 7.5s ease-in-out 2s infinite' }}>
-          <div style={{ color: teal, fontSize: 11, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>JOURNAL ANALYSIS</div>
-          <div style={{ color: '#888', fontSize: 11, lineHeight: 1.55, fontFamily: fm }}>Reads what you write about your trades — not just the numbers, the psychology behind them.</div>
+        {/* Annotation 4: AI THAT COACHES YOU — bottom-right */}
+        <div style={{ position: 'absolute', top: '60%', right: '2%', maxWidth: 240, zIndex: 5, animation: 'hBob4 5.5s ease-in-out 2s infinite' }}>
+          <div style={{ color: '#3388ff', fontSize: 12, letterSpacing: '2px', fontWeight: 'bold', fontFamily: fm, marginBottom: 8 }}>AI THAT COACHES YOU</div>
+          <div style={{ color: '#999', fontSize: 12, lineHeight: 1.5, fontFamily: fm }}>Not just charts and dashboards. A coach that remembers every journal entry you{"'"}ve ever written and holds you accountable.</div>
         </div>
 
         {/* Stat cards — bottom right */}
-        <div style={{ position: 'absolute', bottom: 40, right: 60, display: 'flex', gap: 2, zIndex: 2 }}>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
-            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: teal }}>+42%</div>
+        <div style={{ position: 'absolute', bottom: 30, right: 50, display: 'flex', gap: 2, zIndex: 6 }}>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '14px 20px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>
+            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 'bold', color: teal }}>+42%</div>
             <div style={{ color: '#999', fontSize: 9, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>AVG. EXPECTANCY<br />INCREASE</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center' }}>
-            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '14px 20px', textAlign: 'center' }}>
+            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 'bold', color: '#fff' }}>1.2M+</div>
             <div style={{ color: '#999', fontSize: 9, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>EXECUTIONS<br />ANALYZED</div>
           </div>
-          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '18px 24px', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
-            <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
+          <div style={{ background: 'rgba(14,15,20,0.9)', border: '1px solid #1e1f2a', padding: '14px 20px', textAlign: 'center', borderRadius: '0 8px 8px 0' }}>
+            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 'bold', color: '#ff4444' }}>-68%</div>
             <div style={{ color: '#ff4444', fontSize: 9, letterSpacing: '1.5px', marginTop: 6, fontFamily: fm }}>REDUCTION IN<br />REVENGE TRADES</div>
           </div>
-        </div>
-
-        {/* Stick figure — bottom center */}
-        <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', zIndex: 2, opacity: 0.35 }}>
-          <svg width="16" height="30" viewBox="0 0 20 24" fill="none">
-            <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-            <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-            <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-            <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-          </svg>
         </div>
       </section>
 
