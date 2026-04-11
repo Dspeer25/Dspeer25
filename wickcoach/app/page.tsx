@@ -490,7 +490,7 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
     { ticker: 'DIS', letter: 'D', color: '#1a5276', date: '3/26/26', time: '3:12 PM', strat: 'Call Debit Spread', dir: 'LONG' as const, qty: 9, entry: '$8.52', exit: '$9.85', pl: '+$1,201', rr: '1:2.2', note: 'MA squeeze expanded beau...', win: true },
     { ticker: 'GOOGL', letter: 'G', color: '#34a853', date: '3/26/26', time: '1:38 PM', strat: 'Put Debit Spread', dir: 'LONG' as const, qty: 2, entry: '$3.27', exit: '$7.73', pl: '+$892', rr: '1:1.8', note: 'The 2min 20 EMA was hold...', win: true },
   ];
-  return (<div className="carousel-scroll" style={{ overflowY: 'auto', maxHeight: 520 }}>
+  return (<div>
     {/* Stat cards */}
     <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 16 }}>
       <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
@@ -740,9 +740,10 @@ function MockTradingGoals({ onAdvance, frozen = true }: { onAdvance?: () => void
 
   return (<div style={{ position: 'relative' }}>
     <style>{`
-      .carousel-scroll::-webkit-scrollbar { width: 4px; }
-      .carousel-scroll::-webkit-scrollbar-track { background: transparent; }
-      .carousel-scroll::-webkit-scrollbar-thumb { background: rgba(57,255,133,0.3); border-radius: 2px; }
+      .carousel-card-scroll::-webkit-scrollbar { display: block !important; width: 4px; }
+      .carousel-card-scroll::-webkit-scrollbar-track { background: transparent; }
+      .carousel-card-scroll::-webkit-scrollbar-thumb { background: rgba(57,255,133,0.25); border-radius: 2px; }
+      .carousel-card-scroll { scrollbar-width: thin !important; scrollbar-color: rgba(57,255,133,0.25) transparent; }
       @keyframes goalScan {
         0% { top: 5%; opacity: 0; }
         15% { opacity: 1; }
@@ -2626,7 +2627,7 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 32, position: 'relative' }}>
             {/* Hero animation video */}
-            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, }} />
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, clipPath: 'inset(0 0 22% 0)', }} />
             {/* Heading */}
             <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
             {/* Subtitle */}
@@ -2663,7 +2664,7 @@ export default function WickCoachFull() {
               {/* Screen bezel */}
               <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
-                <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 520, padding: 32 }}>
+                <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: '#0e0f14', borderRadius: 4, overflowX: 'hidden', overflowY: 'auto', height: 520, padding: 32 }}>
                   {activeCategory === 0 && <MockTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
                   {activeCategory === 1 && <MockLogATrade onAdvance={() => setActiveCategory(2)} />}
                   {activeCategory === 2 && <MockPastTrades onAdvance={() => setActiveCategory(0)} />}
