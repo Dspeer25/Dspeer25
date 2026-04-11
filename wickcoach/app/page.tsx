@@ -2412,18 +2412,18 @@ export default function WickCoachFull() {
           </svg>
           <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', fontFamily: fm, color: '#fff' }}>WICKCOACH</span>
         </div>
-        <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 36, alignItems: 'center' }}>
           {['Log a Trade','Past Trades','Trading Goals','Analysis','Trader Profile'].map(t => {
             const label = t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase();
             const isAnalysis = t === 'Analysis';
-            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 11, color: isAnalysis ? '#39ff85' : 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', cursor: 'pointer', fontFamily: fm, textTransform: 'uppercase' as const }}>{label}</span>;
+            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 13, color: isAnalysis ? '#39ff85' : 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', cursor: 'pointer', fontFamily: fm, textTransform: 'uppercase' as const }}>{label}</span>;
           })}
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontFamily: fm, fontSize: 12, cursor: 'pointer' }}>LOGIN</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontFamily: fm, fontSize: 13, cursor: 'pointer' }}>LOGIN</span>
           <button
             onClick={() => setView('app')}
-            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', padding: '9px 20px', fontSize: 11, fontFamily: fm, textTransform: 'uppercase' as const, letterSpacing: '0.08em', cursor: 'pointer', borderRadius: 0 }}
+            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', padding: '10px 22px', fontSize: 13, fontFamily: fm, textTransform: 'uppercase' as const, letterSpacing: '0.08em', cursor: 'pointer', borderRadius: 0 }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >START BUILDING FREE</button>
@@ -2439,30 +2439,30 @@ export default function WickCoachFull() {
         `}</style>
 
         {/* Left column */}
-        <div style={{ paddingLeft: 48, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, zIndex: 5 }}>
+        <div style={{ paddingLeft: 48, paddingTop: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 16, zIndex: 5, paddingBottom: 40 }}>
           {/* Eyebrow */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 24, height: 2, background: '#39ff85' }} />
-            <span style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.2em' }}>ENGINEERED FOR MASTERY</span>
+            <span style={{ fontFamily: fm, fontSize: 12, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.2em' }}>ENGINEERED FOR MASTERY</span>
           </div>
           {/* Headline */}
           <h1 style={{ fontFamily: fd, fontSize: 64, fontWeight: 700, lineHeight: 1.05, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
             The Trading Journal That Fixes Your Psychology<span style={{ color: 'rgba(255,255,255,0.35)' }}>.</span>
           </h1>
           {/* Subtitle */}
-          <p style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: 400, margin: 0 }}>
+          <p style={{ fontFamily: fm, fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 420, margin: 0 }}>
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
           {/* Buttons */}
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <button
               onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-              style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '13px 28px', border: 'none', borderRadius: 0, cursor: 'pointer', overflow: 'hidden', position: 'relative' as const, boxShadow: 'none' }}
+              style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 13, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '14px 32px', border: 'none', borderRadius: 0, cursor: 'pointer', overflow: 'hidden', position: 'relative' as const, boxShadow: 'none' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#2de676'; }}
               onMouseLeave={e => { e.currentTarget.style.background = '#39ff85'; }}
             >START JOURNALING</button>
             <button
-              style={{ background: 'rgba(255,255,255,0.06)', color: '#fff', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '13px 28px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 0, cursor: 'pointer' }}
+              style={{ background: 'rgba(255,255,255,0.06)', color: '#fff', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '14px 32px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 0, cursor: 'pointer' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
             >&#9654; WATCH DEMO</button>
@@ -2470,7 +2470,7 @@ export default function WickCoachFull() {
           {/* Integration logos */}
           <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
             {['BINANCE', 'NINJATRADER', 'TRADINGVIEW'].map(n => (
-              <span key={n} style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>{n}</span>
+              <span key={n} style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>{n}</span>
             ))}
           </div>
         </div>
@@ -2519,22 +2519,81 @@ export default function WickCoachFull() {
             <path d="M 60 405 C 85 380, 100 395, 108 400 C 120 360, 140 300, 156 278 C 200 240, 260 220, 300 210" fill="none" stroke="#39ff85" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
           </svg>
 
+          {/* Brain/Head gazing at journal — animated SVG */}
+          <svg viewBox="0 0 400 200" width="360" height="180" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)', zIndex: 4, opacity: 0.85 }}>
+            <style>{`
+              @media (prefers-reduced-motion: no-preference) {
+                .wc-eye-lid { animation: wcEyeOpen 3s ease-in-out 1s forwards; }
+                .wc-gaze-beam { animation: wcGazeExtend 1.5s ease-out 3s forwards; }
+                .wc-journal-icon { animation: wcJournalAppear 0.8s ease-out 3.8s forwards; }
+              }
+              @keyframes wcEyeOpen {
+                0% { transform: scaleY(0); }
+                60% { transform: scaleY(1.1); }
+                100% { transform: scaleY(1); }
+              }
+              @keyframes wcGazeExtend {
+                0% { stroke-dashoffset: 200; opacity: 0; }
+                20% { opacity: 0.7; }
+                100% { stroke-dashoffset: 0; opacity: 0.5; }
+              }
+              @keyframes wcJournalAppear {
+                0% { opacity: 0; transform: translateY(8px); }
+                100% { opacity: 0.9; transform: translateY(0); }
+              }
+            `}</style>
+            {/* Head profile */}
+            <path d="M 80 140 C 80 140, 65 130, 60 110 C 55 90, 58 70, 68 55 C 78 40, 95 30, 115 30 C 135 30, 148 40, 152 55 C 156 65, 155 75, 150 85 C 147 92, 145 95, 148 100 C 151 105, 150 112, 145 118 C 140 124, 135 128, 130 135 C 125 142, 115 145, 105 145 L 95 145 L 90 140 Z" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round"/>
+            {/* Ear */}
+            <path d="M 80 85 C 75 82, 73 90, 77 95" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
+            {/* Brain lines */}
+            <path d="M 90 50 C 100 45, 120 42, 130 48" fill="none" stroke="rgba(57,255,133,0.12)" strokeWidth="0.8"/>
+            <path d="M 85 60 C 95 55, 110 53, 125 58" fill="none" stroke="rgba(57,255,133,0.1)" strokeWidth="0.8"/>
+            <path d="M 82 72 C 92 68, 108 65, 120 70" fill="none" stroke="rgba(57,255,133,0.08)" strokeWidth="0.8"/>
+            <path d="M 100 48 C 105 55, 102 65, 108 72" fill="none" stroke="rgba(57,255,133,0.1)" strokeWidth="0.8"/>
+            <path d="M 115 42 C 118 50, 115 60, 120 68" fill="none" stroke="rgba(57,255,133,0.09)" strokeWidth="0.8"/>
+            {/* Eye socket */}
+            <ellipse cx="138" cy="82" rx="8" ry="5" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+            {/* Eye pupil */}
+            <g className="wc-eye-lid" style={{ transformOrigin: '138px 82px' }}>
+              <ellipse cx="138" cy="82" rx="4" ry="3.5" fill="#39ff85" opacity="0.9"/>
+              <circle cx="139.5" cy="81.5" r="1.5" fill="#000"/>
+            </g>
+            {/* Gaze beam */}
+            <line x1="148" y1="82" x2="280" y2="82" className="wc-gaze-beam" stroke="#39ff85" strokeWidth="1" strokeDasharray="4 6" style={{ strokeDashoffset: 200, opacity: 0 }}/>
+            {/* Glow particles */}
+            <circle cx="180" cy="82" r="1" fill="#39ff85" className="wc-gaze-beam" style={{ strokeDashoffset: 200, opacity: 0 }}/>
+            <circle cx="220" cy="82" r="0.8" fill="#39ff85" className="wc-gaze-beam" style={{ strokeDashoffset: 200, opacity: 0 }}/>
+            <circle cx="255" cy="82" r="0.6" fill="#39ff85" className="wc-gaze-beam" style={{ strokeDashoffset: 200, opacity: 0 }}/>
+            {/* Journal icon */}
+            <g className="wc-journal-icon" style={{ opacity: 0 }}>
+              <rect x="280" y="58" width="55" height="48" rx="0" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2"/>
+              <line x1="285" y1="58" x2="285" y2="106" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
+              <line x1="292" y1="70" x2="328" y2="70" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+              <line x1="292" y1="76" x2="325" y2="76" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+              <line x1="292" y1="82" x2="320" y2="82" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+              <line x1="292" y1="88" x2="326" y2="88" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+              <line x1="292" y1="94" x2="318" y2="94" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
+              <text x="307" y="66" textAnchor="middle" style={{ fontFamily: fd, fontSize: '5px', letterSpacing: '0.1em', fill: '#39ff85', fontWeight: 600 }}>WICKCOACH</text>
+            </g>
+          </svg>
+
           {/* Annotation panel — stacked right side */}
-          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 220, padding: '0 24px 0 0', display: 'flex', flexDirection: 'column', zIndex: 5, overflow: 'visible' }}>
+          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 240, padding: '0 28px 0 0', display: 'flex', flexDirection: 'column', zIndex: 5, overflow: 'visible' }}>
             {/* Block 1 */}
             <div style={{ padding: '0 0 24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontFamily: fm, fontSize: 10, color: '#ff6b35', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>IMPULSE DRAWDOWN</div>
-              <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#ff6b35', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>IMPULSE DRAWDOWN</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
             </div>
             {/* Block 2 */}
             <div style={{ padding: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontFamily: fm, fontSize: 10, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>PATTERN EXTRACTION</div>
-              <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Micro-fractals isolated perfectly from market noise.</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>PATTERN EXTRACTION</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Micro-fractals isolated perfectly from market noise.</div>
             </div>
             {/* Block 3 */}
             <div style={{ padding: '24px 0 0 0' }}>
-              <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>MOMENTUM IGNITION</div>
-              <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>MOMENTUM IGNITION</div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
             </div>
           </div>
 
@@ -2543,15 +2602,15 @@ export default function WickCoachFull() {
             <div style={{ display: 'flex', background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#39ff85', lineHeight: 1, marginBottom: 4 }}>+42%</div>
-                <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>AVG. EXPECTANCY INCREASE</div>
+                <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>AVG. EXPECTANCY INCREASE</div>
               </div>
               <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#fff', lineHeight: 1, marginBottom: 4 }}>1.2M+</div>
-                <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>EXECUTIONS ANALYZED</div>
+                <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>EXECUTIONS ANALYZED</div>
               </div>
               <div style={{ padding: '16px 20px' }}>
                 <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#ff4444', lineHeight: 1, marginBottom: 4 }}>-68%</div>
-                <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>REDUCTION IN REVENGE TRADES</div>
+                <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>REDUCTION IN REVENGE TRADES</div>
               </div>
             </div>
           </div>
