@@ -2431,7 +2431,7 @@ export default function WickCoachFull() {
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#000', display: 'grid', gridTemplateColumns: '520px 1fr' }}>
+      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#000', display: 'grid', gridTemplateColumns: '420px 1fr' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             @keyframes subtlePulse { 0%,100% { transform: scaleY(0.97); } 50% { transform: scaleY(1.03); } }
@@ -2439,7 +2439,7 @@ export default function WickCoachFull() {
         `}</style>
 
         {/* Left column */}
-        <div style={{ paddingLeft: 48, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 28, zIndex: 5 }}>
+        <div style={{ paddingLeft: 48, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, zIndex: 5 }}>
           {/* Eyebrow */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 24, height: 2, background: '#39ff85' }} />
@@ -2457,7 +2457,7 @@ export default function WickCoachFull() {
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <button
               onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-              style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '13px 28px', border: 'none', borderRadius: 0, cursor: 'pointer' }}
+              style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '13px 28px', border: 'none', borderRadius: 0, cursor: 'pointer', overflow: 'hidden', position: 'relative' as const, boxShadow: 'none' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#2de676'; }}
               onMouseLeave={e => { e.currentTarget.style.background = '#39ff85'; }}
             >START JOURNALING</button>
@@ -2481,23 +2481,22 @@ export default function WickCoachFull() {
           <div style={{ position: 'absolute', top: '15%', left: '10%', width: '65%', height: '70%', background: 'radial-gradient(ellipse 60% 70% at 55% 50%, rgba(0,255,136,0.04) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
           {/* Candlestick SVG */}
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 220px)', height: '100%' }} viewBox="0 0 680 480" preserveAspectRatio="xMidYMid meet">
-            {/* Consolidation — small mixed */}
+          <svg style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 190px)', height: '100%' }} viewBox="0 0 700 460" preserveAspectRatio="xMidYMid meet">
+            {/* Consolidation — mixed candles */}
             {[
-              { x: 120, bh: 35, bt: 320, wt: 305, wb: 365, bull: false },
-              { x: 164, bh: 40, bt: 310, wt: 290, wb: 360, bull: true },
-              { x: 208, bh: 38, bt: 315, wt: 298, wb: 368, bull: false },
-              { x: 252, bh: 30, bt: 318, wt: 302, wb: 355, bull: true },
-              { x: 296, bh: 42, bt: 305, wt: 288, wb: 362, bull: false },
-              {/* Breakout — tall greens */ x: 340, bh: 95, bt: 250, wt: 232, wb: 360, bull: true },
-              { x: 384, bh: 140, bt: 190, wt: 170, wb: 345, bull: true },
-              { x: 428, bh: 180, bt: 155, wt: 135, wb: 350, bull: true },
-              { x: 472, bh: 220, bt: 120, wt: 95,  wb: 355, bull: true },
-              {/* Trailing smaller */ x: 516, bh: 60, bt: 200, wt: 180, wb: 275, bull: false },
-              { x: 560, bh: 80, bt: 170, wt: 148, wb: 265, bull: true },
-              { x: 604, bh: 340, bt: 50,  wt: 25,  wb: 405, bull: true },
+              { x: 60,  bh: 80,  bt: 310, wt: 288, wb: 405, bull: false },
+              { x: 108, bh: 95,  bt: 295, wt: 268, wb: 405, bull: true },
+              { x: 156, bh: 85,  bt: 302, wt: 278, wb: 410, bull: false },
+              { x: 204, bh: 72,  bt: 308, wt: 285, wb: 398, bull: true },
+              { x: 252, bh: 100, bt: 290, wt: 262, wb: 408, bull: false },
+              {/* Breakout — tall greens */ x: 300, bh: 180, bt: 210, wt: 185, wb: 405, bull: true },
+              { x: 348, bh: 240, bt: 150, wt: 122, wb: 408, bull: true },
+              { x: 396, bh: 280, bt: 110, wt: 82,  wb: 410, bull: true },
+              { x: 444, bh: 340, bt: 60,  wt: 40,  wb: 415, bull: true },
+              {/* Pullback */ x: 492, bh: 120, bt: 180, wt: 155, wb: 318, bull: false },
+              { x: 540, bh: 160, bt: 140, wt: 112, wb: 315, bull: true },
+              { x: 588, bh: 280, bt: 50,  wt: 25,  wb: 350, bull: true },
             ].map((c, i) => {
-              const cls = ['c-a','c-b','c-c'][i % 3];
               const dur = [4.5, 5.2, 6.1][i % 3];
               const del = [0, 0.8, 1.6][i % 3];
               const fillCol = c.bull ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,68,0.12)';
@@ -2505,19 +2504,19 @@ export default function WickCoachFull() {
               return (
                 <g key={i}>
                   <line x1={c.x} y1={c.wt} x2={c.x} y2={c.wb} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
-                  <rect className={cls} x={c.x - 8} y={c.bt} width={16} height={c.bh} fill={fillCol} stroke={strokeCol} strokeWidth={1} style={{ transformOrigin: `${c.x}px ${c.bt + c.bh}px`, animation: `subtlePulse ${dur}s ease-in-out ${del}s infinite` }} />
+                  <rect x={c.x - 10} y={c.bt} width={20} height={c.bh} fill={fillCol} stroke={strokeCol} strokeWidth={1} style={{ transformOrigin: `${c.x}px ${c.bt + c.bh}px`, animation: `subtlePulse ${dur}s ease-in-out ${del}s infinite` }} />
                 </g>
               );
             })}
 
             {/* Annotation dots */}
-            <circle cx={340} cy={250} r={4} fill="#39ff85" opacity={0.9} />
-            <circle cx={208} cy={298} r={4} fill="#ff4444" opacity={0.9} />
-            <circle cx={164} cy={360} r={4} fill="rgba(255,255,255,0.7)" />
-            <circle cx={120} cy={365} r={3} fill="#39ff85" opacity={0.7} />
+            <circle cx={300} cy={210} r={4} fill="#39ff85" opacity={0.9} />
+            <circle cx={156} cy={278} r={4} fill="#ff4444" opacity={0.9} />
+            <circle cx={108} cy={400} r={4} fill="rgba(255,255,255,0.7)" />
+            <circle cx={60} cy={405} r={3} fill="#39ff85" opacity={0.7} />
 
             {/* Dashed connecting line between dots */}
-            <path d="M 120 365 C 145 340, 160 355, 164 360 C 175 340, 190 310, 208 298 C 240 270, 300 260, 340 250" fill="none" stroke="#39ff85" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
+            <path d="M 60 405 C 85 380, 100 395, 108 400 C 120 360, 140 300, 156 278 C 200 240, 260 220, 300 210" fill="none" stroke="#39ff85" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
           </svg>
 
           {/* Annotation panel — stacked right side */}
@@ -2540,7 +2539,7 @@ export default function WickCoachFull() {
           </div>
 
           {/* Stat cards — bottom, centered under candles */}
-          <div style={{ position: 'absolute', bottom: 24, right: 260, zIndex: 5 }}>
+          <div style={{ position: 'absolute', bottom: 48, right: 260, zIndex: 5 }}>
             <div style={{ display: 'flex', background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#39ff85', lineHeight: 1, marginBottom: 4 }}>+42%</div>
