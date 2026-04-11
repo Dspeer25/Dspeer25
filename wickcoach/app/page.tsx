@@ -491,8 +491,9 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
     { ticker: 'GOOGL', letter: 'G', color: '#34a853', date: '3/26/26', time: '1:38 PM', strat: 'Put Debit Spread', dir: 'LONG' as const, qty: 2, entry: '$3.27', exit: '$7.73', pl: '+$892', rr: '1:1.8', note: 'The 2min 20 EMA was hold...', win: true },
   ];
   return (<div>
-    {/* Stat cards */}
-    <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 16 }}>
+    {/* Stat cards + HIGH LEVEL ANALYSIS */}
+    <div style={{ display: 'flex', gap: 10, alignItems: 'stretch', marginBottom: 16 }}>
+    <div style={{ display: 'flex', flex: 1, border: '1px solid rgba(255,255,255,0.08)' }}>
       <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
         <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>TOTAL P/L</div>
         <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#39ff85' }}>+$58,532</div>
@@ -517,11 +518,22 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
         <div style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.3)' }}>Per trade</div>
       </div>
     </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: 60, flexShrink: 0, cursor: 'pointer' }}>
+      <div style={{ fontFamily: fm, fontSize: 7, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.08em', textAlign: 'center', lineHeight: 1.3, fontWeight: 600 }}>HIGH-LEVEL<br/>ANALYSIS</div>
+      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="12" height="14" viewBox="0 0 20 24" fill="none"><circle cx="8" cy="4" r="2.8" stroke="#39ff85" strokeWidth="1.2" fill="none" /><line x1="8" y1="6.8" x2="8" y2="15" stroke="#39ff85" strokeWidth="1.2" /><line x1="8" y1="9.5" x2="3" y2="13" stroke="#39ff85" strokeWidth="1.2" /><line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#39ff85" strokeWidth="1.2" /><line x1="8" y1="15" x2="4.5" y2="21" stroke="#39ff85" strokeWidth="1.2" /><line x1="8" y1="15" x2="11.5" y2="21" stroke="#39ff85" strokeWidth="1.2" /><rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#39ff85" opacity="0.9" /><line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#39ff85" strokeWidth="0.8" /></svg>
+      </div>
+    </div>
+    </div>
     {/* Equity Curve */}
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Logo size={12} /><span style={{ fontFamily: fd, fontSize: 14, color: '#fff', fontWeight: 700 }}>Equity Curve</span></div>
-        <div style={{ display: 'flex', gap: 4 }}>{['1D','1W','1M','3M','YTD'].map(p => <span key={p} style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', color: p === 'YTD' ? '#000' : 'rgba(255,255,255,0.4)', background: p === 'YTD' ? '#39ff85' : 'transparent', cursor: 'pointer', letterSpacing: '0.05em' }}>{p}</span>)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', background: 'rgba(0,255,136,0.15)', color: '#39ff85', border: '1px solid rgba(0,255,136,0.3)', cursor: 'pointer' }}>🤖 AI Coach</span>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>↗ Export CSV</span>
+          <div style={{ display: 'flex', gap: 4 }}>{['1D','1W','1M','3M','YTD'].map(p => <span key={p} style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', color: p === 'YTD' ? '#000' : 'rgba(255,255,255,0.4)', background: p === 'YTD' ? '#39ff85' : 'transparent', cursor: 'pointer', letterSpacing: '0.05em' }}>{p}</span>)}</div>
+        </div>
       </div>
       <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '8px 0', height: 100, position: 'relative' }}>
         <svg width="100%" height="100%" viewBox="0 0 500 100" preserveAspectRatio="none">
@@ -539,6 +551,8 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
       <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', background: '#39ff85', color: '#000', fontWeight: 600 }}>● All Trades</span>
       <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>● Wins</span>
       <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>● Losses</span>
+      <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>● Break Even</span>
+      <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>All Time</span>
     </div>
     {/* Table header */}
     <div style={{ display: 'grid', gridTemplateColumns: '30px 44px 62px 58px 1fr 52px 28px 86px 66px 42px 1fr', gap: 4, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const }}>
@@ -870,6 +884,110 @@ function MockAnalysis() {
         ))}
         <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
       </div>
+    </div>
+    {/* Time-of-day performance */}
+    <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div>
+          <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>Time-of-day performance</div>
+          <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>When your edge is sharpest — and when it bleeds</div>
+        </div>
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: 2, gap: 2 }}>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', background: 'rgba(255,255,255,0.08)', color: '#fff', fontWeight: 700 }}>Timeline</span>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', color: '#39ff85' }}>Best hours</span>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', color: 'rgba(255,255,255,0.4)' }}>Worst hours</span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {[
+          { h: '9-10AM', pl: '+$18,500', c: 45, op: 0.22 },
+          { h: '10-11AM', pl: '+$13,006', c: 38, op: 0.18 },
+          { h: '11-12PM', pl: '+$9,781', c: 28, op: 0.15 },
+          { h: '12-1PM', pl: '+$2,176', c: 22, op: 0.08 },
+          { h: '1-2PM', pl: '+$7,653', c: 30, op: 0.14 },
+          { h: '2-3PM', pl: '+$5,726', c: 25, op: 0.12 },
+          { h: '3-4PM', pl: '+$3,124', c: 18, op: 0.09 },
+        ].map((s, i) => (
+          <div key={i} style={{ flex: 1, background: `rgba(0,255,136,${s.op})`, padding: '8px 4px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 2 }}>
+            <span style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.5)' }}>{s.h}</span>
+            <span style={{ fontFamily: fd, fontSize: 11, fontWeight: 700, color: '#39ff85' }}>{s.pl}</span>
+            <span style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.35)' }}>{s.c} trades</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, padding: '0 4px' }}>
+        <span style={{ fontFamily: fm, fontSize: 8, color: '#39ff85', letterSpacing: '1px' }}>OPEN</span>
+        <span style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>MIDDAY</span>
+        <span style={{ fontFamily: fm, fontSize: 8, color: '#ffb400', letterSpacing: '1px' }}>CLOSE</span>
+      </div>
+      <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
+        Best hour: <span style={{ color: '#39ff85' }}>9AM (+$18,500)</span> · Worst hour: <span style={{ color: '#ff4444' }}>12PM (+$2,176)</span>
+      </div>
+    </div>
+    {/* WickCoach observations */}
+    <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div>
+          <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff' }}>WickCoach observations</div>
+          <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>AI-detected behavioral themes vs your stated goals</div>
+        </div>
+        <div style={{ display: 'flex', gap: 2 }}>
+          {['5','10','15','30','50','100','All'].map((w, i) => (
+            <span key={i} style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', background: w === 'All' ? 'rgba(255,255,255,0.08)' : 'transparent', color: w === 'All' ? '#fff' : 'rgba(255,255,255,0.4)', fontWeight: w === 'All' ? 700 : 400 }}>{w}</span>
+          ))}
+        </div>
+      </div>
+      <svg width="100%" height="180" viewBox="0 0 700 180">
+        <text x={80} y={16} fill="#ff4444" fontSize="10" fontFamily={fm} letterSpacing="2">FRICTION</text>
+        <text x={540} y={16} fill="#39ff85" fontSize="10" fontFamily={fm} letterSpacing="2">MOMENTUM</text>
+        <line x1={80} y1={90} x2={620} y2={90} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+        {[
+          { name: 'Ignoring Rules', trades: 12, y: 32, w: 120 },
+          { name: 'Revenge Trading', trades: 8, y: 62, w: 80 },
+          { name: 'Premature Exit', trades: 6, y: 92, w: 60 },
+          { name: 'Stubborn Hold', trades: 5, y: 122, w: 50 },
+        ].map((p, i) => (
+          <g key={'f'+i}>
+            <line x1={345} y1={p.y + 10} x2={350} y2={90} stroke="#ff4444" strokeWidth={0.5} opacity={0.3} />
+            <rect x={345 - p.w} y={p.y} width={p.w} height={20} rx={3} fill="#ff4444" opacity={0.5} />
+            <text x={345 - p.w - 6} y={p.y + 10} fill="#ff4444" fontSize="9" fontFamily={fd} fontWeight="700" textAnchor="end">{p.name}</text>
+            <text x={345 - p.w - 6} y={p.y + 20} fill="#999" fontSize="8" fontFamily={fm} textAnchor="end">{p.trades} trades</text>
+          </g>
+        ))}
+        {[
+          { name: 'Patience', trades: 15, y: 32, w: 150 },
+          { name: 'Clean Entries', trades: 11, y: 62, w: 110 },
+          { name: 'Trading Process', trades: 9, y: 92, w: 90 },
+          { name: 'Position Building', trades: 7, y: 122, w: 70 },
+        ].map((p, i) => (
+          <g key={'m'+i}>
+            <line x1={355} y1={p.y + 10} x2={350} y2={90} stroke="#39ff85" strokeWidth={0.5} opacity={0.3} />
+            <rect x={355} y={p.y} width={p.w} height={20} rx={3} fill="#39ff85" opacity={0.5} />
+            <text x={355 + p.w + 6} y={p.y + 10} fill="#39ff85" fontSize="9" fontFamily={fd} fontWeight="700">{p.name}</text>
+            <text x={355 + p.w + 6} y={p.y + 20} fill="#999" fontSize="8" fontFamily={fm}>{p.trades} trades</text>
+          </g>
+        ))}
+        <circle cx={350} cy={90} r={18} fill="rgba(0,255,136,0.15)" stroke="#39ff85" strokeWidth={1.5} />
+        <text x={350} y={93} fill="#fff" fontSize="12" fontFamily={fd} fontWeight="700" textAnchor="middle" dominantBaseline="middle">72</text>
+        <text x={350} y={155} fill="#999" fontSize="9" fontFamily={fm} textAnchor="middle">Psychology score</text>
+      </svg>
+    </div>
+    {/* Goals alignment */}
+    <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', padding: '12px 16px' }}>
+      <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Goals alignment</div>
+      {[
+        { text: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', status: 'At risk', color: '#ff4444' },
+        { text: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', status: 'At risk', color: '#ff4444' },
+        { text: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', status: 'On track', color: '#39ff85' },
+      ].map((g, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+          <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #39ff85', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', fontWeight: 700 }}>{i + 1}</span>
+          </div>
+          <span style={{ fontFamily: fm, fontSize: 10, color: '#fff', flex: 1 }}>{g.text}</span>
+          <span style={{ fontFamily: fm, fontSize: 9, fontWeight: 700, padding: '2px 10px', borderRadius: 3, background: g.color === '#ff4444' ? 'rgba(255,68,68,0.15)' : 'rgba(0,255,136,0.15)', color: g.color }}>{g.status}</span>
+        </div>
+      ))}
     </div>
   </div>);
 }
@@ -2625,7 +2743,7 @@ export default function WickCoachFull() {
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
-          <div style={{ textAlign: 'center', marginBottom: 32, position: 'relative' }}>
+          <div style={{ textAlign: 'center', marginBottom: 32, position: 'relative', overflow: 'hidden' }}>
             {/* Hero animation video */}
             <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, clipPath: 'inset(0 0 22% 0)', }} />
             {/* Heading */}
