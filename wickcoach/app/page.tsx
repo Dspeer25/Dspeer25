@@ -2399,13 +2399,16 @@ export default function WickCoachFull() {
       {/* ═══ NAV ═══ */}
       <nav style={{ height: 58, padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'relative', zIndex: 10, background: '#000' }}>
         <div onClick={() => setView('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
-            <rect x="3" y="3" width="14" height="14" stroke="#39ff85" strokeWidth="1" fill="none" />
-            <rect x="6" y="6" width="8" height="8" stroke="#39ff85" strokeWidth="1" fill="none" transform="rotate(45 10 10)" />
-            <line x1="10" y1="0" x2="10" y2="5" stroke="#39ff85" strokeWidth="0.8" />
-            <line x1="10" y1="15" x2="10" y2="20" stroke="#39ff85" strokeWidth="0.8" />
-            <line x1="0" y1="10" x2="5" y2="10" stroke="#39ff85" strokeWidth="0.8" />
-            <line x1="15" y1="10" x2="20" y2="10" stroke="#39ff85" strokeWidth="0.8" />
+          <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+            <circle cx="9" cy="3.5" r="2" stroke="#39ff85" strokeWidth="1.3" fill="none" />
+            <line x1="9" y1="5.5" x2="9" y2="13" stroke="#888" strokeWidth="1.3" />
+            <line x1="9" y1="13" x2="6" y2="19" stroke="#888" strokeWidth="1.3" />
+            <line x1="9" y1="13" x2="12" y2="19" stroke="#888" strokeWidth="1.3" />
+            <line x1="9" y1="8.5" x2="5.5" y2="12" stroke="#888" strokeWidth="1.3" />
+            <line x1="9" y1="8.5" x2="14" y2="5.5" stroke="#888" strokeWidth="1.3" />
+            <rect x="14" y="1.5" width="3.5" height="6" rx="0" fill="#39ff85" />
+            <line x1="15.75" y1="0.5" x2="15.75" y2="1.5" stroke="#39ff85" strokeWidth="1.2" />
+            <line x1="15.75" y1="7.5" x2="15.75" y2="9" stroke="#39ff85" strokeWidth="1.2" />
           </svg>
           <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', fontFamily: fm, color: '#fff' }}>WICKCOACH</span>
         </div>
@@ -2428,7 +2431,7 @@ export default function WickCoachFull() {
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', height: 'calc(100vh - 58px)', position: 'relative', overflow: 'hidden', background: '#000', display: 'grid', gridTemplateColumns: '520px 1fr' }}>
+      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#000', display: 'grid', gridTemplateColumns: '520px 1fr' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             @keyframes subtlePulse { 0%,100% { transform: scaleY(0.97); } 50% { transform: scaleY(1.03); } }
@@ -2478,7 +2481,7 @@ export default function WickCoachFull() {
           <div style={{ position: 'absolute', top: '15%', left: '10%', width: '65%', height: '70%', background: 'radial-gradient(ellipse 60% 70% at 55% 50%, rgba(0,255,136,0.04) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
           {/* Candlestick SVG */}
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 250px)', height: '100%' }} viewBox="0 0 680 480" preserveAspectRatio="xMidYMid meet">
+          <svg style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 220px)', height: '100%' }} viewBox="0 0 680 480" preserveAspectRatio="xMidYMid meet">
             {/* Consolidation — small mixed */}
             {[
               { x: 120, bh: 35, bt: 320, wt: 305, wb: 365, bull: false },
@@ -2518,7 +2521,7 @@ export default function WickCoachFull() {
           </svg>
 
           {/* Annotation panel — stacked right side */}
-          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 240, display: 'flex', flexDirection: 'column', zIndex: 5 }}>
+          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 220, padding: '0 24px 0 0', display: 'flex', flexDirection: 'column', zIndex: 5, overflow: 'visible' }}>
             {/* Block 1 */}
             <div style={{ padding: '0 0 24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{ fontFamily: fm, fontSize: 10, color: '#ff6b35', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>IMPULSE DRAWDOWN</div>
@@ -2537,7 +2540,7 @@ export default function WickCoachFull() {
           </div>
 
           {/* Stat cards — bottom, centered under candles */}
-          <div style={{ position: 'absolute', bottom: 24, left: 0, right: 250, display: 'flex', justifyContent: 'center', zIndex: 5 }}>
+          <div style={{ position: 'absolute', bottom: 24, right: 260, zIndex: 5 }}>
             <div style={{ display: 'flex', background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#39ff85', lineHeight: 1, marginBottom: 4 }}>+42%</div>
