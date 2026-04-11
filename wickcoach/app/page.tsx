@@ -483,10 +483,84 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
     const t = setTimeout(onAdvance, 5000);
     return () => clearTimeout(t);
   }, [onAdvance]);
-  const rows = [{ t: "NVDA", d: "Mar 14", s: "0DTE Call", pl: "+$870", w: true }, { t: "QQQ", d: "Mar 13", s: "0DTE Put", pl: "+$445", w: true }, { t: "TSLA", d: "Mar 12", s: "Call Scalp", pl: "-$210", w: false }, { t: "SPY", d: "Mar 11", s: "Put Debit", pl: "+$380", w: true }, { t: "AAPL", d: "Mar 10", s: "0DTE Call", pl: "-$155", w: false }];
-  return (<div>
-    <div style={{ display: "flex", padding: "10px 0", borderBottom: "1px solid #1a1b22", color: "#6b7280", fontFamily: fm, fontSize: 11 }}><span style={{ width: 70 }}>Date</span><span style={{ flex: 1 }}>Ticker</span><span style={{ flex: 1 }}>Strategy</span><span style={{ width: 80, textAlign: "right" }}>P/L</span><span style={{ width: 60, textAlign: "right" }}>Result</span></div>
-    {rows.map((r, i) => (<div key={i} style={{ display: "flex", alignItems: "center", padding: "12px 0", borderBottom: i < 4 ? "1px solid #1a1b22" : "none", fontFamily: fm, fontSize: 13 }}><span style={{ width: 70, color: "#9ca3af" }}>{r.d}</span><span style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, color: "#fff", fontWeight: 700 }}><CLogo t={r.t} />{r.t}</span><span style={{ flex: 1, color: "#9ca3af" }}>{r.s}</span><span style={{ width: 80, textAlign: "right", color: r.w ? teal : "#ef4444", fontWeight: 700 }}>{r.pl}</span><span style={{ width: 60, textAlign: "right" }}><span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: r.w ? "rgba(0,212,160,0.1)" : "rgba(239,68,68,0.1)", color: r.w ? teal : "#ef4444" }}>{r.w ? "WIN" : "LOSS"}</span></span></div>))}
+  const trades = [
+    { ticker: 'DIS', color: '#1a6dff', date: '3/29/26', time: '12:02 PM', strat: 'Call Scalp', dir: 'SHORT' as const, qty: 6, entry: '$5.97', exit: '$6.73', pl: '-$457', rr: '1:0.7', note: 'Saw the 2min color chang...', win: false },
+    { ticker: 'NFLX', color: '#e50914', date: '3/29/26', time: '10:21 AM', strat: '0DTE Put', dir: 'SHORT' as const, qty: 11, entry: '$8.05', exit: '$8.46', pl: '-$456', rr: '1:0.6', note: 'Ignored my own rule abou...', win: false },
+    { ticker: 'AMD', color: '#00a651', date: '3/26/26', time: '10:06 AM', strat: '0DTE Call', dir: 'LONG' as const, qty: 5, entry: '$7.29', exit: '$9.83', pl: '+$1,269', rr: '1:2.3', note: 'MA squeeze expanded beau...', win: true },
+    { ticker: 'DIS', color: '#1a6dff', date: '3/26/26', time: '3:12 PM', strat: 'Call Debit Spread', dir: 'LONG' as const, qty: 9, entry: '$8.52', exit: '$9.85', pl: '+$1,201', rr: '1:2.2', note: 'MA squeeze expanded beau...', win: true },
+    { ticker: 'GOOGL', color: '#34a853', date: '3/26/26', time: '1:38 PM', strat: 'Put Debit Spread', dir: 'LONG' as const, qty: 2, entry: '$3.27', exit: '$7.73', pl: '+$892', rr: '1:1.8', note: 'The 2min 20 EMA was hold...', win: true },
+  ];
+  return (<div style={{ overflow: 'hidden' }}>
+    {/* Stat cards */}
+    <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 16 }}>
+      <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
+        <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>TOTAL P/L</div>
+        <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#39ff85' }}>+$58,532</div>
+      </div>
+      <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
+        <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>WIN RATE</div>
+        <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff' }}>46%</div>
+        <div style={{ display: 'flex', height: 3, marginTop: 4, marginBottom: 3 }}><div style={{ width: '46%', background: '#39ff85' }} /><div style={{ width: '54%', background: '#ff4444' }} /></div>
+        <div style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.3)' }}>92W 80L 28E</div>
+      </div>
+      <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
+        <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>TOTAL TRADES</div>
+        <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff' }}>200</div>
+      </div>
+      <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
+        <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>AVG R:R</div>
+        <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff' }}>1 : 2.2</div>
+      </div>
+      <div style={{ padding: '14px 18px', flex: 1 }}>
+        <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>EXPECTED VALUE</div>
+        <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#39ff85' }}>+$222</div>
+        <div style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.3)' }}>Per trade</div>
+      </div>
+    </div>
+    {/* Equity Curve */}
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Logo size={12} /><span style={{ fontFamily: fd, fontSize: 14, color: '#fff', fontWeight: 700 }}>Equity Curve</span></div>
+        <div style={{ display: 'flex', gap: 4 }}>{['1D','1W','1M','3M','YTD'].map(p => <span key={p} style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', color: p === 'YTD' ? '#000' : 'rgba(255,255,255,0.4)', background: p === 'YTD' ? '#39ff85' : 'transparent', cursor: 'pointer', letterSpacing: '0.05em' }}>{p}</span>)}</div>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', padding: '8px 0', height: 100, position: 'relative' }}>
+        <svg width="100%" height="100%" viewBox="0 0 500 100" preserveAspectRatio="none">
+          <polygon points="20,88 60,82 100,75 140,78 180,60 220,55 260,48 300,52 340,38 380,30 420,25 460,18 480,12 480,100 20,100" fill="rgba(0,255,136,0.05)" />
+          <polyline points="20,88 60,82 100,75 140,78 180,60 220,55 260,48 300,52 340,38 380,30 420,25 460,18 480,12" fill="none" stroke="#39ff85" strokeWidth="1.5" />
+        </svg>
+        <div style={{ position: 'absolute', left: 4, top: 4, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: 'calc(100% - 8px)' }}>{['+$58.5k','+$43.9k','+$29.2k','+$14.6k','$-64'].map(l => <span key={l} style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.25)' }}>{l}</span>)}</div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 20px 0' }}>{['Jan 1','Jan 21','Feb 9','Mar 8','Mar 29'].map(l => <span key={l} style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.25)' }}>{l}</span>)}</div>
+    </div>
+    {/* Filter row */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' as const }}>
+      <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '6px 12px' }}>🔍 Search Ticker...</div>
+      <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '6px 12px' }}>▼ Strategy: All</div>
+      <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', background: '#39ff85', color: '#000', fontWeight: 600 }}>● All Trades</span>
+      <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>● Wins</span>
+      <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>● Losses</span>
+    </div>
+    {/* Table header */}
+    <div style={{ display: 'grid', gridTemplateColumns: '42px 62px 58px 1fr 54px 30px 90px 70px 46px 1fr', gap: 4, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const }}>
+      <span>ASSET</span><span>DATE</span><span>TIME</span><span>STRATEGY</span><span>DIR</span><span>QTY</span><span>ENTRY/EXIT</span><span>NET P/L</span><span>R:R</span><span>NOTES</span>
+    </div>
+    {/* Trade rows */}
+    {trades.map((r, i) => (
+      <div key={i} style={{ display: 'grid', gridTemplateColumns: '42px 62px 58px 1fr 54px 30px 90px 70px 46px 1fr', gap: 4, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontFamily: fm, fontSize: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 20, height: 20, borderRadius: '50%', background: r.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: fm }}>{r.ticker[0]}</div>
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.5)' }}>{r.date}</span>
+        <span style={{ color: 'rgba(255,255,255,0.4)' }}>{r.time}</span>
+        <span style={{ color: 'rgba(255,255,255,0.6)' }}>{r.strat}</span>
+        <span style={{ background: r.dir === 'LONG' ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,68,0.15)', color: r.dir === 'LONG' ? '#39ff85' : '#ff4444', fontFamily: fm, fontSize: 9, padding: '2px 8px', textAlign: 'center' }}>{r.dir}</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)' }}>{r.qty}</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)' }}>{r.entry}→{r.exit}</span>
+        <span style={{ color: r.win ? '#39ff85' : '#ff4444', fontWeight: 700 }}>{r.pl}</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)' }}>{r.rr}</span>
+        <span style={{ color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{r.note}</span>
+      </div>
+    ))}
   </div>);
 }
 
@@ -546,10 +620,10 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
           <span style={{ fontFamily: fd, color: '#fff', fontSize: 22, fontWeight: 700 }}>Weekly Goals</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
-            <span style={{ fontFamily: fm, fontSize: 10, color: '#39ff85' }}>3 Active Rules</span>
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#39ff85' }}>3 Active Rules</span>
           </div>
         </div>
-        <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 18 }}>Active behavioral and technical parameters for the current week.</div>
+        <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 18 }}>Active behavioral and technical parameters for the current week.</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {goalTexts.map((text, gi) => (
             <div key={gi} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -557,21 +631,21 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
                 <span style={{ fontFamily: fd, fontSize: 14, color: '#39ff85' }}>{gi + 1}</span>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.02em', marginBottom: 6 }}>{text}</div>
+                <div style={{ fontFamily: fm, fontSize: 13, fontWeight: 700, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.02em', marginBottom: 6 }}>{text}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 8, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase' as const }}>TYPE</span>
-                  <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{goalTypes[gi]}</span>
+                  <span style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 9, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase' as const }}>TYPE</span>
+                  <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{goalTypes[gi]}</span>
                 </div>
               </div>
               <div style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, cursor: 'pointer' }}>
                 <Logo size={10} />
-                <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>click to give context</span>
+                <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>click to give context</span>
               </div>
             </div>
           ))}
         </div>
         <div style={{ marginTop: 16, border: '1px dashed rgba(255,255,255,0.1)', padding: 12, textAlign: 'center' }}>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>+ INITIALIZE NEW PARAMETER</span>
+          <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>+ INITIALIZE NEW PARAMETER</span>
         </div>
         {/* Scan line */}
         {!frozen && <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />}
@@ -583,7 +657,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
           <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#39ff85' }}>WickCoach AI</span>
         </div>
         <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', borderRadius: 0, padding: 20, marginTop: 12, minHeight: 140 }}>
-          <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.7)', fontSize: 11, lineHeight: 1.7 }}>
+          <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 1.7 }}>
             {renderedBullets.map((line, idx) => (
               <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
                 {line.startsWith('\u2022') ? <><span style={{ color: '#39ff85' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
@@ -705,14 +779,48 @@ function MockTradingGoals({ onAdvance, frozen = true }: { onAdvance?: () => void
 }
 
 function MockAnalysis() {
-  return (<div style={{ display: "flex", gap: 20 }}>
-    <div style={{ flex: 1 }}>
-      <div style={{ background: "#0e0f14", border: "1px solid #1a1b22", borderRadius: 10, padding: "14px", marginBottom: 10 }}><span style={{ color: "#9ca3af", fontFamily: fm, fontSize: 13 }}>Why do I keep losing on Fridays?</span></div>
-      <div style={{ background: "rgba(0,212,160,0.04)", border: "1px solid rgba(0,212,160,0.1)", borderRadius: 10, padding: "14px", display: "flex", gap: 10 }}><Logo size={16} /><span style={{ color: "#b8d0c4", fontFamily: fm, fontSize: 13, lineHeight: 1.6 }}>Looking at your last 8 Friday trades, 6 were taken in the first 10 minutes. Your weekday entries average 25 minutes after open. Friday urgency is costing you &mdash; you&apos;re trading the week&apos;s emotions, not Friday&apos;s chart.</span></div>
+  return (<div style={{ display: 'flex', gap: 24, height: '100%', overflow: 'hidden' }}>
+    {/* Left — Analysis Cards */}
+    <div style={{ flex: '0 0 55%' }}>
+      <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Trade Analysis</div>
+      <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>AI-powered pattern recognition across your execution history.</div>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: 20, marginBottom: 12 }}>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>BEHAVIORAL PATTERN DETECTED</div>
+        <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Revenge Trading After Morning Losses</div>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Frequency: 3.2x/week</span>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Avg Loss: -$340</span>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Recovery Rate: 23%</span>
+        </div>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: 20 }}>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#3388ff', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>EDGE IDENTIFICATION</div>
+        <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>MA Squeeze Breakout &mdash; 0DTE Calls</div>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Win Rate: 72%</span>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Avg R:R: 1:2.4</span>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Sample: 38 trades</span>
+        </div>
+      </div>
     </div>
-    <div style={{ width: 180, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ background: "#0e0f14", border: "1px solid #1a1b22", borderRadius: 10, padding: "16px", textAlign: "center" }}><div style={{ color: "#6b7280", fontFamily: fm, fontSize: 11, marginBottom: 6 }}>Friday Win Rate</div><div style={{ color: "#ef4444", fontFamily: fm, fontSize: 24, fontWeight: 800 }}>25%</div></div>
-      <div style={{ background: "#0e0f14", border: "1px solid #1a1b22", borderRadius: 10, padding: "16px", textAlign: "center" }}><div style={{ color: "#6b7280", fontFamily: fm, fontSize: 11, marginBottom: 6 }}>Mon-Thu Win Rate</div><div style={{ color: teal, fontFamily: fm, fontSize: 24, fontWeight: 800 }}>64%</div></div>
+    {/* Right — WickCoach AI */}
+    <div style={{ flex: '0 0 42%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <Logo size={16} />
+        <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#39ff85' }}>WickCoach AI</span>
+      </div>
+      <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', padding: 20, marginTop: 12 }}>
+        <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7 }}>
+          <div style={{ marginBottom: 12 }}>I&apos;ve analyzed 200 trades over the last 90 days. Two patterns stand out:</div>
+          <div style={{ marginBottom: 12 }}><span style={{ color: '#39ff85' }}>&bull;</span> Your revenge trading pattern costs you ~$1,088/week. After a morning loss exceeding $300, you re-enter within 4 minutes 78% of the time. These re-entries have a 19% win rate.</div>
+          <div><span style={{ color: '#39ff85' }}>&bull;</span> Your MA squeeze setup is your strongest edge. When you wait for the 5M confirmation you specified in your rules, win rate jumps from 46% to 72%.</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+      </div>
     </div>
   </div>);
 }
@@ -2402,6 +2510,59 @@ export default function WickCoachFull() {
       {/* ═══ HOME VIEW ═══ */}
       {view === 'home' && (<>
 
+      {/* ═══ BACKGROUND CHART WATERMARK ═══ */}
+      <svg style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none', opacity: 0.06 }} viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
+        {/* Watermark text */}
+        <text x="600" y="400" textAnchor="middle" style={{ fontFamily: fd, fontSize: 120, fill: 'rgba(255,255,255,0.3)' }} transform="rotate(-15, 600, 400)">WickCoach · 1D</text>
+        {/* Candlesticks */}
+        {[
+          { x: 40, o: 380, c: 340, h: 320, l: 400, bull: true },
+          { x: 80, o: 350, c: 370, h: 330, l: 390, bull: false },
+          { x: 120, o: 360, c: 320, h: 300, l: 380, bull: true },
+          { x: 160, o: 330, c: 360, h: 310, l: 380, bull: false },
+          { x: 200, o: 350, c: 310, h: 290, l: 370, bull: true },
+          { x: 240, o: 320, c: 350, h: 300, l: 370, bull: false },
+          { x: 280, o: 340, c: 360, h: 320, l: 380, bull: false },
+          { x: 320, o: 350, c: 380, h: 330, l: 400, bull: false },
+          { x: 360, o: 370, c: 340, h: 320, l: 390, bull: true },
+          { x: 400, o: 350, c: 310, h: 290, l: 370, bull: true },
+          { x: 440, o: 320, c: 290, h: 270, l: 340, bull: true },
+          { x: 480, o: 300, c: 320, h: 280, l: 340, bull: false },
+          { x: 520, o: 310, c: 280, h: 260, l: 330, bull: true },
+          { x: 560, o: 290, c: 310, h: 270, l: 330, bull: false },
+          { x: 600, o: 300, c: 270, h: 250, l: 320, bull: true },
+          { x: 640, o: 280, c: 260, h: 240, l: 300, bull: true },
+          { x: 680, o: 270, c: 290, h: 250, l: 310, bull: false },
+          { x: 720, o: 280, c: 250, h: 230, l: 300, bull: true },
+          { x: 760, o: 260, c: 240, h: 220, l: 280, bull: true },
+          { x: 800, o: 250, c: 270, h: 230, l: 290, bull: false },
+          { x: 840, o: 260, c: 230, h: 210, l: 280, bull: true },
+          { x: 880, o: 240, c: 260, h: 220, l: 280, bull: false },
+          { x: 920, o: 250, c: 220, h: 200, l: 270, bull: true },
+          { x: 960, o: 230, c: 210, h: 190, l: 250, bull: true },
+          { x: 1000, o: 220, c: 240, h: 200, l: 260, bull: false },
+          { x: 1040, o: 230, c: 200, h: 180, l: 250, bull: true },
+          { x: 1080, o: 210, c: 230, h: 190, l: 250, bull: false },
+          { x: 1120, o: 220, c: 190, h: 170, l: 240, bull: true },
+          { x: 1160, o: 200, c: 180, h: 160, l: 220, bull: true },
+        ].map((c, i) => {
+          const top = Math.min(c.o, c.c);
+          const bot = Math.max(c.o, c.c);
+          const bodyH = bot - top;
+          const fill = c.bull ? 'rgba(255,255,255,0.5)' : 'rgba(0,255,136,0.3)';
+          return (
+            <g key={i}>
+              <line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={fill} strokeWidth={1} />
+              <rect x={c.x - 7} y={top} width={14} height={Math.max(bodyH, 2)} fill={fill} />
+            </g>
+          );
+        })}
+        {/* 20 SMA */}
+        <polyline points="40,360 120,340 200,330 280,350 360,355 440,305 520,295 600,285 680,280 760,250 840,245 920,235 1000,230 1080,210 1160,190" fill="none" stroke="rgba(57,255,133,0.3)" strokeWidth="1.2" strokeLinecap="round" />
+        {/* 200 SMA */}
+        <polyline points="40,375 120,370 200,365 280,360 360,358 440,350 520,345 600,340 680,335 760,325 840,318 920,310 1000,305 1080,298 1160,290" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+
       {/* ═══ NAV ═══ */}
       <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible", position: 'relative' }}>
         <div style={{ marginBottom: 20 }}>
@@ -2421,11 +2582,11 @@ export default function WickCoachFull() {
       </nav>
 
       {/* ═══ FEATURE CAROUSEL ═══ */}
-      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '80px 20px 100px', background: '#0e0f14' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '32px 20px 40px', background: '#0e0f14' }}>
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
+          <div style={{ textAlign: 'center', marginBottom: 32, position: 'relative' }}>
             {/* Hero animation video */}
             <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, }} />
             {/* Heading */}
@@ -2433,7 +2594,7 @@ export default function WickCoachFull() {
             {/* Subtitle */}
             <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>AI-enhanced behavioral and trading pattern recognition</p>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 24 }}>
             {[
               { label: "Trading Goals", d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" },
               { label: "Log a Trade", d: "M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" },
