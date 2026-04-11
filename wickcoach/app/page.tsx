@@ -2397,231 +2397,36 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
 
       {/* ═══ NAV ═══ */}
-      <nav style={{ height: 58, padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'relative', zIndex: 10, background: '#000' }}>
-        <div onClick={() => setView('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            <circle cx="9" cy="3.5" r="2" stroke="#39ff85" strokeWidth="1.3" fill="none" />
-            <line x1="9" y1="5.5" x2="9" y2="13" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="13" x2="6" y2="19" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="13" x2="12" y2="19" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="8.5" x2="5.5" y2="12" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="8.5" x2="14" y2="5.5" stroke="#888" strokeWidth="1.3" />
-            <rect x="14" y="1.5" width="3.5" height="6" rx="0" fill="#39ff85" />
-            <line x1="15.75" y1="0.5" x2="15.75" y2="1.5" stroke="#39ff85" strokeWidth="1.2" />
-            <line x1="15.75" y1="7.5" x2="15.75" y2="9" stroke="#39ff85" strokeWidth="1.2" />
-          </svg>
-          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', fontFamily: fm, color: '#fff' }}>WICKCOACH</span>
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible", position: 'relative' }}>
+        <div style={{ marginBottom: 20 }}>
+          <Logo size={34} showText />
         </div>
-        <div style={{ display: 'flex', gap: 36, alignItems: 'center' }}>
-          {['Log a Trade','Past Trades','Trading Goals','Analysis','Trader Profile'].map(t => {
-            const label = t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase();
-            const isAnalysis = t === 'Analysis';
-            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 13, color: isAnalysis ? '#39ff85' : 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', cursor: 'pointer', fontFamily: fm, textTransform: 'uppercase' as const }}>{label}</span>;
-          })}
+        <span style={{ position: 'absolute', top: 28, right: 40, color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Login</span>
+        <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 920 }}>
+          {tabs.map(t => (
+            <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 14, color: teal, letterSpacing: "0.04em", padding: "14px 16px 16px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600, background: "rgba(0,212,160,0.05)", borderTop: "1px solid rgba(0,212,160,0.18)", borderRight: "1px solid rgba(0,212,160,0.18)", borderBottom: "none", borderLeft: "1px solid rgba(0,212,160,0.18)", flex: 1, textAlign: "center", lineHeight: 1.5, animation: showClickHint ? "iconGlowPulse 1s ease-in-out 3" : tabGlow ? "tabPulse 1.4s ease infinite" : "none" }}>{t}</span>
+          ))}
         </div>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontFamily: fm, fontSize: 13, cursor: 'pointer' }}>LOGIN</span>
-          <button
-            onClick={() => setView('app')}
-            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', padding: '10px 22px', fontSize: 13, fontFamily: fm, textTransform: 'uppercase' as const, letterSpacing: '0.08em', cursor: 'pointer', borderRadius: 0 }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-          >START BUILDING FREE</button>
+        {/* "click these" hint below app tabs */}
+        <div style={{ textAlign: 'center', marginTop: 8, height: 16 }}>
+          <span style={{ fontFamily: fm, fontSize: 11, color: '#9ca3af', opacity: showClickHint ? 1 : 0, transition: 'opacity 0.5s ease' }}>click these ↑</span>
         </div>
+        <style>{`@keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }`}</style>
       </nav>
-
-      {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#000', display: 'grid', gridTemplateColumns: '420px 1fr' }}>
-        <style>{`
-          @media (prefers-reduced-motion: no-preference) {
-            @keyframes subtlePulse { 0%,100% { transform: scaleY(0.97); } 50% { transform: scaleY(1.03); } }
-          }
-        `}</style>
-
-        {/* Left column */}
-        <div style={{ paddingLeft: 48, paddingTop: 20, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 16, zIndex: 5, paddingBottom: 40 }}>
-          {/* Eyebrow */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 24, height: 2, background: '#39ff85' }} />
-            <span style={{ fontFamily: fm, fontSize: 12, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.2em' }}>ENGINEERED FOR MASTERY</span>
-          </div>
-          {/* Headline */}
-          <h1 style={{ fontFamily: fd, fontSize: 64, fontWeight: 700, lineHeight: 1.05, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
-            The Trading Journal That Fixes Your Psychology<span style={{ color: 'rgba(255,255,255,0.35)' }}>.</span>
-          </h1>
-          {/* Subtitle */}
-          <p style={{ fontFamily: fm, fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: 420, margin: 0 }}>
-            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
-          </p>
-          {/* Buttons */}
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <button
-              onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-              style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 13, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '14px 32px', border: 'none', borderRadius: 0, cursor: 'pointer', overflow: 'hidden', position: 'relative' as const, boxShadow: 'none' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#2de676'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#39ff85'; }}
-            >START JOURNALING</button>
-            <button
-              style={{ background: 'rgba(255,255,255,0.06)', color: '#fff', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '14px 32px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 0, cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-            >&#9654; WATCH DEMO</button>
-          </div>
-          {/* Integration logos */}
-          <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-            {['BINANCE', 'NINJATRADER', 'TRADINGVIEW'].map(n => (
-              <span key={n} style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>{n}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Right column — chart + annotations */}
-        <div style={{ position: 'relative', overflow: 'hidden', height: '100%' }}>
-          {/* Subtle green glow behind candles */}
-          <div style={{ position: 'absolute', top: '15%', left: '10%', width: '65%', height: '70%', background: 'radial-gradient(ellipse 60% 70% at 55% 50%, rgba(0,255,136,0.04) 0%, transparent 65%)', pointerEvents: 'none' }} />
-
-          {/* Candlestick SVG */}
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 190px)', height: '100%' }} viewBox="0 0 700 460" preserveAspectRatio="xMidYMid meet">
-            {/* Consolidation — mixed candles */}
-            {[
-              { x: 60,  bh: 80,  bt: 310, wt: 288, wb: 405, bull: false },
-              { x: 108, bh: 95,  bt: 295, wt: 268, wb: 405, bull: true },
-              { x: 156, bh: 85,  bt: 302, wt: 278, wb: 410, bull: false },
-              { x: 204, bh: 72,  bt: 308, wt: 285, wb: 398, bull: true },
-              { x: 252, bh: 100, bt: 290, wt: 262, wb: 408, bull: false },
-              {/* Breakout — tall greens */ x: 300, bh: 180, bt: 210, wt: 185, wb: 405, bull: true },
-              { x: 348, bh: 240, bt: 150, wt: 122, wb: 408, bull: true },
-              { x: 396, bh: 280, bt: 110, wt: 82,  wb: 410, bull: true },
-              { x: 444, bh: 340, bt: 60,  wt: 40,  wb: 415, bull: true },
-              {/* Pullback */ x: 492, bh: 120, bt: 180, wt: 155, wb: 318, bull: false },
-              { x: 540, bh: 160, bt: 140, wt: 112, wb: 315, bull: true },
-              { x: 588, bh: 280, bt: 50,  wt: 25,  wb: 350, bull: true },
-            ].map((c, i) => {
-              const dur = [4.5, 5.2, 6.1][i % 3];
-              const del = [0, 0.8, 1.6][i % 3];
-              const fillCol = c.bull ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,68,0.12)';
-              const strokeCol = c.bull ? '#2a4a3a' : '#4a2a2a';
-              return (
-                <g key={i}>
-                  <line x1={c.x} y1={c.wt} x2={c.x} y2={c.wb} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
-                  <rect x={c.x - 10} y={c.bt} width={20} height={c.bh} fill={fillCol} stroke={strokeCol} strokeWidth={1} style={{ transformOrigin: `${c.x}px ${c.bt + c.bh}px`, animation: `subtlePulse ${dur}s ease-in-out ${del}s infinite` }} />
-                </g>
-              );
-            })}
-
-            {/* Annotation dots */}
-            <circle cx={300} cy={210} r={4} fill="#39ff85" opacity={0.9} />
-            <circle cx={156} cy={278} r={4} fill="#ff4444" opacity={0.9} />
-            <circle cx={108} cy={400} r={4} fill="rgba(255,255,255,0.7)" />
-            <circle cx={60} cy={405} r={3} fill="#39ff85" opacity={0.7} />
-
-            {/* Dashed connecting line between dots */}
-            <path d="M 60 405 C 85 380, 100 395, 108 400 C 120 360, 140 300, 156 278 C 200 240, 260 220, 300 210" fill="none" stroke="#39ff85" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
-          </svg>
-
-          {/* Brain/Head gazing at journal — animated SVG */}
-          <svg viewBox="0 0 400 200" width="360" height="180" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -55%)', zIndex: 4, opacity: 0.85 }}>
-            <style>{`
-              @media (prefers-reduced-motion: no-preference) {
-                .wc-eye-lid { animation: wcEyeOpen 3s ease-in-out 1s forwards; }
-                .wc-gaze-beam { animation: wcGazeExtend 1.5s ease-out 3s forwards; }
-                .wc-journal-icon { animation: wcJournalAppear 0.8s ease-out 3.8s forwards; }
-              }
-              @keyframes wcEyeOpen {
-                0% { transform: scaleY(0); }
-                60% { transform: scaleY(1.1); }
-                100% { transform: scaleY(1); }
-              }
-              @keyframes wcGazeExtend {
-                0% { stroke-dashoffset: 200; opacity: 0; }
-                20% { opacity: 0.7; }
-                100% { stroke-dashoffset: 0; opacity: 0.5; }
-              }
-              @keyframes wcJournalAppear {
-                0% { opacity: 0; transform: translateY(8px); }
-                100% { opacity: 0.9; transform: translateY(0); }
-              }
-            `}</style>
-            {/* Head profile */}
-            <path d="M 80 140 C 80 140, 65 130, 60 110 C 55 90, 58 70, 68 55 C 78 40, 95 30, 115 30 C 135 30, 148 40, 152 55 C 156 65, 155 75, 150 85 C 147 92, 145 95, 148 100 C 151 105, 150 112, 145 118 C 140 124, 135 128, 130 135 C 125 142, 115 145, 105 145 L 95 145 L 90 140 Z" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round"/>
-            {/* Ear */}
-            <path d="M 80 85 C 75 82, 73 90, 77 95" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-            {/* Brain lines */}
-            <path d="M 90 50 C 100 45, 120 42, 130 48" fill="none" stroke="rgba(57,255,133,0.12)" strokeWidth="0.8"/>
-            <path d="M 85 60 C 95 55, 110 53, 125 58" fill="none" stroke="rgba(57,255,133,0.1)" strokeWidth="0.8"/>
-            <path d="M 82 72 C 92 68, 108 65, 120 70" fill="none" stroke="rgba(57,255,133,0.08)" strokeWidth="0.8"/>
-            <path d="M 100 48 C 105 55, 102 65, 108 72" fill="none" stroke="rgba(57,255,133,0.1)" strokeWidth="0.8"/>
-            <path d="M 115 42 C 118 50, 115 60, 120 68" fill="none" stroke="rgba(57,255,133,0.09)" strokeWidth="0.8"/>
-            {/* Eye socket */}
-            <ellipse cx="138" cy="82" rx="8" ry="5" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
-            {/* Eye pupil */}
-            <g className="wc-eye-lid" style={{ transformOrigin: '138px 82px' }}>
-              <ellipse cx="138" cy="82" rx="4" ry="3.5" fill="#39ff85" opacity="0.9"/>
-              <circle cx="139.5" cy="81.5" r="1.5" fill="#000"/>
-            </g>
-            {/* Gaze beam */}
-            <line x1="148" y1="82" x2="280" y2="82" className="wc-gaze-beam" stroke="#39ff85" strokeWidth="1" strokeDasharray="4 6" style={{ strokeDashoffset: 200, opacity: 0 }}/>
-            {/* Glow particles */}
-            <circle cx="180" cy="82" r="1" fill="#39ff85" className="wc-gaze-beam" style={{ strokeDashoffset: 200, opacity: 0 }}/>
-            <circle cx="220" cy="82" r="0.8" fill="#39ff85" className="wc-gaze-beam" style={{ strokeDashoffset: 200, opacity: 0 }}/>
-            <circle cx="255" cy="82" r="0.6" fill="#39ff85" className="wc-gaze-beam" style={{ strokeDashoffset: 200, opacity: 0 }}/>
-            {/* Journal icon */}
-            <g className="wc-journal-icon" style={{ opacity: 0 }}>
-              <rect x="280" y="58" width="55" height="48" rx="0" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2"/>
-              <line x1="285" y1="58" x2="285" y2="106" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
-              <line x1="292" y1="70" x2="328" y2="70" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
-              <line x1="292" y1="76" x2="325" y2="76" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
-              <line x1="292" y1="82" x2="320" y2="82" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
-              <line x1="292" y1="88" x2="326" y2="88" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
-              <line x1="292" y1="94" x2="318" y2="94" stroke="rgba(255,255,255,0.12)" strokeWidth="0.6"/>
-              <text x="307" y="66" textAnchor="middle" style={{ fontFamily: fd, fontSize: '5px', letterSpacing: '0.1em', fill: '#39ff85', fontWeight: 600 }}>WICKCOACH</text>
-            </g>
-          </svg>
-
-          {/* Annotation panel — stacked right side */}
-          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 240, padding: '0 28px 0 0', display: 'flex', flexDirection: 'column', zIndex: 5, overflow: 'visible' }}>
-            {/* Block 1 */}
-            <div style={{ padding: '0 0 24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontFamily: fm, fontSize: 11, color: '#ff6b35', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>IMPULSE DRAWDOWN</div>
-              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
-            </div>
-            {/* Block 2 */}
-            <div style={{ padding: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontFamily: fm, fontSize: 11, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>PATTERN EXTRACTION</div>
-              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Micro-fractals isolated perfectly from market noise.</div>
-            </div>
-            {/* Block 3 */}
-            <div style={{ padding: '24px 0 0 0' }}>
-              <div style={{ fontFamily: fm, fontSize: 11, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>MOMENTUM IGNITION</div>
-              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
-            </div>
-          </div>
-
-          {/* Stat cards — bottom, centered under candles */}
-          <div style={{ position: 'absolute', bottom: 48, right: 260, zIndex: 5 }}>
-            <div style={{ display: 'flex', background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#39ff85', lineHeight: 1, marginBottom: 4 }}>+42%</div>
-                <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>AVG. EXPECTANCY INCREASE</div>
-              </div>
-              <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
-                <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#fff', lineHeight: 1, marginBottom: 4 }}>1.2M+</div>
-                <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>EXECUTIONS ANALYZED</div>
-              </div>
-              <div style={{ padding: '16px 20px' }}>
-                <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#ff4444', lineHeight: 1, marginBottom: 4 }}>-68%</div>
-                <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>REDUCTION IN REVENGE TRADES</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ═══ FEATURE CAROUSEL ═══ */}
       <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '80px 20px 100px', background: '#0e0f14' }}>
         <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'relative' }}>
+          <div style={{ textAlign: 'center', marginBottom: 60, position: 'relative' }}>
+            {/* Hero animation video */}
+            <video ref={heroVideoRef} autoPlay muted playsInline src="/wickcoach-logo-anim.mp4" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', height: 300, width: 'auto', objectFit: 'contain' as const, opacity: textVisible ? 0.1 : 1, zIndex: 0, pointerEvents: 'none', transition: 'opacity 1s ease-out', mixBlendMode: 'lighten' as const, }} />
+            {/* Heading */}
+            <h1 style={{ position: 'relative', zIndex: 1, fontFamily: fd, color: '#ffffff', fontSize: 44, fontWeight: 700, lineHeight: 1.2, maxWidth: 800, margin: '0 auto 0', opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>The trading journal that <span style={{ color: teal, textShadow: textVisible ? '0 0 20px rgba(0,212,160,0.3), 0 0 40px rgba(0,212,160,0.15)' : 'none', transition: 'text-shadow 1s ease-in 1s' }}>fixes your psychology</span></h1>
+            {/* Subtitle */}
+            <p style={{ position: 'relative', zIndex: 1, color: '#e5e7eb', fontFamily: fm, fontSize: 15, maxWidth: 600, margin: '0 auto', lineHeight: 1.7, marginTop: 24, opacity: textVisible ? 1 : 0, filter: textVisible ? 'blur(0px)' : 'blur(8px)', transition: 'opacity 1s ease-in, filter 1s ease-in' }}>AI-enhanced behavioral and trading pattern recognition</p>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
               { label: "Trading Goals", d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" },
