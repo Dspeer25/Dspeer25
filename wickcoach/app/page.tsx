@@ -484,13 +484,13 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
     return () => clearTimeout(t);
   }, [onAdvance]);
   const trades = [
-    { ticker: 'DIS', color: '#1a6dff', date: '3/29/26', time: '12:02 PM', strat: 'Call Scalp', dir: 'SHORT' as const, qty: 6, entry: '$5.97', exit: '$6.73', pl: '-$457', rr: '1:0.7', note: 'Saw the 2min color chang...', win: false },
-    { ticker: 'NFLX', color: '#e50914', date: '3/29/26', time: '10:21 AM', strat: '0DTE Put', dir: 'SHORT' as const, qty: 11, entry: '$8.05', exit: '$8.46', pl: '-$456', rr: '1:0.6', note: 'Ignored my own rule abou...', win: false },
-    { ticker: 'AMD', color: '#00a651', date: '3/26/26', time: '10:06 AM', strat: '0DTE Call', dir: 'LONG' as const, qty: 5, entry: '$7.29', exit: '$9.83', pl: '+$1,269', rr: '1:2.3', note: 'MA squeeze expanded beau...', win: true },
-    { ticker: 'DIS', color: '#1a6dff', date: '3/26/26', time: '3:12 PM', strat: 'Call Debit Spread', dir: 'LONG' as const, qty: 9, entry: '$8.52', exit: '$9.85', pl: '+$1,201', rr: '1:2.2', note: 'MA squeeze expanded beau...', win: true },
-    { ticker: 'GOOGL', color: '#34a853', date: '3/26/26', time: '1:38 PM', strat: 'Put Debit Spread', dir: 'LONG' as const, qty: 2, entry: '$3.27', exit: '$7.73', pl: '+$892', rr: '1:1.8', note: 'The 2min 20 EMA was hold...', win: true },
+    { ticker: 'DIS', letter: 'D', color: '#1a5276', date: '3/29/26', time: '12:02 PM', strat: 'Call Scalp', dir: 'SHORT' as const, qty: 6, entry: '$5.97', exit: '$6.73', pl: '-$457', rr: '1:0.7', note: 'Saw the 2min color chang...', win: false },
+    { ticker: 'NFLX', letter: 'N', color: '#b20710', date: '3/29/26', time: '10:21 AM', strat: '0DTE Put', dir: 'SHORT' as const, qty: 11, entry: '$8.05', exit: '$8.46', pl: '-$456', rr: '1:0.6', note: 'Ignored my own rule abou...', win: false },
+    { ticker: 'AMD', letter: 'A', color: '#007a33', date: '3/26/26', time: '10:06 AM', strat: '0DTE Call', dir: 'LONG' as const, qty: 5, entry: '$7.29', exit: '$9.83', pl: '+$1,269', rr: '1:2.3', note: 'MA squeeze expanded beau...', win: true },
+    { ticker: 'DIS', letter: 'D', color: '#1a5276', date: '3/26/26', time: '3:12 PM', strat: 'Call Debit Spread', dir: 'LONG' as const, qty: 9, entry: '$8.52', exit: '$9.85', pl: '+$1,201', rr: '1:2.2', note: 'MA squeeze expanded beau...', win: true },
+    { ticker: 'GOOGL', letter: 'G', color: '#34a853', date: '3/26/26', time: '1:38 PM', strat: 'Put Debit Spread', dir: 'LONG' as const, qty: 2, entry: '$3.27', exit: '$7.73', pl: '+$892', rr: '1:1.8', note: 'The 2min 20 EMA was hold...', win: true },
   ];
-  return (<div style={{ overflow: 'hidden' }}>
+  return (<div className="carousel-scroll" style={{ overflowY: 'auto', maxHeight: 520 }}>
     {/* Stat cards */}
     <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 16 }}>
       <div style={{ padding: '14px 18px', borderRight: '1px solid rgba(255,255,255,0.08)', flex: 1 }}>
@@ -541,15 +541,16 @@ function MockPastTrades({ onAdvance }: { onAdvance?: () => void }) {
       <span style={{ fontFamily: fm, fontSize: 10, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>● Losses</span>
     </div>
     {/* Table header */}
-    <div style={{ display: 'grid', gridTemplateColumns: '42px 62px 58px 1fr 54px 30px 90px 70px 46px 1fr', gap: 4, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const }}>
-      <span>ASSET</span><span>DATE</span><span>TIME</span><span>STRATEGY</span><span>DIR</span><span>QTY</span><span>ENTRY/EXIT</span><span>NET P/L</span><span>R:R</span><span>NOTES</span>
+    <div style={{ display: 'grid', gridTemplateColumns: '30px 44px 62px 58px 1fr 52px 28px 86px 66px 42px 1fr', gap: 4, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const }}>
+      <span></span><span>TICKER</span><span>DATE</span><span>TIME</span><span>STRATEGY</span><span>DIR</span><span>QTY</span><span>ENTRY/EXIT</span><span>NET P/L</span><span>R:R</span><span>NOTES</span>
     </div>
     {/* Trade rows */}
     {trades.map((r, i) => (
-      <div key={i} style={{ display: 'grid', gridTemplateColumns: '42px 62px 58px 1fr 54px 30px 90px 70px 46px 1fr', gap: 4, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontFamily: fm, fontSize: 10, alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <div style={{ width: 20, height: 20, borderRadius: '50%', background: r.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: fm }}>{r.ticker[0]}</div>
+      <div key={i} style={{ display: 'grid', gridTemplateColumns: '30px 44px 62px 58px 1fr 52px 28px 86px 66px 42px 1fr', gap: 4, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontFamily: fm, fontSize: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 22, height: 22, borderRadius: 4, background: r.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: fm, flexShrink: 0 }}>{r.letter}</div>
         </div>
+        <span style={{ color: '#fff', fontWeight: 700 }}>{r.ticker}</span>
         <span style={{ color: 'rgba(255,255,255,0.5)' }}>{r.date}</span>
         <span style={{ color: 'rgba(255,255,255,0.4)' }}>{r.time}</span>
         <span style={{ color: 'rgba(255,255,255,0.6)' }}>{r.strat}</span>
@@ -739,6 +740,9 @@ function MockTradingGoals({ onAdvance, frozen = true }: { onAdvance?: () => void
 
   return (<div style={{ position: 'relative' }}>
     <style>{`
+      .carousel-scroll::-webkit-scrollbar { width: 4px; }
+      .carousel-scroll::-webkit-scrollbar-track { background: transparent; }
+      .carousel-scroll::-webkit-scrollbar-thumb { background: rgba(57,255,133,0.3); border-radius: 2px; }
       @keyframes goalScan {
         0% { top: 5%; opacity: 0; }
         15% { opacity: 1; }
@@ -779,47 +783,91 @@ function MockTradingGoals({ onAdvance, frozen = true }: { onAdvance?: () => void
 }
 
 function MockAnalysis() {
-  return (<div style={{ display: 'flex', gap: 24, height: '100%', overflow: 'hidden' }}>
-    {/* Left — Analysis Cards */}
-    <div style={{ flex: '0 0 55%' }}>
-      <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Trade Analysis</div>
-      <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>AI-powered pattern recognition across your execution history.</div>
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: 20, marginBottom: 12 }}>
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>BEHAVIORAL PATTERN DETECTED</div>
-        <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Revenge Trading After Morning Losses</div>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Frequency: 3.2x/week</span>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Avg Loss: -$340</span>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Recovery Rate: 23%</span>
-        </div>
+  const strategies = [
+    { name: '0DTE Call', trades: 60, wr: '46.7%', avg: '+$325.84', total: '+$19,550', r: '+0.7R' },
+    { name: '0DTE Put', trades: 54, wr: '42.6%', avg: '+$247.07', total: '+$13,341', r: '+0.5R' },
+    { name: 'Call Debit', trades: 18, wr: '61.1%', avg: '+$493.94', total: '+$8,891', r: '+1.0R' },
+    { name: 'Put Debit', trades: 19, wr: '52.6%', avg: '+$355.96', total: '+$6,763', r: '+0.7R' },
+    { name: 'Call Scalp', trades: 16, wr: '56.3%', avg: '+$396.17', total: '+$6,339', r: '+0.8R' },
+    { name: 'Put Scalp', trades: 8, wr: '50.0%', avg: '+$487.08', total: '+$3,897', r: '+1.0R' },
+  ];
+  const tickers = [
+    { t: 'V', c: '#1a1f71', trades: 14, wr: '78.6%', pl: '+$10,391' },
+    { t: 'META', c: '#0668E1', trades: 9, wr: '77.8%', pl: '+$6,288' },
+    { t: 'NVDA', c: '#76b900', trades: 14, wr: '50.0%', pl: '+$6,129' },
+    { t: 'AMD', c: '#007a33', trades: 11, wr: '54.5%', pl: '+$5,929' },
+    { t: 'BA', c: '#1a6dff', trades: 9, wr: '66.7%', pl: '+$5,018' },
+    { t: 'MSFT', c: '#737373', trades: 17, wr: '47.1%', pl: '+$5,805' },
+  ];
+  return (<div style={{ overflow: 'hidden' }}>
+    {/* Header */}
+    <div style={{ marginBottom: 4 }}>
+      <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff' }}>Analysis</div>
+      <div style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Behavioral pattern recognition across your trade history.</div>
+      <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>200 executions analyzed</div>
+    </div>
+    {/* 4 Stat Cards */}
+    <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+      <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+        <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>TOTAL TRADES</div>
+        <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>200</div>
+        <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Win Rate: 46.0%</div>
+        <div style={{ display: 'flex', height: 3, marginTop: 6 }}><div style={{ width: '46%', background: '#39ff85' }} /><div style={{ width: '54%', background: '#ff4444' }} /></div>
       </div>
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: 20 }}>
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#3388ff', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>EDGE IDENTIFICATION</div>
-        <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>MA Squeeze Breakout &mdash; 0DTE Calls</div>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Win Rate: 72%</span>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Avg R:R: 1:2.4</span>
-          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Sample: 38 trades</span>
-        </div>
+      <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>PROCESS</div>
+        <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>137</div>
+        <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Win Rate: 61.3%</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 4 }}>+150.9R total</div>
+      </div>
+      <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#ff4444', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>IMPULSE</div>
+        <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>63</div>
+        <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Win Rate: 12.7%</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#ff4444', marginTop: 4 }}>-31.3R total</div>
+      </div>
+      <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>WHAT IF?</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>Your P/L if you only took process trades</div>
+        <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Actual P/L: +$58,532</div>
+        <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#39ff85', lineHeight: 1, marginTop: 4 }}>+$74,792</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#ff4444', marginTop: 4 }}>Indiscipline cost you $16,260</div>
       </div>
     </div>
-    {/* Right — WickCoach AI */}
-    <div style={{ flex: '0 0 42%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <Logo size={16} />
-        <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#39ff85' }}>WickCoach AI</span>
-      </div>
-      <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', padding: 20, marginTop: 12 }}>
-        <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7 }}>
-          <div style={{ marginBottom: 12 }}>I&apos;ve analyzed 200 trades over the last 90 days. Two patterns stand out:</div>
-          <div style={{ marginBottom: 12 }}><span style={{ color: '#39ff85' }}>&bull;</span> Your revenge trading pattern costs you ~$1,088/week. After a morning loss exceeding $300, you re-enter within 4 minutes 78% of the time. These re-entries have a 19% win rate.</div>
-          <div><span style={{ color: '#39ff85' }}>&bull;</span> Your MA squeeze setup is your strongest edge. When you wait for the 5M confirmation you specified in your rules, win rate jumps from 46% to 72%.</div>
+    {/* Strategy Breakdown + Ticker Performance */}
+    <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+      <div style={{ flex: '0 0 58%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+        <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Strategy breakdown</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>Performance by setup type</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 50px 55px 70px 80px 45px', gap: 4, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.08)', fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const }}>
+          <span>STRATEGY</span><span>TRADES</span><span>WIN RATE</span><span>AVG P/L</span><span>TOTAL P/L</span><span>AVG R</span>
         </div>
+        {strategies.map((s, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 50px 55px 70px 80px 45px', gap: 4, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', borderLeft: '2px solid #39ff85', paddingLeft: 8, fontFamily: fm, fontSize: 11, alignItems: 'center' }}>
+            <span style={{ color: '#fff' }}>{s.name}</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{s.trades}</span>
+            <span style={{ color: '#39ff85' }}>{s.wr}</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{s.avg}</span>
+            <span style={{ color: '#39ff85' }}>{s.total}</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)' }}>{s.r}</span>
+          </div>
+        ))}
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
       </div>
-      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+      <div style={{ flex: '0 0 38%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
+        <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Ticker performance</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>P/L by asset</div>
+        {tickers.map((tk, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+            <div style={{ width: 24, height: 24, borderRadius: 4, background: tk.c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: fm, flexShrink: 0 }}>{tk.t[0]}</div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontFamily: fm, fontSize: 11, fontWeight: 700, color: '#fff' }}>{tk.t}</span>
+              <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>{tk.trades} trades · {tk.wr} win</span>
+            </div>
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#39ff85', fontWeight: 700 }}>{tk.pl}</span>
+          </div>
+        ))}
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
       </div>
     </div>
   </div>);
@@ -2511,57 +2559,47 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
 
       {/* ═══ BACKGROUND CHART WATERMARK ═══ */}
-      <svg style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none', opacity: 0.06 }} viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
-        {/* Watermark text */}
-        <text x="600" y="400" textAnchor="middle" style={{ fontFamily: fd, fontSize: 120, fill: 'rgba(255,255,255,0.3)' }} transform="rotate(-15, 600, 400)">WickCoach · 1D</text>
-        {/* Candlesticks */}
-        {[
-          { x: 40, o: 380, c: 340, h: 320, l: 400, bull: true },
-          { x: 80, o: 350, c: 370, h: 330, l: 390, bull: false },
-          { x: 120, o: 360, c: 320, h: 300, l: 380, bull: true },
-          { x: 160, o: 330, c: 360, h: 310, l: 380, bull: false },
-          { x: 200, o: 350, c: 310, h: 290, l: 370, bull: true },
-          { x: 240, o: 320, c: 350, h: 300, l: 370, bull: false },
-          { x: 280, o: 340, c: 360, h: 320, l: 380, bull: false },
-          { x: 320, o: 350, c: 380, h: 330, l: 400, bull: false },
-          { x: 360, o: 370, c: 340, h: 320, l: 390, bull: true },
-          { x: 400, o: 350, c: 310, h: 290, l: 370, bull: true },
-          { x: 440, o: 320, c: 290, h: 270, l: 340, bull: true },
-          { x: 480, o: 300, c: 320, h: 280, l: 340, bull: false },
-          { x: 520, o: 310, c: 280, h: 260, l: 330, bull: true },
-          { x: 560, o: 290, c: 310, h: 270, l: 330, bull: false },
-          { x: 600, o: 300, c: 270, h: 250, l: 320, bull: true },
-          { x: 640, o: 280, c: 260, h: 240, l: 300, bull: true },
-          { x: 680, o: 270, c: 290, h: 250, l: 310, bull: false },
-          { x: 720, o: 280, c: 250, h: 230, l: 300, bull: true },
-          { x: 760, o: 260, c: 240, h: 220, l: 280, bull: true },
-          { x: 800, o: 250, c: 270, h: 230, l: 290, bull: false },
-          { x: 840, o: 260, c: 230, h: 210, l: 280, bull: true },
-          { x: 880, o: 240, c: 260, h: 220, l: 280, bull: false },
-          { x: 920, o: 250, c: 220, h: 200, l: 270, bull: true },
-          { x: 960, o: 230, c: 210, h: 190, l: 250, bull: true },
-          { x: 1000, o: 220, c: 240, h: 200, l: 260, bull: false },
-          { x: 1040, o: 230, c: 200, h: 180, l: 250, bull: true },
-          { x: 1080, o: 210, c: 230, h: 190, l: 250, bull: false },
-          { x: 1120, o: 220, c: 190, h: 170, l: 240, bull: true },
-          { x: 1160, o: 200, c: 180, h: 160, l: 220, bull: true },
-        ].map((c, i) => {
-          const top = Math.min(c.o, c.c);
-          const bot = Math.max(c.o, c.c);
-          const bodyH = bot - top;
-          const fill = c.bull ? 'rgba(255,255,255,0.5)' : 'rgba(0,255,136,0.3)';
-          return (
-            <g key={i}>
-              <line x1={c.x} y1={c.h} x2={c.x} y2={c.l} stroke={fill} strokeWidth={1} />
-              <rect x={c.x - 7} y={top} width={14} height={Math.max(bodyH, 2)} fill={fill} />
-            </g>
-          );
-        })}
-        {/* 20 SMA */}
-        <polyline points="40,360 120,340 200,330 280,350 360,355 440,305 520,295 600,285 680,280 760,250 840,245 920,235 1000,230 1080,210 1160,190" fill="none" stroke="rgba(57,255,133,0.3)" strokeWidth="1.2" strokeLinecap="round" />
-        {/* 200 SMA */}
-        <polyline points="40,375 120,370 200,365 280,360 360,358 440,350 520,345 600,340 680,335 760,325 840,318 920,310 1000,305 1080,298 1160,290" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" strokeLinecap="round" />
-      </svg>
+      <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none', opacity: 0.045 }}>
+        <svg viewBox="0 0 1400 800" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+          <text x="700" y="450" textAnchor="middle" style={{ fontFamily: fd, fontSize: 140, fontWeight: 700, fill: 'rgba(255,255,255,0.4)' }} transform="rotate(-12, 700, 450)">WickCoach · 1D</text>
+          {/* Consolidation (1-8) */}
+          <line x1="80" y1="380" x2="80" y2="440" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="74" y="395" width="12" height="30" fill="rgba(255,255,255,0.4)"/>
+          <line x1="128" y1="370" x2="128" y2="445" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="122" y="385" width="12" height="35" fill="rgba(0,255,136,0.3)"/>
+          <line x1="176" y1="375" x2="176" y2="450" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="170" y="390" width="12" height="38" fill="rgba(255,255,255,0.4)"/>
+          <line x1="224" y1="365" x2="224" y2="435" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="218" y="380" width="12" height="32" fill="rgba(0,255,136,0.3)"/>
+          <line x1="272" y1="372" x2="272" y2="448" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="266" y="388" width="12" height="40" fill="rgba(255,255,255,0.4)"/>
+          <line x1="320" y1="360" x2="320" y2="440" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="314" y="375" width="12" height="38" fill="rgba(0,255,136,0.3)"/>
+          <line x1="368" y1="355" x2="368" y2="430" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="362" y="368" width="12" height="42" fill="rgba(255,255,255,0.4)"/>
+          <line x1="416" y1="350" x2="416" y2="425" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="410" y="362" width="12" height="36" fill="rgba(0,255,136,0.3)"/>
+          {/* Breakout (9-16) */}
+          <line x1="468" y1="310" x2="468" y2="420" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="462" y="325" width="12" height="75" fill="rgba(0,255,136,0.3)"/>
+          <line x1="516" y1="270" x2="516" y2="400" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="510" y="285" width="12" height="90" fill="rgba(0,255,136,0.3)"/>
+          <line x1="564" y1="240" x2="564" y2="380" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="558" y="255" width="12" height="100" fill="rgba(0,255,136,0.3)"/>
+          <line x1="612" y1="210" x2="612" y2="360" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="606" y="225" width="14" height="110" fill="rgba(0,255,136,0.3)"/>
+          <line x1="660" y1="190" x2="660" y2="340" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="654" y="205" width="14" height="115" fill="rgba(0,255,136,0.3)"/>
+          <line x1="708" y1="175" x2="708" y2="320" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="702" y="190" width="14" height="105" fill="rgba(0,255,136,0.3)"/>
+          <line x1="756" y1="160" x2="756" y2="300" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="750" y="175" width="14" height="100" fill="rgba(0,255,136,0.3)"/>
+          <line x1="804" y1="150" x2="804" y2="290" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="798" y="165" width="14" height="98" fill="rgba(0,255,136,0.3)"/>
+          {/* Pullback (17-21) */}
+          <line x1="852" y1="165" x2="852" y2="310" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="846" y="185" width="14" height="95" fill="rgba(255,255,255,0.4)"/>
+          <line x1="900" y1="195" x2="900" y2="330" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="894" y="215" width="14" height="85" fill="rgba(255,255,255,0.4)"/>
+          <line x1="948" y1="220" x2="948" y2="340" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="942" y="235" width="14" height="75" fill="rgba(255,255,255,0.4)"/>
+          <line x1="996" y1="230" x2="996" y2="345" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="990" y="242" width="14" height="70" fill="rgba(255,255,255,0.4)"/>
+          <line x1="1044" y1="240" x2="1044" y2="350" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1038" y="252" width="14" height="65" fill="rgba(0,255,136,0.3)"/>
+          {/* Recovery (22-28) */}
+          <line x1="1092" y1="210" x2="1092" y2="340" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1086" y="225" width="14" height="85" fill="rgba(0,255,136,0.3)"/>
+          <line x1="1140" y1="185" x2="1140" y2="320" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1134" y="200" width="14" height="90" fill="rgba(0,255,136,0.3)"/>
+          <line x1="1188" y1="165" x2="1188" y2="305" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1182" y="178" width="14" height="95" fill="rgba(0,255,136,0.3)"/>
+          <line x1="1236" y1="148" x2="1236" y2="290" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1230" y="162" width="14" height="100" fill="rgba(0,255,136,0.3)"/>
+          <line x1="1284" y1="135" x2="1284" y2="275" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1278" y="148" width="14" height="98" fill="rgba(0,255,136,0.3)"/>
+          <line x1="1332" y1="120" x2="1332" y2="260" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1326" y="135" width="14" height="100" fill="rgba(0,255,136,0.3)"/>
+          <line x1="1380" y1="105" x2="1380" y2="250" stroke="rgba(0,255,136,0.5)" strokeWidth="1"/><rect x="1374" y="118" width="14" height="105" fill="rgba(0,255,136,0.3)"/>
+          {/* 20 SMA */}
+          <path d="M 80 410 C 150 405, 250 395, 350 385 C 420 378, 470 355, 540 320 C 600 290, 650 260, 720 235 C 780 215, 820 205, 860 230 C 900 250, 940 270, 980 280 C 1020 275, 1060 260, 1100 240 C 1150 220, 1200 195, 1260 175 C 1300 160, 1350 145, 1380 135" fill="none" stroke="rgba(57,255,133,0.4)" strokeWidth="1.5" strokeLinecap="round"/>
+          {/* 200 SMA */}
+          <path d="M 80 430 C 200 425, 350 415, 500 395 C 600 380, 700 360, 800 340 C 900 325, 1000 315, 1100 300 C 1200 288, 1300 275, 1380 265" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </div>
 
       {/* ═══ NAV ═══ */}
       <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 40px 0", borderBottom: "1px solid #1a1b22", overflow: "visible", position: 'relative' }}>
@@ -2636,25 +2674,8 @@ export default function WickCoachFull() {
                   {activeCategory === 7 && <MockTradeTimeline />}
                 </div>
               </div>
-              {/* Chin with WickCoach logo */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="23" height="28" viewBox="0 0 20 24" fill="none">
-                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#00d4a0" strokeWidth="0.8" />
-                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#00d4a0" opacity="0.9" />
-                  </svg>
-                  <span style={{ fontSize: 22, letterSpacing: '0.12em', fontWeight: 700, fontFamily: fd }}>
-                    <span style={{ color: '#d0d0d8' }}>WICK</span>
-                    <span style={{ color: '#00d4a0' }}>COACH</span>
-                  </span>
-                </div>
-              </div>
+              {/* Chin */}
+              <div style={{ height: 6 }} />
             </div>
             {/* Stand neck */}
             <div style={{ width: 100, height: 50, margin: '0 auto', background: 'linear-gradient(180deg, #222328 0%, #1a1b20 40%, #28292f 100%)', clipPath: 'polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)', position: 'relative' }}>
