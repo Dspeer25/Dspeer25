@@ -531,87 +531,93 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
   const renderedBullets = displayedText.split('\n').filter(l => l.length > 0);
   const aiAnimating = !frozen && (isTyping || isThinking);
 
-  const statusColors: Record<string, { fill: string; stroke: string; textColor: string }> = {
-    complete: { fill: '#00d4a0', stroke: '#00d4a0', textColor: '#00d4a0' },
-    progress: { fill: 'none', stroke: '#eab308', textColor: '#eab308' },
-    missed: { fill: 'none', stroke: '#ef4444', textColor: '#ef4444' },
-  };
+  const goalTexts = [
+    'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN',
+    '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES',
+    'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR',
+  ];
+  const goalTypes = ['Patience / Setup', 'General', 'General'];
 
   return (
-    <div style={{ display: 'flex', gap: 20, padding: 0, height: '100%', overflow: 'hidden' }}>
-      {/* LEFT COLUMN */}
+    <div style={{ display: 'flex', gap: 24, padding: 0, height: '100%', overflow: 'hidden' }}>
+      {/* LEFT COLUMN — Goals List */}
       <div style={{ flex: '0 0 58%', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontFamily: fd, color: '#fff', fontSize: 20, fontWeight: 700 }}>Trader Stated Goals</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: 'rgba(0,212,160,0.15)', border: '1px solid #00d4a0', color: '#00d4a0' }}>Week</span>
-            <span style={{ padding: '4px 14px', borderRadius: 6, fontSize: 11, fontFamily: fm, fontWeight: 700, background: '#1a1b22', border: '1px solid #1a1b22', color: '#6b7280' }}>Month</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <span style={{ fontFamily: fd, color: '#fff', fontSize: 22, fontWeight: 700 }}>Weekly Goals</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
+            <span style={{ fontFamily: fm, fontSize: 10, color: '#39ff85' }}>3 Active Rules</span>
           </div>
         </div>
-        <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 14, marginTop: 10, marginBottom: 18 }}>{goalSet.week}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {goalSet.goals.map((goal, gi) => {
-            const sc = statusColors[goal.status] || statusColors.progress;
-            return (
-              <div key={gi} style={{ background: 'linear-gradient(135deg, rgba(0,212,160,0.04), rgba(0,212,160,0.01))', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                <svg width="22" height="22" viewBox="0 0 22 22" style={{ flexShrink: 0, marginTop: 1 }}>
-                  {goal.status === 'complete' ? (
-                    <><circle cx="11" cy="11" r="10" fill={sc.fill} /><path d="M7 11l3 3 5-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></>
-                  ) : (
-                    <circle cx="11" cy="11" r="9.5" fill="none" stroke={sc.stroke} strokeWidth="2" />
-                  )}
-                </svg>
-                <div>
-                  <div style={{ fontFamily: fm, color: '#ffffff', fontSize: 13, fontWeight: 500 }}>{goal.text}</div>
-                  <div style={{ fontFamily: fm, color: sc.textColor, fontSize: 11, marginTop: 4 }}>{goal.statusText}</div>
+        <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.4)', fontSize: 11, marginBottom: 18 }}>Active behavioral and technical parameters for the current week.</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {goalTexts.map((text, gi) => (
+            <div key={gi} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid #39ff85', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontFamily: fd, fontSize: 14, color: '#39ff85' }}>{gi + 1}</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.02em', marginBottom: 6 }}>{text}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 8, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase' as const }}>TYPE</span>
+                  <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{goalTypes[gi]}</span>
                 </div>
               </div>
-            );
-          })}
+              <div style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, cursor: 'pointer' }}>
+                <Logo size={10} />
+                <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>click to give context</span>
+              </div>
+            </div>
+          ))}
         </div>
-        {/* Scan line — only animates when NOT frozen */}
+        <div style={{ marginTop: 16, border: '1px dashed rgba(255,255,255,0.1)', padding: 12, textAlign: 'center' }}>
+          <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>+ INITIALIZE NEW PARAMETER</span>
+        </div>
+        {/* Scan line */}
         {!frozen && <div style={{ position: 'absolute', left: 0, width: '100%', height: 2, background: 'linear-gradient(90deg, transparent, #00d4a0, transparent)', boxShadow: '0 0 20px rgba(0,212,160,0.4)', animation: 'goalScan 4s ease-in-out infinite', zIndex: 2, pointerEvents: 'none' }} />}
-        {/* Sparkles — only render when NOT frozen */}
-        {!frozen && [{l:'12%',t:'22%',d:'0s'},{l:'45%',t:'38%',d:'0.4s'},{l:'78%',t:'28%',d:'0.8s'},{l:'30%',t:'58%',d:'1.2s'},{l:'65%',t:'72%',d:'1.6s'},{l:'88%',t:'52%',d:'2s'}].map((s, i) => (
-          <div key={i} style={{ position: 'absolute', left: s.l, top: s.t, width: 4, height: 4, borderRadius: '50%', background: '#00d4a0', animation: 'sparkle 2s ease-in-out infinite', animationDelay: s.d, pointerEvents: 'none' }} />
-        ))}
       </div>
-      {/* RIGHT COLUMN */}
+      {/* RIGHT COLUMN — WickCoach AI */}
       <div style={{ flex: '0 0 38%', transform: showFollowUp ? 'translateY(-120px)' : 'translateY(0)', transition: 'transform 0.8s ease' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: aiAnimating ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
           <Logo size={16} />
-          <span style={{ fontFamily: fm, fontSize: 12, fontWeight: 700, color: '#00d4a0', letterSpacing: 1 }}>WickCoach AI</span>
+          <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#39ff85' }}>WickCoach AI</span>
         </div>
-        <div style={{ background: '#1a1b22', border: '1px solid #232430', borderRadius: 10, padding: 16, marginTop: 12, minHeight: 120, backgroundImage: 'radial-gradient(rgba(0,212,160,0.18) 1px, transparent 1px)', backgroundSize: '4px 4px' }}>
-          <div style={{ fontFamily: fm, color: '#d1d5db', fontSize: 13, lineHeight: '1.7', fontStyle: 'italic' }}>
+        <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', borderRadius: 0, padding: 20, marginTop: 12, minHeight: 140 }}>
+          <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.7)', fontSize: 11, lineHeight: 1.7 }}>
             {renderedBullets.map((line, idx) => (
               <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
-                {line.startsWith('\u2022') ? <><span style={{ color: '#00d4a0' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
+                {line.startsWith('\u2022') ? <><span style={{ color: '#39ff85' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
               </div>
             ))}
-            {isTyping && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
+            {isTyping && <span style={{ animation: 'blink 1s step-end infinite', color: '#39ff85' }}>|</span>}
           </div>
           {isThinking && (
             <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0s' }} />
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.3s' }} />
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.6s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.3s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.6s' }} />
             </div>
           )}
         </div>
+        {/* Pagination dots */}
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
+        </div>
         <div style={{ opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: showFollowUp ? 'auto' : 'none' }}>
-          <div style={{ background: 'rgba(0,212,160,0.05)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 8, padding: 10, marginTop: 10 }}>
-            <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
-            <div style={{ fontFamily: fm, color: '#c9cdd4', fontSize: 13, lineHeight: '1.6' }}>{goalSet.followUp}</div>
+          <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', padding: 14, marginTop: 10 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#39ff85', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
+            <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.7)', fontSize: 11, lineHeight: 1.6 }}>{goalSet.followUp}</div>
             <input
               type="text"
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setAnswer(''); }}
               placeholder="Type your answer..."
-              style={{ background: '#13141a', border: '1px solid #232430', borderRadius: 6, padding: '8px 10px', color: '#ffffff', fontSize: 13, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#00d4a0'; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = '#232430'; }}
+              style={{ background: '#13141a', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', color: '#ffffff', fontSize: 11, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = '#39ff85'; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
             />
           </div>
         </div>
@@ -2430,9 +2436,9 @@ export default function WickCoachFull() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 48 }}>
             {[
               { label: "Trading Goals", d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" },
-              { label: "Log a Trade", d: "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" },
+              { label: "Log a Trade", d: "M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" },
               { label: "Past Trades", d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6v6l4 2" },
-              { label: "Analysis", d: "M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7zM9 21h6" },
+              { label: "Analysis", d: "M18 20V10M12 20V4M6 20v-6" },
               { label: "Trader Profile", d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" },
               { label: "Position Sizer", d: "M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM8 6h8M8 10h8M8 14h4" },
               { label: "Growth Simulator", d: "M23 6l-9.5 9.5-5-5L1 18M17 6h6v6" },
@@ -2458,7 +2464,7 @@ export default function WickCoachFull() {
               {/* Screen bezel */}
               <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
                 {/* Screen content */}
-                <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 440, padding: 32 }}>
+                <div style={{ background: '#0e0f14', borderRadius: 4, overflow: 'hidden', height: 520, padding: 32 }}>
                   {activeCategory === 0 && <MockTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
                   {activeCategory === 1 && <MockLogATrade onAdvance={() => setActiveCategory(2)} />}
                   {activeCategory === 2 && <MockPastTrades onAdvance={() => setActiveCategory(0)} />}
