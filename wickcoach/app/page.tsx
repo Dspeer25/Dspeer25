@@ -2397,245 +2397,161 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
 
       {/* ═══ NAV ═══ */}
-      <nav style={{ height: 65, padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10, background: '#131318' }}>
-        <div onClick={() => setView('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <svg width={18} height={22} viewBox="0 0 24 30" fill="none">
-            <circle cx="9" cy="5" r="3" stroke="#888" strokeWidth="1.3" fill="none" />
-            <line x1="9" y1="8" x2="9" y2="18" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="11" x2="4" y2="15" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="11" x2="16" y2="7" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="18" x2="5" y2="25" stroke="#888" strokeWidth="1.3" />
-            <line x1="9" y1="18" x2="13" y2="25" stroke="#888" strokeWidth="1.3" />
-            <line x1="18" y1="2" x2="18" y2="15" stroke={teal} strokeWidth="1" />
-            <rect x="15.5" y="5" width="5" height="6" rx="0.5" fill={teal} opacity="0.9" />
+      <nav style={{ height: 58, padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'relative', zIndex: 10, background: '#000' }}>
+        <div onClick={() => setView('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+            <rect x="3" y="3" width="14" height="14" stroke="#39ff85" strokeWidth="1" fill="none" />
+            <rect x="6" y="6" width="8" height="8" stroke="#39ff85" strokeWidth="1" fill="none" transform="rotate(45 10 10)" />
+            <line x1="10" y1="0" x2="10" y2="5" stroke="#39ff85" strokeWidth="0.8" />
+            <line x1="10" y1="15" x2="10" y2="20" stroke="#39ff85" strokeWidth="0.8" />
+            <line x1="0" y1="10" x2="5" y2="10" stroke="#39ff85" strokeWidth="0.8" />
+            <line x1="15" y1="10" x2="20" y2="10" stroke="#39ff85" strokeWidth="0.8" />
           </svg>
-          <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: '0.04em', fontFamily: fd }}>
-            <span style={{ color: '#fff' }}>WICK</span><span style={{ color: teal }}>COACH</span>
-          </span>
+          <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.12em', fontFamily: fm, color: '#fff' }}>WICKCOACH</span>
         </div>
-        <div style={{ display: 'flex', gap: 36, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
           {['Log a Trade','Past Trades','Trading Goals','Analysis','Trader Profile'].map(t => {
             const label = t === 'Trader Profile' ? 'PROFILE' : t.toUpperCase();
-            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 11, color: '#888', letterSpacing: '0.1em', cursor: 'pointer', fontFamily: fm, textTransform: 'uppercase' as const }}>{label}</span>;
+            const isAnalysis = t === 'Analysis';
+            return <span key={t} onClick={() => { setActiveTab(t); setView('app'); }} style={{ fontSize: 11, color: isAnalysis ? '#39ff85' : 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', cursor: 'pointer', fontFamily: fm, textTransform: 'uppercase' as const }}>{label}</span>;
           })}
         </div>
         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <span style={{ color: '#888', fontFamily: fm, fontSize: 12, cursor: 'pointer' }}>LOGIN</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontFamily: fm, fontSize: 12, cursor: 'pointer' }}>LOGIN</span>
           <button
             onClick={() => setView('app')}
-            style={{ background: 'transparent', color: teal, border: `1px solid ${teal}`, padding: '9px 22px', fontSize: 11, fontFamily: fm, textTransform: 'uppercase' as const, letterSpacing: '0.08em', cursor: 'pointer', borderRadius: 0 }}
-            onMouseEnter={e => { e.currentTarget.style.background = teal; e.currentTarget.style.color = '#131318'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = teal; }}
+            style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.6)', padding: '9px 20px', fontSize: 11, fontFamily: fm, textTransform: 'uppercase' as const, letterSpacing: '0.08em', cursor: 'pointer', borderRadius: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >START BUILDING FREE</button>
         </div>
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
-      <section style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', backgroundColor: '#131318', backgroundImage: 'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)', backgroundSize: '60px 60px' }}>
+      <section style={{ width: '100%', height: 'calc(100vh - 58px)', position: 'relative', overflow: 'hidden', background: '#000', display: 'grid', gridTemplateColumns: '520px 1fr' }}>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
-            @keyframes candleA {
-              0% { transform: scaleY(1.3); } 5% { transform: scaleY(0.65); } 10% { transform: scaleY(1.25); }
-              15% { transform: scaleY(0.7); } 20% { transform: scaleY(1.2); } 30% { transform: scaleY(0.8); }
-              45% { transform: scaleY(1.08); } 60% { transform: scaleY(0.96); } 80% { transform: scaleY(1.03); }
-              100% { transform: scaleY(0.98); }
-            }
-            @keyframes candleB {
-              0% { transform: scaleY(0.7); } 7% { transform: scaleY(1.3); } 12% { transform: scaleY(0.72); }
-              18% { transform: scaleY(1.22); } 28% { transform: scaleY(0.82); } 42% { transform: scaleY(1.1); }
-              58% { transform: scaleY(0.94); } 78% { transform: scaleY(1.02); } 100% { transform: scaleY(1.0); }
-            }
-            @keyframes candleC {
-              0% { transform: scaleY(1.28); } 6% { transform: scaleY(0.68); } 13% { transform: scaleY(1.2); }
-              22% { transform: scaleY(0.75); } 35% { transform: scaleY(1.05); } 50% { transform: scaleY(0.95); }
-              70% { transform: scaleY(1.02); } 100% { transform: scaleY(0.99); }
-            }
-            @keyframes bob0 { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
-            @keyframes bob1 { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
-            @keyframes bob2 { 0%,100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }
-            @keyframes bob3 { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-4px); } }
+            @keyframes subtlePulse { 0%,100% { transform: scaleY(0.97); } 50% { transform: scaleY(1.03); } }
           }
         `}</style>
 
-        {/* Radial vignette */}
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 85% 85% at 50% 50%, transparent 25%, #131318 100%)', pointerEvents: 'none', zIndex: 1 }} />
-
-        {/* Left column — headline area */}
-        <div style={{ position: 'absolute', left: 48, top: 65, bottom: 0, width: 380, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 24, zIndex: 5 }}>
-          {/* Hero logo */}
-          <div>
-            <svg width={36} height={36} viewBox="0 0 24 24" fill="none">
-              <circle cx="9" cy="5" r="3" stroke="#888" strokeWidth="1.3" fill="none" />
-              <line x1="9" y1="8" x2="9" y2="18" stroke="#888" strokeWidth="1.3" />
-              <line x1="9" y1="11" x2="4" y2="15" stroke="#888" strokeWidth="1.3" />
-              <line x1="9" y1="11" x2="16" y2="7" stroke="#888" strokeWidth="1.3" />
-              <line x1="9" y1="18" x2="5" y2="25" stroke="#888" strokeWidth="1.3" />
-              <line x1="9" y1="18" x2="13" y2="25" stroke="#888" strokeWidth="1.3" />
-              <line x1="18" y1="2" x2="18" y2="15" stroke={teal} strokeWidth="1" />
-              <rect x="15.5" y="5" width="5" height="6" rx="0.5" fill={teal} opacity="0.9" />
-            </svg>
-            <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 600, letterSpacing: '0.15em', marginTop: 6 }}>
-              <span style={{ color: '#aaa' }}>WICK</span><span style={{ color: teal }}>COACH</span>
-            </div>
+        {/* Left column */}
+        <div style={{ paddingLeft: 48, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 28, zIndex: 5 }}>
+          {/* Eyebrow */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 24, height: 2, background: '#39ff85' }} />
+            <span style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.2em' }}>ENGINEERED FOR MASTERY</span>
           </div>
           {/* Headline */}
-          <h1 style={{ fontFamily: fd, fontSize: 46, fontWeight: 'bold', lineHeight: 1.1, color: '#fff', margin: 0 }}>
-            The Trading Journal That{' '}<span style={{ color: teal }}>Fixes Your Psychology.</span>
+          <h1 style={{ fontFamily: fd, fontSize: 64, fontWeight: 700, lineHeight: 1.05, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
+            The Trading Journal That Fixes Your Psychology<span style={{ color: 'rgba(255,255,255,0.35)' }}>.</span>
           </h1>
           {/* Subtitle */}
-          <p style={{ fontFamily: fm, fontSize: 12, color: '#666', lineHeight: 1.7, maxWidth: 340, margin: 0 }}>
+          <p style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, maxWidth: 400, margin: 0 }}>
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
-          {/* CTA */}
-          <button
-            onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
-            style={{ background: teal, color: '#131318', fontFamily: fm, fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.12em', padding: '12px 32px', border: 'none', borderRadius: 0, cursor: 'pointer', width: 'fit-content' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#00f0b5'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = teal; }}
-          >START JOURNALING →</button>
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <button
+              onClick={() => { setActiveTab('Log a Trade'); setView('app'); }}
+              style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 11, fontWeight: 500, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '13px 28px', border: 'none', borderRadius: 0, cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#2de676'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#39ff85'; }}
+            >START JOURNALING</button>
+            <button
+              style={{ background: 'rgba(255,255,255,0.06)', color: '#fff', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: '0.1em', padding: '13px 28px', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 0, cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
+            >&#9654; WATCH DEMO</button>
+          </div>
+          {/* Integration logos */}
+          <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+            {['BINANCE', 'NINJATRADER', 'TRADINGVIEW'].map(n => (
+              <span key={n} style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>{n}</span>
+            ))}
+          </div>
         </div>
 
-        {/* Chart area — right side */}
-        <div style={{ position: 'absolute', left: 380, right: 0, top: 65, bottom: 0, zIndex: 3, overflow: 'hidden' }}>
-          {/* Green atmospheric glow */}
-          <div style={{ position: 'absolute', width: 600, height: 400, top: '50%', left: '50%', transform: 'translate(-40%, -55%)', background: 'radial-gradient(ellipse, rgba(0,212,160,0.14) 0%, rgba(0,212,160,0.05) 40%, transparent 70%)', pointerEvents: 'none' }} />
-
-          {/* Watermark */}
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontFamily: fd, fontSize: 72, fontWeight: 700, color: 'rgba(255,255,255,0.025)', whiteSpace: 'nowrap', userSelect: 'none', pointerEvents: 'none', zIndex: 1 }}>WickCoach · 1D</div>
+        {/* Right column — chart + annotations */}
+        <div style={{ position: 'relative', overflow: 'hidden', height: '100%' }}>
+          {/* Subtle green glow behind candles */}
+          <div style={{ position: 'absolute', top: '15%', left: '10%', width: '65%', height: '70%', background: 'radial-gradient(ellipse 60% 70% at 55% 50%, rgba(0,255,136,0.04) 0%, transparent 65%)', pointerEvents: 'none' }} />
 
           {/* Candlestick SVG */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 700 520" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <filter id="greenGlow"><feGaussianBlur stdDeviation="4" /></filter>
-              <filter id="redGlow"><feGaussianBlur stdDeviation="3" /></filter>
-            </defs>
+          <svg style={{ position: 'absolute', top: 0, left: 0, width: 'calc(100% - 250px)', height: '100%' }} viewBox="0 0 680 480" preserveAspectRatio="xMidYMid meet">
+            {/* Consolidation — small mixed */}
+            {[
+              { x: 120, bh: 35, bt: 320, wt: 305, wb: 365, bull: false },
+              { x: 164, bh: 40, bt: 310, wt: 290, wb: 360, bull: true },
+              { x: 208, bh: 38, bt: 315, wt: 298, wb: 368, bull: false },
+              { x: 252, bh: 30, bt: 318, wt: 302, wb: 355, bull: true },
+              { x: 296, bh: 42, bt: 305, wt: 288, wb: 362, bull: false },
+              {/* Breakout — tall greens */ x: 340, bh: 95, bt: 250, wt: 232, wb: 360, bull: true },
+              { x: 384, bh: 140, bt: 190, wt: 170, wb: 345, bull: true },
+              { x: 428, bh: 180, bt: 155, wt: 135, wb: 350, bull: true },
+              { x: 472, bh: 220, bt: 120, wt: 95,  wb: 355, bull: true },
+              {/* Trailing smaller */ x: 516, bh: 60, bt: 200, wt: 180, wb: 275, bull: false },
+              { x: 560, bh: 80, bt: 170, wt: 148, wb: 265, bull: true },
+              { x: 604, bh: 340, bt: 50,  wt: 25,  wb: 405, bull: true },
+            ].map((c, i) => {
+              const cls = ['c-a','c-b','c-c'][i % 3];
+              const dur = [4.5, 5.2, 6.1][i % 3];
+              const del = [0, 0.8, 1.6][i % 3];
+              const fillCol = c.bull ? 'rgba(0,255,136,0.15)' : 'rgba(255,68,68,0.12)';
+              const strokeCol = c.bull ? '#2a4a3a' : '#4a2a2a';
+              return (
+                <g key={i}>
+                  <line x1={c.x} y1={c.wt} x2={c.x} y2={c.wb} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
+                  <rect className={cls} x={c.x - 8} y={c.bt} width={16} height={c.bh} fill={fillCol} stroke={strokeCol} strokeWidth={1} style={{ transformOrigin: `${c.x}px ${c.bt + c.bh}px`, animation: `subtlePulse ${dur}s ease-in-out ${del}s infinite` }} />
+                </g>
+              );
+            })}
 
-            {/* Consolidation */}
-            <g className="candle-grp-a" style={{ transformOrigin: '100px 355px', animation: 'candleA 8s ease-out forwards' }}>
-              <line x1={100} y1={295} x2={100} y2={355} stroke="#ff4444" strokeWidth={1.5} />
-              <rect x={93} y={305} width={14} height={38} fill="#ff4444" opacity={0.85} />
-            </g>
-            <g className="candle-grp-b" style={{ transformOrigin: '128px 350px', animation: 'candleB 9s ease-out 0.15s forwards' }}>
-              <line x1={128} y1={282} x2={128} y2={350} stroke={teal} strokeWidth={1.5} />
-              <rect x={121} y={298} width={14} height={38} fill={teal} opacity={0.85} />
-            </g>
-            <g className="candle-grp-c" style={{ transformOrigin: '156px 358px', animation: 'candleC 10s ease-out 0.3s forwards' }}>
-              <line x1={156} y1={288} x2={156} y2={358} stroke="#ff4444" strokeWidth={1.5} />
-              <rect x={149} y={302} width={14} height={42} fill="#ff4444" opacity={0.85} />
-            </g>
-            <g className="candle-grp-a" style={{ transformOrigin: '184px 340px', animation: 'candleA 8s ease-out 0.1s forwards' }}>
-              <line x1={184} y1={278} x2={184} y2={340} stroke={teal} strokeWidth={1.5} />
-              <rect x={177} y={295} width={14} height={28} fill={teal} opacity={0.85} />
-            </g>
-            <g className="candle-grp-b" style={{ transformOrigin: '212px 360px', animation: 'candleB 9s ease-out 0.25s forwards' }}>
-              <line x1={212} y1={285} x2={212} y2={360} stroke="#ff4444" strokeWidth={1.5} />
-              <rect x={205} y={298} width={14} height={40} fill="#ff4444" opacity={0.85} />
-            </g>
+            {/* Annotation dots */}
+            <circle cx={340} cy={250} r={4} fill="#39ff85" opacity={0.9} />
+            <circle cx={208} cy={298} r={4} fill="#ff4444" opacity={0.9} />
+            <circle cx={164} cy={360} r={4} fill="rgba(255,255,255,0.7)" />
+            <circle cx={120} cy={365} r={3} fill="#39ff85" opacity={0.7} />
 
-            {/* Breakout — glowing greens */}
-            <g className="candle-grp-c" style={{ transformOrigin: '248px 345px', animation: 'candleC 10s ease-out 0.05s forwards' }} filter="url(#greenGlow)">
-              <line x1={248} y1={240} x2={248} y2={345} stroke={teal} strokeWidth={1.5} />
-              <rect x={240} y={252} width={16} height={78} fill={teal} />
-              <rect x={243} y={255} width={10} height={72} fill="rgba(0,212,160,0.3)" />
-            </g>
-            <g className="candle-grp-a" style={{ transformOrigin: '280px 340px', animation: 'candleA 8s ease-out 0.2s forwards' }} filter="url(#greenGlow)">
-              <line x1={280} y1={170} x2={280} y2={340} stroke={teal} strokeWidth={1.5} />
-              <rect x={272} y={185} width={16} height={140} fill={teal} />
-              <rect x={275} y={188} width={10} height={134} fill="rgba(0,212,160,0.3)" />
-            </g>
-            <g className="candle-grp-b" style={{ transformOrigin: '312px 300px', animation: 'candleB 9s ease-out 0.35s forwards' }} filter="url(#greenGlow)">
-              <line x1={312} y1={148} x2={312} y2={300} stroke={teal} strokeWidth={1.5} />
-              <rect x={304} y={162} width={16} height={122} fill={teal} />
-              <rect x={307} y={165} width={10} height={116} fill="rgba(0,212,160,0.25)" />
-            </g>
-            <g className="candle-grp-c" style={{ transformOrigin: '344px 285px', animation: 'candleC 10s ease-out 0.1s forwards' }} filter="url(#greenGlow)">
-              <line x1={344} y1={130} x2={344} y2={285} stroke={teal} strokeWidth={1.5} />
-              <rect x={336} y={145} width={16} height={125} fill={teal} />
-              <rect x={339} y={148} width={10} height={119} fill="rgba(0,212,160,0.2)" />
-            </g>
-
-            {/* Pullback — reds */}
-            <g className="candle-grp-a" style={{ transformOrigin: '376px 290px', animation: 'candleA 8s ease-out 0.3s forwards' }} filter="url(#redGlow)">
-              <line x1={376} y1={145} x2={376} y2={290} stroke="#ff4444" strokeWidth={1.5} />
-              <rect x={368} y={165} width={16} height={105} fill="#ff4444" opacity={0.9} />
-            </g>
-            <g className="candle-grp-b" style={{ transformOrigin: '408px 305px', animation: 'candleB 9s ease-out 0.15s forwards' }} filter="url(#redGlow)">
-              <line x1={408} y1={178} x2={408} y2={305} stroke="#ff4444" strokeWidth={1.5} />
-              <rect x={400} y={195} width={16} height={90} fill="#ff4444" opacity={0.85} />
-            </g>
-            <g className="candle-grp-c" style={{ transformOrigin: '440px 295px', animation: 'candleC 10s ease-out 0.25s forwards' }}>
-              <line x1={440} y1={195} x2={440} y2={295} stroke="#ff4444" strokeWidth={1.5} />
-              <rect x={432} y={210} width={16} height={68} fill="#ff4444" opacity={0.8} />
-            </g>
-
-            {/* Recovery — greens */}
-            <g className="candle-grp-a" style={{ transformOrigin: '472px 288px', animation: 'candleA 8s ease-out 0.15s forwards' }}>
-              <line x1={472} y1={175} x2={472} y2={288} stroke={teal} strokeWidth={1.5} />
-              <rect x={464} y={192} width={16} height={80} fill={teal} opacity={0.9} />
-            </g>
-            <g className="candle-grp-b" style={{ transformOrigin: '504px 275px', animation: 'candleB 9s ease-out 0.3s forwards' }} filter="url(#greenGlow)">
-              <line x1={504} y1={142} x2={504} y2={275} stroke={teal} strokeWidth={1.5} />
-              <rect x={496} y={158} width={16} height={100} fill={teal} />
-              <rect x={499} y={161} width={10} height={94} fill="rgba(0,212,160,0.3)" />
-            </g>
-            <g className="candle-grp-c" style={{ transformOrigin: '536px 260px', animation: 'candleC 10s ease-out 0.1s forwards' }} filter="url(#greenGlow)">
-              <line x1={536} y1={120} x2={536} y2={260} stroke={teal} strokeWidth={1.5} />
-              <rect x={528} y={135} width={16} height={110} fill={teal} />
-              <rect x={531} y={138} width={10} height={104} fill="rgba(0,212,160,0.2)" />
-            </g>
-
-            {/* Moving average line — on top */}
-            <path d="M 85 335 C 130 330,175 325,220 320 C 255 316,268 295,290 258 C 310 230,330 200,355 195 C 385 192,405 215,430 235 C 455 252,468 240,490 225 C 510 210,525 185,555 175" fill="none" stroke="#3388ff" strokeWidth={1.8} opacity={0.8} strokeLinecap="round" />
-
-            {/* Annotation dots + leader lines */}
-            <circle cx={312} cy={148} r={4} fill={teal} opacity={0.9} />
-            <line x1={308} y1={145} x2={200} y2={62} stroke={teal} strokeWidth={0.8} strokeDasharray="4,4" opacity={0.5} />
-
-            <circle cx={408} cy={178} r={4} fill="#ff4444" opacity={0.9} />
-            <line x1={412} y1={175} x2={545} y2={68} stroke="#ff4444" strokeWidth={0.8} strokeDasharray="4,4" opacity={0.5} />
-
-            <circle cx={100} cy={355} r={4} fill="#fff" opacity={0.7} />
-            <line x1={97} y1={358} x2={65} y2={430} stroke="#fff" strokeWidth={0.8} strokeDasharray="4,4" opacity={0.5} />
-
-            <circle cx={536} cy={260} r={4} fill="#3388ff" opacity={0.9} />
-            <line x1={540} y1={263} x2={600} y2={400} stroke="#3388ff" strokeWidth={0.8} strokeDasharray="4,4" opacity={0.5} />
+            {/* Dashed connecting line between dots */}
+            <path d="M 120 365 C 145 340, 160 355, 164 360 C 175 340, 190 310, 208 298 C 240 270, 300 260, 340 250" fill="none" stroke="#39ff85" strokeWidth={1} strokeDasharray="4 4" opacity={0.5} />
           </svg>
 
-          {/* Annotation cards */}
-          <div style={{ position: 'absolute', top: 38, left: 70, maxWidth: 200, background: 'rgba(13,14,20,0.85)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 14px', pointerEvents: 'all', animation: 'bob0 4.2s ease-in-out infinite' }}>
-            <div style={{ fontFamily: fd, fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' as const, letterSpacing: '0.15em', color: teal, marginBottom: 4 }}>READS YOUR WORDS</div>
-            <div style={{ fontFamily: fm, fontSize: 10, color: '#666', lineHeight: 1.5 }}>Other journals track your P/L. WickCoach reads what you write — your frustrations, your excuses, the emotions behind every trade.</div>
+          {/* Annotation panel — stacked right side */}
+          <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', width: 240, display: 'flex', flexDirection: 'column', zIndex: 5 }}>
+            {/* Block 1 */}
+            <div style={{ padding: '0 0 24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontFamily: fm, fontSize: 10, color: '#ff6b35', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>IMPULSE DRAWDOWN</div>
+              <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.</div>
+            </div>
+            {/* Block 2 */}
+            <div style={{ padding: '24px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontFamily: fm, fontSize: 10, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>PATTERN EXTRACTION</div>
+              <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Micro-fractals isolated perfectly from market noise.</div>
+            </div>
+            {/* Block 3 */}
+            <div style={{ padding: '24px 0 0 0' }}>
+              <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.15em', marginBottom: 8 }}>MOMENTUM IGNITION</div>
+              <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.</div>
+            </div>
           </div>
 
-          <div style={{ position: 'absolute', top: 28, right: 60, maxWidth: 200, background: 'rgba(13,14,20,0.85)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 14px', pointerEvents: 'all', animation: 'bob1 3.8s ease-in-out 0.5s infinite' }}>
-            <div style={{ fontFamily: fd, fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' as const, letterSpacing: '0.15em', color: '#ff4444', marginBottom: 4 }}>FIND YOUR PSYCH EDGE</div>
-            <div style={{ fontFamily: fm, fontSize: 10, color: '#666', lineHeight: 1.5 }}>Your setups work on paper. WickCoach shows you exactly where your psychology destroys your edge — and how to fix it.</div>
-          </div>
-
-          <div style={{ position: 'absolute', bottom: 80, left: 20, maxWidth: 200, background: 'rgba(13,14,20,0.85)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 14px', pointerEvents: 'all', animation: 'bob2 5.1s ease-in-out 1.2s infinite' }}>
-            <div style={{ fontFamily: fd, fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' as const, letterSpacing: '0.15em', color: '#ccc', marginBottom: 4 }}>IMPORT YOUR HISTORY</div>
-            <div style={{ fontFamily: fm, fontSize: 10, color: '#666', lineHeight: 1.5 }}>Upload years of existing trade data. Your psychology profile starts on day one, not month six.</div>
-          </div>
-
-          <div style={{ position: 'absolute', bottom: 80, right: 60, maxWidth: 200, background: 'rgba(13,14,20,0.85)', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 14px', pointerEvents: 'all', animation: 'bob3 4.6s ease-in-out 0.8s infinite' }}>
-            <div style={{ fontFamily: fd, fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase' as const, letterSpacing: '0.15em', color: '#3388ff', marginBottom: 4 }}>AI THAT COACHES YOU</div>
-            <div style={{ fontFamily: fm, fontSize: 10, color: '#666', lineHeight: 1.5 }}>Not just charts and dashboards. A coach that remembers every journal entry you{"'"}ve ever written and holds you accountable.</div>
-          </div>
-        </div>
-
-        {/* Stat cards */}
-        <div style={{ position: 'absolute', bottom: 24, right: 48, zIndex: 10, display: 'flex', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ padding: '14px 20px', borderRight: '1px solid rgba(255,255,255,0.08)', minWidth: 110 }}>
-            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 'bold', color: teal, lineHeight: 1, marginBottom: 4 }}>+42%</div>
-            <div style={{ fontFamily: fm, fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>AVG. EXPECTANCY INCREASE</div>
-          </div>
-          <div style={{ padding: '14px 20px', borderRight: '1px solid rgba(255,255,255,0.08)', minWidth: 110 }}>
-            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 'bold', color: '#fff', lineHeight: 1, marginBottom: 4 }}>1.2M+</div>
-            <div style={{ fontFamily: fm, fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>EXECUTIONS ANALYZED</div>
-          </div>
-          <div style={{ padding: '14px 20px', minWidth: 110 }}>
-            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 'bold', color: '#ff4444', lineHeight: 1, marginBottom: 4 }}>-68%</div>
-            <div style={{ fontFamily: fm, fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>REDUCTION IN REVENGE TRADES</div>
+          {/* Stat cards — bottom, centered under candles */}
+          <div style={{ position: 'absolute', bottom: 24, left: 0, right: 250, display: 'flex', justifyContent: 'center', zIndex: 5 }}>
+            <div style={{ display: 'flex', background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#39ff85', lineHeight: 1, marginBottom: 4 }}>+42%</div>
+                <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>AVG. EXPECTANCY INCREASE</div>
+              </div>
+              <div style={{ padding: '16px 20px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#fff', lineHeight: 1, marginBottom: 4 }}>1.2M+</div>
+                <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>EXECUTIONS ANALYZED</div>
+              </div>
+              <div style={{ padding: '16px 20px' }}>
+                <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 'bold', color: '#ff4444', lineHeight: 1, marginBottom: 4 }}>-68%</div>
+                <div style={{ fontFamily: fm, fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>REDUCTION IN REVENGE TRADES</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
