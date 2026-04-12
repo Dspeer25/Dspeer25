@@ -42,6 +42,9 @@ type Journal = {
   review?: string;
   body?: string;
   monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string }[];
+  longTickers?: [string, string, string];
+  shortTickers?: [string, string, string];
+  tickerToEmploy?: string;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1111,51 +1114,116 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         ))}
       </div>
 
-      {/* Observations and Actions — rich text */}
-      <div className="space-y-0">
-        <h3 className="text-sm font-semibold text-slate-200 mb-1">Observations and Actions</h3>
-        {/* Toolbar */}
-        <div className="flex flex-wrap gap-1 p-2 bg-[#2d2f45] border border-b-0 border-[#3d3f5e] rounded-t-xl">
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }}
-            className="px-2 py-1 rounded text-xs font-bold text-slate-200 hover:bg-[#3d3f5e] transition-colors">B</button>
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }}
-            className="px-2 py-1 rounded text-xs italic text-slate-200 hover:bg-[#3d3f5e] transition-colors">I</button>
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
-            className="px-2 py-1 rounded text-xs underline text-slate-200 hover:bg-[#3d3f5e] transition-colors">U</button>
-          <div className="w-px bg-[#3d3f5e] mx-1" />
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }}
-            className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align left">≡←</button>
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }}
-            className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Center">≡</button>
-          <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }}
-            className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align right">→≡</button>
-          <div className="w-px bg-[#3d3f5e] mx-1" />
-          {["#f87171","#34d399","#60a5fa","#fbbf24","#e879f9","#ffffff"].map((color) => (
-            <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("foreColor", color); }}
-              className="w-5 h-5 rounded-full border border-[#3d3f5e] flex-shrink-0"
-              style={{ backgroundColor: color }} />
-          ))}
-          <div className="w-px bg-[#3d3f5e] mx-1" />
-          <select defaultValue="" onMouseDown={(e) => e.stopPropagation()}
-            onChange={(e) => { execCmd("fontSize", e.target.value); e.target.value = ""; }}
-            className="bg-[#1e2035] border border-[#3d3f5e] rounded text-xs text-slate-300 px-1 focus:outline-none cursor-pointer">
-            <option value="" disabled>Size</option>
-            <option value="1">XS</option>
-            <option value="2">S</option>
-            <option value="3">M</option>
-            <option value="4">L</option>
-            <option value="5">XL</option>
-            <option value="6">2XL</option>
-          </select>
+      {/* Observations + Ticker Watchlist — split screen */}
+      <div className="flex gap-4 items-stretch">
+        {/* Left: Observations and Actions rich text */}
+        <div className="flex-1 space-y-0 min-w-0">
+          <h3 className="text-sm font-semibold text-slate-200 mb-1">Observations and Actions</h3>
+          <div className="flex flex-wrap gap-1 p-2 bg-[#2d2f45] border border-b-0 border-[#3d3f5e] rounded-t-xl">
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("bold"); }}
+              className="px-2 py-1 rounded text-xs font-bold text-slate-200 hover:bg-[#3d3f5e] transition-colors">B</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("italic"); }}
+              className="px-2 py-1 rounded text-xs italic text-slate-200 hover:bg-[#3d3f5e] transition-colors">I</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("underline"); }}
+              className="px-2 py-1 rounded text-xs underline text-slate-200 hover:bg-[#3d3f5e] transition-colors">U</button>
+            <div className="w-px bg-[#3d3f5e] mx-1" />
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyLeft"); }}
+              className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align left">≡←</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyCenter"); }}
+              className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Center">≡</button>
+            <button type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("justifyRight"); }}
+              className="px-2 py-1 rounded text-xs text-slate-200 hover:bg-[#3d3f5e] transition-colors" title="Align right">→≡</button>
+            <div className="w-px bg-[#3d3f5e] mx-1" />
+            {["#f87171","#34d399","#60a5fa","#fbbf24","#e879f9","#ffffff"].map((color) => (
+              <button key={color} type="button" onMouseDown={(e) => { e.preventDefault(); execCmd("foreColor", color); }}
+                className="w-5 h-5 rounded-full border border-[#3d3f5e] flex-shrink-0"
+                style={{ backgroundColor: color }} />
+            ))}
+            <div className="w-px bg-[#3d3f5e] mx-1" />
+            <select defaultValue="" onMouseDown={(e) => e.stopPropagation()}
+              onChange={(e) => { execCmd("fontSize", e.target.value); e.target.value = ""; }}
+              className="bg-[#1e2035] border border-[#3d3f5e] rounded text-xs text-slate-300 px-1 focus:outline-none cursor-pointer">
+              <option value="" disabled>Size</option>
+              <option value="1">XS</option>
+              <option value="2">S</option>
+              <option value="3">M</option>
+              <option value="4">L</option>
+              <option value="5">XL</option>
+              <option value="6">2XL</option>
+            </select>
+          </div>
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={() => { if (editorRef.current) set("observations", editorRef.current.innerHTML); }}
+            data-placeholder="Type your observations, thoughts, and planned actions here..."
+            className="w-full bg-[#1e2035] border border-[#3d3f5e] rounded-b-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-64 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-600"
+          />
         </div>
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={() => { if (editorRef.current) set("observations", editorRef.current.innerHTML); }}
-          data-placeholder="Type your observations, thoughts, and planned actions here..."
-          className="w-full bg-[#1e2035] border border-[#3d3f5e] rounded-b-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-64 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-600"
-        />
+
+        {/* Right: Ticker Watchlist */}
+        <div className="w-52 flex-shrink-0 flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-slate-200">Watchlist</h3>
+          {/* Long */}
+          <div className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl overflow-hidden flex-shrink-0">
+            <div className="px-3 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
+            </div>
+            <div className="p-3 space-y-2">
+              {([0,1,2] as const).map(i => (
+                <div key={i}>
+                  <label className="text-[10px] text-slate-600 uppercase tracking-widest block mb-0.5">Ticker {i+1}</label>
+                  <input
+                    value={(journal.longTickers ?? ["","",""])[i]}
+                    onChange={e => {
+                      const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
+                      t[i] = e.target.value.toUpperCase();
+                      onChange({ ...journal, longTickers: t });
+                    }}
+                    placeholder="—"
+                    className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Short */}
+          <div className="bg-[#1a1b2e] border border-red-500/20 rounded-xl overflow-hidden flex-shrink-0">
+            <div className="px-3 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+              <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
+            </div>
+            <div className="p-3 space-y-2">
+              {([0,1,2] as const).map(i => (
+                <div key={i}>
+                  <label className="text-[10px] text-slate-600 uppercase tracking-widest block mb-0.5">Ticker {i+1}</label>
+                  <input
+                    value={(journal.shortTickers ?? ["","",""])[i]}
+                    onChange={e => {
+                      const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
+                      t[i] = e.target.value.toUpperCase();
+                      onChange({ ...journal, shortTickers: t });
+                    }}
+                    placeholder="—"
+                    className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Ticker to employ */}
+          <div className="flex-shrink-0">
+            <label className="text-[10px] text-slate-500 uppercase tracking-widest block mb-1">Ticker to Employ</label>
+            <input
+              value={journal.tickerToEmploy ?? ""}
+              onChange={e => onChange({ ...journal, tickerToEmploy: e.target.value.toUpperCase() })}
+              placeholder="e.g. AAPL"
+              className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-xs text-indigo-300 placeholder-slate-700 focus:outline-none focus:border-indigo-500 font-mono tracking-widest uppercase"
+            />
+          </div>
+        </div>
       </div>
 
       {/* End of Day Review */}
@@ -2479,7 +2547,7 @@ function ObservationsTab() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator" | "observations">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
@@ -2525,7 +2593,6 @@ export default function Home() {
 
       <nav className="flex flex-wrap gap-1 bg-[#252740] p-1 rounded-lg w-fit">
         {([
-          ["observations", "Observations"     ],
           ["log",         "Log Entry"       ],
           ["entries",     "Entries"         ],
           ["csv",         "Import CSV"      ],
@@ -2545,7 +2612,6 @@ export default function Home() {
       </nav>
 
       <main className={`bg-[#252740] rounded-xl border p-6 flex-1 transition-all duration-300 ${journalMarketOn ? "border-[#00ff88] shadow-[0_0_24px_rgba(0,255,136,0.35)]" : "border-[#3d3f5e]"}`}>
-        {tab === "observations" && <ObservationsTab />}
         {tab === "log"     && <LogTab onSave={(e) => setEntries((prev) => [e, ...prev])} />}
         {tab === "entries" && (
           <EntriesTable
