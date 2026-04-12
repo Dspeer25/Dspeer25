@@ -2102,8 +2102,8 @@ function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
             <LineChart width={620} height={220} data={pnlData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2d2f45" />
               <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
-              <Tooltip formatter={(v: number) => [`$${v}`, "P&L"]} contentStyle={tooltipStyle} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+              <Tooltip formatter={(v) => [`$${v}`, "P&L"]} contentStyle={tooltipStyle} />
               <ReferenceLine y={0} stroke="#3d3f5e" />
               <Line type="monotone" dataKey="pnl" stroke="#6366f1" strokeWidth={2} dot={false} />
             </LineChart>
@@ -2129,8 +2129,8 @@ function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
             <BarChart width={260} height={200} data={eventData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2d2f45" />
               <XAxis dataKey="event" tick={{ fill: "#64748b", fontSize: 10 }} />
-              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
-              <Tooltip formatter={(v: number) => [`$${v}`, "Avg P&L"]} contentStyle={tooltipStyle} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+              <Tooltip formatter={(v) => [`$${v}`, "Avg P&L"]} contentStyle={tooltipStyle} />
               <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
                 {eventData.map((entry, i) => <Cell key={i} fill={entry.avg >= 0 ? "#34d399" : "#f87171"} />)}
               </Bar>
@@ -2145,8 +2145,8 @@ function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
           <BarChart width={400} height={200} data={locationData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#2d2f45" />
             <XAxis dataKey="location" tick={{ fill: "#64748b", fontSize: 12 }} />
-            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
-            <Tooltip formatter={(v: number) => [`$${v}`, "Avg P&L"]} contentStyle={tooltipStyle} />
+            <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+            <Tooltip formatter={(v) => [`$${v}`, "Avg P&L"]} contentStyle={tooltipStyle} />
             <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
               {locationData.map((entry, i) => <Cell key={i} fill={entry.avg >= 0 ? "#34d399" : "#f87171"} />)}
             </Bar>
