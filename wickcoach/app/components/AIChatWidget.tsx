@@ -1,6 +1,7 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { fm, fd } from './shared';
+import Logo from './Logo';
 
 const teal = '#39ff85';
 
@@ -85,26 +86,27 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
       {/* Backdrop */}
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 40 }}
+      />
+      {/* Widget — docked to right side */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          height: '100vh',
+          width: 440,
+          maxWidth: '90vw',
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#0A0E0C',
+          borderRadius: '28px 0 0 28px',
+          overflow: 'hidden',
+          boxShadow: '-10px 0 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(57,255,133,0.1)',
+        }}
       >
-        {/* Widget */}
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            position: 'relative',
-            width: '100%',
-            maxWidth: 440,
-            height: 750,
-            maxHeight: '90vh',
-            display: 'flex',
-            flexDirection: 'column',
-            background: '#0A0E0C',
-            borderRadius: 28,
-            overflow: 'hidden',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(57,255,133,0.1)',
-          }}
-        >
-          {/* Ambient glow */}
+        {/* Ambient glow */}
           <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 128, background: teal, borderRadius: '50%', filter: 'blur(100px)', opacity: 0.15, pointerEvents: 'none' }} />
 
           {/* Header */}
@@ -119,16 +121,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
                   boxShadow: '0 0 15px rgba(57,255,133,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-                    <circle cx="8" cy="4" r="2.8" stroke="#c0c0c8" strokeWidth="1.2" fill="none" />
-                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#c0c0c8" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#c0c0c8" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#c0c0c8" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#c0c0c8" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#c0c0c8" strokeWidth="1.2" />
-                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-                  </svg>
+                  <Logo size={20} />
                 </div>
                 {/* Online dot */}
                 <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: teal, border: '2px solid #0A0E0C', animation: 'aiWidgetOnlinePulse 1.8s ease-out infinite' }} />
@@ -193,7 +186,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
                   {formatAiText(msg.content)}
                 </div>
               ) : (
-                <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '85%', background: 'linear-gradient(135deg, #39ff85, #0d9b6c)', color: '#fff', borderRadius: '20px 20px 4px 20px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontWeight: 500, fontFamily: fm }}>
+                <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '85%', background: 'linear-gradient(135deg, #39ff85, #39ff85)', color: '#fff', borderRadius: '20px 20px 4px 20px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontWeight: 500, fontFamily: fm }}>
                   {msg.content}
                 </div>
               )
@@ -256,7 +249,6 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
               AI Coach can make mistakes. Verify executing rules.
             </div>
           </div>
-        </div>
       </div>
     </>
   );

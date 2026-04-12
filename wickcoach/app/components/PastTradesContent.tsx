@@ -8,51 +8,41 @@ const teal = '#39ff85';
 
 // Ticker tile color map. Each entry defines the tile's background, border, text color.
 // Unlisted tickers fall back to a generic dark tile with the first letter in white.
-const TICKER_TILES: Record<string, { bg: string; border: string; color: string; label?: string }> = {
-  DIS:   { bg: '#0f192b', border: '#1e345e', color: '#0063e5' },
-  NFLX:  { bg: '#2d0000', border: '#5e1e1e', color: '#e50914' },
-  MSFT:  { bg: '#1a1a1a', border: '#333333', color: '#ffffff' },
-  TSLA:  { bg: '#2d0000', border: '#5e1e1e', color: '#cc0000' },
-  AMD:   { bg: '#001a0d', border: '#1e5e33', color: '#00a651' },
-  GOOGL: { bg: '#0d2618', border: '#1e5e3a', color: '#34a853' },
-  GOOG:  { bg: '#0d2618', border: '#1e5e3a', color: '#34a853' },
-  SPY:   { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'SPDR' },
-  V:     { bg: '#0d0d2b', border: '#1e1e5e', color: '#1a1f71' },
-  AAPL:  { bg: '#1a1a1a', border: '#333333', color: '#ffffff' },
-  BA:    { bg: '#0d1a2b', border: '#1e3a5e', color: '#0033a0' },
-  COIN:  { bg: '#0d1a2b', border: '#1e3a5e', color: '#0052ff' },
-  META:  { bg: '#0d1a2e', border: '#1e3a6e', color: '#0668E1' },
-  NVDA:  { bg: '#0d1a00', border: '#2e5e00', color: '#76b900' },
-  AMZN:  { bg: '#2b1d00', border: '#5e4100', color: '#ff9900' },
-  QQQ:   { bg: '#1a0d2b', border: '#3a1e5e', color: '#7b3fe4' },
-  JPM:   { bg: '#0d1a2b', border: '#1e3a5e', color: '#006cb7' },
-  WMT:   { bg: '#0d1a2b', border: '#1e3a5e', color: '#0071dc' },
+const TICKER_TILES: Record<string, { bg: string; border: string; color: string; label: string; labelSize: number }> = {
+  DIS:   { bg: '#0f192b', border: '#1e345e', color: '#0063e5', label: 'DI',   labelSize: 10 },
+  NFLX:  { bg: '#2d0000', border: '#5e1e1e', color: '#e50914', label: 'N',    labelSize: 10 },
+  SPY:   { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'SPDR', labelSize: 7 },
+  MSFT:  { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'M',    labelSize: 10 },
+  TSLA:  { bg: '#2d0000', border: '#5e1e1e', color: '#cc0000', label: 'T',    labelSize: 10 },
+  AMD:   { bg: '#001a0d', border: '#1e5e33', color: '#00a651', label: 'AMD',  labelSize: 8 },
+  GOOGL: { bg: '#0d2618', border: '#1e5e3a', color: '#34a853', label: 'G',    labelSize: 10 },
+  GOOG:  { bg: '#0d2618', border: '#1e5e3a', color: '#34a853', label: 'G',    labelSize: 10 },
+  V:     { bg: '#0d0d2b', border: '#1e1e5e', color: '#1a1f71', label: 'V',    labelSize: 10 },
+  AAPL:  { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'A',    labelSize: 10 },
+  BA:    { bg: '#0d1a2b', border: '#1e3a5e', color: '#0033a0', label: 'B',    labelSize: 10 },
+  COIN:  { bg: '#0d1a2b', border: '#1e3a5e', color: '#0052ff', label: 'C',    labelSize: 10 },
+  META:  { bg: '#0d1a2e', border: '#1e3a6e', color: '#0668E1', label: 'M',    labelSize: 10 },
+  NVDA:  { bg: '#0d1a00', border: '#2e5e00', color: '#76b900', label: 'N',    labelSize: 10 },
+  AMZN:  { bg: '#2b1d00', border: '#5e4100', color: '#ff9900', label: 'A',    labelSize: 10 },
+  QQQ:   { bg: '#1a0d2b', border: '#3a1e5e', color: '#7b3fe4', label: 'Q',    labelSize: 10 },
+  JPM:   { bg: '#0d1a2b', border: '#1e3a5e', color: '#006cb7', label: 'J',    labelSize: 10 },
+  WMT:   { bg: '#0d1a2b', border: '#1e3a5e', color: '#0071dc', label: 'W',    labelSize: 10 },
 };
 
 const TickerTile = ({ ticker }: { ticker: string }) => {
-  const t = TICKER_TILES[ticker];
-  if (t) {
-    return (
-      <div style={{
-        width: 28, height: 28, borderRadius: 4,
-        background: t.bg, border: `1px solid ${t.border}`, color: t.color,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: fd, fontWeight: 700, fontSize: t.label && t.label.length > 1 ? 8 : 11,
-        flexShrink: 0, letterSpacing: t.label && t.label.length > 1 ? 0 : 0.5,
-      }}>
-        {t.label || ticker.charAt(0)}
-      </div>
-    );
-  }
-  // Fallback for unlisted tickers
+  const t = TICKER_TILES[ticker] || {
+    bg: '#1a1a1a', border: '#333333', color: '#ffffff',
+    label: ticker.charAt(0), labelSize: 10,
+  };
   return (
     <div style={{
       width: 28, height: 28, borderRadius: 4,
-      background: '#1a1a1a', border: '1px solid #333', color: '#fff',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: fd, fontWeight: 700, fontSize: 11, flexShrink: 0, letterSpacing: 0.5,
+      background: t.bg, border: `1px solid ${t.border}`, color: t.color,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: fd, fontWeight: 700, fontSize: t.labelSize,
+      flexShrink: 0, letterSpacing: t.labelSize < 10 ? 0 : 0.5, marginRight: 8,
     }}>
-      {ticker.charAt(0)}
+      {t.label}
     </div>
   );
 };
@@ -316,8 +306,17 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export CSV
             </span>
-            <span onClick={() => setAiOpen(!aiOpen)} style={{ fontFamily: fm, fontSize: 13, color: '#000', padding: '8px 16px', borderRadius: 6, border: 'none', background: '#39ff85', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, whiteSpace: 'nowrap' }}>
-              <svg width="14" height="17" viewBox="0 0 20 24" fill="none"><circle cx="8" cy="4" r="2.8" stroke="#000" strokeWidth="1.4" fill="none" /><line x1="8" y1="6.8" x2="8" y2="15" stroke="#000" strokeWidth="1.4" /><rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#000" /><line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#000" strokeWidth="1" /></svg>
+            <span onClick={() => setAiOpen(!aiOpen)} style={{ fontFamily: fm, fontSize: 11, color: '#000', padding: '10px 20px', borderRadius: 6, border: 'none', background: '#39ff85', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+                <circle cx="8" cy="4" r="2.8" stroke="#000" strokeWidth="1.4" fill="none" />
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#000" strokeWidth="1.4" />
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#000" strokeWidth="1.4" />
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#000" strokeWidth="1.4" />
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#000" strokeWidth="1.4" />
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#000" strokeWidth="1.4" />
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#000" />
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#000" strokeWidth="1" />
+              </svg>
               Ask AI Coach
             </span>
           </div>
