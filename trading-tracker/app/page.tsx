@@ -2363,9 +2363,123 @@ function GrowthSimulatorTab() {
   );
 }
 
+// ─── Observations Tab ─────────────────────────────────────────────────────────
+function ObservationsTab() {
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [longTickers, setLongTickers] = useState(["", "", ""]);
+  const [shortTickers, setShortTickers] = useState(["", "", ""]);
+  const [employ, setEmploy] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    getData<{ date: string; longTickers: string[]; shortTickers: string[]; employ: string; notes: string }>("trading-observations").then((v) => {
+      if (v) {
+        setDate(v.date || new Date().toISOString().slice(0, 10));
+        setLongTickers(v.longTickers || ["", "", ""]);
+        setShortTickers(v.shortTickers || ["", "", ""]);
+        setEmploy(v.employ || "");
+        setNotes(v.notes || "");
+      }
+      setLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    setData("trading-observations", { date, longTickers, shortTickers, employ, notes });
+  }, [date, longTickers, shortTickers, employ, notes, loaded]);
+
+  const allTickers = [...longTickers, ...shortTickers].filter(Boolean);
+
+  const inputCls = "w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2.5 text-sm text-slate-100 placeholder-slate-700 focus:outline-none focus:border-indigo-500 uppercase font-mono tracking-widest transition-colors";
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-extrabold tracking-tight text-white">Pre-Market <span className="text-indigo-400">Observations</span></h2>
+          <p className="text-slate-500 text-sm mt-0.5">Plan your watchlist before the open</p>
+        </div>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)}
+          className="bg-[#1e2035] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-indigo-500" />
+      </div>
+
+      {/* Long section */}
+      <div className="bg-[#1a1b2e] border border-emerald-500/20 rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
+        </div>
+        <div className="p-5 grid grid-cols-3 gap-3">
+          {longTickers.map((t, i) => (
+            <div key={i}>
+              <label className="text-xs text-slate-500 uppercase tracking-widest block mb-1.5">Ticker {i + 1}</label>
+              <input value={t} onChange={e => { const n = [...longTickers]; n[i] = e.target.value.toUpperCase(); setLongTickers(n); }}
+                placeholder="—" className={inputCls} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Short section */}
+      <div className="bg-[#1a1b2e] border border-red-500/20 rounded-2xl overflow-hidden">
+        <div className="px-5 py-3 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-red-400" />
+          <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
+        </div>
+        <div className="p-5 grid grid-cols-3 gap-3">
+          {shortTickers.map((t, i) => (
+            <div key={i}>
+              <label className="text-xs text-slate-500 uppercase tracking-widest block mb-1.5">Ticker {i + 1}</label>
+              <input value={t} onChange={e => { const n = [...shortTickers]; n[i] = e.target.value.toUpperCase(); setShortTickers(n); }}
+                placeholder="—" className={inputCls} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Ticker to employ */}
+      <div className="bg-[#1a1b2e] border border-[#2d2f50] rounded-2xl p-5 space-y-3">
+        <div>
+          <label className="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-1">Ticker to Employ</label>
+          <p className="text-xs text-slate-600">Based on market conditions, which ticker will you trade today?</p>
+        </div>
+        {allTickers.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {allTickers.map((t, i) => (
+              <button key={i} onClick={() => setEmploy(employ === t ? "" : t)}
+                className={`px-4 py-2 rounded-lg text-sm font-bold font-mono tracking-widest border transition-all ${
+                  employ === t
+                    ? "bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20"
+                    : "bg-[#13142a] border-[#3d3f5e] text-slate-400 hover:border-slate-400"
+                }`}>{t}</button>
+            ))}
+          </div>
+        ) : (
+          <input value={employ} onChange={e => setEmploy(e.target.value.toUpperCase())}
+            placeholder="Type ticker..." className={inputCls} />
+        )}
+      </div>
+
+      {/* Notes */}
+      <div className="bg-[#1a1b2e] border border-[#2d2f50] rounded-2xl p-5 space-y-3">
+        <label className="text-xs font-bold tracking-widest text-slate-400 uppercase block">Notes / Confirmation</label>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)}
+          placeholder="What do you need to see to pull the trigger? What invalidates the setup?..."
+          rows={4}
+          className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-4 py-3 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-indigo-500 resize-none transition-colors" />
+      </div>
+
+      {saved && <p className="text-emerald-400 text-xs font-semibold">Saved</p>}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator" | "observations">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
@@ -2411,6 +2525,7 @@ export default function Home() {
 
       <nav className="flex flex-wrap gap-1 bg-[#252740] p-1 rounded-lg w-fit">
         {([
+          ["observations", "Observations"     ],
           ["log",         "Log Entry"       ],
           ["entries",     "Entries"         ],
           ["csv",         "Import CSV"      ],
@@ -2430,6 +2545,7 @@ export default function Home() {
       </nav>
 
       <main className={`bg-[#252740] rounded-xl border p-6 flex-1 transition-all duration-300 ${journalMarketOn ? "border-[#00ff88] shadow-[0_0_24px_rgba(0,255,136,0.35)]" : "border-[#3d3f5e]"}`}>
+        {tab === "observations" && <ObservationsTab />}
         {tab === "log"     && <LogTab onSave={(e) => setEntries((prev) => [e, ...prev])} />}
         {tab === "entries" && (
           <EntriesTable
