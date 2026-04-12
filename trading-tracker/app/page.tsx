@@ -42,8 +42,8 @@ type Journal = {
   review?: string;
   body?: string;
   monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string }[];
-  longTickers?: [string, string];
-  shortTickers?: [string, string];
+  longTickers?: [string, string, string];
+  shortTickers?: [string, string, string];
   tickerToEmploy?: string;
 };
 
@@ -1223,16 +1223,15 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
             </div>
             <div className="p-4 space-y-3">
-              {(["Near", "Far"] as const).map((loc, i) => (
+              {([["Near",""], ["↓",""], ["Far",""]] as const).map(([loc], i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="flex flex-col items-center flex-shrink-0 w-10">
-                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
-                    {i === 0 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
+                  <div className="flex-shrink-0 w-10 text-center">
+                    <span className={`text-xs font-semibold ${loc === "↓" ? "text-slate-600" : "text-slate-400"}`}>{loc}</span>
                   </div>
                   <input
-                    value={(journal.longTickers ?? ["",""])[i] ?? ""}
+                    value={(journal.longTickers ?? ["","",""])[i] ?? ""}
                     onChange={e => {
-                      const t: [string,string] = [...(journal.longTickers ?? ["",""])] as [string,string];
+                      const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
                       t[i] = e.target.value.toUpperCase();
                       onChange({ ...journal, longTickers: t });
                     }}
@@ -1250,16 +1249,15 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
             </div>
             <div className="p-4 space-y-3">
-              {(["Near", "Far"] as const).map((loc, i) => (
+              {([["Near",""], ["↓",""], ["Far",""]] as const).map(([loc], i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="flex flex-col items-center flex-shrink-0 w-10">
-                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
-                    {i === 0 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
+                  <div className="flex-shrink-0 w-10 text-center">
+                    <span className={`text-xs font-semibold ${loc === "↓" ? "text-slate-600" : "text-slate-400"}`}>{loc}</span>
                   </div>
                   <input
-                    value={(journal.shortTickers ?? ["",""])[i] ?? ""}
+                    value={(journal.shortTickers ?? ["","",""])[i] ?? ""}
                     onChange={e => {
-                      const t: [string,string] = [...(journal.shortTickers ?? ["",""])] as [string,string];
+                      const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
                       t[i] = e.target.value.toUpperCase();
                       onChange({ ...journal, shortTickers: t });
                     }}
