@@ -1468,6 +1468,11 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
   const unnestFolder = (childId: string) =>
     setFolders((prev) => prev.map((f) => f.id === childId ? { ...f, parentId: undefined } : f));
 
+  const createWeekFolder = (parentId: string) => {
+    const weekName = `Week of ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" })}`;
+    setFolders((prev) => [...prev, { id: crypto.randomUUID(), name: weekName, collapsed: false, parentId }]);
+  };
+
   const updateJournal = (updated: Journal) =>
     setJournals((prev) => prev.map((j) => (j.id === updated.id ? updated : j)));
 
@@ -1641,10 +1646,17 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={(e) => { e.stopPropagation(); createJournal(folder.id); }}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition-colors">
-                    + Add Journal
-                  </button>
+                  {isMonth ? (
+                    <button onClick={(e) => { e.stopPropagation(); createWeekFolder(folder.id); }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-sky-600/30 hover:bg-sky-600 text-sky-300 hover:text-white text-xs font-semibold transition-colors">
+                      + Add Week
+                    </button>
+                  ) : (
+                    <button onClick={(e) => { e.stopPropagation(); createJournal(folder.id); }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition-colors">
+                      + Add Journal
+                    </button>
+                  )}
                   {nested && (
                     <button onClick={(e) => { e.stopPropagation(); unnestFolder(folder.id); }}
                       className="text-slate-500 hover:text-slate-200 text-xs transition-colors px-1" title="Remove from month">↑</button>
@@ -1660,7 +1672,9 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                   )}
                   {folderJournals.length === 0 && childFolders.length === 0 ? (
                     <p className="text-slate-600 text-xs text-center py-3">
-                      No journals yet — hit <strong className="text-slate-500">+ Add Journal</strong> above.
+                      {isMonth
+                        ? <>No weeks yet — hit <strong className="text-slate-500">+ Add Week</strong> above.</>
+                        : <>No journals yet — hit <strong className="text-slate-500">+ Add Journal</strong> above.</>}
                     </p>
                   ) : (
                     <>
