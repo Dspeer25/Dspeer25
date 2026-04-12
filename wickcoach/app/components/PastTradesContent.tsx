@@ -240,7 +240,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     return `You have ${trades.length} trade${trades.length !== 1 ? 's' : ''} logged with a ${wr}% win rate. Your best performer was ${best?.ticker} (+$${best?.pl.toFixed(2)}). Want me to analyze your patterns?`;
   })() : null;
 
-  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Notes'];
+  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Analyst Notes'];
   const sortableMap: Record<string, string> = { 'Date': 'date', 'Direction': 'direction', 'Qty': 'qty', 'Net P/L': 'pl', 'R:R': 'rr', 'Asset': 'ticker' };
   function toggleSort(field: string) {
     if (sortBy === field + '-desc') setSortBy(field + '-asc');
@@ -280,69 +280,72 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
         {/* Page header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>Past Trades</span>
-              <span style={{ fontSize: 10, fontFamily: fm, color: '#0e0f14', background: teal, padding: '3px 8px', borderRadius: 4, fontWeight: 700, letterSpacing: 1 }}>LIVE</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#ffffff' }}>Past Trades</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(57,255,133,0.1)', border: '1px solid rgba(57,255,133,0.2)', padding: '4px 10px', borderRadius: 12, fontSize: 11, color: '#39ff85', fontWeight: 600, fontFamily: fm, letterSpacing: 0.5 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'livePulse 1.8s ease-out infinite', flexShrink: 0 }} />
+                LIVE
+              </span>
             </div>
-            <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginTop: 4 }}>Analyze, review, and backtest your historical executions.</div>
+            <div style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>Analyze, review, and backtest your historical executions across all strategies.</div>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <span onClick={() => setAiOpen(!aiOpen)} style={{ fontFamily: fm, fontSize: 13, color: teal, padding: '8px 16px', borderRadius: 8, borderTop: `1px solid rgba(0,212,160,0.3)`, borderRight: `1px solid rgba(0,212,160,0.3)`, borderBottom: `1px solid rgba(0,212,160,0.3)`, borderLeft: `1px solid rgba(0,212,160,0.3)`, background: 'rgba(0,212,160,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-              <svg width="14" height="17" viewBox="0 0 20 24" fill="none"><circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" /><line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" /><rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" /><line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" /></svg>
-              AI Coach
-            </span>
-            <span style={{ fontFamily: fm, fontSize: 13, color: '#c9cdd4', padding: '8px 16px', borderRadius: 8, borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', background: '#111218', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+            <span style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.7)', padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export CSV
             </span>
+            <span onClick={() => setAiOpen(!aiOpen)} style={{ fontFamily: fm, fontSize: 13, color: '#000', padding: '8px 16px', borderRadius: 6, border: 'none', background: '#39ff85', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <svg width="14" height="17" viewBox="0 0 20 24" fill="none"><circle cx="8" cy="4" r="2.8" stroke="#000" strokeWidth="1.4" fill="none" /><line x1="8" y1="6.8" x2="8" y2="15" stroke="#000" strokeWidth="1.4" /><rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#000" /><line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#000" strokeWidth="1" /></svg>
+              Ask AI Coach
+            </span>
           </div>
         </div>
-        {/* ── STAT CARDS ── */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, flex: 1 }}>
-          {/* Total P/L */}
-          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total P/L</div>
-            <div style={{ color: totalPL >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{formatDollar(totalPL)}</div>
-            <svg width="100%" height="20" viewBox="0 0 200 20" preserveAspectRatio="none" style={{ display: 'block', marginTop: 6 }}>
-              <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0.15" /><stop offset="100%" stopColor={totalPL >= 0 ? teal : '#ef4444'} stopOpacity="0" /></linearGradient></defs>
-              <path d={(sparkPoints.replace(/60/g, '200').replace(/24/g, '20') || 'M0,10 L200,10') + ' L200,20 L0,20 Z'} fill="url(#sparkFill)" />
-              <path d={sparkPoints.replace(/60/g, '200').replace(/24/g, '20') || 'M0,10 L200,10'} stroke={totalPL >= 0 ? teal : '#ef4444'} strokeWidth="1.5" fill="none" />
-            </svg>
-          </div>
-          {/* Win Rate */}
-          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{winRate}%</div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6, fontFamily: fm, fontSize: 11 }}>
-              <span style={{ color: teal }}>{wins.length}W</span>
-              <span style={{ color: '#ef4444' }}>{losses.length}L</span>
-              {breakEven.length > 0 && <span style={{ color: '#f59e0b' }}>{breakEven.length}E</span>}
+        {/* ── STAT CARDS — 5 connected cards ── */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden', background: '#13141a' }}>
+          {/* Card 1 — TOTAL NET P/L */}
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Net P/L</div>
+            <div style={{ color: totalPL >= 0 ? '#39ff85' : '#ef4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>
+              {(totalPL >= 0 ? '+' : '-') + '$' + Math.abs(totalPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 4, background: '#1e1f2a' }}>
-              {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: teal }} />}
+            <div style={{ width: '100%', height: 3, background: '#39ff85', borderRadius: 2, marginTop: 10 }} />
+          </div>
+
+          {/* Card 2 — WIN RATE */}
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</span>
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontFamily: fm, fontSize: 11 }}>{wins.length}W / {losses.length}L</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
+              <span style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700 }}>{winRate}%</span>
+              <span style={{ color: '#39ff85', fontFamily: fm, fontSize: 13 }}>+4% MoM</span>
+            </div>
+            <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#1e1f2a' }}>
+              {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: '#39ff85' }} />}
               {filtered.length > 0 && <div style={{ width: `${(losses.length / filtered.length) * 100}%`, background: '#ef4444' }} />}
             </div>
           </div>
-          {/* Total Trades */}
-          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Trades</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{statTrades.length}</div>
+
+          {/* Card 3 — TOTAL EXECUTIONS */}
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Executions</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>{statTrades.length}</div>
+            <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10, fontStyle: 'italic' as const }}>Consistent Volume</div>
           </div>
-          {/* Avg R:R */}
-          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
+
+          {/* Card 4 — AVG R:R */}
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
+            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+              <span style={{ width: 6, height: 6, background: '#39ff85', borderRadius: '50%', display: 'inline-block' }} />
+              <span style={{ fontFamily: fm, fontSize: 11, color: '#39ff85' }}>Above Target</span>
+            </div>
           </div>
-          {/* Expected Value */}
-          <div style={{ background: '#13141a', borderTop: `3px solid ${teal}`, borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, padding: '12px 16px' }}>
-            <div style={{ color: '#6b7280', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Expected Value</div>
-            <div style={{ color: expectedValue >= 0 ? teal : '#ef4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 4 }}>{formatDollar(Math.round(expectedValue * 100) / 100)}</div>
-            <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 4 }}>Per trade</div>
-          </div>
-        </div>
-          {/* WickCoach icon — HIGH-LEVEL ANALYSIS (right of Expected Value) */}
-          <div onClick={() => setAiOpen(!aiOpen)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', flexShrink: 0, width: 80, position: 'relative' }}>
+
+          {/* Card 5 — HIGH-LEVEL ANALYSIS */}
+          <div onClick={() => setAiOpen(!aiOpen)} style={{ flex: 1, padding: '20px 24px', cursor: 'pointer', position: 'relative' }}>
             {!aiOpen && (
               <div style={{ position: 'absolute', top: -70, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const, animation: 'hlaArrowBounce 1.5s ease-in-out infinite', pointerEvents: 'none' }}>
                 <span style={{ fontFamily: fm, fontSize: 11, color: '#39ff85', fontWeight: 600, textShadow: '0 0 12px rgba(0,212,160,0.4)' }}>Click to ask me about your Trading</span>
@@ -352,33 +355,46 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                 </svg>
               </div>
             )}
-            <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase' as const, letterSpacing: 2, textAlign: 'center', lineHeight: 1.3, fontWeight: 600 }}>HIGH-LEVEL ANALYSIS</div>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,212,160,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0,212,160,0.2)', transition: 'all 0.3s', borderTop: `1px solid rgba(0,212,160,0.3)`, borderRight: `1px solid rgba(0,212,160,0.3)`, borderBottom: `1px solid rgba(0,212,160,0.3)`, borderLeft: `1px solid rgba(0,212,160,0.3)` }}>
-              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-                <circle cx="8" cy="4" r="2.8" stroke={teal} strokeWidth="1.2" fill="none" />
-                <line x1="8" y1="6.8" x2="8" y2="15" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="9.5" x2="3" y2="13" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="15" x2="4.5" y2="21" stroke={teal} strokeWidth="1.2" />
-                <line x1="8" y1="15" x2="11.5" y2="21" stroke={teal} strokeWidth="1.2" />
-                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+            <div style={{ position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: '50%', background: 'rgba(57,255,133,0.1)', border: '1px solid rgba(57,255,133,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 12px rgba(57,255,133,0.2)' }}>
+              <svg width="14" height="17" viewBox="0 0 20 24" fill="none">
+                <circle cx="8" cy="4" r="2.8" stroke="#39ff85" strokeWidth="1.2" fill="none" />
+                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#39ff85" strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#39ff85" strokeWidth="1.2" />
+                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#39ff85" strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#39ff85" strokeWidth="1.2" />
+                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#39ff85" strokeWidth="1.2" />
+                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#39ff85" opacity="0.9" />
+                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#39ff85" strokeWidth="0.8" />
               </svg>
             </div>
+            <div style={{ color: '#39ff85', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600 }}>High-Level Analysis</div>
+            <div style={{ color: expectedValue >= 0 ? '#39ff85' : '#ef4444', fontFamily: fd, fontSize: 20, fontWeight: 700, marginTop: 6 }}>
+              {(expectedValue >= 0 ? '+' : '-') + '$' + Math.abs(expectedValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10 }}>Expected Value / Trade</div>
           </div>
         </div>
 
         {/* ── EQUITY CURVE ── */}
-        <div style={{ background: '#13141a', borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 24, marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-              <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#e8e8f0' }}>Equity Curve</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#39ff85" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
+              <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#ffffff' }}>Cumulative Equity Curve</span>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
-              {['1D', '1W', '1M', '3M', 'YTD'].map(p => (
-                <span key={p} onClick={() => setEqRange(p)} style={{ fontFamily: fm, fontSize: 11, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: eqRange === p ? 'rgba(0,212,160,0.18)' : 'transparent', color: eqRange === p ? teal : '#6b7280', borderTop: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderRight: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderBottom: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', borderLeft: eqRange === p ? '1px solid rgba(0,212,160,0.3)' : '1px solid transparent', fontWeight: 600 }}>{p}</span>
-              ))}
+              {['1D', '1W', '1M', '3M', 'YTD'].map(p => {
+                const active = eqRange === p;
+                return (
+                  <span key={p} onClick={() => setEqRange(p)} style={{
+                    fontFamily: fm, fontSize: 11, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
+                    background: active ? '#39ff85' : 'transparent',
+                    color: active ? '#000' : 'rgba(255,255,255,0.4)',
+                    fontWeight: active ? 700 : 600,
+                    border: '1px solid transparent',
+                  }}>{p}</span>
+                );
+              })}
             </div>
           </div>
           <div style={{ display: 'flex', position: 'relative' }}>
@@ -407,12 +423,30 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                 {[30, 60, 90].map(y => <line key={y} x1="0" y1={y} x2="700" y2={y} stroke="#1a1b22" strokeWidth="1" />)}
                 <defs><linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={teal} stopOpacity="0.12" /><stop offset="100%" stopColor={teal} stopOpacity="0" /></linearGradient></defs>
                 <path d={eqFill} fill="url(#eqGrad)" />
-                <path d={eqLine} fill="none" stroke={teal} strokeWidth="2" />
+                <path d={eqLine} fill="none" stroke="#39ff85" strokeWidth="2" />
+                {equityCurve.length > 0 && !eqHover && (() => {
+                  const lastIdx = equityCurve.length - 1;
+                  const lastPt = equityCurve[lastIdx];
+                  const endX = (lastIdx / Math.max(equityCurve.length - 1, 1)) * 700;
+                  const endY = 10 + (1 - (lastPt.value - eqMin) / eqRange2) * 100;
+                  return <circle cx={endX} cy={endY} r="5" fill="#39ff85" stroke="#13141a" strokeWidth="2" />;
+                })()}
                 {eqHover && (<>
-                  <line x1={eqHover.x} y1="0" x2={eqHover.x} y2="120" stroke="rgba(0,212,160,0.4)" strokeWidth="1" strokeDasharray="3,3" />
-                  <circle cx={eqHover.x} cy={eqHover.y} r="4" fill={teal} stroke="#0e0f14" strokeWidth="2" />
+                  <line x1={eqHover.x} y1="0" x2={eqHover.x} y2="120" stroke="rgba(57,255,133,0.4)" strokeWidth="1" strokeDasharray="3,3" />
+                  <circle cx={eqHover.x} cy={eqHover.y} r="4" fill="#39ff85" stroke="#13141a" strokeWidth="2" />
                 </>)}
               </svg>
+              {/* Current value label next to end dot */}
+              {equityCurve.length > 0 && !eqHover && (() => {
+                const lastIdx = equityCurve.length - 1;
+                const lastPt = equityCurve[lastIdx];
+                const endXPct = (lastIdx / Math.max(equityCurve.length - 1, 1)) * 100;
+                return (
+                  <div style={{ position: 'absolute', left: `calc(${endXPct}% + 10px)`, top: 10 + (1 - (lastPt.value - eqMin) / eqRange2) * 100 - 10, fontFamily: fm, fontSize: 11, color: '#39ff85', fontWeight: 700, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+                    {formatDollar(Math.round(lastPt.value))}
+                  </div>
+                );
+              })()}
               {/* Hover tooltip */}
               {eqHover && (
                 <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#13141a', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
@@ -447,7 +481,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               {strategies.map(s => <option key={s} value={s}>{s === 'All' ? 'Strategy: All' : `Strategy: ${s}`}</option>)}
               <option value="+ Add New">+ Add New</option>
             </select>
-            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 11, pointerEvents: 'none' }}>▼</span>
           </div>
           {stratFilter !== 'All' && stratFilter !== '+ Add New' && (
             <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ef4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕</span>
@@ -474,7 +508,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               <select value={dateRange} onChange={e => setDateRange(e.target.value)} style={{ ...selectBase, paddingRight: 28, fontSize: 13 }}>
                 {['This Week', '10 Days', '15 Days', 'This Month', 'All Time'].map(d => <option key={d} value={d}>{d === 'All Time' ? 'All Time' : d}</option>)}
               </select>
-              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 10, pointerEvents: 'none' }}>▼</span>
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: teal, fontSize: 11, pointerEvents: 'none' }}>▼</span>
             </div>
           </div>
         </div>
@@ -488,10 +522,10 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               const isActive = sortField && sortBy.startsWith(sortField + '-');
               const isAsc = sortBy === sortField + '-asc';
               return (
-                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : '#9ca3af', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1.5, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
+                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.35)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
                   {h}
                   {sortField && (
-                    <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0, fontSize: 8, marginLeft: 2 }}>
+                    <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0, fontSize: 11, marginLeft: 2 }}>
                       <span style={{ color: isActive && isAsc ? teal : '#3a3b42' }}>&#9650;</span>
                       <span style={{ color: isActive && !isAsc ? teal : '#3a3b42' }}>&#9660;</span>
                     </span>
@@ -509,9 +543,10 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             </div>
           ) : (<>
             {pagedTrades.map((t, idx) => {
-              const rowBg = idx % 2 === 0 ? '#111218' : '#151620';
+              const isBigWin = t.pl > 1000;
+              const rowBg = isBigWin ? 'rgba(57,255,133,0.03)' : (idx % 2 === 0 ? '#111218' : '#151620');
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', borderLeft: isBigWin ? '2px solid #39ff85' : '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = isBigWin ? 'rgba(57,255,133,0.06)' : '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap' }}>
                     <TickerLogo ticker={t.ticker} />
@@ -542,13 +577,60 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             })}
           </>)}
         </div>
-        {filtered.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, padding: '16px 0', marginTop: 8 }}>
-            <span onClick={() => { if (safePage > 1) setCurrentPage(safePage - 1); }} style={{ fontFamily: fm, fontSize: 13, color: safePage > 1 ? teal : '#3a3b42', cursor: safePage > 1 ? 'pointer' : 'default', fontWeight: 600 }}>&larr; Previous</span>
-            <span style={{ fontFamily: fm, fontSize: 13, color: '#6b7280' }}>Showing {(safePage - 1) * perPage + 1}-{Math.min(safePage * perPage, filtered.length)} of {filtered.length} trades</span>
-            <span onClick={() => { if (safePage < totalPages) setCurrentPage(safePage + 1); }} style={{ fontFamily: fm, fontSize: 13, color: safePage < totalPages ? teal : '#3a3b42', cursor: safePage < totalPages ? 'pointer' : 'default', fontWeight: 600 }}>Next &rarr;</span>
-          </div>
-        )}
+        {filtered.length > 0 && (() => {
+          const startIdx = (safePage - 1) * perPage + 1;
+          const endIdx = Math.min(safePage * perPage, filtered.length);
+          // Build page number list with ellipsis
+          const pages: (number | '…')[] = [];
+          if (totalPages <= 5) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+          } else {
+            pages.push(1);
+            if (safePage > 3) pages.push('…');
+            const start = Math.max(2, safePage - 1);
+            const end = Math.min(totalPages - 1, safePage + 1);
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (safePage < totalPages - 2) pages.push('…');
+            pages.push(totalPages);
+          }
+          const btnBase: React.CSSProperties = {
+            width: 32, height: 32, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: fm, fontSize: 13, cursor: 'pointer', userSelect: 'none' as const, transition: 'background 0.15s',
+          };
+          return (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                Showing {startIdx}-{endIdx} of {filtered.length} executions
+              </span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <span
+                  onClick={() => { if (safePage > 1) setCurrentPage(safePage - 1); }}
+                  style={{ ...btnBase, border: '1px solid rgba(255,255,255,0.1)', color: safePage > 1 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: safePage > 1 ? 'pointer' : 'not-allowed' }}
+                >‹</span>
+                {pages.map((p, i) => p === '…' ? (
+                  <span key={`dots-${i}`} style={{ ...btnBase, color: 'rgba(255,255,255,0.3)', cursor: 'default', padding: '0 4px' }}>…</span>
+                ) : (
+                  <span
+                    key={p}
+                    onClick={() => setCurrentPage(p)}
+                    style={{
+                      ...btnBase,
+                      background: p === safePage ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      color: p === safePage ? '#fff' : 'rgba(255,255,255,0.4)',
+                      fontWeight: p === safePage ? 700 : 400,
+                    }}
+                    onMouseEnter={e => { if (p !== safePage) e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                    onMouseLeave={e => { if (p !== safePage) e.currentTarget.style.background = 'transparent'; }}
+                  >{p}</span>
+                ))}
+                <span
+                  onClick={() => { if (safePage < totalPages) setCurrentPage(safePage + 1); }}
+                  style={{ ...btnBase, border: '1px solid rgba(255,255,255,0.1)', color: safePage < totalPages ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: safePage < totalPages ? 'pointer' : 'not-allowed' }}
+                >›</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Notes tooltip */}
         {notesTooltip && (
@@ -578,7 +660,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               </div>
               <div>
                 <div style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff' }}>WickCoach AI</div>
-                <div style={{ fontFamily: fm, fontSize: 9, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
+                <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', letterSpacing: 2, textTransform: 'uppercase' as const }}>TRADING CO-PILOT</div>
               </div>
             </div>
           </div>
@@ -641,7 +723,14 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           </div>
         </div>
       )}
-      <style>{`@keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }`}</style>
+      <style>{`
+        @keyframes dotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+        @keyframes livePulse {
+          0% { box-shadow: 0 0 0 0 rgba(57,255,133,0.4); }
+          70% { box-shadow: 0 0 0 4px rgba(57,255,133,0); }
+          100% { box-shadow: 0 0 0 0 rgba(57,255,133,0); }
+        }
+      `}</style>
     </div>
   );
 }
