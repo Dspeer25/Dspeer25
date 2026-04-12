@@ -36,25 +36,25 @@ const annotations: Annotation[] = [
     title: 'Impulse Drawdown',
     body: 'Revenge trading anomaly detected. 68% probability of forced closures within 15 mins.',
     color: '#ffffff',
-    style: { top: '20%', left: '5%' },
+    style: { top: '15%', right: '55%' },
   },
   {
     title: 'Momentum Ignition',
     body: 'Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.',
     color: teal,
-    style: { top: '35%', right: '5%' },
+    style: { top: '45%', right: '5%' },
   },
   {
     title: 'Pattern Extraction',
     body: 'Micro-fractals isolated perfectly from noise.',
     color: '#ffffff',
-    style: { top: '55%', left: '8%' },
+    style: { bottom: '25%', left: '55%' },
   },
   {
     title: 'Behavioral Drift',
     body: 'Rule adherence drops 34% after consecutive wins.',
     color: red,
-    style: { top: '15%', right: '15%' },
+    style: { top: '15%', right: '5%' },
   },
 ];
 
@@ -80,51 +80,14 @@ export default function Hero({ textVisible }: HeroProps) {
             50% { opacity: 0.7; }
           }
         }
-        .heroGridFloor {
-          -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%);
-          mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%);
-        }
       `}</style>
 
       <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: '#030305' }}>
 
-        {/* ═══ BACKGROUND LAYER ═══ */}
+        {/* ═══ BACKGROUND LAYER — just the candles ═══ */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
 
-          {/* 1. Ethereal glow */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '45%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '90vw',
-              height: '70vw',
-              background: 'radial-gradient(ellipse at center, rgba(57,255,133,0.25) 0%, rgba(255,68,68,0.1) 40%, transparent 75%)',
-              filter: 'blur(50px)',
-              pointerEvents: 'none',
-              animation: 'heroPulseGlow 8s infinite alternate ease-in-out',
-            }}
-          />
-
-          {/* 2. Perspective grid floor */}
-          <div
-            className="heroGridFloor"
-            style={{
-              position: 'absolute',
-              bottom: '-20vh',
-              left: '-50vw',
-              width: '200vw',
-              height: '80vh',
-              backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(to top, rgba(255,255,255,0.08) 1px, transparent 1px)',
-              backgroundSize: '60px 60px',
-              transform: 'rotateX(75deg)',
-              transformOrigin: 'center top',
-              pointerEvents: 'none',
-            }}
-          />
-
-          {/* 3. Monolithic candlestick cluster */}
+          {/* Monolithic candlestick cluster — pushed right */}
           <div
             style={{
               position: 'absolute',
@@ -132,11 +95,13 @@ export default function Hero({ textVisible }: HeroProps) {
               left: 0,
               width: '100%',
               display: 'flex',
-              justifyContent: 'center',
+              justifyContent: 'flex-end',
+              paddingRight: '10%',
               alignItems: 'flex-end',
               gap: '2vw',
               zIndex: 2,
               pointerEvents: 'none',
+              boxSizing: 'border-box',
             }}
           >
             {candles.map((c, i) => {
@@ -182,16 +147,6 @@ export default function Hero({ textVisible }: HeroProps) {
             })}
           </div>
 
-          {/* 4. Vignette */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(circle at 50% 50%, transparent 40%, rgba(3,3,5,0.6) 100%)',
-              zIndex: 5,
-              pointerEvents: 'none',
-            }}
-          />
         </div>
 
         {/* ═══ ANNOTATION LABELS ═══ */}
@@ -223,7 +178,7 @@ export default function Hero({ textVisible }: HeroProps) {
           style={{
             position: 'relative',
             zIndex: 20,
-            maxWidth: 680,
+            maxWidth: 800,
             padding: '0 8%',
             display: 'flex',
             flexDirection: 'column',
@@ -245,24 +200,18 @@ export default function Hero({ textVisible }: HeroProps) {
           <h1
             style={{
               fontFamily: fd,
-              fontSize: 'clamp(48px, 5vw, 80px)',
+              fontSize: 'clamp(52px, 6vw, 76px)',
               fontWeight: 600,
               color: '#ffffff',
               lineHeight: 1.05,
               letterSpacing: '-0.02em',
               marginBottom: 32,
+              maxWidth: 700,
             }}
           >
             The Trading Journal That
             <br />
-            <span
-              style={{
-                color: 'transparent',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                backgroundImage: 'linear-gradient(to right, #ffffff, rgba(200,200,200,0.7), rgba(120,120,120,0.5))',
-              }}
-            >
+            <span style={{ color: teal }}>
               Fixes Your Psychology.
             </span>
           </h1>
