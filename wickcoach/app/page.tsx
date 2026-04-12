@@ -17,6 +17,7 @@ import AnalysisContent from "./components/AnalysisHub";
 import PastTradesContent from "./components/PastTradesContent";
 import TradingGoalsContent from "./components/TradingGoalsContent";
 import LogATradeContent from "./components/LogATradeContent";
+import SplashScreen from "./components/SplashScreen";
 
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
@@ -106,6 +107,7 @@ export default function WickCoachFull() {
 
   return (
     <div style={{ background: "#0e0f14", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
+      <SplashScreen />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Chakra+Petch:wght@400;500;600;700&display=swap');
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
