@@ -1163,18 +1163,21 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         </div>
 
         {/* Right: Ticker Watchlist */}
-        <div className="w-52 flex-shrink-0 flex flex-col gap-3">
+        <div className="w-72 flex-shrink-0 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-slate-200">Watchlist</h3>
           {/* Long */}
           <div className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl overflow-hidden flex-shrink-0">
-            <div className="px-3 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <div className="px-4 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
             </div>
-            <div className="p-3 space-y-2">
-              {([0,1,2] as const).map(i => (
-                <div key={i}>
-                  <label className="text-[10px] text-slate-600 uppercase tracking-widest block mb-0.5">Ticker {i+1}</label>
+            <div className="p-4 space-y-3">
+              {(["Near", "Far", "At"] as const).map((loc, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex flex-col items-center flex-shrink-0 w-8">
+                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
+                    {i < 2 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
+                  </div>
                   <input
                     value={(journal.longTickers ?? ["","",""])[i]}
                     onChange={e => {
@@ -1182,8 +1185,8 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
                       t[i] = e.target.value.toUpperCase();
                       onChange({ ...journal, longTickers: t });
                     }}
-                    placeholder="—"
-                    className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
+                    placeholder="Ticker"
+                    className="flex-1 bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
                   />
                 </div>
               ))}
@@ -1191,14 +1194,17 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
           </div>
           {/* Short */}
           <div className="bg-[#1a1b2e] border border-red-500/20 rounded-xl overflow-hidden flex-shrink-0">
-            <div className="px-3 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+            <div className="px-4 py-2.5 bg-red-500/10 border-b border-red-500/20 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
               <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
             </div>
-            <div className="p-3 space-y-2">
-              {([0,1,2] as const).map(i => (
-                <div key={i}>
-                  <label className="text-[10px] text-slate-600 uppercase tracking-widest block mb-0.5">Ticker {i+1}</label>
+            <div className="p-4 space-y-3">
+              {(["Near", "Far", "At"] as const).map((loc, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex flex-col items-center flex-shrink-0 w-8">
+                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
+                    {i < 2 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
+                  </div>
                   <input
                     value={(journal.shortTickers ?? ["","",""])[i]}
                     onChange={e => {
@@ -1206,8 +1212,8 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
                       t[i] = e.target.value.toUpperCase();
                       onChange({ ...journal, shortTickers: t });
                     }}
-                    placeholder="—"
-                    className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-xs text-slate-100 placeholder-slate-700 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
+                    placeholder="Ticker"
+                    className="flex-1 bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
                   />
                 </div>
               ))}
@@ -1215,12 +1221,12 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
           </div>
           {/* Ticker to employ */}
           <div className="flex-shrink-0">
-            <label className="text-[10px] text-slate-500 uppercase tracking-widest block mb-1">Ticker to Employ</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Ticker to Employ</label>
             <input
               value={journal.tickerToEmploy ?? ""}
               onChange={e => onChange({ ...journal, tickerToEmploy: e.target.value.toUpperCase() })}
               placeholder="e.g. AAPL"
-              className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-xs text-indigo-300 placeholder-slate-700 focus:outline-none focus:border-indigo-500 font-mono tracking-widest uppercase"
+              className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-indigo-300 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono tracking-widest uppercase"
             />
           </div>
         </div>
