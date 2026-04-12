@@ -42,8 +42,8 @@ type Journal = {
   review?: string;
   body?: string;
   monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string }[];
-  longTickers?: [string, string, string];
-  shortTickers?: [string, string, string];
+  longTickers?: [string, string];
+  shortTickers?: [string, string];
   tickerToEmploy?: string;
 };
 
@@ -1157,14 +1157,65 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
             contentEditable
             suppressContentEditableWarning
             onInput={() => { if (editorRef.current) set("observations", editorRef.current.innerHTML); }}
+            onKeyDown={(e) => {
+              const sel = window.getSelection();
+              if (!sel || sel.rangeCount === 0) return;
+              if (e.key === "Tab") {
+                e.preventDefault();
+                document.execCommand("insertText", false, "    ");
+                return;
+              }
+              if (e.key === "Enter" && !e.shiftKey) {
+                const range = sel.getRangeAt(0);
+                let node: Node | null = range.startContainer;
+                while (node && node !== editorRef.current) {
+                  if (node.nodeType === 1 && ["DIV","P","LI"].includes((node as Element).tagName)) break;
+                  node = node.parentNode;
+                }
+                const text = (node as Element)?.textContent ?? range.startContainer.textContent ?? "";
+                if (text.trimStart().match(/^-\s/)) {
+                  e.preventDefault();
+                  document.execCommand("insertParagraph", false);
+                  document.execCommand("insertText", false, "- ");
+                }
+              }
+            }}
+            onPaste={(e) => {
+              const items = Array.from(e.clipboardData.items);
+              const img = items.find(it => it.type.startsWith("image/"));
+              if (!img) return;
+              e.preventDefault();
+              const blob = img.getAsFile();
+              if (!blob) return;
+              const url = URL.createObjectURL(blob);
+              const sel2 = window.getSelection();
+              if (!sel2 || sel2.rangeCount === 0) return;
+              const range2 = sel2.getRangeAt(0);
+              const wrapper = document.createElement("div");
+              wrapper.style.cssText = "display:inline-block;resize:both;overflow:hidden;width:420px;max-width:100%;border:1px solid #3d3f5e;border-radius:6px;margin:6px 0;cursor:se-resize;";
+              wrapper.contentEditable = "false";
+              const imgEl = document.createElement("img");
+              imgEl.src = url;
+              imgEl.style.cssText = "width:100%;height:100%;display:block;object-fit:contain;";
+              imgEl.draggable = false;
+              wrapper.appendChild(imgEl);
+              range2.deleteContents();
+              range2.insertNode(wrapper);
+              const nr = document.createRange();
+              nr.setStartAfter(wrapper);
+              nr.collapse(true);
+              sel2.removeAllRanges();
+              sel2.addRange(nr);
+              if (editorRef.current) set("observations", editorRef.current.innerHTML);
+            }}
             data-placeholder="Type your observations, thoughts, and planned actions here..."
             className="w-full bg-[#1e2035] border border-[#3d3f5e] rounded-b-xl p-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 min-h-64 leading-relaxed empty:before:content-[attr(data-placeholder)] empty:before:text-slate-600"
           />
         </div>
 
         {/* Right: Ticker Watchlist */}
-        <div className="w-72 flex-shrink-0 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-slate-200">Watchlist</h3>
+        <div className="w-80 flex-shrink-0 flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-slate-200 text-center">Watchlist</h3>
           {/* Long */}
           <div className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl overflow-hidden flex-shrink-0">
             <div className="px-4 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-1.5">
@@ -1172,16 +1223,16 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
             </div>
             <div className="p-4 space-y-3">
-              {(["Near", "Far", "At"] as const).map((loc, i) => (
+              {(["Near", "Far"] as const).map((loc, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="flex flex-col items-center flex-shrink-0 w-8">
+                  <div className="flex flex-col items-center flex-shrink-0 w-10">
                     <span className="text-xs font-semibold text-slate-400">{loc}</span>
-                    {i < 2 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
+                    {i === 0 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
                   </div>
                   <input
-                    value={(journal.longTickers ?? ["","",""])[i]}
+                    value={(journal.longTickers ?? ["",""])[i] ?? ""}
                     onChange={e => {
-                      const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
+                      const t: [string,string] = [...(journal.longTickers ?? ["",""])] as [string,string];
                       t[i] = e.target.value.toUpperCase();
                       onChange({ ...journal, longTickers: t });
                     }}
@@ -1199,16 +1250,16 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
             </div>
             <div className="p-4 space-y-3">
-              {(["Near", "Far", "At"] as const).map((loc, i) => (
+              {(["Near", "Far"] as const).map((loc, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="flex flex-col items-center flex-shrink-0 w-8">
+                  <div className="flex flex-col items-center flex-shrink-0 w-10">
                     <span className="text-xs font-semibold text-slate-400">{loc}</span>
-                    {i < 2 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
+                    {i === 0 && <span className="text-slate-600 text-xs leading-none mt-0.5">↓</span>}
                   </div>
                   <input
-                    value={(journal.shortTickers ?? ["","",""])[i]}
+                    value={(journal.shortTickers ?? ["",""])[i] ?? ""}
                     onChange={e => {
-                      const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
+                      const t: [string,string] = [...(journal.shortTickers ?? ["",""])] as [string,string];
                       t[i] = e.target.value.toUpperCase();
                       onChange({ ...journal, shortTickers: t });
                     }}
@@ -1218,16 +1269,6 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
                 </div>
               ))}
             </div>
-          </div>
-          {/* Ticker to employ */}
-          <div className="flex-shrink-0">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-widest block mb-1.5">Ticker to Employ</label>
-            <input
-              value={journal.tickerToEmploy ?? ""}
-              onChange={e => onChange({ ...journal, tickerToEmploy: e.target.value.toUpperCase() })}
-              placeholder="e.g. AAPL"
-              className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-indigo-300 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono tracking-widest uppercase"
-            />
           </div>
         </div>
       </div>
