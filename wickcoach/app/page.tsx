@@ -162,6 +162,18 @@ export default function WickCoachFull() {
           <Hero textVisible={textVisible} />
         </div>
 
+        {/* "See how this works" prompt — bridges the hero into the carousel */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 20px 16px', background: '#0A0D14' }}>
+          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, letterSpacing: '0.15em', color: '#00d4a0', textTransform: 'uppercase', textShadow: '0 0 20px rgba(0,212,160,0.4)' }}>
+            See how this works
+          </div>
+          <svg width="22" height="28" viewBox="0 0 22 28" fill="none" style={{ animation: 'seeHowBounce 1.4s ease-in-out infinite' }}>
+            <path d="M11 2 L11 22" stroke="#00d4a0" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M3 16 L11 25 L19 16" stroke="#00d4a0" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <style>{`@keyframes seeHowBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }`}</style>
+        </div>
+
         <section style={{ position: 'relative', zIndex: 1, overflow: 'hidden', marginTop: 0, padding: '0px 20px 40px', background: 'transparent' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />

@@ -23,7 +23,7 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           <span onClick={onLogoClick} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
       )}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 84, borderBottom: "1px solid #2A3143", overflow: "visible", position: 'relative', background: 'transparent' }}>
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 84, borderBottom: "1px solid rgba(0,212,160,0.3)", overflow: "visible", position: 'relative', background: 'transparent' }}>
         <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 18, marginBottom: 18, cursor: view === 'app' ? 'pointer' : 'default' }}>
           <Logo size={34} showText />
         </div>
@@ -36,24 +36,24 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                 ref={t === 'Trader Profile' ? traderProfileTabRef : undefined}
                 key={t}
                 onClick={() => onTabClick(t)}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#00d4a0' : 'rgba(0,212,160,0.3)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#00d4a0'; e.currentTarget.style.background = 'rgba(0,212,160,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#00d4a0' : 'rgba(0,212,160,0.6)'; e.currentTarget.style.background = isActive ? 'rgba(0,212,160,0.2)' : 'rgba(0,212,160,0.08)'; }}
                 style={{
                   fontSize: 16,
-                  color: isActive ? '#00d4a0' : teal,
+                  color: '#00d4a0',
                   letterSpacing: "0.02em",
                   padding: "14px 36px",
                   cursor: "pointer",
                   fontFamily: fm,
                   borderRadius: 8,
-                  fontWeight: isActive ? 600 : 500,
-                  background: isActive ? "rgba(0,212,160,0.15)" : "transparent",
-                  border: isActive ? '1px solid #00d4a0' : '1px solid rgba(0,212,160,0.3)',
+                  fontWeight: isActive ? 700 : 600,
+                  background: isActive ? "rgba(0,212,160,0.2)" : "rgba(0,212,160,0.08)",
+                  border: isActive ? '1px solid #00d4a0' : '1px solid rgba(0,212,160,0.6)',
                   flex: 1,
                   textAlign: "center",
                   lineHeight: 1.5,
                   boxShadow: t === 'Trader Profile' && profileTabGlow ? '0 0 15px rgba(0,212,160,0.4)' : 'none',
-                  transition: 'border-color 0.2s ease, box-shadow 0.3s ease',
+                  transition: 'border-color 0.2s ease, background 0.2s ease, box-shadow 0.3s ease',
                   animation: !isActive
                     ? `tabPulse 3s ease-in-out ${idx * 0.4}s infinite`
                     : 'none',
@@ -64,12 +64,13 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
         </div>
         <style>{`
           @keyframes tabPulse {
-            0%, 100% { border-color: rgba(0,212,160,0.25); }
-            50% { border-color: rgba(0,212,160,0.5); }
+            0%, 100% { border-color: rgba(0,212,160,0.6); box-shadow: 0 0 0 0 rgba(0,212,160,0); }
+            50% { border-color: #00d4a0; box-shadow: 0 0 12px rgba(0,212,160,0.3); }
           }
         `}</style>
       </nav>
     </>
   );
 }
+
 
