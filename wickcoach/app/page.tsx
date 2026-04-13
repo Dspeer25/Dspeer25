@@ -174,7 +174,7 @@ export default function WickCoachFull() {
           <style>{`@keyframes seeHowBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(6px); } }`}</style>
         </div>
 
-        <section style={{ position: 'relative', zIndex: 1, overflow: 'hidden', marginTop: 0, padding: '0px 20px 40px', background: 'transparent' }}>
+        <section style={{ position: 'relative', zIndex: 1, overflow: 'hidden', marginTop: 0, padding: '48px 20px 40px', background: 'transparent' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
