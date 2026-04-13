@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/speer/**)",
+      "Read(//c/Users/speer/Dspeer25/.aidesigner/**)",
+      "Bash(npx:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "aidesigner"
+  ]
+}
