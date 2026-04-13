@@ -7,6 +7,7 @@ export default function SplashScreen() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const dismiss = () => {
+    if (fading) return;
     setFading(true);
     sessionStorage.setItem('wickcoach-splash-seen', 'true');
     setTimeout(() => setVisible(false), 800);
@@ -18,14 +19,16 @@ export default function SplashScreen() {
       return;
     }
     const video = videoRef.current;
-    if (!video) return;
-    video.muted = true;
-    video.play().then(() => {
-      try { video.muted = false; } catch { /* ignore */ }
-    }).catch(() => dismiss());
-    const t = setTimeout(dismiss, 8000);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (video) {
+      video.muted = true;
+      video.play().then(() => {
+        try { video.muted = false; } catch(e) {}
+      }).catch(() => {
+        dismiss();
+      });
+    }
+    const timer = setTimeout(dismiss, 8000);
+    return () => clearTimeout(timer);
   }, []);
 
   if (!visible) return null;
@@ -50,36 +53,25 @@ export default function SplashScreen() {
       <video
         ref={videoRef}
         src="/Wick_Video.mp4"
-        muted
         playsInline
-        preload="auto"
         onEnded={dismiss}
         style={{
-          width: '300px',
-          height: 'auto',
+          maxWidth: '350px',
+          maxHeight: '350px',
           objectFit: 'contain',
         }}
       />
-      <div
-        style={{
-          marginTop: '32px',
-          fontFamily: 'Chakra Petch, sans-serif',
-          fontSize: '36px',
-          fontWeight: 700,
-          letterSpacing: '0.2em',
-          color: '#00d4a0',
-          textTransform: 'uppercase',
-          animation: 'fadeInUp 1s ease-out 1.5s both',
-        }}
-      >
+      <div style={{
+        marginTop: '32px',
+        fontFamily: 'Chakra Petch, sans-serif',
+        fontSize: '36px',
+        fontWeight: 700,
+        letterSpacing: '0.2em',
+        color: '#00d4a0',
+        textTransform: 'uppercase',
+      }}>
         GET STARTED
       </div>
-      <style>{`
-        @keyframes fadeInUp {
-          0% { opacity: 0; transform: translateY(16px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
