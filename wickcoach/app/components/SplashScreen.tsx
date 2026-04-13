@@ -6,41 +6,27 @@ export default function SplashScreen() {
   const [fading, setFading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Only show once per session
-  useEffect(() => {
-    if (sessionStorage.getItem('wickcoach-splash-seen')) {
-      setVisible(false);
-    }
-  }, []);
-
-  // Kick the video, try unmute after play starts, auto-dismiss fallback at 6s
-  useEffect(() => {
-    if (!visible) return;
-
-    const v = videoRef.current;
-    if (v) {
-      // Force play (some browsers need explicit .play() even with autoPlay)
-      const playPromise = v.play();
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise
-          .then(() => {
-            // Try unmuting after play starts
-            try { v.muted = false; } catch { /* ignore */ }
-          })
-          .catch(() => { /* autoplay blocked — video stays muted, still plays */ });
-      }
-    }
-
-    const fallback = setTimeout(() => dismiss(), 6000);
-    return () => clearTimeout(fallback);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
-
   const dismiss = () => {
     setFading(true);
     sessionStorage.setItem('wickcoach-splash-seen', 'true');
     setTimeout(() => setVisible(false), 800);
   };
+
+  useEffect(() => {
+    if (sessionStorage.getItem('wickcoach-splash-seen')) {
+      setVisible(false);
+      return;
+    }
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.play().then(() => {
+      try { video.muted = false; } catch { /* ignore */ }
+    }).catch(() => dismiss());
+    const t = setTimeout(dismiss, 8000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!visible) return null;
 
@@ -64,7 +50,6 @@ export default function SplashScreen() {
       <video
         ref={videoRef}
         src="/Wick_Video.mp4"
-        autoPlay
         muted
         playsInline
         preload="auto"
