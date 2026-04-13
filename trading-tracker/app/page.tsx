@@ -691,11 +691,12 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
 }
 
 // ─── Journal Sheet ────────────────────────────────────────────────────────────
-function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
+function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTexts = [] }: {
   journal: Journal;
   onChange: (j: Journal) => void;
   onBack: () => void;
   onMarketChange?: (on: boolean) => void;
+  weeklyGoalTexts?: string[];
 }) {
   const set = <K extends keyof Journal>(k: K, v: Journal[K]) => {
     onChange({ ...journal, [k]: v });
@@ -1106,7 +1107,7 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               type="text"
               value={goal.text}
               onChange={(e) => setGoalText(i, e.target.value)}
-              placeholder={`Goal ${i + 1}...`}
+              placeholder={weeklyGoalTexts[i] || `Goal ${i + 1}...`}
               className={`flex-1 bg-transparent border-b border-[#3d3f5e] text-sm focus:outline-none focus:border-indigo-500 pb-1 placeholder-slate-600 transition-all ${
                 goal.checked ? "line-through text-slate-500" : "text-slate-200"
               }`}
@@ -1413,6 +1414,18 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
 
   const createJournal = (folderId?: string) => {
     const j = makeJournal(folderId);
+    // Pre-fill weekly goal texts from the Weekly Goals entry in the same folder
+    if (folderId) {
+      const weeklyGoalsEntry = journals.find(
+        (jj) => jj.folderId === folderId && jj.title === "Weekly Goals"
+      );
+      if (weeklyGoalsEntry?.monthlyGoals) {
+        j.goals = j.goals.map((g, i) => ({
+          ...g,
+          text: weeklyGoalsEntry.monthlyGoals![i]?.text ?? "",
+        })) as [Goal, Goal, Goal];
+      }
+    }
     setJournals((prev) => [j, ...prev]);
     setOpenId(j.id);
   };
@@ -1504,12 +1517,17 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
 
   const open = journals.find((j) => j.id === openId);
   if (open) {
+    const weeklyGoalsEntry = open.folderId
+      ? journals.find((j) => j.folderId === open.folderId && j.title === "Weekly Goals")
+      : undefined;
+    const weeklyGoalTexts = weeklyGoalsEntry?.monthlyGoals?.map((g) => g.text) ?? [];
     return (
       <JournalSheet
         journal={open}
         onChange={updateJournal}
         onBack={() => setOpenId(null)}
         onMarketChange={onMarketChange}
+        weeklyGoalTexts={weeklyGoalTexts}
       />
     );
   }
