@@ -213,7 +213,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
 
   const pillBtn = (active: boolean): React.CSSProperties => ({
     padding: '8px 16px', borderRadius: 8, fontSize: 14, fontFamily: fm, fontWeight: 600, cursor: 'pointer',
-    background: active ? 'rgba(0,212,160,0.1)' : '#0e0f14',
+    background: active ? 'rgba(0,212,160,0.1)' : '#0f1318',
     borderTop: active ? '1px solid #00d4a0' : '1px solid #2A3143',
     borderRight: active ? '1px solid #00d4a0' : '1px solid #2A3143',
     borderBottom: active ? '1px solid #00d4a0' : '1px solid #2A3143',
@@ -322,9 +322,9 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           </div>
         </div>
         {/* ── STAT CARDS — 5 connected cards ── */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden', background: '#141822' }}>
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid #2A3143', borderRadius: 10, overflow: 'hidden', background: '#141822' }}>
           {/* Card 1 — TOTAL NET P/L */}
-          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Net P/L</div>
             <div style={{ color: totalPL >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>
               {(totalPL >= 0 ? '+' : '-') + '$' + Math.abs(totalPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -333,7 +333,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           </div>
 
           {/* Card 2 — WIN RATE */}
-          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</span>
               <span style={{ color: 'rgba(255,255,255,0.3)', fontFamily: fm, fontSize: 11 }}>{wins.length}W / {losses.length}L</span>
@@ -342,21 +342,21 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               <span style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700 }}>{winRate}%</span>
               <span style={{ color: '#00d4a0', fontFamily: fm, fontSize: 13 }}>+4% MoM</span>
             </div>
-            <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#1e1f2a' }}>
+            <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#2A3143' }}>
               {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: '#00d4a0' }} />}
               {filtered.length > 0 && <div style={{ width: `${(losses.length / filtered.length) * 100}%`, background: '#ff4444' }} />}
             </div>
           </div>
 
           {/* Card 3 — TOTAL EXECUTIONS */}
-          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Executions</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>{statTrades.length}</div>
             <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10, fontStyle: 'italic' as const }}>Consistent Volume</div>
           </div>
 
           {/* Card 4 — AVG R:R */}
-          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
@@ -397,7 +397,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
         </div>
 
         {/* ── EQUITY CURVE ── */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 24, marginBottom: 20 }}>
+        <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 8, padding: 24, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4a0" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
@@ -619,14 +619,14 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             fontFamily: fm, fontSize: 13, cursor: 'pointer', userSelect: 'none' as const, transition: 'background 0.15s',
           };
           return (
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ borderTop: '1px solid #2A3143', padding: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
                 Showing {startIdx}-{endIdx} of {filtered.length} executions
               </span>
               <div style={{ display: 'flex', gap: 6 }}>
                 <span
                   onClick={() => { if (safePage > 1) setCurrentPage(safePage - 1); }}
-                  style={{ ...btnBase, border: '1px solid rgba(255,255,255,0.1)', color: safePage > 1 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: safePage > 1 ? 'pointer' : 'not-allowed' }}
+                  style={{ ...btnBase, border: '1px solid #2A3143', color: safePage > 1 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: safePage > 1 ? 'pointer' : 'not-allowed' }}
                 >‹</span>
                 {pages.map((p, i) => p === '…' ? (
                   <span key={`dots-${i}`} style={{ ...btnBase, color: 'rgba(255,255,255,0.3)', cursor: 'default', padding: '0 4px' }}>…</span>
@@ -646,7 +646,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                 ))}
                 <span
                   onClick={() => { if (safePage < totalPages) setCurrentPage(safePage + 1); }}
-                  style={{ ...btnBase, border: '1px solid rgba(255,255,255,0.1)', color: safePage < totalPages ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: safePage < totalPages ? 'pointer' : 'not-allowed' }}
+                  style={{ ...btnBase, border: '1px solid #2A3143', color: safePage < totalPages ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: safePage < totalPages ? 'pointer' : 'not-allowed' }}
                 >›</span>
               </div>
             </div>

@@ -37,7 +37,7 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                 key={t}
                 onClick={() => onTabClick(t)}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? 'rgba(0,212,160,0.5)' : '#2A3143'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#00d4a0' : 'rgba(0,212,160,0.3)'; }}
                 style={{
                   fontSize: 15,
                   color: isActive ? '#00d4a0' : teal,
@@ -47,8 +47,8 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                   fontFamily: fm,
                   borderRadius: 8,
                   fontWeight: isActive ? 600 : 500,
-                  background: isActive ? "rgba(0,212,160,0.1)" : "transparent",
-                  border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid #2A3143',
+                  background: isActive ? "rgba(0,212,160,0.15)" : "transparent",
+                  border: isActive ? '1px solid #00d4a0' : '1px solid rgba(0,212,160,0.3)',
                   flex: 1,
                   textAlign: "center",
                   lineHeight: 1.5,
@@ -64,8 +64,8 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
         </div>
         <style>{`
           @keyframes tabPulse {
-            0%, 100% { border-color: #2A3143; }
-            50% { border-color: rgba(0,212,160,0.35); }
+            0%, 100% { border-color: rgba(0,212,160,0.25); }
+            50% { border-color: rgba(0,212,160,0.5); }
           }
         `}</style>
       </nav>

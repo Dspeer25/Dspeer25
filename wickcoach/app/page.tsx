@@ -106,7 +106,9 @@ export default function WickCoachFull() {
   ];
 
   return (
-    <div style={{ background: "#0A0D14", backgroundImage: "radial-gradient(circle at 50% 0%, #141822 0%, #0A0D14 40%)", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
+    <div style={{ background: "#0A0D14", backgroundImage: "radial-gradient(circle at 50% 0%, #141822 0%, #0A0D14 40%)", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>
+      {/* Subtle grid texture overlay — fades out past 80% of viewport */}
+      <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0, maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)', WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)' }} />
       <SplashScreen />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Chakra+Petch:wght@400;500;600;700&display=swap');
@@ -124,8 +126,10 @@ export default function WickCoachFull() {
 
       {/* ═══ APP VIEW ═══ */}
       {view === 'app' && (<>
-        <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} />
-        <div style={{ background: 'transparent', minHeight: 'calc(100vh - 140px)' }}>
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} />
+        </div>
+        <div style={{ background: 'transparent', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
           {activeTab === 'Log a Trade' && (
             <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
               <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} />
@@ -149,12 +153,19 @@ export default function WickCoachFull() {
       {/* ═══ HOME VIEW ═══ */}
       {view === 'home' && (<>
         <StockChartBackground />
-        <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
+        </div>
 
         {/* Hero — zero gap to carousel */}
-        <Hero textVisible={textVisible} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Hero textVisible={textVisible} />
+        </div>
 
-        <section style={{ position: 'relative', overflow: 'hidden', marginTop: 0, padding: '32px 20px 60px', background: 'transparent' }}>
+        {/* Gradient strip fading hero (#030305) into page bg (#0A0D14) — Fix 3 */}
+        <div style={{ width: '100%', height: '120px', background: 'linear-gradient(to bottom, #030305, #0A0D14)', pointerEvents: 'none', marginTop: '-2px', marginBottom: '-2px', position: 'relative', zIndex: 1 }} />
+
+        <section style={{ position: 'relative', zIndex: 1, overflow: 'hidden', marginTop: 0, padding: '32px 20px 60px', background: 'transparent' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
@@ -194,7 +205,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* Privacy + Data Upload */}
-        <section style={{ background: "transparent" }}>
+        <section style={{ background: "transparent", position: 'relative', zIndex: 1 }}>
           <div style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
             <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.3, marginBottom: 20, color: "#e8e8f0" }}>We never see your data.<br />It&apos;s stored on your own computer.</h2>
             <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm, maxWidth: 520, margin: "0 auto 40px" }}>Upload your past trading data in any format &mdash; CSVs, broker statements, screenshots. The AI uses it to understand your trading history before you log a single trade.</p>
@@ -211,7 +222,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* Pricing */}
-        <section style={{ background: "transparent", padding: "100px 48px" }}>
+        <section style={{ background: "transparent", padding: "100px 48px", position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: 750, margin: "0 auto" }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, fontFamily: fd, marginBottom: 12, color: "#e8e8f0", textAlign: "center" }}>Choose your plan.</h2>
           <p style={{ fontSize: 15, color: "#6a6d78", fontFamily: fm, textAlign: "center", marginBottom: 50 }}>One-time payment with software updates included.</p>
@@ -241,7 +252,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* FAQ */}
-        <section style={{ background: "transparent", padding: "100px 48px" }}>
+        <section style={{ background: "transparent", padding: "100px 48px", position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
             <h2 style={{ fontSize: 30, fontWeight: 700, fontFamily: fd, marginBottom: 40, color: "#e8e8f0" }}>Frequently Asked Questions</h2>
             {faqs.map((f, i) => (<FAQ key={i} q={f.q} a={f.a} open={openFAQ === i} onClick={() => setOpenFAQ(openFAQ === i ? null : i)} />))}
@@ -249,7 +260,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* Footer */}
-        <footer style={{ background: "#0a0b10", borderTop: "1px solid #1a1b22", padding: "60px 48px 30px" }}>
+        <footer style={{ background: "#0a0b10", borderTop: "1px solid #1a1b22", padding: "60px 48px 30px", position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 40 }}>
             <div>
               <Logo size={22} showText />
