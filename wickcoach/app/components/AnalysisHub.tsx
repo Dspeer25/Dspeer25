@@ -105,7 +105,7 @@ export default function AnalysisContent() {
       {/* ═══ FOUR STAT CARDS ═══ */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {/* Total Trades */}
-        <div style={{ flex: 1, minWidth: 200, background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '20px 24px' }}>
+        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px' }}>
           <div style={{ fontSize: 11, color: '#aaa', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>200</div>
           <div style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Win Rate: 46.0%</div>
@@ -117,7 +117,7 @@ export default function AnalysisContent() {
         </div>
 
         {/* Process */}
-        <div style={{ flex: 1, minWidth: 200, background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
+        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
           <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Process</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>137</div>
           <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: 61.3%</div>
@@ -125,7 +125,7 @@ export default function AnalysisContent() {
         </div>
 
         {/* Impulse */}
-        <div style={{ flex: 1, minWidth: 200, background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
+        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
           <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Impulse</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>63</div>
           <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: 12.7%</div>
@@ -133,7 +133,7 @@ export default function AnalysisContent() {
         </div>
 
         {/* What If? */}
-        <div style={{ flex: 1, minWidth: 200, background: '#1a1c23', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
+        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
           <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
           <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took process trades</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
@@ -148,12 +148,12 @@ export default function AnalysisContent() {
       {/* ═══ STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
         {/* Strategy Breakdown */}
-        <div style={{ flex: '0 0 60%', minWidth: 300, background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+        <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
           <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
           <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>Performance by setup type</div>
 
           {/* Header row */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #2a2d38', padding: '12px 16px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid #2A3143', padding: '12px 16px' }}>
             <div style={{ flex: 2, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase' }}>Strategy</div>
             <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Trades</div>
             <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Win Rate</div>
@@ -168,8 +168,8 @@ export default function AnalysisContent() {
             return (
               <div key={s.name} style={{
                 display: 'flex', padding: '12px 16px',
-                borderBottom: '1px solid #2a2d38',
-                background: i % 2 === 0 ? '#1a1c23' : '#1e2029',
+                borderBottom: '1px solid #2A3143',
+                background: i % 2 === 0 ? '#141822' : '#1a1f2a',
                 borderLeft: isTop ? `3px solid ${teal}` : isBottom ? `3px solid ${red}` : '3px solid transparent',
               }}>
                 <div style={{ flex: 2, fontSize: 14, color: '#fff' }}>{s.name}</div>
@@ -185,7 +185,7 @@ export default function AnalysisContent() {
         </div>
 
         {/* Ticker Performance */}
-        <div style={{ flex: 1, minWidth: 300, background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+        <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
           <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
           <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>P/L by asset</div>
 
@@ -197,7 +197,7 @@ export default function AnalysisContent() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 12px',
-                  borderBottom: i < arr.length - 1 ? '1px solid #2a2d38' : 'none',
+                  borderBottom: i < arr.length - 1 ? '1px solid #2A3143' : 'none',
                   borderLeft: `3px solid ${positive ? teal : red}`,
                 }}
               >
@@ -215,7 +215,7 @@ export default function AnalysisContent() {
       </div>
 
       {/* ═══ WICKCOACH OBSERVATIONS BOARD ═══ */}
-      <div style={{ background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '32px 0 24px', position: 'relative' }}>
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '32px 0 24px', position: 'relative' }}>
 
         {/* Board-level header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0 40px 24px' }}>
@@ -223,7 +223,7 @@ export default function AnalysisContent() {
             <h3 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>WickCoach observations</h3>
             <p style={{ color: '#888', fontSize: 12, margin: '6px 0 0' }}>AI-detected behavioral themes vs your stated goals</p>
           </div>
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', border: '1px solid #2a2d38', borderRadius: 6, padding: 4, gap: 2 }}>
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', border: '1px solid #2A3143', borderRadius: 6, padding: 4, gap: 2 }}>
             {timeframes.map(t => {
               const active = t === 'All';
               return (
@@ -253,12 +253,12 @@ export default function AnalysisContent() {
               width: 100, height: 100, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
-              background: `radial-gradient(circle at center, #1a1c23 58%, transparent 59%), conic-gradient(${teal} 0% 61%, #3e4252 61% 100%)`,
+              background: `radial-gradient(circle at center, #141822 58%, transparent 59%), conic-gradient(${teal} 0% 61%, #3e4252 61% 100%)`,
               boxShadow: 'inset 0 0 20px rgba(0,212,160,0.1), 0 0 30px rgba(0,0,0,0.5)',
             }}>
               <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 32, color: '#fff' }}>61</span>
             </div>
-            <span style={{ color: '#888', fontSize: 11, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1, background: '#1a1c23', padding: '2px 8px', borderRadius: 4 }}>Psychology Score</span>
+            <span style={{ color: '#888', fontSize: 11, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1, background: '#141822', padding: '2px 8px', borderRadius: 4 }}>Psychology Score</span>
           </div>
 
           <div style={{ flex: 1, textAlign: 'left', paddingLeft: 80 }}>
@@ -279,7 +279,7 @@ export default function AnalysisContent() {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: 48 }}>
               <span style={{ color: red, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{row.friction.name}</span>
               <span style={{ color: '#888', fontSize: 12 }}>{row.friction.trades}</span>
-              <div style={{ width: 180, height: 6, background: '#2a2d38', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ width: 180, height: 6, background: '#2A3143', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex', justifyContent: 'flex-end' }}>
                 <div style={{ width: `${row.friction.pct}%`, background: red, height: '100%' }} />
               </div>
             </div>
@@ -293,7 +293,7 @@ export default function AnalysisContent() {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 48 }}>
               <span style={{ color: teal, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{row.momentum.name}</span>
               <span style={{ color: '#888', fontSize: 12 }}>{row.momentum.trades}</span>
-              <div style={{ width: 180, height: 6, background: '#2a2d38', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex' }}>
+              <div style={{ width: 180, height: 6, background: '#2A3143', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex' }}>
                 <div style={{ width: `${row.momentum.pct}%`, background: teal, height: '100%' }} />
                 <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', height: '100%' }} />
               </div>
@@ -315,18 +315,18 @@ export default function AnalysisContent() {
       </div>
 
       {/* ═══ TIME-OF-DAY PERFORMANCE ═══ */}
-      <div style={{ background: '#1a1c23', border: '1px solid #2a2d38', borderRadius: 12, padding: '24px 28px' }}>
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
             <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Time-of-day performance</div>
             <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>When your edge is sharpest — and when it bleeds</div>
           </div>
-          <div style={{ display: 'flex', background: '#131318', borderRadius: 8, padding: 3, gap: 2 }}>
+          <div style={{ display: 'flex', background: '#141822', borderRadius: 8, padding: 3, gap: 2 }}>
             {(['timeline', 'best', 'worst'] as const).map(mode => {
               const active = heatmapMode === mode;
               const label = mode === 'timeline' ? 'Timeline' : mode === 'best' ? 'Best hours' : 'Worst hours';
               const bg = active ? (mode === 'timeline' ? '#2a2b32' : mode === 'best' ? teal : red) : 'transparent';
-              const color = active ? (mode === 'best' ? '#0e0f14' : '#fff') : '#999';
+              const color = active ? (mode === 'best' ? '#0A0D14' : '#fff') : '#999';
               return (
                 <button key={mode} onClick={() => setHeatmapMode(mode)} style={{
                   padding: '6px 16px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
