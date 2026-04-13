@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { fm, fd } from './shared';
 
 const teal = '#00d4a0';
@@ -27,34 +27,31 @@ const candles: { type: 'bull' | 'bear'; h: number }[] = [
 interface Annotation {
   title: string;
   body: string;
-  color: string;
-  style: React.CSSProperties;
+  // `rightPct` positions the label's right edge as % of wrapper width — tuned to hover
+  // above the target candle (3rd, 5th, 7th, 9th from left within the right-aligned cluster).
+  rightPct: number;
 }
 
 const annotations: Annotation[] = [
   {
-    title: 'Impulse Drawdown',
-    body: 'Revenge trading anomaly detected. 68% probability of forced closures within 15 mins.',
-    color: '#ffffff',
-    style: { top: '15%', right: '55%' },
+    title: 'Full Understanding',
+    body: 'AI that reads your journal entries, understands your frustrations, and coaches the psychology behind every trade.',
+    rightPct: 54, // above 3rd candle
   },
   {
-    title: 'Momentum Ignition',
-    body: 'Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.',
-    color: teal,
-    style: { top: '45%', right: '5%' },
+    title: 'Technical & Psychological Analysis',
+    body: 'Knows your goals from both a technical and psychological perspective. Tracks what you planned vs what you did.',
+    rightPct: 42, // above 5th candle
   },
   {
-    title: 'Pattern Extraction',
-    body: 'Micro-fractals isolated perfectly from noise.',
-    color: '#ffffff',
-    style: { bottom: '25%', left: '55%' },
+    title: 'Shared Goals & Accountability',
+    body: 'Compares what you write about your trades to what you actually execute. Holds you accountable to your own rules.',
+    rightPct: 30, // above 7th candle
   },
   {
-    title: 'Behavioral Drift',
-    body: 'Rule adherence drops 34% after consecutive wins.',
-    color: red,
-    style: { top: '15%', right: '5%' },
+    title: 'Pattern Recognition',
+    body: "AI recognizes behavioral patterns across hundreds of your trades that you'd never spot manually.",
+    rightPct: 18, // above 9th candle
   },
 ];
 
@@ -70,6 +67,7 @@ const CornerBrackets = ({ color = 'rgba(255,255,255,0.5)', size = 6 }: { color?:
 
 export default function Hero({ textVisible }: HeroProps) {
   const opacity = textVisible ? 1 : 0;
+  const [showAllBrokers, setShowAllBrokers] = useState(false);
 
   return (
     <>
@@ -82,21 +80,29 @@ export default function Hero({ textVisible }: HeroProps) {
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: '#030305' }}>
+      <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: 'linear-gradient(to bottom, #1a1c23 0%, #0d0e12 15%, #030305 40%)', maxWidth: 1600, margin: '0 auto', width: '100%' }}>
+
+        {/* Grid texture overlay */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 1, opacity: 0.5 }} />
+
+        {/* WickCoach · 1D watermark */}
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-12deg)', fontFamily: fd, fontSize: 120, fontWeight: 700, color: 'rgba(255,255,255,0.02)', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 1, userSelect: 'none' }}>
+          WickCoach · 1D
+        </div>
 
         {/* ═══ BACKGROUND LAYER — just the candles ═══ */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
 
-          {/* Monolithic candlestick cluster — pushed right */}
+          {/* Monolithic candlestick cluster — pushed right, capped width so it doesn't spread at wide viewports */}
           <div
             style={{
               position: 'absolute',
               bottom: '15vh',
-              left: 0,
-              width: '100%',
+              right: '10%',
+              maxWidth: 900,
+              width: 'auto',
               display: 'flex',
               justifyContent: 'flex-end',
-              paddingRight: '10%',
               alignItems: 'flex-end',
               gap: '2vw',
               zIndex: 2,
@@ -149,27 +155,32 @@ export default function Hero({ textVisible }: HeroProps) {
 
         </div>
 
-        {/* ═══ ANNOTATION LABELS ═══ */}
+        {/* ═══ ANNOTATION LABELS — candlestick wick extensions ═══ */}
         {annotations.map((a, i) => (
           <div
             key={i}
             style={{
               position: 'absolute',
               zIndex: 20,
-              maxWidth: 220,
-              opacity: textVisible ? 0.85 : 0,
+              maxWidth: 180,
+              top: '8%',
+              right: `${a.rightPct}%`,
+              transform: 'translateX(50%)',
+              textAlign: 'center',
+              opacity: textVisible ? 0.9 : 0,
               transition: 'opacity 0.9s ease',
               transitionDelay: `${0.4 + i * 0.15}s`,
-              ...a.style,
+              pointerEvents: 'none',
             }}
           >
-            <div style={{ width: 30, height: 1, background: 'rgba(255,255,255,0.2)', marginBottom: 6 }} />
-            <div style={{ fontFamily: fm, fontSize: 11, color: a.color, textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 600, marginBottom: 6 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600, marginBottom: 8 }}>
               {a.title}
             </div>
-            <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, marginBottom: 10 }}>
               {a.body}
             </div>
+            {/* Dashed connector — visual extension of candle's wick up into the label */}
+            <div style={{ width: 1, height: 40, borderLeft: '1px dashed rgba(0,212,160,0.4)', margin: '0 auto' }} />
           </div>
         ))}
 
@@ -230,52 +241,28 @@ export default function Hero({ textVisible }: HeroProps) {
             AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
           </p>
 
-          {/* CTA buttons */}
+          {/* CTA */}
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
             <button
               style={{
-                background: '#ffffff',
+                background: teal,
                 color: '#000000',
                 fontFamily: fm,
-                fontSize: 11,
+                fontSize: 14,
                 textTransform: 'uppercase',
-                letterSpacing: '0.2em',
+                letterSpacing: '0.15em',
                 fontWeight: 600,
-                padding: '16px 32px',
+                padding: '16px 48px',
                 border: 'none',
                 cursor: 'pointer',
+                width: 'auto',
+                minWidth: 200,
                 transition: 'all 0.3s ease',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = teal; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
+              onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
             >
-              Start Journaling
-            </button>
-
-            <button
-              style={{
-                position: 'relative',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: '#ffffff',
-                fontFamily: fm,
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: '0.2em',
-                fontWeight: 600,
-                padding: '16px 32px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                transition: 'background 0.3s ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <CornerBrackets />
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20" /></svg>
-              Watch Demo
+              Sign Up
             </button>
           </div>
         </div>
@@ -302,12 +289,27 @@ export default function Hero({ textVisible }: HeroProps) {
           {/* Left — integrations */}
           <div>
             <div style={{ fontFamily: fm, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', marginBottom: 12 }}>
-              Integrated with leading APIs
+              Connects With All Brokers
             </div>
-            <div style={{ display: 'flex', gap: 24, fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em' }}>
+            <div style={{ display: 'flex', gap: 24, fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', flexWrap: 'wrap' }}>
               <span>BINANCE</span>
               <span>NINJATRADER</span>
               <span>TRADINGVIEW</span>
+              {showAllBrokers && (
+                <>
+                  <span>THINKORSWIM</span>
+                  <span>INTERACTIVE BROKERS</span>
+                  <span>SCHWAB</span>
+                  <span>WEBULL</span>
+                  <span>TASTYTRADE</span>
+                </>
+              )}
+            </div>
+            <div
+              onClick={() => setShowAllBrokers(s => !s)}
+              style={{ marginTop: 10, fontFamily: fm, fontSize: 10, color: teal, cursor: 'pointer', letterSpacing: '0.1em', display: 'inline-block' }}
+            >
+              {showAllBrokers ? 'Hide brokers ▲' : 'View all brokers ▼'}
             </div>
           </div>
 

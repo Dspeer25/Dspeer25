@@ -57,21 +57,21 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <span style={{ fontFamily: fd, color: '#fff', fontSize: 22, fontWeight: 700 }}>Weekly Goals</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
-            <span style={{ fontFamily: fm, fontSize: 11, color: '#39ff85' }}>3 Active Rules</span>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0' }} />
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#00d4a0' }}>3 Active Rules</span>
           </div>
         </div>
         <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.4)', fontSize: 12, marginBottom: 18 }}>Active behavioral and technical parameters for the current week.</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {goalTexts.map((text, gi) => (
             <div key={gi} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid #39ff85', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontFamily: fd, fontSize: 14, color: '#39ff85' }}>{gi + 1}</span>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '1.5px solid #00d4a0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontFamily: fd, fontSize: 14, color: '#00d4a0' }}>{gi + 1}</span>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: fm, fontSize: 13, fontWeight: 700, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: '0.02em', marginBottom: 6 }}>{text}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ background: '#39ff85', color: '#000', fontFamily: fm, fontSize: 9, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase' as const }}>TYPE</span>
+                  <span style={{ background: '#00d4a0', color: '#000', fontFamily: fm, fontSize: 9, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase' as const }}>TYPE</span>
                   <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{goalTypes[gi]}</span>
                 </div>
               </div>
@@ -92,34 +92,34 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
       <div style={{ flex: '0 0 38%', transform: showFollowUp ? 'translateY(-120px)' : 'translateY(0)', transition: 'transform 0.8s ease' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, animation: aiAnimating ? 'aiPulse 1.5s ease-in-out infinite' : 'none' }}>
           <Logo size={16} />
-          <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#39ff85' }}>WickCoach AI</span>
+          <span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#00d4a0' }}>WickCoach AI</span>
         </div>
-        <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', borderRadius: 0, padding: 20, marginTop: 12, minHeight: 140 }}>
+        <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 0, padding: 20, marginTop: 12, minHeight: 140 }}>
           <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 1.7 }}>
             {renderedBullets.map((line, idx) => (
               <div key={idx} style={{ marginBottom: idx < renderedBullets.length - 1 ? 10 : 0 }}>
-                {line.startsWith('\u2022') ? <><span style={{ color: '#39ff85' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
+                {line.startsWith('\u2022') ? <><span style={{ color: '#00d4a0' }}>{'\u2022'}</span>{line.slice(1)}</> : line}
               </div>
             ))}
-            {isTyping && <span style={{ animation: 'blink 1s step-end infinite', color: '#39ff85' }}>|</span>}
+            {isTyping && <span style={{ animation: 'blink 1s step-end infinite', color: '#00d4a0' }}>|</span>}
           </div>
           {isThinking && (
             <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0s' }} />
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.3s' }} />
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.6s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.3s' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0', animation: 'thinkDot 1.2s ease-in-out infinite', animationDelay: '0.6s' }} />
             </div>
           )}
         </div>
         {/* Pagination dots */}
         <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 12 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#39ff85' }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4a0' }} />
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.2)' }} />
         </div>
         <div style={{ opacity: showFollowUp ? 1 : 0, transition: 'opacity 0.6s ease', pointerEvents: showFollowUp ? 'auto' : 'none' }}>
-          <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(57,255,133,0.15)', padding: 14, marginTop: 10 }}>
-            <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#39ff85', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
+          <div style={{ background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,212,160,0.15)', padding: 14, marginTop: 10 }}>
+            <div style={{ fontFamily: fm, fontSize: 10, fontWeight: 700, color: '#00d4a0', letterSpacing: 1, marginBottom: 8 }}>FOLLOW-UP</div>
             <div style={{ fontFamily: fm, color: 'rgba(255,255,255,0.7)', fontSize: 11, lineHeight: 1.6 }}>{goalSet.followUp}</div>
             <input
               type="text"
@@ -128,7 +128,7 @@ function MockTradingGoalsInner({ goalSet, onAdvance, frozen = true }: { goalSet:
               onKeyDown={(e) => { if (e.key === 'Enter') setAnswer(''); }}
               placeholder="Type your answer..."
               style={{ background: '#13141a', border: '1px solid rgba(255,255,255,0.08)', padding: '8px 10px', color: '#ffffff', fontSize: 11, fontFamily: fm, width: '100%', outline: 'none', marginTop: 10, boxSizing: 'border-box' }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#39ff85'; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = '#00d4a0'; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
             />
           </div>
@@ -179,8 +179,8 @@ export default function CarouselTradingGoals({ onAdvance, frozen = true }: { onA
     <style>{`
       .carousel-card-scroll::-webkit-scrollbar { display: block !important; width: 4px; }
       .carousel-card-scroll::-webkit-scrollbar-track { background: transparent; }
-      .carousel-card-scroll::-webkit-scrollbar-thumb { background: rgba(57,255,133,0.25); border-radius: 2px; }
-      .carousel-card-scroll { scrollbar-width: thin !important; scrollbar-color: rgba(57,255,133,0.25) transparent; }
+      .carousel-card-scroll::-webkit-scrollbar-thumb { background: rgba(0,212,160,0.25); border-radius: 2px; }
+      .carousel-card-scroll { scrollbar-width: thin !important; scrollbar-color: rgba(0,212,160,0.25) transparent; }
       @keyframes goalScan {
         0% { top: 5%; opacity: 0; }
         15% { opacity: 1; }

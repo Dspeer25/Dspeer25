@@ -32,13 +32,13 @@ export default function CarouselAnalysis() {
         <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>TOTAL TRADES</div>
         <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>200</div>
         <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Win Rate: 46.0%</div>
-        <div style={{ display: 'flex', height: 3, marginTop: 6 }}><div style={{ width: '46%', background: '#39ff85' }} /><div style={{ width: '54%', background: '#ff4444' }} /></div>
+        <div style={{ display: 'flex', height: 3, marginTop: 6 }}><div style={{ width: '46%', background: '#00d4a0' }} /><div style={{ width: '54%', background: '#ff4444' }} /></div>
       </div>
       <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>PROCESS</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#00d4a0', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>PROCESS</div>
         <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>137</div>
         <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Win Rate: 61.3%</div>
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 4 }}>+150.9R total</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#00d4a0', marginTop: 4 }}>+150.9R total</div>
       </div>
       <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
         <div style={{ fontFamily: fm, fontSize: 10, color: '#ff4444', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 6 }}>IMPULSE</div>
@@ -47,10 +47,10 @@ export default function CarouselAnalysis() {
         <div style={{ fontFamily: fm, fontSize: 10, color: '#ff4444', marginTop: 4 }}>-31.3R total</div>
       </div>
       <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>WHAT IF?</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#00d4a0', textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>WHAT IF?</div>
         <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}>Your P/L if you only took process trades</div>
         <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Actual P/L: +$58,532</div>
-        <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#39ff85', lineHeight: 1, marginTop: 4 }}>+$74,792</div>
+        <div style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#00d4a0', lineHeight: 1, marginTop: 4 }}>+$74,792</div>
         <div style={{ fontFamily: fm, fontSize: 10, color: '#ff4444', marginTop: 4 }}>Indiscipline cost you $16,260</div>
       </div>
     </div>
@@ -63,16 +63,16 @@ export default function CarouselAnalysis() {
           <span>STRATEGY</span><span>TRADES</span><span>WIN RATE</span><span>AVG P/L</span><span>TOTAL P/L</span><span>AVG R</span>
         </div>
         {strategies.map((s, i) => (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 50px 55px 70px 80px 45px', gap: 4, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', borderLeft: '2px solid #39ff85', paddingLeft: 8, fontFamily: fm, fontSize: 11, alignItems: 'center' }}>
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 50px 55px 70px 80px 45px', gap: 4, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', borderLeft: '2px solid #00d4a0', paddingLeft: 8, fontFamily: fm, fontSize: 11, alignItems: 'center' }}>
             <span style={{ color: '#fff' }}>{s.name}</span>
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>{s.trades}</span>
-            <span style={{ color: '#39ff85' }}>{s.wr}</span>
+            <span style={{ color: '#00d4a0' }}>{s.wr}</span>
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>{s.avg}</span>
-            <span style={{ color: '#39ff85' }}>{s.total}</span>
+            <span style={{ color: '#00d4a0' }}>{s.total}</span>
             <span style={{ color: 'rgba(255,255,255,0.5)' }}>{s.r}</span>
           </div>
         ))}
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#00d4a0', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
       </div>
       <div style={{ flex: '0 0 38%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '16px' }}>
         <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Ticker performance</div>
@@ -84,10 +84,10 @@ export default function CarouselAnalysis() {
               <span style={{ fontFamily: fm, fontSize: 11, fontWeight: 700, color: '#fff' }}>{tk.t}</span>
               <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>{tk.trades} trades · {tk.wr} win</span>
             </div>
-            <span style={{ fontFamily: fm, fontSize: 11, color: '#39ff85', fontWeight: 700 }}>{tk.pl}</span>
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#00d4a0', fontWeight: 700 }}>{tk.pl}</span>
           </div>
         ))}
-        <div style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
+        <div style={{ fontFamily: fm, fontSize: 10, color: '#00d4a0', marginTop: 8, cursor: 'pointer' }}>Show all ↓</div>
       </div>
     </div>
     {/* Time-of-day performance */}
@@ -99,7 +99,7 @@ export default function CarouselAnalysis() {
         </div>
         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: 2, gap: 2 }}>
           <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', background: 'rgba(255,255,255,0.08)', color: '#fff', fontWeight: 700 }}>Timeline</span>
-          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', color: '#39ff85' }}>Best hours</span>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', color: '#00d4a0' }}>Best hours</span>
           <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 10px', color: 'rgba(255,255,255,0.4)' }}>Worst hours</span>
         </div>
       </div>
@@ -115,18 +115,18 @@ export default function CarouselAnalysis() {
         ].map((s, i) => (
           <div key={i} style={{ flex: 1, background: `rgba(0,255,136,${s.op})`, padding: '8px 4px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 2 }}>
             <span style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.5)' }}>{s.h}</span>
-            <span style={{ fontFamily: fd, fontSize: 11, fontWeight: 700, color: '#39ff85' }}>{s.pl}</span>
+            <span style={{ fontFamily: fd, fontSize: 11, fontWeight: 700, color: '#00d4a0' }}>{s.pl}</span>
             <span style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.35)' }}>{s.c} trades</span>
           </div>
         ))}
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, padding: '0 4px' }}>
-        <span style={{ fontFamily: fm, fontSize: 8, color: '#39ff85', letterSpacing: '1px' }}>OPEN</span>
+        <span style={{ fontFamily: fm, fontSize: 8, color: '#00d4a0', letterSpacing: '1px' }}>OPEN</span>
         <span style={{ fontFamily: fm, fontSize: 8, color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>MIDDAY</span>
         <span style={{ fontFamily: fm, fontSize: 8, color: '#ffb400', letterSpacing: '1px' }}>CLOSE</span>
       </div>
       <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
-        Best hour: <span style={{ color: '#39ff85' }}>9AM (+$18,500)</span> · Worst hour: <span style={{ color: '#ff4444' }}>12PM (+$2,176)</span>
+        Best hour: <span style={{ color: '#00d4a0' }}>9AM (+$18,500)</span> · Worst hour: <span style={{ color: '#ff4444' }}>12PM (+$2,176)</span>
       </div>
     </div>
     {/* WickCoach observations */}
@@ -144,7 +144,7 @@ export default function CarouselAnalysis() {
       </div>
       <svg width="100%" height="180" viewBox="0 0 700 180">
         <text x={80} y={16} fill="#ff4444" fontSize="10" fontFamily={fm} letterSpacing="2">FRICTION</text>
-        <text x={540} y={16} fill="#39ff85" fontSize="10" fontFamily={fm} letterSpacing="2">MOMENTUM</text>
+        <text x={540} y={16} fill="#00d4a0" fontSize="10" fontFamily={fm} letterSpacing="2">MOMENTUM</text>
         <line x1={80} y1={90} x2={620} y2={90} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
         {[
           { name: 'Ignoring Rules', trades: 12, y: 32, w: 120 },
@@ -166,13 +166,13 @@ export default function CarouselAnalysis() {
           { name: 'Position Building', trades: 7, y: 122, w: 70 },
         ].map((p, i) => (
           <g key={'m'+i}>
-            <line x1={355} y1={p.y + 10} x2={350} y2={90} stroke="#39ff85" strokeWidth={0.5} opacity={0.3} />
-            <rect x={355} y={p.y} width={p.w} height={20} rx={3} fill="#39ff85" opacity={0.5} />
-            <text x={355 + p.w + 6} y={p.y + 10} fill="#39ff85" fontSize="9" fontFamily={fd} fontWeight="700">{p.name}</text>
+            <line x1={355} y1={p.y + 10} x2={350} y2={90} stroke="#00d4a0" strokeWidth={0.5} opacity={0.3} />
+            <rect x={355} y={p.y} width={p.w} height={20} rx={3} fill="#00d4a0" opacity={0.5} />
+            <text x={355 + p.w + 6} y={p.y + 10} fill="#00d4a0" fontSize="9" fontFamily={fd} fontWeight="700">{p.name}</text>
             <text x={355 + p.w + 6} y={p.y + 20} fill="#999" fontSize="8" fontFamily={fm}>{p.trades} trades</text>
           </g>
         ))}
-        <circle cx={350} cy={90} r={18} fill="rgba(0,255,136,0.15)" stroke="#39ff85" strokeWidth={1.5} />
+        <circle cx={350} cy={90} r={18} fill="rgba(0,255,136,0.15)" stroke="#00d4a0" strokeWidth={1.5} />
         <text x={350} y={93} fill="#fff" fontSize="12" fontFamily={fd} fontWeight="700" textAnchor="middle" dominantBaseline="middle">72</text>
         <text x={350} y={155} fill="#999" fontSize="9" fontFamily={fm} textAnchor="middle">Psychology score</text>
       </svg>
@@ -183,11 +183,11 @@ export default function CarouselAnalysis() {
       {[
         { text: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', status: 'At risk', color: '#ff4444' },
         { text: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', status: 'At risk', color: '#ff4444' },
-        { text: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', status: 'On track', color: '#39ff85' },
+        { text: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', status: 'On track', color: '#00d4a0' },
       ].map((g, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-          <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #39ff85', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <span style={{ fontFamily: fm, fontSize: 10, color: '#39ff85', fontWeight: 700 }}>{i + 1}</span>
+          <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #00d4a0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ fontFamily: fm, fontSize: 10, color: '#00d4a0', fontWeight: 700 }}>{i + 1}</span>
           </div>
           <span style={{ fontFamily: fm, fontSize: 10, color: '#fff', flex: 1 }}>{g.text}</span>
           <span style={{ fontFamily: fm, fontSize: 9, fontWeight: 700, padding: '2px 10px', borderRadius: 3, background: g.color === '#ff4444' ? 'rgba(255,68,68,0.15)' : 'rgba(0,255,136,0.15)', color: g.color }}>{g.status}</span>
