@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { fd, fm } from './shared';
 
-const teal = '#39ff85';
+const teal = '#00d4a0';
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(false);
@@ -44,8 +44,8 @@ export default function SplashScreen() {
     <>
       <style>{`
         @keyframes candleGlow {
-          0%, 100% { filter: drop-shadow(0 0 8px rgba(57,255,133,0.3)); }
-          50% { filter: drop-shadow(0 0 20px rgba(57,255,133,0.8)); }
+          0%, 100% { filter: drop-shadow(0 0 8px rgba(0,212,160,0.3)); }
+          50% { filter: drop-shadow(0 0 20px rgba(0,212,160,0.8)); }
         }
         @keyframes fadeInUp {
           0% { opacity: 0; transform: translateY(12px); }

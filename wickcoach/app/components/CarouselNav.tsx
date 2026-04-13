@@ -30,10 +30,10 @@ export default function CarouselNav({ activeCategory, onCategoryClick, textVisib
       <div style={{ position: 'relative' }}>
         {textVisible && (
           <div style={{ position: 'absolute', left: 20, top: '35%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 8, zIndex: 2, animation: 'exploreSlideIn 0.8s ease-out 1.5s both' }}>
-            <span style={{ fontFamily: fd, fontSize: 16, color: '#39ff85', fontWeight: 700, letterSpacing: '0.05em', textShadow: '0 0 20px rgba(0,212,160,0.4)' }}>Explore</span>
+            <span style={{ fontFamily: fd, fontSize: 16, color: '#00d4a0', fontWeight: 700, letterSpacing: '0.05em', textShadow: '0 0 20px rgba(0,212,160,0.4)' }}>Explore</span>
             <svg width="36" height="18" viewBox="0 0 36 18" fill="none" style={{ animation: 'exploreArrowBounce 1s ease-in-out infinite 2.5s' }}>
-              <path d="M0 9 L26 9" stroke="#39ff85" strokeWidth="2.5" strokeLinecap="round"/>
-              <path d="M22 3 L30 9 L22 15" stroke="#39ff85" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M0 9 L26 9" stroke="#00d4a0" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M22 3 L30 9 L22 15" stroke="#00d4a0" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         )}

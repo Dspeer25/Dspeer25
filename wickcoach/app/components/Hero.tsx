@@ -2,7 +2,7 @@
 import React from 'react';
 import { fm, fd } from './shared';
 
-const teal = '#39ff85';
+const teal = '#00d4a0';
 const red = '#ff4444';
 
 interface HeroProps {
@@ -107,11 +107,11 @@ export default function Hero({ textVisible }: HeroProps) {
             {candles.map((c, i) => {
               const isBull = c.type === 'bull';
               const color = isBull ? teal : red;
-              const rgbaMid = isBull ? 'rgba(57,255,133,0.4)' : 'rgba(255,68,68,0.4)';
-              const rgbaLight = isBull ? 'rgba(57,255,133,0.05)' : 'rgba(255,68,68,0.05)';
-              const rgbaHeavy = isBull ? 'rgba(57,255,133,0.25)' : 'rgba(255,68,68,0.25)';
-              const rgbaGlow = isBull ? 'rgba(57,255,133,0.35)' : 'rgba(255,68,68,0.35)';
-              const rgbaInset = isBull ? 'rgba(57,255,133,0.2)' : 'rgba(255,68,68,0.2)';
+              const rgbaMid = isBull ? 'rgba(0,212,160,0.4)' : 'rgba(255,68,68,0.4)';
+              const rgbaLight = isBull ? 'rgba(0,212,160,0.05)' : 'rgba(255,68,68,0.05)';
+              const rgbaHeavy = isBull ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)';
+              const rgbaGlow = isBull ? 'rgba(0,212,160,0.35)' : 'rgba(255,68,68,0.35)';
+              const rgbaInset = isBull ? 'rgba(0,212,160,0.2)' : 'rgba(255,68,68,0.2)';
               return (
                 <div
                   key={i}

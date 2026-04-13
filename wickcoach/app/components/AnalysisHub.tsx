@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { fm, fd } from './shared';
 
-const teal = '#39ff85';
+const teal = '#00d4a0';
 const red = '#ff4444';
 
 // ─── Static data ──────────────────────────────────────────────
@@ -90,7 +90,7 @@ export default function AnalysisContent() {
   const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0];
   const worstHour = [...hours].sort((a, b) => a.pl - b.pl)[0];
 
-  const rowGrad = 'linear-gradient(90deg, rgba(255,68,68,0.03) 0%, rgba(26,28,35,1) 40%, rgba(26,28,35,1) 60%, rgba(57,255,133,0.03) 100%)';
+  const rowGrad = 'linear-gradient(90deg, rgba(255,68,68,0.03) 0%, rgba(26,28,35,1) 40%, rgba(26,28,35,1) 60%, rgba(0,212,160,0.03) 100%)';
 
   return (
     <div style={{ background: '#131318', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
@@ -133,7 +133,7 @@ export default function AnalysisContent() {
         </div>
 
         {/* What If? */}
-        <div style={{ flex: 1, minWidth: 200, background: '#1a1c23', border: '1px solid rgba(57,255,133,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(57,255,133,0.08)' }}>
+        <div style={{ flex: 1, minWidth: 200, background: '#1a1c23', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
           <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
           <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took process trades</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
@@ -254,7 +254,7 @@ export default function AnalysisContent() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
               background: `radial-gradient(circle at center, #1a1c23 58%, transparent 59%), conic-gradient(${teal} 0% 61%, #3e4252 61% 100%)`,
-              boxShadow: 'inset 0 0 20px rgba(57,255,133,0.1), 0 0 30px rgba(0,0,0,0.5)',
+              boxShadow: 'inset 0 0 20px rgba(0,212,160,0.1), 0 0 30px rgba(0,0,0,0.5)',
             }}>
               <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 32, color: '#fff' }}>61</span>
             </div>
@@ -309,7 +309,7 @@ export default function AnalysisContent() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
             <span style={{ color: '#ccc', fontSize: 13, letterSpacing: 0.5 }}>LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN</span>
-            <span style={{ marginLeft: 'auto', background: 'rgba(57,255,133,0.1)', color: teal, padding: '4px 10px', borderRadius: 4, fontSize: 11 }}>On track</span>
+            <span style={{ marginLeft: 'auto', background: 'rgba(0,212,160,0.1)', color: teal, padding: '4px 10px', borderRadius: 4, fontSize: 11 }}>On track</span>
           </div>
         </div>
       </div>
@@ -341,10 +341,10 @@ export default function AnalysisContent() {
           {sortedHours.map(d => {
             const opacity = 0.15 + (Math.abs(d.pl) / maxAbsHourPL) * 0.35;
             const bg = heatmapMode === 'best'
-              ? `rgba(57,255,133,${opacity.toFixed(2)})`
+              ? `rgba(0,212,160,${opacity.toFixed(2)})`
               : heatmapMode === 'worst'
                 ? `rgba(255,68,68,${opacity.toFixed(2)})`
-                : d.pl >= 0 ? `rgba(57,255,133,${opacity.toFixed(2)})` : `rgba(255,68,68,${opacity.toFixed(2)})`;
+                : d.pl >= 0 ? `rgba(0,212,160,${opacity.toFixed(2)})` : `rgba(255,68,68,${opacity.toFixed(2)})`;
             return (
               <div key={d.h} style={{
                 flex: 1, height: 75, borderRadius: 8, background: bg,

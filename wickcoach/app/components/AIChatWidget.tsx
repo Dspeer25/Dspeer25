@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import { fm, fd } from './shared';
 import Logo from './Logo';
 
-const teal = '#39ff85';
+const teal = '#00d4a0';
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
@@ -73,14 +73,14 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
       <style>{`
         @keyframes aiWidgetDotPulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
         @keyframes aiWidgetOnlinePulse {
-          0% { box-shadow: 0 0 0 0 rgba(57,255,133,0.6); }
-          70% { box-shadow: 0 0 0 6px rgba(57,255,133,0); }
-          100% { box-shadow: 0 0 0 0 rgba(57,255,133,0); }
+          0% { box-shadow: 0 0 0 0 rgba(0,212,160,0.6); }
+          70% { box-shadow: 0 0 0 6px rgba(0,212,160,0); }
+          100% { box-shadow: 0 0 0 0 rgba(0,212,160,0); }
         }
         .aiWidgetScroll::-webkit-scrollbar { width: 6px; }
         .aiWidgetScroll::-webkit-scrollbar-track { background: transparent; }
-        .aiWidgetScroll::-webkit-scrollbar-thumb { background: rgba(57,255,133,0.15); border-radius: 3px; }
-        .aiWidgetScroll { scrollbar-width: thin; scrollbar-color: rgba(57,255,133,0.15) transparent; }
+        .aiWidgetScroll::-webkit-scrollbar-thumb { background: rgba(0,212,160,0.15); border-radius: 3px; }
+        .aiWidgetScroll { scrollbar-width: thin; scrollbar-color: rgba(0,212,160,0.15) transparent; }
       `}</style>
 
       {/* Backdrop */}
@@ -103,7 +103,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
           background: '#0A0E0C',
           borderRadius: '28px 0 0 28px',
           overflow: 'hidden',
-          boxShadow: '-10px 0 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(57,255,133,0.1)',
+          boxShadow: '-10px 0 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,160,0.1)',
         }}
       >
         {/* Ambient glow */}
@@ -116,9 +116,9 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
               <div style={{ position: 'relative' }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: '50%',
-                  background: 'linear-gradient(135deg, rgba(57,255,133,0.2), #0A0E0C)',
-                  border: '1px solid rgba(57,255,133,0.3)',
-                  boxShadow: '0 0 15px rgba(57,255,133,0.15)',
+                  background: 'linear-gradient(135deg, rgba(0,212,160,0.2), #0A0E0C)',
+                  border: '1px solid rgba(0,212,160,0.3)',
+                  boxShadow: '0 0 15px rgba(0,212,160,0.15)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <Logo size={20} />
@@ -165,7 +165,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
               display: 'flex',
               flexDirection: 'column',
               gap: 16,
-              backgroundImage: `repeating-linear-gradient(0deg, rgba(57,255,133,0.03) 0px, rgba(57,255,133,0.03) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, rgba(57,255,133,0.03) 0px, rgba(57,255,133,0.03) 1px, transparent 1px, transparent 40px)`,
+              backgroundImage: `repeating-linear-gradient(0deg, rgba(0,212,160,0.03) 0px, rgba(0,212,160,0.03) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, rgba(0,212,160,0.03) 0px, rgba(0,212,160,0.03) 1px, transparent 1px, transparent 40px)`,
             }}
           >
             {!hasMessages && welcomeMsg && (
@@ -186,7 +186,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
                   {formatAiText(msg.content)}
                 </div>
               ) : (
-                <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '85%', background: 'linear-gradient(135deg, #39ff85, #39ff85)', color: '#fff', borderRadius: '20px 20px 4px 20px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontWeight: 500, fontFamily: fm }}>
+                <div key={i} style={{ alignSelf: 'flex-end', maxWidth: '85%', background: 'linear-gradient(135deg, #00d4a0, #00d4a0)', color: '#fff', borderRadius: '20px 20px 4px 20px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontWeight: 500, fontFamily: fm }}>
                   {msg.content}
                 </div>
               )
