@@ -27,31 +27,29 @@ const candles: { type: 'bull' | 'bear'; h: number }[] = [
 interface Annotation {
   title: string;
   body: string;
-  // `rightPct` positions the label's right edge as % of wrapper width — tuned to hover
-  // above the target candle (3rd, 5th, 7th, 9th from left within the right-aligned cluster).
-  rightPct: number;
+  pos: React.CSSProperties;
 }
 
 const annotations: Annotation[] = [
   {
     title: 'Full Understanding',
     body: 'AI that reads your journal entries, understands your frustrations, and coaches the psychology behind every trade.',
-    rightPct: 54, // above 3rd candle
+    pos: { top: '22%', left: '35%' },
   },
   {
     title: 'Technical & Psychological Analysis',
     body: 'Knows your goals from both a technical and psychological perspective. Tracks what you planned vs what you did.',
-    rightPct: 42, // above 5th candle
+    pos: { top: '15%', left: '52%' },
   },
   {
     title: 'Shared Goals & Accountability',
     body: 'Compares what you write about your trades to what you actually execute. Holds you accountable to your own rules.',
-    rightPct: 30, // above 7th candle
+    pos: { top: '20%', right: '20%' },
   },
   {
     title: 'Pattern Recognition',
     body: "AI recognizes behavioral patterns across hundreds of your trades that you'd never spot manually.",
-    rightPct: 18, // above 9th candle
+    pos: { top: '12%', right: '3%' },
   },
 ];
 
@@ -73,22 +71,18 @@ export default function Hero({ textVisible }: HeroProps) {
     <>
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
-          @keyframes heroPulseGlow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+          @keyframes candleBreathe {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.03); }
+          }
+          @keyframes candleBreatheB {
+            0%, 100% { transform: scaleY(1.02); }
+            50% { transform: scaleY(0.97); }
           }
         }
       `}</style>
 
       <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: 'linear-gradient(to bottom, #1a1c23 0%, #0d0e12 15%, #030305 40%)', maxWidth: 1600, margin: '0 auto', width: '100%' }}>
-
-        {/* Grid texture overlay */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 1, opacity: 0.5 }} />
-
-        {/* WickCoach · 1D watermark */}
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-12deg)', fontFamily: fd, fontSize: 120, fontWeight: 700, color: 'rgba(255,255,255,0.02)', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 1, userSelect: 'none' }}>
-          WickCoach · 1D
-        </div>
 
         {/* ═══ BACKGROUND LAYER — just the candles ═══ */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -118,6 +112,8 @@ export default function Hero({ textVisible }: HeroProps) {
               const rgbaHeavy = isBull ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)';
               const rgbaGlow = isBull ? 'rgba(0,212,160,0.35)' : 'rgba(255,68,68,0.35)';
               const rgbaInset = isBull ? 'rgba(0,212,160,0.2)' : 'rgba(255,68,68,0.2)';
+              const animName = i % 2 === 0 ? 'candleBreathe' : 'candleBreatheB';
+              const animDur = i % 2 === 0 ? '4.5s' : '5.2s';
               return (
                 <div
                   key={i}
@@ -133,6 +129,9 @@ export default function Hero({ textVisible }: HeroProps) {
                     borderBottom: 'none',
                     background: `linear-gradient(to top, ${rgbaLight} 0%, ${rgbaHeavy} 100%)`,
                     boxShadow: `0 -15px 40px ${rgbaGlow}, inset 0 10px 30px ${rgbaInset}`,
+                    animation: `${animName} ${animDur} ease-in-out infinite`,
+                    animationDelay: `${i * 0.3}s`,
+                    transformOrigin: 'center bottom',
                   }}
                 >
                   {/* Wick */}
@@ -151,6 +150,21 @@ export default function Hero({ textVisible }: HeroProps) {
                 </div>
               );
             })}
+
+            {/* Moving average curve — traces through the candles */}
+            <svg
+              style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }}
+              viewBox="0 0 900 500"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M 50 380 C 100 370, 150 350, 200 330 C 250 310, 300 280, 350 250 C 400 230, 450 200, 500 190 C 550 185, 600 210, 650 230 C 700 245, 750 220, 800 200 C 850 185, 880 170, 900 160"
+                fill="none"
+                stroke="rgba(0,212,160,0.4)"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
 
         </div>
@@ -162,15 +176,13 @@ export default function Hero({ textVisible }: HeroProps) {
             style={{
               position: 'absolute',
               zIndex: 20,
-              maxWidth: 180,
-              top: '8%',
-              right: `${a.rightPct}%`,
-              transform: 'translateX(50%)',
+              maxWidth: 150,
               textAlign: 'center',
               opacity: textVisible ? 0.9 : 0,
               transition: 'opacity 0.9s ease',
               transitionDelay: `${0.4 + i * 0.15}s`,
               pointerEvents: 'none',
+              ...a.pos,
             }}
           >
             <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600, marginBottom: 8 }}>
@@ -180,7 +192,7 @@ export default function Hero({ textVisible }: HeroProps) {
               {a.body}
             </div>
             {/* Dashed connector — visual extension of candle's wick up into the label */}
-            <div style={{ width: 1, height: 40, borderLeft: '1px dashed rgba(0,212,160,0.4)', margin: '0 auto' }} />
+            <div style={{ width: 1, height: 60, borderLeft: '1px dashed rgba(0,212,160,0.4)', margin: '0 auto' }} />
           </div>
         ))}
 
