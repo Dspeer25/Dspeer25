@@ -25,16 +25,16 @@ export default function CarouselNav({ activeCategory, onCategoryClick, textVisib
       <style>{`
         @keyframes carouselIconPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); border-color: rgba(255,255,255,0.06); } 50% { box-shadow: 0 0 15px rgba(0,212,160,0.4); border-color: rgba(0,212,160,0.4); } }
       `}</style>
-      <div style={{ position: 'relative' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 24 }}>
+      <div style={{ position: 'relative', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 36, marginBottom: 24 }}>
           {categories.map((cat, i) => {
             const isActive = activeCategory === i;
             return (
               <div key={i} onClick={() => onCategoryClick(i)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                <div style={{ width: 56, height: 56, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : '#141822', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid #2A3143', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.18)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease', animation: !isActive && textVisible ? 'carouselIconPulse 1.5s ease-in-out infinite' : 'none', }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isActive ? teal : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={cat.d} /></svg>
+                <div style={{ width: 60, height: 60, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'linear-gradient(135deg, rgba(0,212,160,0.25), rgba(0,212,160,0.1))' : '#141822', border: isActive ? '1px solid rgba(0,212,160,0.5)' : '1px solid #2A3143', boxShadow: isActive ? '0 0 20px rgba(0,212,160,0.4), 0 0 50px rgba(0,212,160,0.25), 0 0 100px rgba(0,212,160,0.18)' : 'none', transform: isActive ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.3s ease', animation: !isActive && textVisible ? 'carouselIconPulse 1.5s ease-in-out infinite' : 'none', }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={isActive ? teal : '#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={cat.d} /></svg>
                 </div>
-                <span style={{ fontFamily: fm, fontSize: 13, color: isActive ? teal : '#94A3B8', textAlign: 'center', whiteSpace: 'nowrap' as const, transition: 'color 0.3s ease' }}>{cat.label}</span>
+                <span style={{ fontFamily: fm, fontSize: 14, color: isActive ? teal : '#94A3B8', textAlign: 'center', whiteSpace: 'nowrap' as const, transition: 'color 0.3s ease' }}>{cat.label}</span>
               </div>
             );
           })}

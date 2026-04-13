@@ -23,11 +23,11 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           <span onClick={onLogoClick} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
       )}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 80, borderBottom: "1px solid #2A3143", overflow: "visible", position: 'relative', background: 'transparent' }}>
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 84, borderBottom: "1px solid #2A3143", overflow: "visible", position: 'relative', background: 'transparent' }}>
         <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 18, marginBottom: 18, cursor: view === 'app' ? 'pointer' : 'default' }}>
-          <Logo size={32} showText />
+          <Logo size={34} showText />
         </div>
-        <span style={{ position: 'absolute', top: 30, right: 56, color: '#00d4a0', fontFamily: fm, fontSize: 15, cursor: 'pointer', fontWeight: 500 }}>Login</span>
+        <span style={{ position: 'absolute', top: 30, right: 56, color: '#00d4a0', fontFamily: fm, fontSize: 16, cursor: 'pointer', fontWeight: 500 }}>Login</span>
         <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 1000, marginBottom: 12 }}>
           {tabs.map((t, idx) => {
             const isActive = view === 'app' && activeTab === t;
@@ -39,10 +39,10 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#00d4a0' : 'rgba(0,212,160,0.3)'; }}
                 style={{
-                  fontSize: 15,
+                  fontSize: 16,
                   color: isActive ? '#00d4a0' : teal,
                   letterSpacing: "0.02em",
-                  padding: "12px 32px",
+                  padding: "14px 36px",
                   cursor: "pointer",
                   fontFamily: fm,
                   borderRadius: 8,
