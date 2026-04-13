@@ -59,3 +59,4 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
     </>
   );
 }
+

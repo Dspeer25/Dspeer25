@@ -104,3 +104,4 @@ export default function CarouselPastTrades({ onAdvance }: { onAdvance?: () => vo
     ))}
   </div>);
 }
+

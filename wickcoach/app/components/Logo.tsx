@@ -37,3 +37,4 @@ export const MiniStickFigure = ({ size = 20 }: { size?: number }) => (
 );
 
 export default Logo;
+

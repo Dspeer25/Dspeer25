@@ -253,3 +253,4 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
     </>
   );
 }
+

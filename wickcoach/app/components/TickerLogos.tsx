@@ -70,3 +70,4 @@ export const TickerLogo = ({ ticker }: { ticker: string }) => {
     </div>
   );
 };
+

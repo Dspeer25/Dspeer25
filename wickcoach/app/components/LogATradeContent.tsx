@@ -285,3 +285,4 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       </>
     );
   }
+

@@ -337,3 +337,4 @@ export default function CarouselLogTrade({ onAdvance }: { onAdvance: () => void 
     </div>
   </div>);
 }
+

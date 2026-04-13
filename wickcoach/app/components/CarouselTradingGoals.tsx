@@ -219,3 +219,4 @@ export default function CarouselTradingGoals({ onAdvance, frozen = true }: { onA
     <MockTradingGoalsInner key={goalSetIndex} goalSet={goalSets[goalSetIndex]} onAdvance={onAdvance} frozen={frozen} />
   </div>);
 }
+

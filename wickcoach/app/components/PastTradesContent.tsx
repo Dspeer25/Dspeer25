@@ -682,3 +682,4 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     </div>
   );
 }
+

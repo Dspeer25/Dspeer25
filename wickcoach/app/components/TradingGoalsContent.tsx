@@ -499,3 +499,4 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
     </div>
   );
 }
+

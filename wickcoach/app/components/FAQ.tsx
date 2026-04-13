@@ -15,3 +15,4 @@ export default function FAQ({ q, a, open, onClick }: { q: string; a: string; ope
     </div>
   );
 }
+
