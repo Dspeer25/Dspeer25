@@ -7,7 +7,7 @@ interface HeroProps {
 
 export default function Hero({ textVisible }: HeroProps) {
   return (
-    <div style={{ width: '100%', height: '85vh', position: 'relative', overflow: 'hidden', marginBottom: 0, paddingBottom: 0, background: '#0A0D14' }}>
+    <div style={{ width: '100%', height: '80vh', position: 'relative', overflow: 'hidden', marginBottom: 0, paddingBottom: 0, background: '#0A0D14' }}>
       <iframe
         src="/hero.html"
         style={{

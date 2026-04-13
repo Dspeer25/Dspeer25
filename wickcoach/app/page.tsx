@@ -162,10 +162,10 @@ export default function WickCoachFull() {
           <Hero textVisible={textVisible} />
         </div>
 
-        {/* Gradient strip fading hero (#030305) into page bg (#0A0D14) — Fix 3 */}
-        <div style={{ width: '100%', height: '120px', background: 'linear-gradient(to bottom, #030305, #0A0D14)', pointerEvents: 'none', marginTop: '-2px', marginBottom: '-2px', position: 'relative', zIndex: 1 }} />
+        {/* Gradient strip fading hero (#030305) into page bg (#0A0D14) */}
+        <div style={{ width: '100%', height: '40px', background: 'linear-gradient(to bottom, #030305, #0A0D14)', pointerEvents: 'none', marginTop: '-2px', marginBottom: '-2px', position: 'relative', zIndex: 1 }} />
 
-        <section style={{ position: 'relative', zIndex: 1, overflow: 'hidden', marginTop: 0, padding: '32px 20px 60px', background: 'transparent' }}>
+        <section style={{ position: 'relative', zIndex: 1, overflow: 'hidden', marginTop: 0, padding: '24px 20px 60px', background: 'transparent' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
