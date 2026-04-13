@@ -847,7 +847,8 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
   const btnCls = "flex items-center justify-center rounded-lg text-sm font-semibold h-10 transition-all cursor-pointer select-none";
   const rBtnCls = "flex items-center justify-center rounded-lg text-xs font-bold h-10 bg-violet-900/60 hover:bg-violet-700 text-violet-200 transition-all cursor-pointer select-none";
 
-  if (journal.title === "Monthly Goals") {
+  if (journal.title === "Monthly Goals" || journal.title === "Weekly Goals") {
+    const isWeekly = journal.title === "Weekly Goals";
     type GoalStatus = "none" | "progress" | "completed" | "missed";
     const mGoals = journal.monthlyGoals ?? [];
     const setMGoals = (g: typeof mGoals) => onChange({ ...journal, monthlyGoals: g });
@@ -902,8 +903,8 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
           <div className="px-6 pt-6 pb-4 border-b border-[#2d2f50]">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-bold tracking-widest text-indigo-400 uppercase mb-1">Daily Journal</p>
-                <h3 className="text-2xl font-extrabold text-white tracking-tight">Trader Stated Goals</h3>
+                <p className="text-xs font-bold tracking-widest text-indigo-400 uppercase mb-1">{isWeekly ? "Weekly Journal" : "Daily Journal"}</p>
+                <h3 className="text-2xl font-extrabold text-white tracking-tight">{isWeekly ? "Weekly Goals" : "Trader Stated Goals"}</h3>
                 <p className="text-sm text-slate-400 mt-1">{journal.date}</p>
               </div>
               {total > 0 && (
@@ -1379,6 +1380,8 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
   const newFolderInputRef = useRef<HTMLInputElement>(null);
   const [dragFolderId, setDragFolderId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   // Load from Supabase once on mount
   useEffect(() => {
@@ -1470,7 +1473,25 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
 
   const createWeekFolder = (parentId: string) => {
     const weekName = `Week of ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric" })}`;
-    setFolders((prev) => [...prev, { id: crypto.randomUUID(), name: weekName, collapsed: false, parentId }]);
+    const folderId = crypto.randomUUID();
+    const goalsEntry: Journal = {
+      id: crypto.randomUUID(),
+      folderId,
+      title: "Weekly Goals",
+      date: new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+      goals: [{ text: "", checked: false }, { text: "", checked: false }, { text: "", checked: false }],
+      marketOn: false,
+      observations: "",
+      body: "",
+      monthlyGoals: [
+        { text: "", status: "none", note: "" },
+        { text: "", status: "none", note: "" },
+        { text: "", status: "none", note: "" },
+      ],
+    };
+    setFolders((prev) => [...prev, { id: folderId, name: weekName, collapsed: false, parentId }]);
+    setJournals((prev) => [goalsEntry, ...prev]);
+    setOpenId(goalsEntry.id);
   };
 
   const updateJournal = (updated: Journal) =>
@@ -1633,7 +1654,27 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                   <span className="text-slate-400 text-xs transition-transform duration-150"
                     style={{ display: "inline-block", transform: folder.collapsed ? "rotate(-90deg)" : "rotate(0deg)" }}>▾</span>
                   <FolderIcon gold={isMonth} />
-                  <span className="text-sm font-semibold text-slate-200">{folder.name}</span>
+                  {!isMonth && renamingFolderId === folder.id ? (
+                    <input
+                      autoFocus
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => {
+                        const v = renameValue.trim();
+                        if (v) setFolders((prev) => prev.map((f) => f.id === folder.id ? { ...f, name: v } : f));
+                        setRenamingFolderId(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.currentTarget.blur(); }
+                        if (e.key === "Escape") { setRenamingFolderId(null); }
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="bg-[#13142a] border border-indigo-500 rounded px-2 py-0.5 text-sm font-semibold text-slate-200 focus:outline-none w-48"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-slate-200">{folder.name}</span>
+                  )}
                   <span className="text-xs text-slate-500">{folderJournals.length} journal{folderJournals.length !== 1 ? "s" : ""}</span>
                   {folderJournals.filter((j) => j.grade).map((j) => (
                     <span key={j.id} className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
@@ -1656,6 +1697,10 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
                       className="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-semibold transition-colors">
                       + Add Journal
                     </button>
+                  )}
+                  {!isMonth && (
+                    <button onClick={(e) => { e.stopPropagation(); setRenameValue(folder.name); setRenamingFolderId(folder.id); }}
+                      className="text-slate-600 hover:text-slate-300 text-xs transition-colors px-1" title="Rename folder">✎</button>
                   )}
                   {nested && (
                     <button onClick={(e) => { e.stopPropagation(); unnestFolder(folder.id); }}
