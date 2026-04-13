@@ -106,7 +106,7 @@ export default function WickCoachFull() {
   ];
 
   return (
-    <div style={{ background: "#0e0f14", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
+    <div style={{ background: "#030305", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
       <SplashScreen />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Chakra+Petch:wght@400;500;600;700&display=swap');
@@ -151,7 +151,7 @@ export default function WickCoachFull() {
         <StockChartBackground />
         <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
 
-        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '32px 20px 40px', background: 'transparent' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '60px 20px 40px', background: 'linear-gradient(to bottom, #030305 0%, #0d0e12 5%, #131318 15%)' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>

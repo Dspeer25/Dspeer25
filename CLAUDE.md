@@ -12,3 +12,11 @@
   npm run dev
   ```
 - Replace `[project-folder]` and `[branch-name]` with actual values. Never deviate from this pattern.
+
+## AIDesigner Exports
+- Always load AIDesigner HTML as iframe FIRST to verify it looks correct
+- Only convert to React component AFTER visual confirmation
+- When converting: mechanical line-by-line translation, never interpret or simplify
+- Never change colors, spacing, gradients, or positioning during conversion
+- The HTML file is the source of truth — if the React version looks different, the React version is wrong
+- The correct green for this project is #00d4a0 (defined in shared.ts as teal)
