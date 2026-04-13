@@ -1217,55 +1217,45 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
         {/* Right: Ticker Watchlist */}
         <div className="w-80 flex-shrink-0 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-slate-200 text-center">Watchlist</h3>
-          {/* Long */}
+          {/* Stronger */}
           <div className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl overflow-hidden flex-shrink-0">
             <div className="px-4 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
+              <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Stronger</span>
             </div>
             <div className="p-4 space-y-3">
-              {(["Stronger", "Weaker"] as const).map((loc, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-16 text-right">
-                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
-                  </div>
-                  <input
-                    value={(journal.longTickers ?? ["","",""])[i] ?? ""}
-                    onChange={e => {
-                      const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
-                      t[i] = e.target.value.toUpperCase();
-                      onChange({ ...journal, longTickers: t });
-                    }}
-                    placeholder="Ticker"
-                    className="flex-1 bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
-                  />
-                </div>
+              {[0, 1, 2].map((i) => (
+                <input key={i}
+                  value={(journal.longTickers ?? ["","",""])[i] ?? ""}
+                  onChange={e => {
+                    const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
+                    t[i] = e.target.value.toUpperCase();
+                    onChange({ ...journal, longTickers: t });
+                  }}
+                  placeholder="Ticker"
+                  className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
+                />
               ))}
             </div>
           </div>
-          {/* Short */}
+          {/* Weaker */}
           <div className="bg-[#1a1b2e] border border-red-500/20 rounded-xl overflow-hidden flex-shrink-0">
             <div className="px-4 py-2.5 bg-red-500/10 border-b border-red-500/20 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
+              <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Weaker</span>
             </div>
             <div className="p-4 space-y-3">
-              {(["Stronger", "Weaker"] as const).map((loc, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-16 text-right">
-                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
-                  </div>
-                  <input
-                    value={(journal.shortTickers ?? ["","",""])[i] ?? ""}
-                    onChange={e => {
-                      const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
-                      t[i] = e.target.value.toUpperCase();
-                      onChange({ ...journal, shortTickers: t });
-                    }}
-                    placeholder="Ticker"
-                    className="flex-1 bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
-                  />
-                </div>
+              {[0, 1, 2].map((i) => (
+                <input key={i}
+                  value={(journal.shortTickers ?? ["","",""])[i] ?? ""}
+                  onChange={e => {
+                    const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
+                    t[i] = e.target.value.toUpperCase();
+                    onChange({ ...journal, shortTickers: t });
+                  }}
+                  placeholder="Ticker"
+                  className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
+                />
               ))}
             </div>
           </div>
