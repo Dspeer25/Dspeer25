@@ -31,7 +31,6 @@ export default function WickCoachFull() {
   const traderProfileTabRef = useRef<HTMLSpanElement>(null);
   const [floatingPlusOnes, setFloatingPlusOnes] = useState<{ id: string; startX: number; startY: number; endX: number; endY: number; animated: boolean }[]>([]);
   const [profileTabGlow, setProfileTabGlow] = useState(false);
-  const [showBrokers, setShowBrokers] = useState(false);
 
   const triggerFloatingPlusOne = (inputRect: DOMRect) => {
     const tabEl = traderProfileTabRef.current;
@@ -165,54 +164,11 @@ export default function WickCoachFull() {
 
         {/* CONNECTS TO ALL MAJOR BROKERS — fills gap under hero */}
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '40px 20px 28px', background: '#0A0D14' }}>
-          <div style={{ fontFamily: fm, fontSize: 12, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 500 }}>
+          <div style={{ fontFamily: fm, fontSize: 12, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 500 }}>
             Connects to all major brokers
           </div>
-          {/* Always-visible primary brokers */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px 32px', fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.12em', maxWidth: 960 }}>
-            <span>BINANCE</span>
-            <span>NINJATRADER</span>
-            <span>TRADINGVIEW</span>
-            <span>THINKORSWIM</span>
-          </div>
-          {/* Dropdown extra brokers */}
-          <div style={{ maxHeight: showBrokers ? 200 : 0, overflow: 'hidden', transition: 'max-height 0.5s ease', width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px 32px', fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em', maxWidth: 960, paddingTop: 14 }}>
-              <span>INTERACTIVE BROKERS</span>
-              <span>SCHWAB</span>
-              <span>WEBULL</span>
-              <span>TASTYTRADE</span>
-              <span>E*TRADE</span>
-              <span>FIDELITY</span>
-              <span>ROBINHOOD</span>
-              <span>COINBASE</span>
-              <span>KRAKEN</span>
-              <span>TRADESTATION</span>
-              <span>TD AMERITRADE</span>
-            </div>
-          </div>
-          <div
-            onClick={() => setShowBrokers(s => !s)}
-            style={{
-              fontFamily: fm,
-              fontSize: 11,
-              letterSpacing: '0.2em',
-              color: '#00d4a0',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 14px',
-              border: '1px solid rgba(0,212,160,0.4)',
-              borderRadius: 999,
-              background: 'rgba(0,212,160,0.06)',
-              transition: 'background 0.2s ease, border-color 0.2s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.15)'; e.currentTarget.style.borderColor = '#00d4a0'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.06)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.4)'; }}
-          >
-            {showBrokers ? 'Hide brokers ▲' : 'Show all brokers ▼'}
+          <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.12em', maxWidth: 900, textAlign: 'center', lineHeight: 2 }}>
+            WEBULL · THINKORSWIM · NINJATRADER · INTERACTIVE BROKERS · ROBINHOOD · METATRADER · TRADINGVIEW · STERLING PRO · ALL PROP FIRMS
           </div>
         </div>
 
