@@ -15,6 +15,7 @@ export default function Hero({ textVisible }: HeroProps) {
           height: '100%',
           border: 'none',
           display: 'block',
+          pointerEvents: 'none',
         }}
         title="WickCoach Hero"
       />

@@ -151,58 +151,74 @@ export default function WickCoachFull() {
         <StockChartBackground />
         <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
 
-        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '60px 20px 40px', background: 'transparent' }}>
+        {/* Hero stands alone with its own background — no section wrapper */}
+        <Hero textVisible={textVisible} />
+        {/* Tight 20px spacer between hero and carousel (Fix 4) */}
+        <div style={{ height: 20, background: '#030305', pointerEvents: 'none' }} />
+
+        <section style={{ position: 'relative', overflow: 'hidden', padding: '40px 20px 60px', background: '#0a0b0f' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
-            <Hero textVisible={textVisible} />
-            {/* Spacer between hero and carousel (Fix 6) */}
-            <div style={{ height: 80, background: 'linear-gradient(to bottom, #030305, #030305)', pointerEvents: 'none' }} />
             <CarouselNav activeCategory={activeCategory} onCategoryClick={setActiveCategory} textVisible={textVisible} />
 
-            {/* Simple bordered carousel card (was iMac bezel) */}
-            <div style={{ maxWidth: 1200, width: '90%', margin: '0 auto' }}>
-              <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minHeight: 500, padding: 32 }}>
-                {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
-                {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
-                {activeCategory === 2 && <CarouselPastTrades onAdvance={() => setActiveCategory(0)} />}
-                {activeCategory === 3 && <CarouselAnalysis />}
-                {activeCategory === 4 && <CarouselTraderProfile />}
-                {activeCategory === 5 && <MockPositionSizer />}
-                {activeCategory === 6 && <MockGrowthSimulator />}
-                {activeCategory === 7 && <MockTradeTimeline />}
+            {/* Restored iMac monitor frame (Fix 3) */}
+            <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
+              {/* Top bezel + camera dot */}
+              <div style={{ background: 'linear-gradient(to bottom, #2a2a2e, #1e1e22)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#333' }} />
+              </div>
+              {/* Screen area */}
+              <div style={{ background: '#0d0e12', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', overflow: 'hidden' }}>
+                <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', overflowX: 'hidden', overflowY: 'auto', minHeight: 480, padding: 28 }}>
+                  {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
+                  {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
+                  {activeCategory === 2 && <CarouselPastTrades onAdvance={() => setActiveCategory(0)} />}
+                  {activeCategory === 3 && <CarouselAnalysis />}
+                  {activeCategory === 4 && <CarouselTraderProfile />}
+                  {activeCategory === 5 && <MockPositionSizer />}
+                  {activeCategory === 6 && <MockGrowthSimulator />}
+                  {activeCategory === 7 && <MockTradeTimeline />}
+                </div>
+              </div>
+              {/* Stand */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ width: 60, height: 40, background: 'linear-gradient(to bottom, #1e1e22, #161618)', borderLeft: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }} />
+                <div style={{ width: 120, height: 8, background: '#1a1a1e', borderRadius: '0 0 4px 4px', border: '1px solid rgba(255,255,255,0.04)', borderTop: 'none' }} />
               </div>
             </div>
 
             <div style={{ textAlign: 'center', marginTop: 48 }}>
-              <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 18, fontWeight: 700, padding: '16px 48px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Log Goals &rarr;</button>
-              <p onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#00d4a0'; }} onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#6b7280'; }} style={{ color: '#6b7280', fontFamily: fm, fontSize: 12, marginTop: 8, cursor: 'pointer', textAlign: 'center' }}>or sign up to get started</p>
-              <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 14, marginTop: 12 }}>One-time payment. No subscription. No data collection.</p>
+              <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 16, fontWeight: 600, padding: '18px 64px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Sign Up</button>
+              <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 14, marginTop: 16 }}>One-time payment. No subscription. No data collection.</p>
             </div>
           </div>
         </section>
 
         {/* Privacy + Data Upload */}
-        <section style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
-          <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.3, marginBottom: 20, color: "#e8e8f0" }}>We never see your data.<br />It&apos;s stored on your own computer.</h2>
-          <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm, maxWidth: 520, margin: "0 auto 40px" }}>Upload your past trading data in any format &mdash; CSVs, broker statements, screenshots. The AI uses it to understand your trading history before you log a single trade.</p>
-          <div style={{ display: "flex", gap: 20 }}>
-            {privacyCards.map((c, i) => (
-              <div key={i} style={{ flex: 1, background: "#13141a", border: "1px solid #1a1b22", borderRadius: 12, padding: "28px 24px", textAlign: "left" }}>
-                <div style={{ marginBottom: 16 }}>{c.icon}</div>
-                <div style={{ fontSize: 17, fontWeight: 600, color: "#d0d0d8", marginBottom: 10, fontFamily: fd }}>{c.title}</div>
-                <div style={{ fontSize: 15, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm }}>{c.text}</div>
-              </div>
-            ))}
+        <section style={{ background: "#0e0f14" }}>
+          <div style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
+            <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.3, marginBottom: 20, color: "#e8e8f0" }}>We never see your data.<br />It&apos;s stored on your own computer.</h2>
+            <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm, maxWidth: 520, margin: "0 auto 40px" }}>Upload your past trading data in any format &mdash; CSVs, broker statements, screenshots. The AI uses it to understand your trading history before you log a single trade.</p>
+            <div style={{ display: "flex", gap: 20 }}>
+              {privacyCards.map((c, i) => (
+                <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "28px 24px", textAlign: "left" }}>
+                  <div style={{ marginBottom: 16 }}>{c.icon}</div>
+                  <div style={{ fontSize: 17, fontWeight: 600, color: "#d0d0d8", marginBottom: 10, fontFamily: fd }}>{c.title}</div>
+                  <div style={{ fontSize: 15, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm }}>{c.text}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Pricing */}
-        <section style={{ padding: "100px 48px", maxWidth: 750, margin: "0 auto" }}>
+        <section style={{ background: "#0a0b0f", padding: "100px 48px" }}>
+          <div style={{ maxWidth: 750, margin: "0 auto" }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, fontFamily: fd, marginBottom: 12, color: "#e8e8f0", textAlign: "center" }}>Choose your plan.</h2>
           <p style={{ fontSize: 15, color: "#6a6d78", fontFamily: fm, textAlign: "center", marginBottom: 50 }}>One-time payment with software updates included.</p>
           <div style={{ display: "flex", gap: 20 }}>
-            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 32, minHeight: 500, textAlign: "center" }}>
+            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 36, minHeight: 480, textAlign: "center" }}>
               <div style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>ESSENTIAL</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$55</div>
               <div style={{ fontSize: 14, color: "#6a6d78", marginBottom: 24, fontFamily: fm }}>one-time</div>
@@ -212,7 +228,7 @@ export default function WickCoachFull() {
               <div style={{ fontSize: 12, color: "#5a5d68", fontFamily: fm, marginBottom: 16 }}>No AI coach included</div>
               <div style={{ background: "rgba(0,212,160,0.1)", color: teal, padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, border: "1px solid rgba(0,212,160,0.2)" }}>Get Essential</div>
             </div>
-            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 14, padding: 32, minHeight: 500, textAlign: "center", position: "relative" }}>
+            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 12, padding: 36, minHeight: 480, textAlign: "center", position: "relative" }}>
               <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: teal, color: "#0a0a0f", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, fontFamily: fm }}>RECOMMENDED</div>
               <div style={{ fontSize: 14, color: teal, fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>COMPLETE</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$99</div>
@@ -223,12 +239,15 @@ export default function WickCoachFull() {
               <div style={{ background: teal, color: "#0a0a0f", padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, boxShadow: "0 0 20px rgba(0,212,160,0.25)" }}>Get Complete</div>
             </div>
           </div>
+          </div>
         </section>
 
         {/* FAQ */}
-        <section style={{ padding: "100px 48px", maxWidth: 640, margin: "0 auto" }}>
-          <h2 style={{ fontSize: 30, fontWeight: 700, fontFamily: fd, marginBottom: 40, color: "#e8e8f0" }}>Frequently Asked Questions</h2>
-          {faqs.map((f, i) => (<FAQ key={i} q={f.q} a={f.a} open={openFAQ === i} onClick={() => setOpenFAQ(openFAQ === i ? null : i)} />))}
+        <section style={{ background: "#0e0f14", padding: "100px 48px" }}>
+          <div style={{ maxWidth: 640, margin: "0 auto" }}>
+            <h2 style={{ fontSize: 30, fontWeight: 700, fontFamily: fd, marginBottom: 40, color: "#e8e8f0" }}>Frequently Asked Questions</h2>
+            {faqs.map((f, i) => (<FAQ key={i} q={f.q} a={f.a} open={openFAQ === i} onClick={() => setOpenFAQ(openFAQ === i ? null : i)} />))}
+          </div>
         </section>
 
         {/* Footer */}
