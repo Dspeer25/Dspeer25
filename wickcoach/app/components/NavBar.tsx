@@ -28,43 +28,32 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           <Logo size={32} showText />
         </div>
         <span style={{ position: 'absolute', top: 32, right: 56, color: teal, fontFamily: fm, fontSize: 16, cursor: 'pointer', fontWeight: 500 }}>Login</span>
-        <div style={{ display: "flex", gap: 5, width: "100%", maxWidth: 1000 }}>
+        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 1000, marginBottom: 12 }}>
           {tabs.map((t, idx) => (
             <span
               ref={t === 'Trader Profile' ? traderProfileTabRef : undefined}
               key={t}
               onClick={() => onTabClick(t)}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.6)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = view === 'app' && activeTab === t ? 'rgba(0,212,160,0.6)' : 'rgba(0,212,160,0.3)'; }}
               style={{
-                fontSize: 15, color: teal, letterSpacing: "0.04em", padding: "14px 36px", cursor: "pointer", fontFamily: fm, borderRadius: "8px 8px 0 0", fontWeight: 600,
+                fontSize: 15, color: teal, letterSpacing: "0.04em", padding: "14px 36px", cursor: "pointer", fontFamily: fm, borderRadius: 8, fontWeight: 600,
                 background: view === 'app' && activeTab === t ? "rgba(0,212,160,0.18)" : "rgba(0,212,160,0.05)",
-                borderTop: view === 'app' && activeTab === t ? `1px solid rgba(0,212,160,0.6)` : "1px solid rgba(0,212,160,0.25)",
-                borderRight: view === 'app' && activeTab === t ? `1px solid rgba(0,212,160,0.6)` : "1px solid rgba(0,212,160,0.25)",
-                borderBottom: "none",
-                borderLeft: view === 'app' && activeTab === t ? `1px solid rgba(0,212,160,0.6)` : "1px solid rgba(0,212,160,0.25)",
+                border: view === 'app' && activeTab === t ? '1px solid rgba(0,212,160,0.6)' : '1px solid rgba(0,212,160,0.3)',
                 flex: 1, textAlign: "center", lineHeight: 1.5,
                 boxShadow: t === 'Trader Profile' && profileTabGlow ? '0 0 15px rgba(0,212,160,0.4)' : 'none',
-                transition: 'box-shadow 0.3s ease',
-                animation: view === 'home' && showClickHint
-                  ? "iconGlowPulse 1s ease-in-out 3"
-                  : view === 'home' && tabGlow
-                    ? "tabPulse 1.4s ease infinite"
-                    : view === 'home'
-                      ? `tabBorderPulse 2.5s ease-in-out ${idx * 0.3}s infinite`
-                      : "none",
+                transition: 'border-color 0.2s ease, box-shadow 0.3s ease',
+                animation: view === 'home'
+                  ? `tabPulse 3s ease-in-out ${idx * 0.4}s infinite`
+                  : 'none',
               }}
             >{t}</span>
           ))}
         </div>
-        {view === 'home' && (
-          <div style={{ textAlign: 'center', marginTop: 8, height: 18 }}>
-            <span style={{ fontFamily: fm, fontSize: 12, color: '#9ca3af', opacity: showClickHint ? 1 : 0.7, transition: 'opacity 0.5s ease' }}>click these ↑</span>
-          </div>
-        )}
         <style>{`
-          @keyframes iconGlowPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); } 50% { box-shadow: 0 0 12px rgba(0,212,160,0.4); } }
-          @keyframes tabBorderPulse {
-            0%, 100% { border-color: rgba(0,212,160,0.25); }
-            50% { border-color: rgba(0,212,160,0.6); }
+          @keyframes tabPulse {
+            0%, 100% { border-color: rgba(0,212,160,0.25); box-shadow: 0 0 0 0 rgba(0,212,160,0); }
+            50% { border-color: rgba(0,212,160,0.5); box-shadow: 0 0 8px rgba(0,212,160,0.15); }
           }
         `}</style>
       </nav>

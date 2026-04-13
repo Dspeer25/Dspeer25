@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import { fm, fd, teal } from "./shared";
+import { fm, teal } from "./shared";
 
 const categories = [
   { label: "Trading Goals", d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" },
@@ -24,19 +24,8 @@ export default function CarouselNav({ activeCategory, onCategoryClick, textVisib
     <>
       <style>{`
         @keyframes carouselIconPulse { 0%,100% { box-shadow: 0 0 0px rgba(0,212,160,0); border-color: rgba(255,255,255,0.06); } 50% { box-shadow: 0 0 15px rgba(0,212,160,0.4); border-color: rgba(0,212,160,0.4); } }
-        @keyframes exploreSlideIn { 0% { opacity: 0; transform: translateX(-40px) translateY(-50%); } 100% { opacity: 1; transform: translateX(0) translateY(-50%); } }
-        @keyframes exploreArrowBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
       `}</style>
       <div style={{ position: 'relative' }}>
-        {textVisible && (
-          <div style={{ position: 'absolute', left: '50%', top: -36, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, zIndex: 2, animation: 'exploreSlideIn 0.8s ease-out 1.5s both' }}>
-            <svg width="18" height="32" viewBox="0 0 18 32" fill="none" style={{ animation: 'exploreArrowBounce 1.2s ease-in-out infinite 2.5s' }}>
-              <path d="M9 30 L9 6" stroke="#00d4a0" strokeWidth="2.5" strokeLinecap="round"/>
-              <path d="M3 12 L9 4 L15 12" stroke="#00d4a0" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span style={{ fontFamily: fd, fontSize: 13, color: '#00d4a0', fontWeight: 700, letterSpacing: '0.05em', textShadow: '0 0 20px rgba(0,212,160,0.4)', whiteSpace: 'nowrap' }}>click these ↑</span>
-          </div>
-        )}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 28, marginBottom: 24 }}>
           {categories.map((cat, i) => {
             const isActive = activeCategory === i;

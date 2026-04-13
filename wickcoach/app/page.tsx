@@ -106,7 +106,7 @@ export default function WickCoachFull() {
   ];
 
   return (
-    <div style={{ background: "#030305", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
+    <div style={{ background: "#0a0b10", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
       <SplashScreen />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Chakra+Petch:wght@400;500;600;700&display=swap');
@@ -151,25 +151,23 @@ export default function WickCoachFull() {
         <StockChartBackground />
         <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
 
-        {/* Hero stands alone with its own background — no section wrapper */}
+        {/* Hero — zero gap to carousel (Fix 5) */}
         <Hero textVisible={textVisible} />
-        {/* Tight 20px spacer between hero and carousel (Fix 4) */}
-        <div style={{ height: 20, background: '#030305', pointerEvents: 'none' }} />
 
-        <section style={{ position: 'relative', overflow: 'hidden', padding: '40px 20px 60px', background: '#0a0b0f' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', marginTop: 0, padding: '40px 20px 60px', background: '#0e1015' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
             <CarouselNav activeCategory={activeCategory} onCategoryClick={setActiveCategory} textVisible={textVisible} />
 
-            {/* Restored iMac monitor frame (Fix 3) */}
+            {/* iMac monitor frame — visible greys (Fix 4) */}
             <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
               {/* Top bezel + camera dot */}
-              <div style={{ background: 'linear-gradient(to bottom, #2a2a2e, #1e1e22)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#333' }} />
+              <div style={{ background: 'linear-gradient(to bottom, #3a3a40, #2a2a30)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', borderLeft: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#555' }} />
               </div>
               {/* Screen area */}
-              <div style={{ background: '#0d0e12', border: '1px solid rgba(255,255,255,0.06)', borderTop: 'none', overflow: 'hidden' }}>
+              <div style={{ background: '#0d0e12', border: '1px solid rgba(255,255,255,0.1)', borderTop: 'none', overflow: 'hidden' }}>
                 <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', overflowX: 'hidden', overflowY: 'auto', minHeight: 480, padding: 28 }}>
                   {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
                   {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
@@ -183,8 +181,8 @@ export default function WickCoachFull() {
               </div>
               {/* Stand */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: 60, height: 40, background: 'linear-gradient(to bottom, #1e1e22, #161618)', borderLeft: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }} />
-                <div style={{ width: 120, height: 8, background: '#1a1a1e', borderRadius: '0 0 4px 4px', border: '1px solid rgba(255,255,255,0.04)', borderTop: 'none' }} />
+                <div style={{ width: 60, height: 40, background: 'linear-gradient(to bottom, #2a2a30, #222226)', borderLeft: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)' }} />
+                <div style={{ width: 120, height: 8, background: '#252528', borderRadius: '0 0 4px 4px', border: '1px solid rgba(255,255,255,0.08)', borderTop: 'none' }} />
               </div>
             </div>
 
@@ -196,7 +194,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* Privacy + Data Upload */}
-        <section style={{ background: "#0e0f14" }}>
+        <section style={{ background: "#121318" }}>
           <div style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
             <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.3, marginBottom: 20, color: "#e8e8f0" }}>We never see your data.<br />It&apos;s stored on your own computer.</h2>
             <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm, maxWidth: 520, margin: "0 auto 40px" }}>Upload your past trading data in any format &mdash; CSVs, broker statements, screenshots. The AI uses it to understand your trading history before you log a single trade.</p>
@@ -213,7 +211,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* Pricing */}
-        <section style={{ background: "#0a0b0f", padding: "100px 48px" }}>
+        <section style={{ background: "#0e1015", padding: "100px 48px" }}>
           <div style={{ maxWidth: 750, margin: "0 auto" }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, fontFamily: fd, marginBottom: 12, color: "#e8e8f0", textAlign: "center" }}>Choose your plan.</h2>
           <p style={{ fontSize: 15, color: "#6a6d78", fontFamily: fm, textAlign: "center", marginBottom: 50 }}>One-time payment with software updates included.</p>
@@ -243,7 +241,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* FAQ */}
-        <section style={{ background: "#0e0f14", padding: "100px 48px" }}>
+        <section style={{ background: "#121318", padding: "100px 48px" }}>
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
             <h2 style={{ fontSize: 30, fontWeight: 700, fontFamily: fd, marginBottom: 40, color: "#e8e8f0" }}>Frequently Asked Questions</h2>
             {faqs.map((f, i) => (<FAQ key={i} q={f.q} a={f.a} open={openFAQ === i} onClick={() => setOpenFAQ(openFAQ === i ? null : i)} />))}
