@@ -1,384 +1,592 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <!-- 
-      aesthetic_dna: Premium Institutional Fintech, Dark Mode
-      ui_paradigm: Data-Spatial Asymmetrical Split Hero 
-      palette: Obsidian (#131318), Trade Green (#00E599), Error Red (#FF3B30), Electric Blue (#00E1FF), Pristine White 
-    -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WickCoach - Master Your Trading Psychology</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        obsidian: '#131318',
-                        surface: '#1A1A24',
-                        brandGreen: '#00E599',
-                        brandRed: '#FF3B30',
-                        brandBlue: '#00E1FF',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    backgroundImage: {
-                        'radial-glow': 'radial-gradient(circle, var(--tw-gradient-stops))',
+<html lang="en" class="scroll-smooth bg-[#030305]"><head><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@100;200;300;400;500;600;700;800;900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM%20Mono:wght@100;200;300;400;500;600;700;800;900&amp;display=swap">
+        <script>
+            (function() {
+                const OriginalIntersectionObserver = window.IntersectionObserver;
+                if (!OriginalIntersectionObserver) return;
+                window.IntersectionObserver = function(callback, options) {
+                    const observer = new OriginalIntersectionObserver(function(entries, obs) {
+                        // Force all entries to appear as intersecting
+                        const modifiedEntries = entries.map(entry => ({
+                            target: entry.target,
+                            isIntersecting: true,
+                            intersectionRatio: 1,
+                            boundingClientRect: entry.boundingClientRect,
+                            intersectionRect: entry.intersectionRect,
+                            rootBounds: entry.rootBounds,
+                            time: entry.time,
+                        }));
+                        callback(modifiedEntries, obs);
+                    }, options);
+
+                    // Also immediately trigger for any observed element
+                    const originalObserve = observer.observe.bind(observer);
+                    observer.observe = function(target) {
+                        originalObserve(target);
+                        // Trigger callback immediately with the element as intersecting
+                        setTimeout(() => {
+                            callback([{
+                                target: target,
+                                isIntersecting: true,
+                                intersectionRatio: 1,
+                                boundingClientRect: target.getBoundingClientRect(),
+                                intersectionRect: target.getBoundingClientRect(),
+                                rootBounds: null,
+                                time: performance.now(),
+                            }], observer);
+                        }, 0);
+                    };
+
+                    return observer;
+                };
+                window.IntersectionObserver.prototype = OriginalIntersectionObserver.prototype;
+            })();
+        </script>
+       
+        <script>
+            (function() {
+                // console.log("[Iframe] Script injected and running");
+                document.addEventListener('error', function(e) {
+                    // console.log("[Iframe] Error event captured:", e);
+                    if (e.target && e.target.tagName) {
+                         // console.log("[Iframe] Target tag:", e.target.tagName);
                     }
-                }
+                    
+                    if (e.target && e.target.tagName.toLowerCase() === 'img') {
+                        // console.log("[Iframe] Image error detected:", e.target.src);
+                        const img = e.target;
+                        const alt = img.alt;
+                        if (alt && !img.dataset.retried) {
+                            // console.log("[Iframe] Posting IMAGE_ERROR for:", alt);
+                            img.dataset.retried = 'true';
+                            window.parent.postMessage({
+                                type: 'IMAGE_ERROR',
+                                alt: alt,
+                                src: img.src
+                            }, '*');
+                        } else {
+                            // console.log("[Iframe] Skipping IMAGE_ERROR (no alt or already retried):", { alt, retried: img.dataset.retried });
+                        }
+                    }
+                }, true);
+
+                window.addEventListener('message', function(e) {
+                    if (e.data?.type === 'IMAGE_REPLACED' && e.data?.newSrc) {
+                        // console.log("[Iframe] Received IMAGE_REPLACED:", e.data);
+                        const images = document.getElementsByTagName('img');
+                        for (let img of images) {
+                            if (img.src === e.data.originalSrc || (img.dataset.retried === 'true' && !img.complete)) {
+                                img.src = e.data.newSrc;
+                            }
+                        }
+                    }
+                });
+            })();
+        </script>
+       
+        <script>
+            (function() {
+                window.__image_debug_v1 = true;
+                if (window.__tailwind_warn_suppressed) return;
+                window.__tailwind_warn_suppressed = true;
+                const originalWarn = console.warn;
+                console.warn = (...args) => {
+                    if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script>
+            (function() {
+                 // Removed Link Editing Interception
+            })();
+        </script>
+        <style>
+            .h-screen { min-height: 800px !important; height: auto !important; }
+            .min-h-screen { min-height: 800px !important; }
+            
+            html, body {
+                min-height: 800px !important;
+                width: 100% !important;
+                overflow: auto !important;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
             }
-        }
-    </script>
+            ::-webkit-scrollbar {
+                display: none;
+            }
+            .editor-link-hover {
+                outline: 2px solid #3b82f6 !important;
+                cursor: pointer !important;
+            }
+            /* Fix h-full in flex containers - use stretch instead of percentage */
+            .flex > .h-full {
+                height: auto !important;
+                align-self: stretch !important;
+                min-height: 0;
+            }
+            /* Fix fixed-positioned full-height sidebars */
+            /* Convert to absolute so height: 100% is relative to document, not viewport */
+            .fixed.h-full,
+            nav.fixed.h-full,
+            aside.fixed.h-full {
+                position: absolute !important;
+            }
+            /* Force visibility on scroll-animation hidden elements */
+            /* These override common patterns used by AOS, ScrollReveal, GSAP, and custom animations */
+            [style*="opacity: 0"],
+            [style*="opacity:0"] {
+                opacity: 1 !important;
+            }
+            [style*="clip-path: inset"],
+            [style*="clip-path:inset"] {
+                clip-path: none !important;
+            }
+            [style*="visibility: hidden"],
+            [style*="visibility:hidden"] {
+                visibility: visible !important;
+            }
+            /* AOS library data attributes */
+            [data-aos] {
+                opacity: 1 !important;
+                transform: none !important;
+                visibility: visible !important;
+            }
+            /* Common animation class patterns */
+            [class*="aos-"],
+            [class*="scroll-"],
+            [class*="reveal"],
+            [class*="fade-"],
+            [class*="slide-"] {
+                opacity: 1 !important;
+                transform: none !important;
+                clip-path: none !important;
+                visibility: visible !important;
+            }
+        </style>
+       
     
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WickCoach - Architectural Trading Mastery</title>
+    
+    <!-- Scripts & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/thin/style.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/light/style.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/fill/style.css"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/duotone/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&amp;family=Syncopate:wght@400;700&amp;display=swap" rel="stylesheet">
 
     <style>
+        /* Typography overrides */
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+        .font-inter { font-family: 'Inter', sans-serif; }
+        .font-mono-custom { font-family: 'DM Mono', monospace; }
+
+        /* The Void & Light Engine */
         body {
-            background-color: #131318;
             color: #ffffff;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            overscroll-behavior: none;
         }
 
         /* 
-         * Complex Keyframes for Volatility -> Breathing transition
+         * ARTISTIC CANDLESTICK LANDSCAPE (CSS ART)
+         * Creates the illusion of standing before massive, monolithic data structures.
          */
-        @keyframes chartEntrance {
-            0% { opacity: 0; transform: translateY(40px) scale(0.95); }
-            15% { opacity: 1; transform: translateY(-10px) scale(1.02); }
-            30% { transform: translateY(5px) scale(0.99); }
-            45% { transform: translateY(-2px) scale(1.005); }
-            60% { transform: translateY(1px) scale(0.998); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
+        #monolith-landscape {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            min-height: 800px; height: auto;
+            overflow: hidden;
+            z-index: 0;
+            perspective: 1200px;
+            pointer-events: none;
         }
 
-        @keyframes breatheGlow {
-            0%, 100% { opacity: 0.12; transform: scale(1) translate(-50%, -50%); }
-            50% { opacity: 0.25; transform: scale(1.15) translate(-45%, -45%); }
+        /* The Central "Data Sun" */
+        .ethereal-glow {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90vw;
+            height: 70vw;
+            /* Brighter, mixed ambient light reflecting both bull/bear colors */
+            background: radial-gradient(ellipse at center, rgba(0, 255, 157, 0.25) 0%, rgba(255, 51, 102, 0.1) 40%, transparent 75%);
+            filter: blur(50px);
+            opacity: 1;
+            animation: pulse-glow 8s infinite alternate ease-in-out;
         }
 
-        @keyframes drawLine {
-            from { stroke-dashoffset: 100; }
-            to { stroke-dashoffset: 0; }
+        /* Perspective Grid Floor */
+        .grid-floor {
+            position: absolute;
+            bottom: -20vh;
+            left: -50vw;
+            width: 200vw;
+            height: 640px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+                linear-gradient(to top, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: rotateX(75deg);
+            transform-origin: center top;
+            mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%);
         }
 
-        @keyframes floatLabel {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
+        /* Monolithic Candles */
+        .candle-cluster {
+            position: absolute;
+            bottom: 120px; /* Sit on grid horizon */
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 2vw;
+            transform: translateZ(-200px); /* Push into background */
+            z-index: 2;
         }
 
-        @keyframes liveCandleHeight {
-            0%, 100% { height: 15px; y: 60px; }
-            20% { height: 28px; y: 47px; }
-            40% { height: 10px; y: 65px; }
-            80% { height: 18px; y: 57px; }
+        .monolith {
+            position: relative;
+            width: 4vw;
+            max-width: 60px;
+            min-width: 20px;
+            /* Lighter base gradient for visibility */
+            background: linear-gradient(to top, rgba(25, 25, 30, 0.9) 0%, rgba(45, 45, 55, 0.95) 100%);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-bottom: none;
+            transition: all 2s ease;
         }
 
-        @keyframes liveCandleWick {
-            0%, 100% { y1: 45px; }
-            20% { y1: 30px; }
-            40% { y1: 45px; }
-            80% { y1: 35px; }
+        .monolith::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 150%;
+            /* Brighter wicks */
+            background: linear-gradient(to top, rgba(255,255,255,0.6), transparent);
+            z-index: -1;
         }
 
-        /* Utility Classes for Animations */
-        .animate-chart-entrance {
-            animation: chartEntrance 1.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        /* Mint (Bullish) Monoliths - High Visibility */
+        .monolith.bull {
+            border-top: 3px solid #00ff9d;
+            border-left: 1px solid rgba(0, 255, 157, 0.4);
+            border-right: 1px solid rgba(0, 255, 157, 0.4);
+            background: linear-gradient(to top, rgba(0, 255, 157, 0.05) 0%, rgba(0, 255, 157, 0.25) 100%);
+            box-shadow: 0 -15px 40px rgba(0, 255, 157, 0.35), inset 0px 10px 30px rgba(0, 255, 157, 0.2);
         }
         
-        .animate-breathe-glow {
-            animation: breatheGlow 8s ease-in-out infinite alternate;
+        /* Crimson (Bearish) Monoliths - High Visibility */
+        .monolith.bear {
+            border-top: 3px solid #ff3366;
+            border-left: 1px solid rgba(255, 51, 102, 0.4);
+            border-right: 1px solid rgba(255, 51, 102, 0.4);
+            background: linear-gradient(to top, rgba(255, 51, 102, 0.05) 0%, rgba(255, 51, 102, 0.25) 100%);
+            box-shadow: 0 -15px 40px rgba(255, 51, 102, 0.35), inset 0px 10px 30px rgba(255, 51, 102, 0.2);
         }
 
-        .animate-draw-line {
-            stroke-dasharray: 100;
-            stroke-dashoffset: 100;
-            animation: drawLine 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-            animation-delay: 1.2s; /* Start after entrance settles */
+        /* Foreground silhouette setup */
+        .silhouette-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            opacity: 1;
+            filter: drop-shadow(0px 0px 15px rgba(0,0,0,0.8));
         }
 
-        .float-label-delay-1 { animation: floatLabel 4s ease-in-out infinite alternate; animation-delay: 0s; }
-        .float-label-delay-2 { animation: floatLabel 4s ease-in-out infinite alternate; animation-delay: 1s; }
-        .float-label-delay-3 { animation: floatLabel 4s ease-in-out infinite alternate; animation-delay: 2s; }
-        .float-label-delay-4 { animation: floatLabel 4s ease-in-out infinite alternate; animation-delay: 3s; }
+        /* Abstract Vignette to blend everything */
+        .vignette-overlay {
+            position: absolute;
+            inset: 0;
+            /* Less aggressive vignette so art stays bright */
+            background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(3, 3, 5, 0.6) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
 
-        .live-rect { animation: liveCandleHeight 4s ease-in-out infinite; }
-        .live-wick { animation: liveCandleWick 4s ease-in-out infinite; }
+        /* UI Overlays & Annotations */
+        .annotation-line {
+            position: absolute;
+            background: rgba(255,255,255,0.2);
+            z-index: 20;
+        }
+        
+        .annotation-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
 
-        /* Custom Scrollbar for absolute edge cases */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #131318; }
-        ::-webkit-scrollbar-thumb { background: #2A2A35; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3A3A48; }
+        /* Animations */
+        @keyframes pulse-glow {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.9; }
+        }
 
-        /* Glow utilities */
-        .text-glow-green { text-shadow: 0 0 20px rgba(0, 229, 153, 0.6); }
-        .box-shadow-green { box-shadow: 0 0 40px rgba(0, 229, 153, 0.2); }
+        @keyframes drift {
+            0% { transform: translateY(0px) scaleY(1); filter: brightness(1); box-shadow: 0 -15px 40px var(--shadow-color, rgba(255,255,255,0.1)); }
+            50% { transform: translateY(-16px) scaleY(1.04); filter: brightness(1.25); box-shadow: 0 -25px 60px var(--shadow-color, rgba(255,255,255,0.2)); }
+            100% { transform: translateY(0px) scaleY(1); filter: brightness(1); box-shadow: 0 -15px 40px var(--shadow-color, rgba(255,255,255,0.1)); }
+        }
+
+        /* Set CSS variables to match shadow specs to dynamic breathing */
+        .monolith.bull { --shadow-color: rgba(0, 255, 157, 0.4); }
+        .monolith.bear { --shadow-color: rgba(255, 51, 102, 0.4); }
+
+        .nav-glass {
+            background: rgba(3, 3, 5, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
     </style>
-</head>
-<body class="flex items-center justify-center min-h-screen">
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0px}.-bottom-2{bottom:-0.5rem}.bottom-0{bottom:0px}.bottom-8{bottom:2rem}.left-0{left:0px}.left-1\/2{left:50%}.left-8{left:2rem}.right-0{right:0px}.right-8{right:2rem}.top-0{top:0px}.top-1\/2{top:50%}.top-8{top:2rem}.z-0{z-index:0}.z-10{z-index:10}.z-20{z-index:20}.z-30{z-index:30}.z-50{z-index:50}.m-0{margin:0px}.mx-auto{margin-left:auto;margin-right:auto}.-mt-3{margin-top:-0.75rem}.mb-1{margin-bottom:0.25rem}.mb-12{margin-bottom:3rem}.mb-8{margin-bottom:2rem}.ml-4{margin-left:1rem}.mr-4{margin-right:1rem}.mt-1{margin-top:0.25rem}.mt-12{margin-top:3rem}.mt-2{margin-top:0.5rem}.block{display:block}.flex{display:flex}.hidden{display:none}.h-1\.5{height:0.375rem}.h-2{height:0.5rem}.h-20{height:5rem}.h-4{height:1rem}.h-\[160px\]{height:160px}.h-\[1px\]{height:1px}.h-\[200px\]{height:200px}.h-\[240px\]{height:240px}.h-\[280px\]{height:280px}.h-\[320px\]{height:320px}.h-\[360px\]{height:360px}.h-\[400px\]{height:400px}.h-\[440px\]{height:440px}.h-\[480px\]{height:480px}.h-\[520px\]{height:520px}.h-\[800px\]{height:800px}.h-auto{height:auto}.h-full{height:100%}.w-1\.5{width:0.375rem}.w-1\/2{width:50%}.w-12{width:3rem}.w-2{width:0.5rem}.w-4{width:1rem}.w-40{width:10rem}.w-48{width:12rem}.w-56{width:14rem}.w-\[1px\]{width:1px}.w-full{width:100%}.max-w-2xl{max-width:42rem}.max-w-\[90\%\]{max-width:90%}.max-w-xl{max-width:36rem}.flex-grow{flex-grow:1}.-translate-x-1\/2{--tw-translate-x:-50%;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-20{--tw-translate-y:-5rem;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.scale-75{--tw-scale-x:.75;--tw-scale-y:.75;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.flex-col{flex-direction:column}.items-start{align-items:flex-start}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.overflow-hidden{overflow:hidden}.scroll-smooth{scroll-behavior:smooth}.rounded-sm{border-radius:0.125rem}.rounded-r{border-top-right-radius:0.25rem;border-bottom-right-radius:0.25rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-l{border-left-width:1px}.border-r{border-right-width:1px}.border-t{border-top-width:1px}.border-white\/10{border-color:rgb(255 255 255 / 0.1)}.border-white\/20{border-color:rgb(255 255 255 / 0.2)}.border-white\/30{border-color:rgb(255 255 255 / 0.3)}.border-white\/50{border-color:rgb(255 255 255 / 0.5)}.bg-\[\#00ff9d\]{--tw-bg-opacity:1;background-color:rgb(0 255 157 / var(--tw-bg-opacity, 1))}.bg-\[\#030305\]{--tw-bg-opacity:1;background-color:rgb(3 3 5 / var(--tw-bg-opacity, 1))}.bg-black\/20{background-color:rgb(0 0 0 / 0.2)}.bg-black\/40{background-color:rgb(0 0 0 / 0.4)}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/10{background-color:rgb(255 255 255 / 0.1)}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.bg-gradient-to-tr{background-image:linear-gradient(to top right, var(--tw-gradient-stops))}.from-\[\#00ff9d\]\/5{--tw-gradient-from:rgb(0 255 157 / 0.05) var(--tw-gradient-from-position);--tw-gradient-to:rgb(0 255 157 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.from-white{--tw-gradient-from:#fff var(--tw-gradient-from-position);--tw-gradient-to:rgb(255 255 255 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.via-gray-300{--tw-gradient-to:rgb(209 213 219 / 0)  var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), #d1d5db var(--tw-gradient-via-position), var(--tw-gradient-to)}.to-gray-600{--tw-gradient-to:#4b5563 var(--tw-gradient-to-position)}.to-transparent{--tw-gradient-to:transparent var(--tw-gradient-to-position)}.bg-clip-text{-webkit-background-clip:text;background-clip:text}.p-0{padding:0px}.p-1\.5{padding:0.375rem}.p-5{padding:1.25rem}.p-8{padding:2rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.px-8{padding-left:2rem;padding-right:2rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-12{padding-bottom:3rem}.pb-20{padding-bottom:5rem}.pb-4{padding-bottom:1rem}.pt-32{padding-top:8rem}.text-left{text-align:left}.text-right{text-align:right}.text-2xl{font-size:1.5rem;line-height:2rem}.text-5xl{font-size:3rem;line-height:1}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[9px\]{font-size:9px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-light{font-weight:300}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-\[1\.05\]{line-height:1.05}.leading-relaxed{line-height:1.625}.tracking-\[0\.2em\]{letter-spacing:0.2em}.tracking-\[0\.3em\]{letter-spacing:0.3em}.tracking-tight{letter-spacing:-0.025em}.tracking-wider{letter-spacing:0.05em}.tracking-widest{letter-spacing:0.1em}.text-\[\#00ff9d\]{--tw-text-opacity:1;color:rgb(0 255 157 / var(--tw-text-opacity, 1))}.text-\[\#555\]{--tw-text-opacity:1;color:rgb(85 85 85 / var(--tw-text-opacity, 1))}.text-\[\#ff3366\]{--tw-text-opacity:1;color:rgb(255 51 102 / var(--tw-text-opacity, 1))}.text-black{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.text-transparent{color:transparent}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.opacity-100{opacity:1}.opacity-40{opacity:0.4}.opacity-60{opacity:0.6}.opacity-80{opacity:0.8}.blur-\[2px\]{--tw-blur:blur(2px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.drop-shadow-2xl{--tw-drop-shadow:drop-shadow(0 25px 25px rgb(0 0 0 / 0.15));filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.grayscale{--tw-grayscale:grayscale(100%);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-colors{transition-property:color, background-color, border-color, fill, stroke, -webkit-text-decoration-color;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, -webkit-text-decoration-color;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-300{transition-duration:300ms}.selection\:bg-\[\#00ff9d\] *::selection{--tw-bg-opacity:1;background-color:rgb(0 255 157 / var(--tw-bg-opacity, 1))}.selection\:text-black *::selection{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.selection\:bg-\[\#00ff9d\]::selection{--tw-bg-opacity:1;background-color:rgb(0 255 157 / var(--tw-bg-opacity, 1))}.selection\:text-black::selection{--tw-text-opacity:1;color:rgb(0 0 0 / var(--tw-text-opacity, 1))}.hover\:-translate-y-1:hover{--tw-translate-y:-0.25rem;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.hover\:bg-\[\#00ff9d\]:hover{--tw-bg-opacity:1;background-color:rgb(0 255 157 / var(--tw-bg-opacity, 1))}.hover\:bg-gray-200:hover{--tw-bg-opacity:1;background-color:rgb(229 231 235 / var(--tw-bg-opacity, 1))}.hover\:bg-white\/5:hover{background-color:rgb(255 255 255 / 0.05)}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.group:hover .group-hover\:text-\[\#00ff9d\]{--tw-text-opacity:1;color:rgb(0 255 157 / var(--tw-text-opacity, 1))}@media (min-width: 640px){.sm\:w-auto{width:auto}.sm\:flex-row{flex-direction:row}}@media (min-width: 768px){.md\:mt-16{margin-top:4rem}.md\:flex{display:flex}.md\:w-auto{width:auto}.md\:flex-row{flex-direction:row}.md\:text-6xl{font-size:3.75rem;line-height:1}.md\:text-xl{font-size:1.25rem;line-height:1.75rem}}@media (min-width: 1024px){.lg\:px-\[8\%\]{padding-left:8%;padding-right:8%}.lg\:text-\[5rem\]{font-size:5rem}}@media (min-width: 1280px){.xl\:block{display:block}.xl\:flex{display:flex}.xl\:px-\[10\%\]{padding-left:10%;padding-right:10%}}</style></head>
+<body class="antialiased selection:bg-[#00ff9d] selection:text-black min-min-h-[800px] h-auto flex flex-col relative w-full m-0 p-0" style="margin: 0px; padding: 0px; width: 100%; overflow: hidden;">
 
-    <!-- Hero Wrapper: min-h 70vh, dense layout -->
-    <main class="relative w-full min-h-[70vh] flex items-center overflow-hidden py-20 lg:py-0 border-y border-white/5">
+    <!-- ========================================== -->
+    <!-- BACKGROUND ART ENGINE (THE MACRO-STRUCTURE)-->
+    <!-- ========================================== -->
+    <div id="monolith-landscape">
+        <div class="ethereal-glow"></div>
+        <div class="grid-floor"></div>
         
-        <!-- Faint Background Grid overlay for institutional feel -->
-        <div class="absolute inset-0 pointer-events-none opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0wIDBoNDB2NDBIMHoiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTTAgNDBMMDAgMCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEiLz4KPHBhdGggZD0iTTQwIDBMNCAwIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=')]"></div>
+        <!-- The architectural candlestick clusters - Background -->
+        <div class="candle-cluster filter blur-[2px] opacity-60 transform scale-75 -translate-y-20">
+            <!-- Background layer (out of focus but visible) -->
+            <div class="monolith bull h-[320px]"></div>
+            <div class="monolith bear h-[200px]"></div>
+            <div class="monolith bull h-[440px]"></div>
+            <div class="monolith bull h-[240px]"></div>
+            <div class="monolith bear h-[480px]"></div>
+        </div>
 
-        <div class="max-w-[1440px] w-full mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center relative z-10">
+        <!-- The architectural candlestick clusters - Foreground -->
+        <div class="candle-cluster z-10 opacity-100 drop-shadow-2xl">
+            <!-- Midground layer (Sharp, bright, highly visible) -->
+            <div class="monolith bull h-[160px]" style="animation: drift 8s infinite ease-in-out;"></div>
+            <div class="monolith bear h-[280px]" style="animation: drift 9s infinite ease-in-out reverse;"></div>
+            <div class="monolith bull h-[520px]" style="animation: drift 7s infinite ease-in-out;"></div>
+            <div class="monolith bull h-[360px]" style="animation: drift 10s infinite ease-in-out reverse;"></div>
+            <div class="monolith bear h-[200px]" style="animation: drift 6s infinite ease-in-out;"></div>
+            <div class="monolith bull h-[400px]" style="animation: drift 8.5s infinite ease-in-out reverse;"></div>
+        </div>
+    </div>
+
+    <!-- Vignette to merge 3D art with UI -->
+    <div class="vignette-overlay"></div>
+
+
+    <!-- ========================================== -->
+    <!-- OVERLAY UI / ARCHITECTURAL ANNOTATIONS     -->
+    <!-- ========================================== -->
+    <!-- Top Left Crosshair -->
+    <div class="absolute top-8 left-8 w-4 h-4 z-20 pointer-events-none opacity-40">
+        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-white"></div>
+        <div class="absolute left-1/2 top-0 h-full w-[1px] bg-white"></div>
+    </div>
+    <!-- Bottom Right Crosshair -->
+    <div class="absolute bottom-8 right-8 w-4 h-4 z-20 pointer-events-none opacity-40">
+        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-white"></div>
+        <div class="absolute left-1/2 top-0 h-full w-[1px] bg-white"></div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ARCHITECTURAL SCHEMATICS / DATA POINTERS   -->
+    <!-- ========================================== -->
+    <div class="absolute inset-0 z-30 pointer-events-none hidden xl:block">
+        
+        <!-- Interactive Data Traces (SVG mapping lines) -->
+        <svg class="absolute inset-0 w-full h-[800px]" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="bull-trace" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00ff9d" stop-opacity="0.8"></stop>
+                    <stop offset="100%" stop-color="#00ff9d" stop-opacity="0.0"></stop>
+                </linearGradient>
+                <linearGradient id="bear-trace" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ff3366" stop-opacity="0.8"></stop>
+                    <stop offset="100%" stop-color="#ff3366" stop-opacity="0.0"></stop>
+                </linearGradient>
+                <linearGradient id="neutral-trace-right" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"></stop>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"></stop>
+                </linearGradient>
+                <linearGradient id="neutral-trace-left" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"></stop>
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"></stop>
+                </linearGradient>
+            </defs>
+
+            <!-- Trace 1: Top Right to Bear Monolith -->
+            <circle cx="75%" cy="32%" r="2.5" fill="#ff3366" filter="drop-shadow(0 0 8px #ff3366)"></circle>
+            <line x1="75%" y1="32%" x2="55%" y2="52%" stroke="url(#bear-trace)" stroke-width="1.5" stroke-dasharray="2 3"></line>
+
+            <!-- Trace 2: Mid Right to Bull Monolith -->
+            <circle cx="82%" cy="62%" r="2.5" fill="#00ff9d" filter="drop-shadow(0 0 8px #00ff9d)"></circle>
+            <line x1="82%" y1="62%" x2="62%" y2="70%" stroke="url(#neutral-trace-right)" stroke-width="1" stroke-dasharray="1 4"></line>
+
+            <!-- Trace 3: Bottom Left to Background Array -->
+            <circle cx="20%" cy="75%" r="2" fill="#ffffff" opacity="0.8"></circle>
+            <line x1="20%" y1="75%" x2="38%" y2="80%" stroke="url(#neutral-trace-left)" stroke-width="1"></line>
             
-            <!-- Left Column: Typography & Action (col-span-5) -->
-            <div class="lg:col-span-5 flex flex-col justify-center z-20">
-                
-                <!-- Logo -->
-                <div class="flex items-center gap-3 mb-10 opacity-0 animate-[fade-in_0.5s_ease-out_forwards]">
-                    <!-- Custom SVG Stick Figure Logo -->
-                    <div class="relative w-10 h-10 flex items-center justify-center bg-surface/50 rounded-lg border border-white/10 backdrop-blur-sm">
-                        <svg viewBox="0 0 40 40" class="w-6 h-6 text-brandGreen overflow-visible">
-                            <!-- Head -->
-                            <circle cx="20" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <!-- Body -->
-                            <line x1="20" y1="15" x2="20" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            <!-- Arms parsing chart -->
-                            <path d="M12 18 L20 20 L28 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <!-- Legs -->
-                            <path d="M14 34 L20 26 L26 34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <!-- Small abstract candle element the figure is looking at -->
-                            <line x1="30" y1="10" x2="30" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="opacity-50"/>
-                            <rect x="29" y="12" width="2" height="6" fill="currentColor"/>
-                        </svg>
-                        <div class="absolute inset-0 rounded-lg box-shadow-green opacity-50"></div>
-                    </div>
-                    <span class="text-2xl font-black tracking-tight text-white flex items-baseline">
-                        WickCoach<span class="text-brandGreen text-3xl leading-none">.</span>
-                    </span>
-                </div>
+            <!-- Trace 4: Far Right to Center cluster -->
+            <circle cx="85%" cy="45%" r="2" fill="#ffffff" opacity="0.7"></circle>
+            <line x1="85%" y1="45%" x2="65%" y2="58%" stroke="url(#neutral-trace-right)" stroke-width="1"></line>
+        </svg>
 
-                <!-- Text Content -->
-                <h1 class="text-5xl lg:text-[56px] font-bold leading-[1.1] tracking-tight text-white mb-6">
-                    Master the Space <br />
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">Between the Wicks.</span>
-                </h1>
-                
-                <p class="text-gray-400 text-lg md:text-xl font-light leading-relaxed max-w-[480px] mb-10">
-                    Institutional-grade trading psychology journaling. Identify your behavioral patterns before they impact your P&L.
-                </p>
+        <!-- Overlaid HTML Labels matched perfectly to SVG trace anchors -->
+        
+        <!-- Label 1 (Red Impulse) -->
+        <div class="absolute w-56 -mt-3 ml-4" style="top: 32%; left: 75%;">
+            <div class="flex items-center gap-3 mb-1">
+                <div class="font-mono-custom text-[10px] tracking-widest text-[#ff3366] uppercase">Impulse Drawdown</div>
+            </div>
+            <p class="text-[10px] text-gray-400 font-inter leading-relaxed bg-black/20 backdrop-blur-sm p-1.5 rounded-r">
+                Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.
+            </p>
+        </div>
 
-                <!-- CTA Engine -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <button class="relative group overflow-hidden bg-brandGreen text-obsidian font-semibold text-lg px-8 py-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(0,229,153,0.3)]">
-                        <span class="relative z-10 flex items-center gap-2">
-                            Start Journaling
-                            <i class="ph-bold ph-arrow-right transition-transform group-hover:translate-x-1"></i>
-                        </span>
-                        <div class="absolute inset-0 h-full w-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    </button>
-                    <div class="flex flex-col">
-                        <span class="font-mono text-xs text-brandGreen font-bold tracking-widest uppercase mb-1">Live Beta</span>
-                        <span class="text-sm text-gray-500 font-medium">Join 12,400+ disciplined traders.</span>
-                    </div>
-                </div>
+        <!-- Label 2 (Green Expectancy) -->
+        <div class="absolute w-56 -mt-3 ml-4" style="top: 62%; left: 82%;">
+            <div class="font-mono-custom text-[10px] tracking-widest text-[#00ff9d] uppercase mb-1">Momentum Ignition</div>
+            <p class="text-[10px] text-gray-400 font-inter leading-relaxed">
+                Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.
+            </p>
+        </div>
 
+        <!-- Label 3 (Left Baseline) -->
+        <div class="absolute w-48 -mt-3 mr-4 text-right" style="top: 75%; right: 80%;">
+            
+            
+        </div>
+
+        <!-- Label 4 (Right Micro-fractal) -->
+        <div class="absolute w-40 -mt-3 ml-4" style="top: 45%; left: 85%;">
+            <div class="font-mono-custom text-[10px] tracking-widest text-white uppercase mb-1">Pattern Extraction</div>
+            <p class="text-[10px] text-gray-500 font-inter leading-relaxed">
+                Micro-fractals isolated perfectly from noise.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HERO CONTENT (EDGE-ALIGNED LAYOUT)         -->
+    <!-- ========================================== -->
+    <main class="flex-grow w-full flex flex-col justify-center relative z-20 px-8 lg:px-[8%] xl:px-[10%] pt-32 pb-20 mt-12 md:mt-16 pointer-events-none">
+        
+        <div class="max-w-2xl flex flex-col items-start text-left relative pointer-events-auto">
+            
+            <!-- Structural Top Border for Text Block -->
+            <div class="flex items-center gap-4 mb-8 opacity-80">
+                <div class="w-12 h-[1px] bg-[#00ff9d]"></div>
+                <div class="font-mono-custom text-[10px] tracking-[0.3em] uppercase text-[#00ff9d]">Engineered For Mastery</div>
             </div>
 
-            <!-- Right Column: Data-Spatial Visualization (col-span-7) -->
-            <div class="lg:col-span-7 relative w-full h-[500px] lg:h-[600px] flex items-center justify-center animate-chart-entrance">
+            <!-- Massive Headline -->
+            <h1 class="font-inter font-semibold text-5xl md:text-6xl lg:text-[5rem] leading-[1.05] tracking-tight text-white mb-8 drop-shadow-2xl">
+                The Trading Journal That
+                <span class="block text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-gray-600 mt-2 pb-4" style="color: rgb(6, 198, 134);">Fixes Your Psychology.</span>
+            </h1>
+
+            <!-- Subheadline -->
+            <p class="font-inter font-light text-lg md:text-xl text-gray-300 max-w-xl mb-12 leading-relaxed">
+                AI-enhanced behavioral and trading pattern recognition. 
+                We analyze the data hidden in your drawdowns to reconstruct your discipline.
+            </p>
+
+            <!-- CTA Row -->
+            <div class="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
+                <!-- Primary Button: Brutalist box style -->
+                <button class="w-full sm:w-auto px-8 py-4 bg-white text-black font-mono-custom text-xs uppercase tracking-[0.2em] font-semibold hover:bg-[#00ff9d] transition-all duration-300 transform hover:-translate-y-1">
+                    Start Journaling
+                </button>
                 
-                <!-- Atmospheric Radial Glow around breakout -->
-                <div class="absolute right-1/4 top-1/2 w-[500px] h-[500px] bg-brandGreen rounded-full blur-[120px] pointer-events-none animate-breathe-glow z-0"></div>
-                <div class="absolute left-1/4 bottom-1/4 w-[300px] h-[300px] bg-brandBlue rounded-full blur-[100px] pointer-events-none opacity-10 z-0"></div>
-
-                <!-- Chart Container (Holds SVG and absolute overlays) -->
-                <div class="relative w-full h-full max-w-[850px] max-h-[480px] z-10">
-                    
-                    <!-- Watermark -->
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden select-none z-0">
-                        <h2 class="text-[140px] font-black text-white/5 whitespace-nowrap transform -rotate-12 tracking-tighter">WICKCOACH 1D</h2>
-                    </div>
-
-                    <!-- SVG Chart Layer
-                         ViewBox 0 0 850 480 provides perfect coordinate space mapping -->
-                    <svg viewBox="0 0 850 480" class="w-full h-full overflow-visible absolute inset-0 z-10 filter drop-shadow-2xl">
-                        <defs>
-                            <!-- Linear gradient for breakout volume -->
-                            <linearGradient id="volumeRamp" x1="0" y1="1" x2="0" y2="0">
-                                <stop offset="0%" stop-color="#00E599" stop-opacity="0" />
-                                <stop offset="100%" stop-color="#00E599" stop-opacity="0.2" />
-                            </linearGradient>
-                            
-                            <!-- Filter for glowing dots -->
-                            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                <feGaussianBlur stdDeviation="3" result="blur" />
-                                <feMerge>
-                                    <feMergeNode in="blur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
-                            </filter>
-                        </defs>
-
-                        <!-- Faint Y-Axis Grid Lines -->
-                        <path d="M 0 100 L 850 100 M 0 200 L 850 200 M 0 300 L 850 300 M 0 400 L 850 400" stroke="#ffffff" stroke-opacity="0.04" stroke-width="1" stroke-dasharray="4 4" fill="none" />
-                        <path d="M 200 0 L 200 480 M 400 0 L 400 480 M 600 0 L 600 480" stroke="#ffffff" stroke-opacity="0.02" stroke-width="1" fill="none" />
-
-                        <!-- Volume Baseline (Decorative) -->
-                        <path d="M 400 450 L 430 430 L 460 410 L 490 420 L 520 440 L 550 400 L 580 320 L 610 280 L 640 290 L 670 300 L 670 450 Z" fill="url(#volumeRamp)" />
-
-                        <!-- 
-                          CANDLESTICKS (X steps of roughly 25px)
-                          Base structure: <linewick> + <rectbody>
-                        -->
-                        <g class="candles transition-all duration-700 ease-out">
-                            <!-- Accumulation Zone -->
-                            <line x1="65" y1="230" x2="65" y2="270" stroke="#777" stroke-width="2" stroke-linecap="round"/> <rect x="60" y="240" width="10" height="25" fill="#444" rx="2" />
-                            <line x1="90" y1="240" x2="90" y2="265" stroke="#777" stroke-width="2" stroke-linecap="round"/> <rect x="85" y="250" width="10" height="10" fill="#444" rx="2" />
-                            <line x1="115" y1="240" x2="115" y2="280" stroke="#777" stroke-width="2" stroke-linecap="round"/> <rect x="110" y="250" width="10" height="20" fill="#444" rx="2" />
-                            <line x1="140" y1="255" x2="140" y2="285" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/> <rect x="135" y="260" width="10" height="15" fill="#FF3B30" rx="2" />
-                            
-                            <!-- Bottom White Target: Support Check -->
-                            <line x1="165" y1="250" x2="165" y2="300" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" class="opacity-80"/> <rect x="160" y="265" width="10" height="10" fill="#FF3B30" rx="2" class="opacity-80" />
-                            
-                            <line x1="190" y1="240" x2="190" y2="270" stroke="#00E599" stroke-width="2" stroke-linecap="round" class="opacity-60"/> <rect x="185" y="250" width="10" height="15" fill="#00E599" rx="2" class="opacity-60" />
-                            <line x1="215" y1="230" x2="215" y2="270" stroke="#00E599" stroke-width="2" stroke-linecap="round" class="opacity-60"/> <rect x="210" y="245" width="10" height="20" fill="#00E599" rx="2" class="opacity-60" />
-                            <line x1="240" y1="220" x2="240" y2="260" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" class="opacity-80"/> <rect x="235" y="245" width="10" height="5" fill="#FF3B30" rx="2" class="opacity-80" />
-                            <line x1="265" y1="210" x2="265" y2="250" stroke="#00E599" stroke-width="2" stroke-linecap="round"/> <rect x="260" y="230" width="10" height="15" fill="#00E599" rx="2" />
-                            
-                            <!-- Top Red Target: Liquidity Grab -->
-                            <line x1="290" y1="180" x2="290" y2="240" stroke="#00E599" stroke-width="2" stroke-linecap="round"/> <rect x="285" y="210" width="10" height="20" fill="#00E599" rx="2" />
-                            
-                            <line x1="315" y1="200" x2="315" y2="270" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/> <rect x="310" y="230" width="10" height="30" fill="#FF3B30" rx="2" />
-                            <line x1="340" y1="250" x2="340" y2="280" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/> <rect x="335" y="260" width="10" height="15" fill="#FF3B30" rx="2" />
-                            <line x1="365" y1="245" x2="365" y2="270" stroke="#00E599" stroke-width="2" stroke-linecap="round"/> <rect x="360" y="255" width="10" height="10" fill="#00E599" rx="2" />
-                            <line x1="390" y1="230" x2="390" y2="260" stroke="#00E599" stroke-width="2" stroke-linecap="round"/> <rect x="385" y="245" width="10" height="10" fill="#00E599" rx="2" />
-
-                            <!-- Breakout Zone -->
-                            <line x1="415" y1="210" x2="415" y2="250" stroke="#00E599" stroke-width="2" stroke-linecap="round"/> <rect x="410" y="220" width="10" height="25" fill="#00E599" rx="2" />
-                            <line x1="440" y1="160" x2="440" y2="230" stroke="#00E599" stroke-width="3" stroke-linecap="round"/> <rect x="435" y="180" width="10" height="40" fill="#00E599" rx="2" />
-                            <line x1="465" y1="130" x2="465" y2="190" stroke="#00E599" stroke-width="3" stroke-linecap="round"/> <rect x="460" y="140" width="10" height="40" fill="#00E599" rx="2" />
-                            <!-- Slight pull back -->
-                            <line x1="490" y1="140" x2="490" y2="180" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/> <rect x="485" y="150" width="10" height="15" fill="#FF3B30" rx="2" />
-                            <line x1="515" y1="155" x2="515" y2="195" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/> <rect x="510" y="165" width="10" height="20" fill="#FF3B30" rx="2" />
-                            
-                            <!-- Bottom Blue Target: MA Retest -->
-                            <line x1="540" y1="180" x2="540" y2="215" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/> <rect x="535" y="185" width="10" height="15" fill="#FF3B30" rx="2" />
-                            
-                            <!-- Vertical Ignition -->
-                            <line x1="565" y1="110" x2="565" y2="190" stroke="#00E599" stroke-width="3" stroke-linecap="round"/> <rect x="560" y="130" width="10" height="55" fill="#00E599" rx="2" />
-                            <line x1="590" y1="60" x2="590" y2="140" stroke="#00E599" stroke-width="3" stroke-linecap="round"/> <rect x="585" y="80" width="10" height="50" fill="#00E599" rx="2" />
-                            <line x1="615" y1="35" x2="615" y2="90" stroke="#00E599" stroke-width="3" stroke-linecap="round"/> <rect x="610" y="50" width="10" height="30" fill="#00E599" rx="2" />
-                            
-                            <!-- Top Green Target: Volume Expansion / Climax -->
-                            <line x1="640" y1="20" x2="640" y2="60" stroke="#00E599" stroke-width="2" stroke-linecap="round"/> <rect x="635" y="40" width="10" height="10" fill="#00E599" rx="2" />
-                            
-                            <!-- The 'Live' Candle (Breathing Animation) -->
-                            <line x1="665" y1="45" x2="665" y2="85" stroke="#FF3B30" stroke-width="2" stroke-linecap="round" class="live-wick"/> 
-                            <rect x="660" y="60" width="10" height="15" fill="#FF3B30" rx="2" class="live-rect"/>
-                        </g>
-
-                        <!-- Moving Average Line (Blue) -->
-                        <path d="M 40 270 Q 200 270 310 280 T 450 230 C 500 205, 520 205, 540 215 C 580 230, 610 130, 680 90" 
-                              stroke="#00E1FF" stroke-width="3" fill="none" stroke-linecap="round" class="filter drop-shadow-[0_0_8px_rgba(0,225,255,0.6)] opacity-90" />
-
-                        <!-- DOTTED ANNOTATION LINES (Drawn via CSS) -->
-                        <!-- Line 1: Top Red (Liq Grab) -->
-                        <path d="M 290 180 L 250 110 L 220 110" stroke="#FF3B30" stroke-width="2" stroke-dasharray="4" fill="none" class="animate-draw-line opacity-70" />
-                        <!-- Line 2: Bottom White (Support) -->
-                        <path d="M 165 300 L 140 350 L 110 350" stroke="#ffffff" stroke-width="2" stroke-dasharray="4" fill="none" class="animate-draw-line opacity-50" />
-                        <!-- Line 3: Bottom Blue (MA Retest) -->
-                        <path d="M 540 215 L 570 280 L 610 280" stroke="#00E1FF" stroke-width="2" stroke-dasharray="4" fill="none" class="animate-draw-line opacity-80" />
-                        <!-- Line 4: Top Green (Expansion) -->
-                        <path d="M 640 20 L 700 20 L 730 40" stroke="#00E599" stroke-width="2" stroke-dasharray="4" fill="none" class="animate-draw-line opacity-80" />
-
-                        <!-- Connection Dots -->
-                        <circle cx="290" cy="180" r="4" fill="#FF3B30" filter="url(#glow)" />
-                        <circle cx="165" cy="300" r="4" fill="#ffffff" filter="url(#glow)" />
-                        <circle cx="540" cy="215" r="4" fill="#00E1FF" filter="url(#glow)" />
-                        <circle cx="640" cy="20" r="4" fill="#00E599" filter="url(#glow)" />
-
-                        <!-- 
-                          FOREIGN OBJECTS FOR HTML ANNOTATIONS
-                          This guarantees perfect alignment with SVG paths.
-                        -->
-                        
-                        <!-- Top Red Annotation -->
-                        <foreignObject x="40" y="80" width="180" height="60" class="overflow-visible float-label-delay-1">
-                            <div xmlns="http://www.w3.org/1999/xhtml" class="flex flex-col items-end w-full h-full">
-                                <div class="bg-surface/80 backdrop-blur-md border border-[#FF3B30]/30 rounded-md px-3 py-1.5 shadow-[0_4px_20px_rgba(255,59,48,0.15)] flex items-center gap-2">
-                                    <i class="ph-fill ph-target text-[#FF3B30] text-sm"></i>
-                                    <span class="font-mono text-[10px] text-white uppercase tracking-wider font-semibold">Liq Grab</span>
-                                </div>
-                                <span class="text-[#FF3B30] font-mono text-[9px] mt-1 pr-1">R:R -1.2</span>
-                            </div>
-                        </foreignObject>
-
-                        <!-- Bottom White Annotation -->
-                        <foreignObject x="-40" y="330" width="150" height="60" class="overflow-visible float-label-delay-2">
-                            <div xmlns="http://www.w3.org/1999/xhtml" class="flex flex-col items-end w-full h-full">
-                                <div class="bg-surface/80 backdrop-blur-md border border-white/20 rounded-md px-3 py-1.5 shadow-[0_4px_20px_rgba(255,255,255,0.05)] flex items-center gap-2">
-                                    <i class="ph-fill ph-shield-check text-white text-sm"></i>
-                                    <span class="font-mono text-[10px] text-white uppercase tracking-wider font-semibold">Support</span>
-                                </div>
-                            </div>
-                        </foreignObject>
-
-                        <!-- Bottom Blue Annotation -->
-                        <foreignObject x="615" y="260" width="160" height="80" class="overflow-visible float-label-delay-3">
-                            <div xmlns="http://www.w3.org/1999/xhtml" class="flex flex-col items-start w-full h-full">
-                                <div class="bg-[#00E1FF]/10 backdrop-blur-md border border-[#00E1FF]/40 rounded-md px-3 py-1.5 shadow-[0_4px_20px_rgba(0,225,255,0.15)] flex items-center gap-2">
-                                    <i class="ph-bold ph-trend-up text-[#00E1FF] text-sm"></i>
-                                    <span class="font-mono text-[10px] text-[#00E1FF] uppercase tracking-wider font-bold">MA Retest</span>
-                                </div>
-                                <span class="text-white/60 font-mono text-[9px] mt-1 pl-1">High conviction prep</span>
-                            </div>
-                        </foreignObject>
-
-                        <!-- Top Green Annotation -->
-                        <foreignObject x="735" y="30" width="130" height="60" class="overflow-visible float-label-delay-4">
-                            <div xmlns="http://www.w3.org/1999/xhtml" class="flex flex-col items-start w-full h-full">
-                                <div class="bg-[#00E599]/10 backdrop-blur-md border border-[#00E599]/40 rounded-md px-3 py-1.5 shadow-[0_4px_20px_rgba(0,229,153,0.15)] flex items-center gap-2">
-                                    <i class="ph-fill ph-rocket-launch text-[#00E599] text-sm hover:animate-bounce"></i>
-                                    <span class="font-mono text-[10px] text-[#00E599] uppercase tracking-wider font-bold">Expansion</span>
-                                </div>
-                            </div>
-                        </foreignObject>
-
-                    </svg>
-
-                    <!-- Stat Cards Overlay (Bottom Right absolute) -->
-                    <div class="absolute bottom-0 right-0 z-20 flex flex-col gap-3 pb-4 pr-4">
-                        <!-- Stat Card 1 -->
-                        <div class="bg-surface/60 backdrop-blur-xl border border-white/10 rounded-lg p-3 w-[160px] transform transition-transform hover:translate-x-[-4px]">
-                            <p class="text-xs text-gray-400 font-medium mb-1">Win Rate</p>
-                            <div class="flex items-end justify-between">
-                                <span class="font-mono text-xl text-white font-bold">68.4%</span>
-                                <span class="text-[10px] text-brandGreen font-mono font-bold">+2.1%</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Stat Card 2 -->
-                        <div class="bg-surface/60 backdrop-blur-xl border border-white/10 rounded-lg p-3 w-[160px] transform transition-transform hover:translate-x-[-4px] delay-75">
-                            <p class="text-xs text-gray-400 font-medium mb-1">Profit Factor</p>
-                            <div class="flex items-end justify-between">
-                                <span class="font-mono text-xl text-white font-bold">2.4</span>
-                                <i class="ph-fill ph-chart-line-up text-brandBlue text-sm mb-1"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+                <!-- Secondary Button: Hollow wireframe style -->
+                
             </div>
 
         </div>
+
     </main>
 
-</body>
-</html>
+
+    <!-- ========================================== -->
+    <!-- FOREGROUND / ESTABLISHING SCALE            -->
+    <!-- ========================================== -->
+    
+    <!-- The Solitary Figure (SVG silhouette looking at the monoliths) -->
+    <div class="silhouette-container">
+        <!-- Minimalist vector of a person standing -->
+         <svg width="40" height="90" viewBox="0 0 24 54" fill="#050505" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 9C14.2091 9 16 7.20914 16 5C16 2.79086 14.2091 1 12 1C9.79086 1 8 2.79086 8 5C8 7.20914 9.79086 9 12 9Z" fill="#000" stroke="#111" stroke-width="0.5"></path>
+            <path d="M15.5 12C14.5 10.5 13 10 12 10C11 10 9.5 10.5 8.5 12C7 14 6 18 6 22L7 30H10V52C10 52.8 10.4 53 11 53C11.6 53 12 52.8 12 52V35H12.5V52C12.5 52.8 12.9 53 13.5 53C14.1 53 14.5 52.8 14.5 52V30H17.5L18.5 22C18.5 18 17.5 14 15.5 12Z" fill="#000" stroke="#111" stroke-width="0.5"></path>
+        </svg>
+    </div>
+
+    <!-- Bottom Architectural Data/Proof Panel (Meso-Architecture) -->
+    <div class="absolute bottom-0 left-0 w-full p-8 z-30 flex flex-col md:flex-row justify-between items-end pointer-events-none pb-12">
+        
+        <!-- Left: Branding/Trust -->
+        <div class="hidden md:flex flex-col gap-4 font-mono-custom text-[10px] tracking-widest text-[#555]">
+            
+            <div class="flex gap-6 opacity-60 grayscale filter">
+                <!-- Dummy placeholders for broker logos -->
+                
+                
+                
+            </div>
+        </div>
+
+        <!-- Right: Statistical Proof Grid -->
+        <div class="w-full md:w-auto bg-black/40 backdrop-blur-md border border-white/10 p-5 rounded-sm flex gap-8 relative pointer-events-auto overflow-hidden">
+            <!-- Subtle glow inside the stat box -->
+            <div class="absolute inset-0 bg-gradient-to-tr from-[#00ff9d]/5 to-transparent z-0"></div>
+            
+            <div class="relative z-10 flex flex-col">
+                <span class="font-inter font-medium text-2xl text-white">+42%</span>
+                <span class="font-mono-custom text-[9px] uppercase tracking-wider text-gray-500 mt-1">Avg. Expectancy<br>Increase</span>
+            </div>
+            
+            <div class="w-[1px] bg-white/10 relative z-10"></div>
+            
+            <div class="relative z-10 flex flex-col">
+                <span class="font-inter font-medium text-2xl text-white">1.2M+</span>
+                <span class="font-mono-custom text-[9px] uppercase tracking-wider text-gray-500 mt-1">Executions<br>Analyzed</span>
+            </div>
+
+            <div class="w-[1px] bg-white/10 relative z-10"></div>
+
+            <div class="relative z-10 flex flex-col">
+                <span class="font-inter font-medium text-2xl text-white">-68%</span>
+                <span class="font-mono-custom text-[9px] uppercase tracking-wider text-[#ff3366] mt-1">Reduction in<br>Revenge Trades</span>
+            </div>
+            
+            <!-- Decorative framing -->
+            <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/30 z-10"></div>
+            <div class="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/30 z-10"></div>
+        </div>
+
+    </div>
+
+
+
+</body></html>
