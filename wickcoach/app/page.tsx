@@ -125,7 +125,7 @@ export default function WickCoachFull() {
       {/* ═══ APP VIEW ═══ */}
       {view === 'app' && (<>
         <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} />
-        <div style={{ background: '#1a1c23', minHeight: 'calc(100vh - 140px)' }}>
+        <div style={{ background: 'transparent', minHeight: 'calc(100vh - 140px)' }}>
           {activeTab === 'Log a Trade' && (
             <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
               <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} />
@@ -151,39 +151,27 @@ export default function WickCoachFull() {
         <StockChartBackground />
         <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
 
-        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '60px 20px 40px', background: 'linear-gradient(to bottom, #030305 0%, #0d0e12 5%, #131318 15%)' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '60px 20px 40px', background: 'transparent' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
             <Hero textVisible={textVisible} />
+            {/* Spacer between hero and carousel (Fix 6) */}
+            <div style={{ height: 80, background: 'linear-gradient(to bottom, #030305, #030305)', pointerEvents: 'none' }} />
             <CarouselNav activeCategory={activeCategory} onCategoryClick={setActiveCategory} textVisible={textVisible} />
 
-            {/* iMac frame */}
-            <div style={{ maxWidth: 1060, margin: '0 auto', padding: '0 20px' }}>
-              <div style={{ background: 'linear-gradient(180deg, #38393f 0%, #2c2d33 4%, #232428 100%)', borderRadius: '18px 18px 2px 2px', padding: '10px 10px 28px 10px', position: 'relative', boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0,0,0,0.3), inset 0 0 10px rgba(0,0,0,0.5)' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#0e0f14', border: '1px solid #3a3b45', margin: '2px auto 6px' }} />
-                <div style={{ background: '#000000', borderRadius: 6, padding: 5, position: 'relative', border: '1px solid #3a3b45' }}>
-                  <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: '#0e0f14', borderRadius: 4, overflowX: 'hidden', overflowY: 'auto', height: 520, padding: 32 }}>
-                    {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
-                    {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
-                    {activeCategory === 2 && <CarouselPastTrades onAdvance={() => setActiveCategory(0)} />}
-                    {activeCategory === 3 && <CarouselAnalysis />}
-                    {activeCategory === 4 && <CarouselTraderProfile />}
-                    {activeCategory === 5 && <MockPositionSizer />}
-                    {activeCategory === 6 && <MockGrowthSimulator />}
-                    {activeCategory === 7 && <MockTradeTimeline />}
-                  </div>
-                </div>
-                <div style={{ height: 6 }} />
+            {/* Simple bordered carousel card (was iMac bezel) */}
+            <div style={{ maxWidth: 1200, width: '90%', margin: '0 auto' }}>
+              <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minHeight: 500, padding: 32 }}>
+                {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
+                {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
+                {activeCategory === 2 && <CarouselPastTrades onAdvance={() => setActiveCategory(0)} />}
+                {activeCategory === 3 && <CarouselAnalysis />}
+                {activeCategory === 4 && <CarouselTraderProfile />}
+                {activeCategory === 5 && <MockPositionSizer />}
+                {activeCategory === 6 && <MockGrowthSimulator />}
+                {activeCategory === 7 && <MockTradeTimeline />}
               </div>
-              <div style={{ width: 100, height: 50, margin: '0 auto', background: 'linear-gradient(180deg, #222328 0%, #1a1b20 40%, #28292f 100%)', clipPath: 'polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)', position: 'relative' }}>
-                <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-              </div>
-              <div style={{ width: 180, height: 10, margin: '0 auto', background: 'linear-gradient(180deg, #28292f 0%, #1c1d22 100%)', borderRadius: '0 0 50% 50% / 0 0 100% 100%', boxShadow: '0 2px 10px rgba(0,0,0,0.4)', position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '10%', right: '10%', top: 0, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-              </div>
-              <div style={{ width: '50%', height: 20, margin: '4px auto 0', background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%)', pointerEvents: 'none' }} />
-              <div style={{ width: '40%', height: 30, margin: '-15px auto 0', background: 'radial-gradient(ellipse, rgba(0,212,160,0.04) 0%, transparent 70%)', filter: 'blur(8px)', pointerEvents: 'none' }} />
             </div>
 
             <div style={{ textAlign: 'center', marginTop: 48 }}>
@@ -214,7 +202,7 @@ export default function WickCoachFull() {
           <h2 style={{ fontSize: 36, fontWeight: 700, fontFamily: fd, marginBottom: 12, color: "#e8e8f0", textAlign: "center" }}>Choose your plan.</h2>
           <p style={{ fontSize: 15, color: "#6a6d78", fontFamily: fm, textAlign: "center", marginBottom: 50 }}>One-time payment with software updates included.</p>
           <div style={{ display: "flex", gap: 20 }}>
-            <div className="price-card" style={{ flex: 1, background: "#13141a", border: "1px solid #1e1e28", borderRadius: 14, padding: 32, textAlign: "center" }}>
+            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: 32, minHeight: 500, textAlign: "center" }}>
               <div style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>ESSENTIAL</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$55</div>
               <div style={{ fontSize: 14, color: "#6a6d78", marginBottom: 24, fontFamily: fm }}>one-time</div>
@@ -224,7 +212,7 @@ export default function WickCoachFull() {
               <div style={{ fontSize: 12, color: "#5a5d68", fontFamily: fm, marginBottom: 16 }}>No AI coach included</div>
               <div style={{ background: "rgba(0,212,160,0.1)", color: teal, padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, border: "1px solid rgba(0,212,160,0.2)" }}>Get Essential</div>
             </div>
-            <div className="price-card" style={{ flex: 1, background: "#13141a", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 14, padding: 32, textAlign: "center", position: "relative" }}>
+            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 14, padding: 32, minHeight: 500, textAlign: "center", position: "relative" }}>
               <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: teal, color: "#0a0a0f", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, fontFamily: fm }}>RECOMMENDED</div>
               <div style={{ fontSize: 14, color: teal, fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>COMPLETE</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$99</div>

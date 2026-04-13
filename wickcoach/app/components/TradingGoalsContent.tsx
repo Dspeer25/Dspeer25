@@ -192,7 +192,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   const getProgressPercent = (g: Goal) => Math.min(g.context.length * 20, 100);
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 140px)', fontFamily: fm, background: '#1a1c23' }}>
+    <div style={{ display: 'flex', minHeight: 'calc(100vh - 140px)', fontFamily: fm, background: 'transparent' }}>
       {/* ═══ LEFT SIDEBAR ═══ */}
       <div style={{ width: 220, background: '#0e0f14', borderRight: '1px solid #1e1f2a', padding: '28px 20px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ fontFamily: fm, fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Navigation</div>
