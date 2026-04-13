@@ -209,15 +209,15 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     return `${h}:${m} ${ampm}`;
   };
 
-  const selectBase: React.CSSProperties = { background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 8, padding: '10px 14px', color: '#c9cdd4', fontFamily: fm, fontSize: 14, outline: 'none', cursor: 'pointer', appearance: 'none' as const, WebkitAppearance: 'none' as const };
+  const selectBase: React.CSSProperties = { background: '#0f1318', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 8, padding: '10px 14px', color: '#c9cdd4', fontFamily: fm, fontSize: 14, outline: 'none', cursor: 'pointer', appearance: 'none' as const, WebkitAppearance: 'none' as const };
 
   const pillBtn = (active: boolean): React.CSSProperties => ({
     padding: '8px 16px', borderRadius: 8, fontSize: 14, fontFamily: fm, fontWeight: 600, cursor: 'pointer',
     background: active ? 'rgba(0,212,160,0.1)' : '#0e0f14',
-    borderTop: active ? '1px solid #00d4a0' : '1px solid #2a2b32',
-    borderRight: active ? '1px solid #00d4a0' : '1px solid #2a2b32',
-    borderBottom: active ? '1px solid #00d4a0' : '1px solid #2a2b32',
-    borderLeft: active ? '1px solid #00d4a0' : '1px solid #2a2b32',
+    borderTop: active ? '1px solid #00d4a0' : '1px solid #2A3143',
+    borderRight: active ? '1px solid #00d4a0' : '1px solid #2A3143',
+    borderBottom: active ? '1px solid #00d4a0' : '1px solid #2A3143',
+    borderLeft: active ? '1px solid #00d4a0' : '1px solid #2A3143',
     color: active ? teal : '#6b7280', transition: 'all 0.2s',
   });
 
@@ -322,7 +322,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           </div>
         </div>
         {/* ── STAT CARDS — 5 connected cards ── */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden', background: '#13141a' }}>
+        <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, overflow: 'hidden', background: '#141822' }}>
           {/* Card 1 — TOTAL NET P/L */}
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Net P/L</div>
@@ -470,7 +470,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               })()}
               {/* Hover tooltip */}
               {eqHover && (
-                <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#13141a', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#141822', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
                   <div style={{ color: '#9ca3af' }}>{new Date(eqHover.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                   <div style={{ color: eqHover.value >= 0 ? teal : '#ff4444', fontWeight: 700 }}>{formatDollar(Math.round(eqHover.value))}</div>
                 </div>
@@ -508,7 +508,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             <span onClick={() => removeStrategy(stratFilter)} style={{ color: '#ff4444', fontSize: 12, cursor: 'pointer', fontFamily: fm }}>✕</span>
           )}
           {/* Result pills with colored dots */}
-          <div style={{ display: 'flex', gap: 4, background: '#111218', borderRadius: 8, padding: 3, borderTop: '1px solid #1e1f2a', borderRight: '1px solid #1e1f2a', borderBottom: '1px solid #1e1f2a', borderLeft: '1px solid #1e1f2a' }}>
+          <div style={{ display: 'flex', gap: 4, background: '#141822', borderRadius: 8, padding: 3, borderTop: '1px solid rgba(42,49,67,0.5)', borderRight: '1px solid rgba(42,49,67,0.5)', borderBottom: '1px solid rgba(42,49,67,0.5)', borderLeft: '1px solid rgba(42,49,67,0.5)' }}>
             {([['All', '#6b7280'], ['Wins', teal], ['Losses', '#ff4444'], ['Break Even', '#f59e0b']] as [string, string][]).map(([r, dotColor]) => (
               <span key={r} onClick={() => setResultFilter(r)} style={{ ...pillBtn(resultFilter === r), display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
@@ -518,7 +518,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           </div>
           {/* Sort reset */}
           {sortBy !== 'date-desc' && (
-            <span onClick={() => setSortBy('date-desc')} title="Reset sort to default" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, cursor: 'pointer', background: '#0e0f14', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', marginLeft: 4 }}>
+            <span onClick={() => setSortBy('date-desc')} title="Reset sort to default" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, cursor: 'pointer', background: '#0f1318', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', marginLeft: 4 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>
             </span>
           )}
@@ -535,15 +535,15 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
         </div>
 
         {/* ── TRADE LIST ── */}
-        <div style={{ background: '#111218', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
+        <div style={{ background: '#141822', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 40px rgba(0,212,160,0.03)' }}>
           {/* Header row */}
-          <div style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: '#0e0f14', borderBottom: '2px solid #2a2b32' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: '#0f1318', borderBottom: '2px solid #2A3143' }}>
             {colHeaders.map((h, hi) => {
               const sortField = sortableMap[h];
               const isActive = sortField && sortBy.startsWith(sortField + '-');
               const isAsc = sortBy === sortField + '-asc';
               return (
-                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.35)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid #1e1f2a' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
+                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.35)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid rgba(42,49,67,0.5)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
                   {h}
                   {sortField && (
                     <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0, fontSize: 11, marginLeft: 2 }}>
@@ -567,30 +567,30 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               const isBigWin = t.pl > 1000;
               const rowBg = isBigWin ? 'rgba(0,212,160,0.03)' : (idx % 2 === 0 ? '#111218' : '#151620');
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2a2b32', borderLeft: isBigWin ? '2px solid #00d4a0' : '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = isBigWin ? 'rgba(0,212,160,0.06)' : '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2A3143', borderLeft: isBigWin ? '2px solid #00d4a0' : '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 14, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = isBigWin ? 'rgba(0,212,160,0.06)' : '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
                   {/* Asset */}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid #1e1f2a', whiteSpace: 'nowrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', whiteSpace: 'nowrap' }}>
                     <TickerTile ticker={t.ticker} />
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 13 }}>{t.ticker}</span>
                   </span>
                   {/* Date */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
                   {/* Time */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
                   {/* Direction */}
-                  <span style={{ padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontFamily: fm, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(255,68,68,0.1)', border: t.direction === 'LONG' ? '1px solid rgba(0,212,160,0.15)' : '1px solid rgba(255,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ff4444' }}>{t.direction}</span>
                   </span>
                   {/* Qty */}
-                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
+                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
                   {/* Entry / Exit */}
-                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
                   {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 15, padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 15, padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
-                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid #1e1f2a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
+                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Notes */}
                   <div style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                 </div>
@@ -655,7 +655,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
 
         {/* Notes tooltip */}
         {notesTooltip && (
-          <div style={{ position: 'fixed', left: Math.min(notesTooltip.x, window.innerWidth - 380), top: notesTooltip.y - 10, transform: 'translateY(-100%)', background: '#13141a', borderTop: '1px solid #2a2b32', borderRight: '1px solid #2a2b32', borderBottom: '1px solid #2a2b32', borderLeft: '1px solid #2a2b32', borderRadius: 8, padding: 12, maxWidth: 350, fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6, zIndex: 50, whiteSpace: 'normal', pointerEvents: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+          <div style={{ position: 'fixed', left: Math.min(notesTooltip.x, window.innerWidth - 380), top: notesTooltip.y - 10, transform: 'translateY(-100%)', background: '#141822', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 8, padding: 12, maxWidth: 350, fontFamily: fm, fontSize: 13, color: '#c9cdd4', lineHeight: 1.6, zIndex: 50, whiteSpace: 'normal', pointerEvents: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
             {notesTooltip.text}
           </div>
         )}

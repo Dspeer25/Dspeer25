@@ -106,7 +106,7 @@ export default function WickCoachFull() {
   ];
 
   return (
-    <div style={{ background: "#0a0b10", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
+    <div style={{ background: "#0A0D14", backgroundImage: "radial-gradient(circle at 50% 0%, #141822 0%, #0A0D14 40%)", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm }}>
       <SplashScreen />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Chakra+Petch:wght@400;500;600;700&display=swap');
@@ -151,24 +151,24 @@ export default function WickCoachFull() {
         <StockChartBackground />
         <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
 
-        {/* Hero — zero gap to carousel (Fix 5) */}
+        {/* Hero — zero gap to carousel */}
         <Hero textVisible={textVisible} />
 
-        <section style={{ position: 'relative', overflow: 'hidden', marginTop: 0, padding: '40px 20px 60px', background: '#0e1015' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', marginTop: 0, padding: '32px 20px 60px', background: 'transparent' }}>
           <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: -300, left: -200, width: 700, height: 700, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.05) 0%, rgba(59,130,246,0.03) 50%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'relative' }}>
             <CarouselNav activeCategory={activeCategory} onCategoryClick={setActiveCategory} textVisible={textVisible} />
 
-            {/* iMac monitor frame — visible greys (Fix 4) */}
-            <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
+            {/* iMac monitor frame (Fix 9) */}
+            <div style={{ maxWidth: 1100, width: '90%', margin: '0 auto', position: 'relative' }}>
               {/* Top bezel + camera dot */}
-              <div style={{ background: 'linear-gradient(to bottom, #3a3a40, #2a2a30)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', borderLeft: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ background: 'linear-gradient(to bottom, #2A3143, #1e2330)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #2A3143', borderBottom: 'none' }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#555' }} />
               </div>
               {/* Screen area */}
-              <div style={{ background: '#0d0e12', border: '1px solid rgba(255,255,255,0.1)', borderTop: 'none', overflow: 'hidden' }}>
-                <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', overflowX: 'hidden', overflowY: 'auto', minHeight: 480, padding: 28 }}>
+              <div style={{ background: '#0A0D14', border: '1px solid #2A3143', borderTop: 'none', overflow: 'hidden' }}>
+                <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', overflowX: 'hidden', overflowY: 'auto', minHeight: 520, padding: 32 }}>
                   {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
                   {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
                   {activeCategory === 2 && <CarouselPastTrades onAdvance={() => setActiveCategory(0)} />}
@@ -181,8 +181,8 @@ export default function WickCoachFull() {
               </div>
               {/* Stand */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: 60, height: 40, background: 'linear-gradient(to bottom, #2a2a30, #222226)', borderLeft: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.08)' }} />
-                <div style={{ width: 120, height: 8, background: '#252528', borderRadius: '0 0 4px 4px', border: '1px solid rgba(255,255,255,0.08)', borderTop: 'none' }} />
+                <div style={{ width: 60, height: 40, background: '#1e2330', border: '1px solid #2A3143', borderTop: 'none' }} />
+                <div style={{ width: 120, height: 8, background: '#2A3143', borderRadius: '0 0 4px 4px' }} />
               </div>
             </div>
 
@@ -194,13 +194,13 @@ export default function WickCoachFull() {
         </section>
 
         {/* Privacy + Data Upload */}
-        <section style={{ background: "#121318" }}>
+        <section style={{ background: "transparent" }}>
           <div style={{ padding: "100px 48px", maxWidth: 700, margin: "0 auto", textAlign: "center" }}>
             <h2 style={{ fontSize: 34, fontWeight: 700, fontFamily: fd, lineHeight: 1.3, marginBottom: 20, color: "#e8e8f0" }}>We never see your data.<br />It&apos;s stored on your own computer.</h2>
             <p style={{ fontSize: 16, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm, maxWidth: 520, margin: "0 auto 40px" }}>Upload your past trading data in any format &mdash; CSVs, broker statements, screenshots. The AI uses it to understand your trading history before you log a single trade.</p>
             <div style={{ display: "flex", gap: 20 }}>
               {privacyCards.map((c, i) => (
-                <div key={i} style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "28px 24px", textAlign: "left" }}>
+                <div key={i} style={{ flex: 1, background: "#141822", border: "1px solid #2A3143", borderRadius: 12, padding: "28px 24px", textAlign: "left" }}>
                   <div style={{ marginBottom: 16 }}>{c.icon}</div>
                   <div style={{ fontSize: 17, fontWeight: 600, color: "#d0d0d8", marginBottom: 10, fontFamily: fd }}>{c.title}</div>
                   <div style={{ fontSize: 15, color: "#9a9da8", lineHeight: 1.7, fontFamily: fm }}>{c.text}</div>
@@ -211,12 +211,12 @@ export default function WickCoachFull() {
         </section>
 
         {/* Pricing */}
-        <section style={{ background: "#0e1015", padding: "100px 48px" }}>
+        <section style={{ background: "transparent", padding: "100px 48px" }}>
           <div style={{ maxWidth: 750, margin: "0 auto" }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, fontFamily: fd, marginBottom: 12, color: "#e8e8f0", textAlign: "center" }}>Choose your plan.</h2>
           <p style={{ fontSize: 15, color: "#6a6d78", fontFamily: fm, textAlign: "center", marginBottom: 50 }}>One-time payment with software updates included.</p>
           <div style={{ display: "flex", gap: 20 }}>
-            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: 36, minHeight: 480, textAlign: "center" }}>
+            <div className="price-card" style={{ flex: 1, background: "#141822", border: "1px solid #2A3143", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center" }}>
               <div style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>ESSENTIAL</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$55</div>
               <div style={{ fontSize: 14, color: "#6a6d78", marginBottom: 24, fontFamily: fm }}>one-time</div>
@@ -226,8 +226,8 @@ export default function WickCoachFull() {
               <div style={{ fontSize: 12, color: "#5a5d68", fontFamily: fm, marginBottom: 16 }}>No AI coach included</div>
               <div style={{ background: "rgba(0,212,160,0.1)", color: teal, padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, border: "1px solid rgba(0,212,160,0.2)" }}>Get Essential</div>
             </div>
-            <div className="price-card" style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 12, padding: 36, minHeight: 480, textAlign: "center", position: "relative" }}>
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: teal, color: "#0a0a0f", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, fontFamily: fm }}>RECOMMENDED</div>
+            <div className="price-card" style={{ flex: 1, background: "#141822", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center", position: "relative" }}>
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: teal, color: "#0A0D14", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, fontFamily: fm }}>RECOMMENDED</div>
               <div style={{ fontSize: 14, color: teal, fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>COMPLETE</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$99</div>
               <div style={{ fontSize: 14, color: "#6a6d78", marginBottom: 24, fontFamily: fm }}>one-time</div>
@@ -241,7 +241,7 @@ export default function WickCoachFull() {
         </section>
 
         {/* FAQ */}
-        <section style={{ background: "#121318", padding: "100px 48px" }}>
+        <section style={{ background: "transparent", padding: "100px 48px" }}>
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
             <h2 style={{ fontSize: 30, fontWeight: 700, fontFamily: fd, marginBottom: 40, color: "#e8e8f0" }}>Frequently Asked Questions</h2>
             {faqs.map((f, i) => (<FAQ key={i} q={f.q} a={f.a} open={openFAQ === i} onClick={() => setOpenFAQ(openFAQ === i ? null : i)} />))}

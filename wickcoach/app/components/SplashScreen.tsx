@@ -6,13 +6,35 @@ export default function SplashScreen() {
   const [fading, setFading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Only show once per session
   useEffect(() => {
-    // Only show once per session
     if (sessionStorage.getItem('wickcoach-splash-seen')) {
       setVisible(false);
-      return;
     }
   }, []);
+
+  // Kick the video, try unmute after play starts, auto-dismiss fallback at 6s
+  useEffect(() => {
+    if (!visible) return;
+
+    const v = videoRef.current;
+    if (v) {
+      // Force play (some browsers need explicit .play() even with autoPlay)
+      const playPromise = v.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise
+          .then(() => {
+            // Try unmuting after play starts
+            try { v.muted = false; } catch { /* ignore */ }
+          })
+          .catch(() => { /* autoplay blocked — video stays muted, still plays */ });
+      }
+    }
+
+    const fallback = setTimeout(() => dismiss(), 6000);
+    return () => clearTimeout(fallback);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   const dismiss = () => {
     setFading(true);
@@ -29,7 +51,7 @@ export default function SplashScreen() {
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        background: '#030305',
+        background: '#0A0D14',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -43,25 +65,28 @@ export default function SplashScreen() {
         ref={videoRef}
         src="/Wick_Video.mp4"
         autoPlay
-        muted={false}
+        muted
         playsInline
+        preload="auto"
         onEnded={dismiss}
         style={{
-          maxWidth: '300px',
-          maxHeight: '300px',
+          width: '300px',
+          height: 'auto',
           objectFit: 'contain',
         }}
       />
-      <div style={{
-        marginTop: '32px',
-        fontFamily: 'Chakra Petch, sans-serif',
-        fontSize: '32px',
-        fontWeight: 700,
-        letterSpacing: '0.2em',
-        color: '#00d4a0',
-        textTransform: 'uppercase',
-        animation: 'fadeInUp 1s ease-out 1.5s both',
-      }}>
+      <div
+        style={{
+          marginTop: '32px',
+          fontFamily: 'Chakra Petch, sans-serif',
+          fontSize: '36px',
+          fontWeight: 700,
+          letterSpacing: '0.2em',
+          color: '#00d4a0',
+          textTransform: 'uppercase',
+          animation: 'fadeInUp 1s ease-out 1.5s both',
+        }}
+      >
         GET STARTED
       </div>
       <style>{`
