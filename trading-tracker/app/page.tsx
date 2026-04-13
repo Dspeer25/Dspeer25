@@ -1224,10 +1224,10 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Long</span>
             </div>
             <div className="p-4 space-y-3">
-              {([["Near",""], ["↓",""], ["Far",""]] as const).map(([loc], i) => (
+              {(["Stronger", "Weaker"] as const).map((loc, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 text-center">
-                    <span className={`text-xs font-semibold ${loc === "↓" ? "text-slate-600" : "text-slate-400"}`}>{loc}</span>
+                  <div className="flex-shrink-0 w-16 text-right">
+                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
                   </div>
                   <input
                     value={(journal.longTickers ?? ["","",""])[i] ?? ""}
@@ -1250,10 +1250,10 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange }: {
               <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Short</span>
             </div>
             <div className="p-4 space-y-3">
-              {([["Near",""], ["↓",""], ["Far",""]] as const).map(([loc], i) => (
+              {(["Stronger", "Weaker"] as const).map((loc, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 text-center">
-                    <span className={`text-xs font-semibold ${loc === "↓" ? "text-slate-600" : "text-slate-400"}`}>{loc}</span>
+                  <div className="flex-shrink-0 w-16 text-right">
+                    <span className="text-xs font-semibold text-slate-400">{loc}</span>
                   </div>
                   <input
                     value={(journal.shortTickers ?? ["","",""])[i] ?? ""}
