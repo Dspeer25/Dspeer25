@@ -1,71 +1,36 @@
 'use client';
 import React, { useState } from 'react';
-import { fm, fd } from './shared';
-
-const teal = '#00d4a0';
-const red = '#ff4444';
+import { fm, fd, teal } from './shared';
 
 interface HeroProps {
   textVisible: boolean;
 }
 
-// Candle definitions in left-to-right order per spec pattern:
-// bull(35), bear(30), bull(55), bear(25), bull(45), bull(60), bear(38), bull(40), bear(28), bull(50)
-const candles: { type: 'bull' | 'bear'; h: number }[] = [
-  { type: 'bull', h: 35 },
-  { type: 'bear', h: 30 },
-  { type: 'bull', h: 55 },
-  { type: 'bear', h: 25 },
-  { type: 'bull', h: 45 },
-  { type: 'bull', h: 60 },
-  { type: 'bear', h: 38 },
-  { type: 'bull', h: 40 },
-  { type: 'bear', h: 28 },
-  { type: 'bull', h: 50 },
-];
-
-interface Annotation {
-  title: string;
-  body: string;
-  pos: React.CSSProperties;
-}
-
-const annotations: Annotation[] = [
-  {
-    title: 'Full Understanding',
-    body: 'AI that reads your journal entries, understands your frustrations, and coaches the psychology behind every trade.',
-    pos: { top: '22%', left: '35%' },
-  },
-  {
-    title: 'Technical & Psychological Analysis',
-    body: 'Knows your goals from both a technical and psychological perspective. Tracks what you planned vs what you did.',
-    pos: { top: '15%', left: '52%' },
-  },
-  {
-    title: 'Shared Goals & Accountability',
-    body: 'Compares what you write about your trades to what you actually execute. Holds you accountable to your own rules.',
-    pos: { top: '20%', right: '20%' },
-  },
-  {
-    title: 'Pattern Recognition',
-    body: "AI recognizes behavioral patterns across hundreds of your trades that you'd never spot manually.",
-    pos: { top: '12%', right: '3%' },
-  },
-];
-
-// Reusable corner-bracket renderer (4 tiny L-shapes at each corner)
-const CornerBrackets = ({ color = 'rgba(255,255,255,0.5)', size = 6 }: { color?: string; size?: number }) => (
-  <>
-    <span style={{ position: 'absolute', top: 0, left: 0, width: size, height: size, borderTop: `1px solid ${color}`, borderLeft: `1px solid ${color}`, pointerEvents: 'none' }} />
-    <span style={{ position: 'absolute', top: 0, right: 0, width: size, height: size, borderTop: `1px solid ${color}`, borderRight: `1px solid ${color}`, pointerEvents: 'none' }} />
-    <span style={{ position: 'absolute', bottom: 0, left: 0, width: size, height: size, borderBottom: `1px solid ${color}`, borderLeft: `1px solid ${color}`, pointerEvents: 'none' }} />
-    <span style={{ position: 'absolute', bottom: 0, right: 0, width: size, height: size, borderBottom: `1px solid ${color}`, borderRight: `1px solid ${color}`, pointerEvents: 'none' }} />
-  </>
-);
-
 export default function Hero({ textVisible }: HeroProps) {
-  const opacity = textVisible ? 1 : 0;
-  const [showAllBrokers, setShowAllBrokers] = useState(false);
+  const [showBrokers, setShowBrokers] = useState(false);
+
+  const candles = [
+    { type: 'bull', height: '35vh' },
+    { type: 'bear', height: '22vh' },
+    { type: 'bull', height: '50vh' },
+    { type: 'bull', height: '42vh' },
+    { type: 'bear', height: '18vh' },
+    { type: 'bull', height: '58vh' },
+    { type: 'bull', height: '48vh' },
+    { type: 'bear', height: '28vh' },
+    { type: 'bull', height: '52vh' },
+    { type: 'bear', height: '20vh' },
+    { type: 'bull', height: '45vh' },
+    { type: 'bull', height: '55vh' },
+    { type: 'bear', height: '25vh' },
+    { type: 'bull', height: '40vh' },
+  ];
+
+  const annotations = [
+    { title: 'IMPULSE DRAWDOWN', body: 'Revenge trading anomaly detected. 68% probability of forced closures within 15 mins of this wick.', top: '18%', left: '55%', color: teal },
+    { title: 'PATTERN EXTRACTION', body: 'Micro-fractals isolated perfectly from market noise.', top: '40%', right: '8%', color: '#fff' },
+    { title: 'MOMENTUM IGNITION', body: 'Avg +1.4R expectancy gap when waiting 3+ minutes after opening range.', top: '55%', right: '5%', color: teal },
+  ];
 
   return (
     <>
@@ -73,300 +38,272 @@ export default function Hero({ textVisible }: HeroProps) {
         @media (prefers-reduced-motion: no-preference) {
           @keyframes candleBreathe {
             0%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(1.03); }
+            50% { transform: scaleY(1.025); }
           }
-          @keyframes candleBreatheB {
+          @keyframes candleBreatheAlt {
             0%, 100% { transform: scaleY(1.02); }
-            50% { transform: scaleY(0.97); }
+            50% { transform: scaleY(0.975); }
           }
+          @keyframes pulseGlow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+          }
+        }
+        .nav-glass {
+          background: rgba(3, 3, 5, 0.7);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(255,255,255,0.06);
         }
       `}</style>
 
-      <div style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden', background: 'linear-gradient(to bottom, #1a1c23 0%, #0d0e12 15%, #030305 40%)', maxWidth: 1600, margin: '0 auto', width: '100%' }}>
+      <div style={{
+        position: 'relative',
+        minHeight: '100vh',
+        width: '100%',
+        background: 'linear-gradient(to bottom, #1a1c23 0%, #0d0e12 10%, #030305 35%)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
 
-        {/* ═══ BACKGROUND LAYER — just the candles ═══ */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+        {/* Ethereal Glow */}
+        <div style={{
+          position: 'absolute',
+          top: '45%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '90vw',
+          height: '70vw',
+          background: 'radial-gradient(ellipse at center, rgba(0,212,160,0.2) 0%, rgba(255,68,68,0.08) 40%, transparent 75%)',
+          filter: 'blur(60px)',
+          pointerEvents: 'none',
+          zIndex: 0,
+          animation: 'pulseGlow 8s infinite alternate ease-in-out',
+        }} />
 
-          {/* Monolithic candlestick cluster — pushed right, capped width so it doesn't spread at wide viewports */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '15vh',
-              right: '10%',
-              maxWidth: 900,
-              width: 'auto',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'flex-end',
-              gap: '2vw',
-              zIndex: 2,
-              pointerEvents: 'none',
-              boxSizing: 'border-box',
-            }}
-          >
-            {candles.map((c, i) => {
-              const isBull = c.type === 'bull';
-              const color = isBull ? teal : red;
-              const rgbaMid = isBull ? 'rgba(0,212,160,0.4)' : 'rgba(255,68,68,0.4)';
-              const rgbaLight = isBull ? 'rgba(0,212,160,0.05)' : 'rgba(255,68,68,0.05)';
-              const rgbaHeavy = isBull ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)';
-              const rgbaGlow = isBull ? 'rgba(0,212,160,0.35)' : 'rgba(255,68,68,0.35)';
-              const rgbaInset = isBull ? 'rgba(0,212,160,0.2)' : 'rgba(255,68,68,0.2)';
-              const animName = i % 2 === 0 ? 'candleBreathe' : 'candleBreatheB';
-              const animDur = i % 2 === 0 ? '4.5s' : '5.2s';
-              return (
-                <div
-                  key={i}
-                  style={{
-                    position: 'relative',
-                    width: '4vw',
-                    maxWidth: 60,
-                    minWidth: 20,
-                    height: `${c.h}vh`,
-                    borderTop: `3px solid ${color}`,
-                    borderLeft: `1px solid ${rgbaMid}`,
-                    borderRight: `1px solid ${rgbaMid}`,
-                    borderBottom: 'none',
-                    background: `linear-gradient(to top, ${rgbaLight} 0%, ${rgbaHeavy} 100%)`,
-                    boxShadow: `0 -15px 40px ${rgbaGlow}, inset 0 10px 30px ${rgbaInset}`,
-                    animation: `${animName} ${animDur} ease-in-out infinite`,
-                    animationDelay: `${i * 0.3}s`,
-                    transformOrigin: 'center bottom',
-                  }}
-                >
-                  {/* Wick */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '-50%',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: 2,
-                      height: '150%',
-                      background: 'linear-gradient(to top, rgba(255,255,255,0.6), transparent)',
-                      zIndex: -1,
-                    }}
-                  />
-                </div>
-              );
-            })}
+        {/* Perspective Grid Floor */}
+        <div style={{
+          position: 'absolute',
+          bottom: '-20vh',
+          left: '-50vw',
+          width: '200vw',
+          height: '80vh',
+          backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to top, rgba(255,255,255,0.06) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+          transform: 'rotateX(75deg)',
+          transformOrigin: 'center top',
+          WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%)',
+          maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 90%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
 
-            {/* Moving average curve — traces through the candles */}
-            <svg
-              style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }}
-              viewBox="0 0 900 500"
-              preserveAspectRatio="none"
-            >
-              <path
-                d="M 50 380 C 100 370, 150 350, 200 330 C 250 310, 300 280, 350 250 C 400 230, 450 200, 500 190 C 550 185, 600 210, 650 230 C 700 245, 750 220, 800 200 C 850 185, 880 170, 900 160"
-                fill="none"
-                stroke="rgba(0,212,160,0.4)"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
+        {/* Candle Cluster */}
+        <div style={{
+          position: 'absolute',
+          bottom: '12vh',
+          left: 0,
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          gap: '1.8vw',
+          zIndex: 2,
+          pointerEvents: 'none',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          right: 0,
+          paddingLeft: '30%',
+        }}>
+          {candles.map((c, i) => (
+            <div key={i} style={{
+              position: 'relative',
+              width: '3.5vw',
+              maxWidth: '50px',
+              minWidth: '18px',
+              height: c.height,
+              borderTop: `3px solid ${c.type === 'bull' ? teal : '#ff4444'}`,
+              borderLeft: `1px solid ${c.type === 'bull' ? 'rgba(0,212,160,0.4)' : 'rgba(255,68,68,0.4)'}`,
+              borderRight: `1px solid ${c.type === 'bull' ? 'rgba(0,212,160,0.4)' : 'rgba(255,68,68,0.4)'}`,
+              background: c.type === 'bull'
+                ? 'linear-gradient(to top, rgba(0,212,160,0.05) 0%, rgba(0,212,160,0.25) 100%)'
+                : 'linear-gradient(to top, rgba(255,68,68,0.05) 0%, rgba(255,68,68,0.25) 100%)',
+              boxShadow: c.type === 'bull'
+                ? '0 -15px 40px rgba(0,212,160,0.3), inset 0 10px 30px rgba(0,212,160,0.15)'
+                : '0 -15px 40px rgba(255,68,68,0.3), inset 0 10px 30px rgba(255,68,68,0.15)',
+              animation: i % 2 === 0
+                ? `candleBreathe ${4 + (i * 0.3)}s ease-in-out infinite`
+                : `candleBreatheAlt ${4.5 + (i * 0.25)}s ease-in-out infinite`,
+              animationDelay: `${i * 0.2}s`,
+              transformOrigin: 'center bottom',
+            }}>
+              {/* Wick */}
+              <div style={{
+                position: 'absolute',
+                top: '-45%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '2px',
+                height: '140%',
+                background: `linear-gradient(to top, ${c.type === 'bull' ? 'rgba(0,212,160,0.5)' : 'rgba(255,68,68,0.5)'}, transparent)`,
+                zIndex: -1,
+              }} />
+            </div>
+          ))}
 
+          {/* Moving Average Line */}
+          <svg style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 3 }} viewBox="0 0 1000 500" preserveAspectRatio="none">
+            <path d="M 0 400 C 80 390, 150 370, 220 340 C 290 310, 350 270, 420 240 C 490 215, 550 195, 620 185 C 690 180, 740 200, 800 220 C 850 235, 900 210, 950 190 C 980 180, 1000 170, 1000 165" fill="none" stroke="rgba(0,212,160,0.35)" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 0 420 C 120 415, 250 405, 380 385 C 480 370, 580 345, 680 325 C 780 310, 880 295, 1000 280" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         </div>
 
-        {/* ═══ ANNOTATION LABELS — candlestick wick extensions ═══ */}
+        {/* Vignette */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(circle at 50% 50%, transparent 40%, rgba(3,3,5,0.6) 100%)',
+          zIndex: 5,
+          pointerEvents: 'none',
+        }} />
+
+        {/* Annotation Labels */}
         {annotations.map((a, i) => (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              zIndex: 20,
-              maxWidth: 150,
-              textAlign: 'center',
-              opacity: textVisible ? 0.9 : 0,
-              transition: 'opacity 0.9s ease',
-              transitionDelay: `${0.4 + i * 0.15}s`,
-              pointerEvents: 'none',
-              ...a.pos,
-            }}
-          >
-            <div style={{ fontFamily: fm, fontSize: 10, color: teal, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600, marginBottom: 8 }}>
-              {a.title}
-            </div>
-            <div style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.4)', lineHeight: 1.5, marginBottom: 10 }}>
-              {a.body}
-            </div>
-            {/* Dashed connector — visual extension of candle's wick up into the label */}
-            <div style={{ width: 1, height: 60, borderLeft: '1px dashed rgba(0,212,160,0.4)', margin: '0 auto' }} />
+          <div key={i} style={{
+            position: 'absolute',
+            top: a.top,
+            left: a.left,
+            right: a.right,
+            maxWidth: '180px',
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}>
+            <div style={{ width: '20px', height: '1px', background: 'rgba(255,255,255,0.2)', marginBottom: '8px' }} />
+            <div style={{ fontFamily: fd, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: a.color, marginBottom: '6px', fontWeight: 500 }}>{a.title}</div>
+            <p style={{ fontFamily: fd, fontSize: '10px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.6, margin: 0 }}>{a.body}</p>
           </div>
         ))}
 
-        {/* ═══ HERO CONTENT ═══ */}
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 20,
-            maxWidth: 800,
-            padding: '0 8%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            minHeight: 'calc(100vh - 80px)',
-            opacity,
-            transition: 'opacity 1s ease',
-          }}
-        >
-          {/* Eyebrow */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32, opacity: 0.8 }}>
-            <span style={{ width: 48, height: 1, background: teal }} />
-            <span style={{ fontFamily: fm, fontSize: 11, color: teal, textTransform: 'uppercase', letterSpacing: '0.3em', fontWeight: 600 }}>
-              Engineered for Mastery
-            </span>
-          </div>
+        {/* Silhouette Figure */}
+        <div style={{ position: 'absolute', bottom: '5vh', left: '50%', transform: 'translateX(-50%)', zIndex: 10, opacity: 0.8 }}>
+          <svg width="30" height="70" viewBox="0 0 24 54" fill="#050505" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 9C14.2091 9 16 7.20914 16 5C16 2.79086 14.2091 1 12 1C9.79086 1 8 2.79086 8 5C8 7.20914 9.79086 9 12 9Z" fill="#000" stroke="#111" strokeWidth="0.5"/>
+            <path d="M15.5 12C14.5 10.5 13 10 12 10C11 10 9.5 10.5 8.5 12C7 14 6 18 6 22L7 30H10V52C10 52.8 10.4 53 11 53C11.6 53 12 52.8 12 52V35H12.5V52C12.5 52.8 12.9 53 13.5 53C14.1 53 14.5 52.8 14.5 52V30H17.5L18.5 22C18.5 18 17.5 14 15.5 12Z" fill="#000" stroke="#111" strokeWidth="0.5"/>
+          </svg>
+        </div>
 
-          {/* Headline */}
-          <h1
-            style={{
+        {/* Hero Content */}
+        <main style={{
+          flexGrow: 1,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          position: 'relative',
+          zIndex: 20,
+          padding: '120px 8% 80px',
+          pointerEvents: 'none',
+        }}>
+          <div style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', pointerEvents: 'auto' }}>
+
+            {/* Eyebrow */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px', opacity: 0.8 }}>
+              <div style={{ width: '48px', height: '1px', background: teal }} />
+              <div style={{ fontFamily: fd, fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: teal }}>Engineered For Mastery</div>
+            </div>
+
+            {/* Headline */}
+            <h1 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 'clamp(48px, 5.5vw, 80px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#fff', margin: '0 0 32px 0' }}>
+              The Trading Journal That
+              <span style={{ display: 'block', color: teal, marginTop: '8px' }}>Fixes Your Psychology.</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, fontSize: 'clamp(16px, 1.2vw, 20px)', color: 'rgba(200,200,200,0.8)', maxWidth: '540px', marginBottom: '48px', lineHeight: 1.7 }}>
+              AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
+            </p>
+
+            {/* CTA */}
+            <button style={{
+              padding: '16px 48px',
+              background: teal,
+              color: '#000',
               fontFamily: fd,
-              fontSize: 'clamp(52px, 6vw, 76px)',
+              fontSize: '12px',
               fontWeight: 600,
-              color: '#ffffff',
-              lineHeight: 1.05,
-              letterSpacing: '-0.02em',
-              marginBottom: 32,
-              maxWidth: 700,
-            }}
-          >
-            The Trading Journal That
-            <br />
-            <span style={{ color: teal }}>
-              Fixes Your Psychology.
-            </span>
-          </h1>
-
-          {/* Subtitle */}
-          <p
-            style={{
-              fontFamily: fm,
-              fontSize: 'clamp(15px, 1.2vw, 20px)',
-              color: 'rgba(200,200,200,0.8)',
-              maxWidth: 540,
-              lineHeight: 1.7,
-              marginBottom: 48,
-            }}
-          >
-            AI-enhanced behavioral and trading pattern recognition. We analyze the data hidden in your drawdowns to reconstruct your discipline.
-          </p>
-
-          {/* CTA */}
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <button
-              style={{
-                background: teal,
-                color: '#000000',
-                fontFamily: fm,
-                fontSize: 14,
-                textTransform: 'uppercase',
-                letterSpacing: '0.15em',
-                fontWeight: 600,
-                padding: '16px 48px',
-                border: 'none',
-                cursor: 'pointer',
-                width: 'auto',
-                minWidth: 200,
-                transition: 'all 0.3s ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
-            >
+              textTransform: 'uppercase',
+              letterSpacing: '0.2em',
+              border: 'none',
+              cursor: 'pointer',
+            }}>
               Sign Up
             </button>
           </div>
-        </div>
+        </main>
 
-        {/* ═══ BOTTOM BAR ═══ */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            padding: 32,
-            zIndex: 30,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            gap: 24,
-            flexWrap: 'wrap',
-            boxSizing: 'border-box',
-            opacity,
-            transition: 'opacity 1s ease 0.3s',
-          }}
-        >
-          {/* Left — integrations */}
-          <div>
-            <div style={{ fontFamily: fm, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', marginBottom: 12 }}>
-              Connects With All Brokers
-            </div>
-            <div style={{ display: 'flex', gap: 24, fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', flexWrap: 'wrap' }}>
+        {/* Bottom Bar */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          padding: '32px',
+          zIndex: 30,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          pointerEvents: 'none',
+        }}>
+          {/* Left: Brokers */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', pointerEvents: 'auto' }}>
+            <p style={{ fontFamily: fd, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Connects With All Brokers</p>
+            <div style={{ fontFamily: fd, fontSize: '10px', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.25)', display: 'flex', gap: '24px' }}>
               <span>BINANCE</span>
               <span>NINJATRADER</span>
               <span>TRADINGVIEW</span>
-              {showAllBrokers && (
-                <>
-                  <span>THINKORSWIM</span>
-                  <span>INTERACTIVE BROKERS</span>
-                  <span>SCHWAB</span>
-                  <span>WEBULL</span>
-                  <span>TASTYTRADE</span>
-                </>
-              )}
             </div>
             <div
-              onClick={() => setShowAllBrokers(s => !s)}
-              style={{ marginTop: 10, fontFamily: fm, fontSize: 10, color: teal, cursor: 'pointer', letterSpacing: '0.1em', display: 'inline-block' }}
+              onClick={() => setShowBrokers(!showBrokers)}
+              style={{ fontFamily: fd, fontSize: '10px', color: teal, cursor: 'pointer', marginTop: '4px' }}
             >
-              {showAllBrokers ? 'Hide brokers ▲' : 'View all brokers ▼'}
+              {showBrokers ? 'Hide brokers ▲' : 'View all brokers ▼'}
             </div>
+            {showBrokers && (
+              <div style={{ fontFamily: fd, fontSize: '10px', color: 'rgba(255,255,255,0.25)', display: 'flex', gap: '16px', flexWrap: 'wrap', maxWidth: '400px', marginTop: '4px' }}>
+                <span>THINKORSWIM</span><span>INTERACTIVE BROKERS</span><span>SCHWAB</span><span>WEBULL</span><span>TASTYTRADE</span><span>E*TRADE</span><span>FIDELITY</span>
+              </div>
+            )}
           </div>
 
-          {/* Right — stat cards */}
-          <div
-            style={{
-              position: 'relative',
-              background: 'rgba(0,0,0,0.4)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              padding: 20,
-              display: 'flex',
-              gap: 32,
-              alignItems: 'center',
-            }}
-          >
-            <CornerBrackets />
-
-            <div>
-              <div style={{ fontFamily: fd, fontSize: 24, color: '#ffffff', fontWeight: 700, lineHeight: 1 }}>+42%</div>
-              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 6 }}>
-                Avg. Expectancy Increase
-              </div>
+          {/* Right: Stat Cards */}
+          <div style={{
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '20px',
+            display: 'flex',
+            gap: '32px',
+            position: 'relative',
+            pointerEvents: 'auto',
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '24px', color: '#fff' }}>+42%</span>
+              <span style={{ fontFamily: fd, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Avg. Expectancy<br/>Increase</span>
             </div>
-
-            <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.1)' }} />
-
-            <div>
-              <div style={{ fontFamily: fd, fontSize: 24, color: '#ffffff', fontWeight: 700, lineHeight: 1 }}>1.2M+</div>
-              <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 6 }}>
-                Executions Analyzed
-              </div>
+            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '24px', color: '#fff' }}>1.2M+</span>
+              <span style={{ fontFamily: fd, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>Executions<br/>Analyzed</span>
             </div>
-
-            <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.1)' }} />
-
-            <div>
-              <div style={{ fontFamily: fd, fontSize: 24, color: '#ffffff', fontWeight: 700, lineHeight: 1 }}>-68%</div>
-              <div style={{ fontFamily: fm, fontSize: 11, color: red, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 6 }}>
-                Reduction in Revenge Trades
-              </div>
+            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '24px', color: '#fff' }}>-68%</span>
+              <span style={{ fontFamily: fd, fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#ff4444', marginTop: '4px' }}>Reduction in<br/>Revenge Trades</span>
             </div>
           </div>
         </div>
+
       </div>
     </>
   );
