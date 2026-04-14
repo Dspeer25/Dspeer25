@@ -157,20 +157,20 @@ export default function WickCoachFull() {
           <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
         </div>
 
-        {/* Gradient fade from nav area (grey) into hero (black) */}
-        <div style={{ width: '100%', height: 80, background: 'linear-gradient(to bottom, #1a1d26 0%, #0A0D14 50%, #030305 100%)', pointerEvents: 'none', position: 'relative', zIndex: 1, marginBottom: -1 }} />
+        {/* Gradient fade from nav area (lighter grey) into hero — all lands on #0A0D14 */}
+        <div style={{ width: '100%', height: 80, background: 'linear-gradient(to bottom, #1a1d26 0%, #0A0D14 100%)', pointerEvents: 'none', position: 'relative', zIndex: 1, marginBottom: -1 }} />
 
         {/* Hero */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Hero textVisible={textVisible} />
         </div>
 
-        {/* CONNECTS TO ALL MAJOR BROKERS — fills gap under hero */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '40px 20px 28px', background: '#0A0D14' }}>
-          <div style={{ fontFamily: fm, fontSize: 12, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 500 }}>
+        {/* CONNECTS TO ALL MAJOR BROKERS — 3×3 grid, green bold subheader */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '48px 20px 32px', background: '#0A0D14' }}>
+          <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
             Connects to all major brokers
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '14px 28px', maxWidth: 1000 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, width: '100%', maxWidth: 720 }}>
             {[
               { name: 'WEBULL', domain: 'webull.com' },
               { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
@@ -182,18 +182,33 @@ export default function WickCoachFull() {
               { name: 'STERLING PRO', domain: null },
               { name: 'ALL PROP FIRMS', domain: null },
             ].map(b => (
-              <div key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <div
+                key={b.name}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  padding: '14px 16px',
+                  background: '#141822',
+                  border: '1px solid #2A3143',
+                  borderRadius: 10,
+                  transition: 'border-color 0.2s ease, background 0.2s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; e.currentTarget.style.background = '#1a1f2a'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; e.currentTarget.style.background = '#141822'; }}
+              >
                 {b.domain && (
                   <img
                     src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
                     alt=""
-                    width={20}
-                    height={20}
-                    style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4, background: '#ffffff', padding: 2 }}
+                    width={22}
+                    height={22}
+                    style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 4, background: '#ffffff', padding: 2, flexShrink: 0 }}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                 )}
-                <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em', fontWeight: 600, textAlign: 'center' }}>
                   {b.name}
                 </span>
               </div>
