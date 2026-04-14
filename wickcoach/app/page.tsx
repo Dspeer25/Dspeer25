@@ -175,7 +175,7 @@ export default function WickCoachFull() {
         {/* CONNECTS TO ALL MAJOR BROKERS — 3×3 grid with See More expand */}
         {(() => {
           const brokers = [
-            // Brokers (row 1-3, shown by default)
+            // Brokers (shown first — row 1-3 by default)
             { name: 'WEBULL', domain: 'webull.com' },
             { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
             { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
@@ -185,17 +185,26 @@ export default function WickCoachFull() {
             { name: 'CHARLES SCHWAB', domain: 'schwab.com' },
             { name: 'TRADESTATION', domain: 'tradestation.com' },
             { name: 'TASTYTRADE', domain: 'tastytrade.com' },
+            { name: 'MOOMOO', domain: 'moomoo.com' },
+            { name: 'ETORO', domain: 'etoro.com' },
+            { name: 'LIGHTSPEED', domain: 'lightspeed.com' },
+            { name: 'COBRA TRADING', domain: 'cobratrading.com' },
             // Platforms (shown after See More)
             { name: 'TRADINGVIEW', domain: 'tradingview.com' },
             { name: 'NINJATRADER', domain: 'ninjatrader.com' },
             { name: 'METATRADER', domain: 'metatrader5.com' },
             { name: 'STERLING PRO', domain: 'sterlingtradingtech.com' },
             { name: 'DAS TRADER', domain: 'dastrader.com' },
+            { name: 'TRENDSPIDER', domain: 'trendspider.com' },
+            { name: 'BOOKMAP', domain: 'bookmap.com' },
             // Prop firms (shown after See More)
             { name: 'TOPSTEP', domain: 'topstep.com' },
             { name: 'APEX TRADER FUNDING', domain: 'apextraderfunding.com' },
             { name: 'FTMO', domain: 'ftmo.com' },
             { name: 'THE FUNDED TRADER', domain: 'thefundedtraderprogram.com' },
+            { name: 'MYFUNDEDFUTURES', domain: 'myfundedfutures.com' },
+            { name: 'EARN2TRADE', domain: 'earn2trade.com' },
+            { name: 'TAKE PROFIT TRADER', domain: 'takeprofittrader.com' },
           ];
           const visible = showAllBrokers ? brokers : brokers.slice(0, 9);
           return (
