@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { fm, fd } from './shared';
+import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
 const red = '#ff4444';
@@ -104,6 +105,53 @@ export default function AnalysisContent() {
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
 
+  // ─── Analysis AI chat ───
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const analysisWelcome =
+    "I've analyzed your 200 executions. Here's what the data is telling me:\n\n" +
+    "• Your edge: **Patience setups** — 56% win rate when you wait 3+ minutes after opening range, vs 19% on impulse entries. That one pattern alone explains most of your profit.\n\n" +
+    "• Your leak: **Revenge trading** — 15 trades cost you $35.90 and dragged your expectancy from +1.1R to +0.5R. It's concentrated in the 12–1PM slot where your edge is weakest.\n\n" +
+    "• **0DTE Calls** carry your book (+$19.5K on 60 trades, 46.7% WR, +0.7R avg). **0DTE Puts** trail (+$13.3K, 42.6% WR).\n\n" +
+    "• Ticker concentration: **V**, **META**, **NVDA** and **AMD** generate 54% of your P/L across just 48 trades. The rest of your watchlist is noise.\n\n" +
+    "What would you like to dig into? I can slice this by session, by setup, or by the emotional state you logged in the journal.";
+
+  async function sendToCoach() {
+    if (!aiInput.trim() || aiLoading) return;
+    const userMsg = aiInput.trim();
+    setAiInput('');
+    setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setAiLoading(true);
+    try {
+      const analysisContext =
+        '200 total trades. 92 wins, 80 losses, 28 breakeven. Total P/L +$58,532. Process trades 137 (61.3% WR, +150.9R). Impulse 63 (12.7% WR, -31.3R). ' +
+        'Strategies by P/L: 0DTE Call 60 trades 46.7% WR +$19,550 +0.7R; 0DTE Put 54 42.6% +$13,341 +0.5R; Call Debit Spread 18 61.1% +$8,891 +1.0R; Put Debit Spread 19 52.6% +$6,763 +0.7R; Call Scalp 16 56.3% +$6,339 +0.8R; Put Scalp 8 50% +$3,897 +1.0R. ' +
+        'Tickers by P/L: V +$10,391 (14t 78.6%); META +$6,288 (9t 77.8%); NVDA +$6,129 (14t 50%); AMD +$5,929 (11t 54.5%); BA +$5,018 (9t 66.7%); MSFT +$5,805 (17t 47.1%); JPM +$4,200 (8t 62.5%); DIS +$3,450 (6t 50%). ' +
+        'Hourly: 9-10AM +$18,500 (45t); 10-11AM +$13,006; 11-12PM +$9,781; 12-1PM +$2,176; 1-2PM +$7,653; 2-3PM +$5,726; 3-4PM +$3,124. ' +
+        'Psychology patterns: Ignoring Rules 19t (+0.5R vs +1.1R gap); Impulse Entries 16t (19% WR vs 61% patient); Revenge Trading 15t (cost $35.90); FOMO/Chasing 12t (0% WR); Patience 39t (56% WR when waiting); Clean Execution 31t (+1.6R); Stop Discipline 15t; Trusting Process 14t.';
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content: userMsg },
+          ],
+          tradesContext: analysisContext,
+          mode: 'analysis',
+        }),
+      });
+      const data = await response.json();
+      setAiMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'Unable to analyze right now.' }]);
+    } catch {
+      setAiMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Try again.' }]);
+    }
+    setAiLoading(false);
+  }
+
   // Pinwheel data
   const totalTrades = 200;
   const wins = 92;
@@ -129,10 +177,48 @@ export default function AnalysisContent() {
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
 
       {/* ═══ HEADER ═══ */}
-      <div>
-        <h2 style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Analysis</h2>
-        <p style={{ color: '#bbb', fontSize: 14, margin: '6px 0 0' }}>Behavioral pattern recognition across your trade history.</p>
-        <p style={{ color: '#999', fontSize: 12, margin: '4px 0 0' }}>200 executions analyzed</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h2 style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Analysis</h2>
+          <p style={{ color: '#bbb', fontSize: 14, margin: '6px 0 0' }}>Behavioral pattern recognition across your trade history.</p>
+          <p style={{ color: '#999', fontSize: 12, margin: '4px 0 0' }}>200 executions analyzed</p>
+        </div>
+
+        {/* WickCoach AI — Click for analysis */}
+        <div
+          onClick={() => setAiOpen(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '14px 20px',
+            background: 'rgba(0,212,160,0.08)',
+            border: '1px solid rgba(0,212,160,0.4)',
+            borderRadius: 12,
+            cursor: 'pointer',
+            transition: 'background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease',
+            boxShadow: '0 0 24px rgba(0,212,160,0.12)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.15)'; e.currentTarget.style.borderColor = '#00d4a0'; e.currentTarget.style.boxShadow = '0 0 32px rgba(0,212,160,0.25)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.4)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(0,212,160,0.12)'; }}
+        >
+          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(0,212,160,0.12)', border: '1px solid rgba(0,212,160,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="28" height="34" viewBox="0 0 20 24" fill="none">
+              <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+              <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+              <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+              <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+            </svg>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>WickCoach AI</span>
+            <span style={{ fontFamily: fm, fontSize: 12, color: teal, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>Click for analysis</span>
+          </div>
+        </div>
       </div>
 
       {/* ═══ PINWHEEL ═══ */}
@@ -318,7 +404,7 @@ export default function AnalysisContent() {
           return (
             <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
               <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
-              <div style={{ fontSize: 12, color: '#999', marginBottom: 18 }}>Performance by setup type — sorted by total P/L</div>
+              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 18 }}>Performance by setup type — sorted by total P/L</div>
 
               {visible.map((s, i) => {
                 const winBar = Math.max(0, Math.min(100, s.wr));
@@ -337,14 +423,14 @@ export default function AnalysisContent() {
                     {/* Row 1: name + trades + total */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                       <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, flex: 1 }}>{s.name}</div>
-                      <div style={{ fontSize: 11, color: '#888', fontFamily: fm, letterSpacing: 1 }}>{s.trades} TRADES</div>
+                      <div style={{ fontSize: 13, color: '#aab0bd', fontFamily: fm, letterSpacing: 1, fontWeight: 500 }}>{s.trades} TRADES</div>
                       <div style={{ fontSize: 15, color: s.total >= 0 ? teal : red, fontWeight: 700, fontFamily: fd, minWidth: 90, textAlign: 'right' }}>{fmtDollar(s.total)}</div>
                     </div>
                     {/* Row 2: 3 inline bars */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                       {/* Win rate */}
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>
                           <span>Win Rate</span>
                           <span style={{ color: s.wr >= 50 ? teal : red, fontWeight: 700 }}>{fmtPct(s.wr)}</span>
                         </div>
@@ -354,7 +440,7 @@ export default function AnalysisContent() {
                       </div>
                       {/* Avg R */}
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>
                           <span>Avg R</span>
                           <span style={{ color: s.r >= 0 ? teal : red, fontWeight: 700 }}>{fmtR(s.r)}</span>
                         </div>
@@ -364,7 +450,7 @@ export default function AnalysisContent() {
                       </div>
                       {/* Total P/L share */}
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>
                           <span>Avg P/L</span>
                           <span style={{ color: s.avg >= 0 ? teal : red, fontWeight: 700 }}>{fmtDollar(s.avg, true)}</span>
                         </div>
@@ -394,7 +480,7 @@ export default function AnalysisContent() {
           return (
             <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
               <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
-              <div style={{ fontSize: 12, color: '#999', marginBottom: 18 }}>P/L ranking across your tickers</div>
+              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 18 }}>P/L ranking across your tickers</div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {visible.map((tk) => {
@@ -415,8 +501,8 @@ export default function AnalysisContent() {
                             transition: 'width 0.5s ease',
                           }}
                         />
-                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: fm, letterSpacing: 0.5 }}>
-                          {tk.trades}t · {fmtPct(tk.wr)}
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: fm, letterSpacing: 0.5, fontWeight: 500, textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>
+                          {tk.trades} trades · {fmtPct(tk.wr)} win
                         </div>
                       </div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: positive ? teal : red, fontFamily: fd, width: 80, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.pl)}</div>
@@ -594,6 +680,18 @@ export default function AnalysisContent() {
           Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
         </div>
       </div>
+
+      {/* ═══ ANALYSIS AI CHAT WIDGET ═══ */}
+      <AIChatWidget
+        isOpen={aiOpen}
+        onClose={() => setAiOpen(false)}
+        messages={aiMessages}
+        input={aiInput}
+        setInput={setAiInput}
+        onSend={sendToCoach}
+        loading={aiLoading}
+        welcomeMsg={analysisWelcome}
+      />
     </div>
   );
 }
