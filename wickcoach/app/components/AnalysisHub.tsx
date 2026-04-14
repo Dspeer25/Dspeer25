@@ -77,9 +77,42 @@ const fmtDollar = (n: number, withCents = false) => {
 const fmtR = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1) + 'R';
 const fmtPct = (n: number) => n.toFixed(1) + '%';
 
+// Pinwheel hover data — static for mock
+const winsCopy = {
+  title: 'MAJOR PSYCHOLOGICAL WINS',
+  points: [
+    'Patience: 39 trades with a 56% win rate when you wait for setup',
+    'Clean Execution: +1.6R average on 31 textbook trades',
+    'Stop Discipline: clean exits avg $492 — you honor your stops',
+    'Trusting the Process: 14 entries show building resilience',
+  ],
+};
+const issuesCopy = {
+  title: 'MAJOR PSYCHOLOGICAL ISSUES',
+  points: [
+    'Revenge Trading: 15 trades costing +$35.90 this window',
+    'Impulse Entries: 19% win rate vs 61% when patient',
+    'FOMO / Chasing: win rate drops to 0% when chasing',
+    'Ignoring Rules: +0.5R vs +1.1R expectancy gap',
+  ],
+};
+
 // ─── Component ────────────────────────────────────────────────
 export default function AnalysisContent() {
   const [heatmapMode, setHeatmapMode] = useState<'timeline' | 'best' | 'worst'>('timeline');
+  const [showAllStrategies, setShowAllStrategies] = useState(false);
+  const [showAllTickers, setShowAllTickers] = useState(false);
+  const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
+
+  // Pinwheel data
+  const totalTrades = 200;
+  const wins = 92;
+  const losses = 80;
+  const be = totalTrades - wins - losses;
+  const winPct = wins / totalTrades;
+  const lossPct = losses / totalTrades;
+  const bePct = be / totalTrades;
+  const circ = 2 * Math.PI * 40; // r=40
 
   const maxAbsHourPL = Math.max(...hours.map(h => Math.abs(h.pl)));
   const sortedHours = heatmapMode === 'best'
@@ -100,6 +133,136 @@ export default function AnalysisContent() {
         <h2 style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Analysis</h2>
         <p style={{ color: '#bbb', fontSize: 14, margin: '6px 0 0' }}>Behavioral pattern recognition across your trade history.</p>
         <p style={{ color: '#999', fontSize: 12, margin: '4px 0 0' }}>200 executions analyzed</p>
+      </div>
+
+      {/* ═══ PINWHEEL ═══ */}
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 16, padding: '32px 28px', display: 'flex', alignItems: 'center', gap: 40, position: 'relative', flexWrap: 'wrap', justifyContent: 'center' }}>
+
+        {/* Pie chart */}
+        <div style={{ position: 'relative', width: 220, height: 220, flexShrink: 0 }}>
+          <svg width="220" height="220" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+            {/* background track */}
+            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#2A3143" strokeWidth="16" />
+            {/* wins (green) */}
+            <circle
+              cx="50" cy="50" r="40" fill="transparent"
+              stroke={teal} strokeWidth={hoveredSlice === 'wins' ? 20 : 16}
+              strokeDasharray={`${(winPct * circ).toFixed(2)} ${circ.toFixed(2)}`}
+              strokeDashoffset="0"
+              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s', pointerEvents: 'stroke' }}
+              onMouseEnter={() => setHoveredSlice('wins')}
+              onMouseLeave={() => setHoveredSlice(null)}
+            />
+            {/* losses (red) */}
+            <circle
+              cx="50" cy="50" r="40" fill="transparent"
+              stroke={red} strokeWidth={hoveredSlice === 'losses' ? 20 : 16}
+              strokeDasharray={`${(lossPct * circ).toFixed(2)} ${circ.toFixed(2)}`}
+              strokeDashoffset={`${(-winPct * circ).toFixed(2)}`}
+              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s', pointerEvents: 'stroke' }}
+              onMouseEnter={() => setHoveredSlice('losses')}
+              onMouseLeave={() => setHoveredSlice(null)}
+            />
+            {/* break-even (grey) */}
+            <circle
+              cx="50" cy="50" r="40" fill="transparent"
+              stroke="#6b7280" strokeWidth="16"
+              strokeDasharray={`${(bePct * circ).toFixed(2)} ${circ.toFixed(2)}`}
+              strokeDashoffset={`${(-(winPct + lossPct) * circ).toFixed(2)}`}
+            />
+          </svg>
+          {/* Center label */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <div style={{ fontFamily: fd, fontSize: 36, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{totalTrades}</div>
+            <div style={{ fontFamily: fm, fontSize: 10, color: '#999', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 }}>Total Trades</div>
+          </div>
+        </div>
+
+        {/* Legend + hover detail */}
+        <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
+              <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Wins</span>
+              <span style={{ color: teal, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{wins}</span>
+              <span style={{ color: '#888', fontSize: 12 }}>({fmtPct(winPct * 100)})</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 10, height: 10, background: red, borderRadius: 2, display: 'inline-block' }} />
+              <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Losses</span>
+              <span style={{ color: red, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{losses}</span>
+              <span style={{ color: '#888', fontSize: 12 }}>({fmtPct(lossPct * 100)})</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 10, height: 10, background: '#6b7280', borderRadius: 2, display: 'inline-block' }} />
+              <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Break Even</span>
+              <span style={{ color: '#bbb', fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{be}</span>
+              <span style={{ color: '#888', fontSize: 12 }}>({fmtPct(bePct * 100)})</span>
+            </div>
+          </div>
+
+          {/* Hover tooltip — only visible while hovering a slice */}
+          <div
+            style={{
+              background: hoveredSlice === 'wins' ? 'rgba(0,212,160,0.08)' : hoveredSlice === 'losses' ? 'rgba(255,68,68,0.08)' : 'transparent',
+              border: hoveredSlice === 'wins' ? '1px solid rgba(0,212,160,0.4)' : hoveredSlice === 'losses' ? '1px solid rgba(255,68,68,0.4)' : '1px dashed #2A3143',
+              borderRadius: 10,
+              padding: '14px 16px',
+              minHeight: 160,
+              transition: 'all 0.25s ease',
+            }}
+          >
+            {hoveredSlice === 'wins' && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
+                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+                  </svg>
+                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, letterSpacing: 1.5 }}>{winsCopy.title}</div>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {winsCopy.points.map(p => (
+                    <li key={p} style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{p}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {hoveredSlice === 'losses' && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
+                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={red} opacity="0.9" />
+                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={red} strokeWidth="0.8" />
+                  </svg>
+                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: red, letterSpacing: 1.5 }}>{issuesCopy.title}</div>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {issuesCopy.points.map(p => (
+                    <li key={p} style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{p}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {!hoveredSlice && (
+              <div style={{ color: '#666', fontSize: 12, fontFamily: fm, textAlign: 'center', paddingTop: 60, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                Hover a segment for WickCoach analysis
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ═══ FOUR STAT CARDS ═══ */}
@@ -147,71 +310,130 @@ export default function AnalysisContent() {
 
       {/* ═══ STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-        {/* Strategy Breakdown */}
-        <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
-          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
-          <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>Performance by setup type</div>
+        {/* Strategy Breakdown — visual bars */}
+        {(() => {
+          const maxTotal = Math.max(...strategies.map(s => Math.abs(s.total)));
+          const maxR = Math.max(...strategies.map(s => Math.abs(s.r)), 1.5);
+          const visible = showAllStrategies ? strategies : strategies.slice(0, 3);
+          return (
+            <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
+              <div style={{ fontSize: 12, color: '#999', marginBottom: 18 }}>Performance by setup type — sorted by total P/L</div>
 
-          {/* Header row */}
-          <div style={{ display: 'flex', borderBottom: '1px solid #2A3143', padding: '12px 16px' }}>
-            <div style={{ flex: 2, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase' }}>Strategy</div>
-            <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Trades</div>
-            <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Win Rate</div>
-            <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Avg P/L</div>
-            <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Total P/L</div>
-            <div style={{ flex: 1, fontSize: 11, color: '#aaa', letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'right' }}>Avg R</div>
-          </div>
-
-          {strategies.map((s, i) => {
-            const isTop = i === 0;
-            const isBottom = i === strategies.length - 1;
-            return (
-              <div key={s.name} style={{
-                display: 'flex', padding: '12px 16px',
-                borderBottom: '1px solid #2A3143',
-                background: i % 2 === 0 ? '#141822' : '#1a1f2a',
-                borderLeft: isTop ? `3px solid ${teal}` : isBottom ? `3px solid ${red}` : '3px solid transparent',
-              }}>
-                <div style={{ flex: 2, fontSize: 14, color: '#fff' }}>{s.name}</div>
-                <div style={{ flex: 1, fontSize: 13, color: '#bbb', textAlign: 'right' }}>{s.trades}</div>
-                <div style={{ flex: 1, fontSize: 14, color: s.wr >= 50 ? teal : red, textAlign: 'right' }}>{fmtPct(s.wr)}</div>
-                <div style={{ flex: 1, fontSize: 13, color: s.avg >= 0 ? teal : red, textAlign: 'right' }}>{fmtDollar(s.avg, true)}</div>
-                <div style={{ flex: 1, fontSize: 14, color: s.total >= 0 ? teal : red, textAlign: 'right', fontWeight: 700 }}>{fmtDollar(s.total)}</div>
-                <div style={{ flex: 1, fontSize: 13, color: s.r >= 0 ? teal : red, textAlign: 'right' }}>{fmtR(s.r)}</div>
-              </div>
-            );
-          })}
-          <div style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center' }}>Show all ↓</div>
-        </div>
-
-        {/* Ticker Performance */}
-        <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
-          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
-          <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>P/L by asset</div>
-
-          {tickers.map((tk, i, arr) => {
-            const positive = tk.pl >= 0;
-            return (
+              {visible.map((s, i) => {
+                const winBar = Math.max(0, Math.min(100, s.wr));
+                const totalBar = (Math.abs(s.total) / maxTotal) * 100;
+                const rBar = (Math.abs(s.r) / maxR) * 100;
+                const isBest = i === 0;
+                return (
+                  <div key={s.name} style={{
+                    padding: '14px 16px',
+                    background: i % 2 === 0 ? '#1a1f2a' : '#141822',
+                    border: '1px solid #2A3143',
+                    borderLeft: isBest ? `3px solid ${teal}` : '3px solid #2A3143',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                  }}>
+                    {/* Row 1: name + trades + total */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                      <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, flex: 1 }}>{s.name}</div>
+                      <div style={{ fontSize: 11, color: '#888', fontFamily: fm, letterSpacing: 1 }}>{s.trades} TRADES</div>
+                      <div style={{ fontSize: 15, color: s.total >= 0 ? teal : red, fontWeight: 700, fontFamily: fd, minWidth: 90, textAlign: 'right' }}>{fmtDollar(s.total)}</div>
+                    </div>
+                    {/* Row 2: 3 inline bars */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                      {/* Win rate */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                          <span>Win Rate</span>
+                          <span style={{ color: s.wr >= 50 ? teal : red, fontWeight: 700 }}>{fmtPct(s.wr)}</span>
+                        </div>
+                        <div style={{ height: 6, background: '#2A3143', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${winBar}%`, height: '100%', background: s.wr >= 50 ? teal : red, transition: 'width 0.4s ease' }} />
+                        </div>
+                      </div>
+                      {/* Avg R */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                          <span>Avg R</span>
+                          <span style={{ color: s.r >= 0 ? teal : red, fontWeight: 700 }}>{fmtR(s.r)}</span>
+                        </div>
+                        <div style={{ height: 6, background: '#2A3143', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${rBar}%`, height: '100%', background: s.r >= 0 ? teal : red, transition: 'width 0.4s ease' }} />
+                        </div>
+                      </div>
+                      {/* Total P/L share */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+                          <span>Avg P/L</span>
+                          <span style={{ color: s.avg >= 0 ? teal : red, fontWeight: 700 }}>{fmtDollar(s.avg, true)}</span>
+                        </div>
+                        <div style={{ height: 6, background: '#2A3143', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${totalBar}%`, height: '100%', background: s.total >= 0 ? teal : red, transition: 'width 0.4s ease' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
               <div
-                key={tk.t}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 12px',
-                  borderBottom: i < arr.length - 1 ? '1px solid #2A3143' : 'none',
-                  borderLeft: `3px solid ${positive ? teal : red}`,
-                }}
+                onClick={() => setShowAllStrategies(s => !s)}
+                style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center', fontFamily: fm, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}
               >
-                <div style={{ width: 28, height: 28, borderRadius: 6, background: tk.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, color: '#fff' }}>{tk.t.charAt(0)}</span>
-                </div>
-                <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', width: 50, flexShrink: 0 }}>{tk.t}</div>
-                <div style={{ fontSize: 12, color: '#999', flex: 1 }}>{tk.trades} trades · {fmtPct(tk.wr)} win</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: positive ? teal : red, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.pl)}</div>
+                {showAllStrategies ? 'Show less ↑' : `Show all ${strategies.length} ↓`}
               </div>
-            );
-          })}
-          <div style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center' }}>Show all ↓</div>
-        </div>
+            </div>
+          );
+        })()}
+
+        {/* Ticker Performance — horizontal bar ranking */}
+        {(() => {
+          const sorted = [...tickers].sort((a, b) => b.pl - a.pl);
+          const maxPL = Math.max(...sorted.map(t => Math.abs(t.pl)));
+          const visible = showAllTickers ? sorted : sorted.slice(0, 4);
+          return (
+            <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
+              <div style={{ fontSize: 12, color: '#999', marginBottom: 18 }}>P/L ranking across your tickers</div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {visible.map((tk) => {
+                  const positive = tk.pl >= 0;
+                  const barWidth = (Math.abs(tk.pl) / maxPL) * 100;
+                  return (
+                    <div key={tk.t} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, background: tk.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, color: '#fff' }}>{tk.t.charAt(0)}</span>
+                      </div>
+                      <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#fff', width: 50, flexShrink: 0 }}>{tk.t}</div>
+                      <div style={{ flex: 1, position: 'relative', height: 24, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            position: 'absolute', top: 0, left: 0, bottom: 0,
+                            width: `${barWidth}%`,
+                            background: `linear-gradient(to right, ${positive ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)'}, ${positive ? teal : red})`,
+                            transition: 'width 0.5s ease',
+                          }}
+                        />
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 8, fontSize: 10, color: 'rgba(255,255,255,0.7)', fontFamily: fm, letterSpacing: 0.5 }}>
+                          {tk.trades}t · {fmtPct(tk.wr)}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: positive ? teal : red, fontFamily: fd, width: 80, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.pl)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div
+                onClick={() => setShowAllTickers(s => !s)}
+                style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 14, textAlign: 'center', fontFamily: fm, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}
+              >
+                {showAllTickers ? 'Show less ↑' : `Show all ${tickers.length} ↓`}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* ═══ WICKCOACH OBSERVATIONS BOARD ═══ */}
