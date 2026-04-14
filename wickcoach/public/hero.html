@@ -309,12 +309,12 @@
             filter: none;
         }
 
-        /* Abstract Vignette to blend everything */
+        /* Vignette disabled — was creating a black shadow darkening the hero edges */
         .vignette-overlay {
+            display: none;
             position: absolute;
             inset: 0;
-            /* Less aggressive vignette so art stays bright */
-            background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(3, 3, 5, 0.6) 100%);
+            background: transparent;
             z-index: 5;
             pointer-events: none;
         }
