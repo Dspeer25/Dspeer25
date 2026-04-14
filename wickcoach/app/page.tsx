@@ -190,7 +190,7 @@ export default function WickCoachFull() {
           ];
           const visible = showAllBrokers ? brokers : brokers.slice(0, 9);
           return (
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '48px 20px 32px', background: '#0A0D14' }}>
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '12px 20px 32px', background: '#0A0D14', marginTop: -40 }}>
               <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
                 Connects to all major brokers
               </div>

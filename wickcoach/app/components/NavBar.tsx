@@ -27,7 +27,26 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
         <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 24, marginBottom: 20, cursor: view === 'app' ? 'pointer' : 'default' }}>
           <Logo size={54} showText />
         </div>
-        <span style={{ position: 'absolute', top: 46, right: 56, color: '#00d4a0', fontFamily: fm, fontSize: 20, cursor: 'pointer', fontWeight: 500 }}>Login</span>
+        <span
+          style={{
+            position: 'absolute',
+            top: 40,
+            right: 56,
+            color: '#ffffff',
+            fontFamily: fm,
+            fontSize: 16,
+            cursor: 'pointer',
+            fontWeight: 500,
+            padding: '8px 22px',
+            border: '2px solid #ffffff',
+            borderRadius: 999,
+            background: 'transparent',
+            letterSpacing: '0.05em',
+            transition: 'background 0.2s ease, color 0.2s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.color = '#0A0D14'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ffffff'; }}
+        >Login</span>
         <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 1000, marginBottom: 12 }}>
           {tabs.map((t, idx) => {
             const isActive = view === 'app' && activeTab === t;
