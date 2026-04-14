@@ -56,7 +56,10 @@ export default function CarouselPastTrades({ onAdvance }: { onAdvance?: () => vo
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Logo size={12} /><span style={{ fontFamily: fd, fontSize: 14, color: '#fff', fontWeight: 700 }}>Equity Curve</span></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', background: 'rgba(0,255,136,0.15)', color: '#00d4a0', border: '1px solid rgba(0,255,136,0.3)', cursor: 'pointer' }}>🤖 AI Coach</span>
+          <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', background: 'rgba(0,212,160,0.15)', color: '#00d4a0', border: '1px solid rgba(0,212,160,0.3)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Logo size={10} />
+            WickCoach
+          </span>
           <span style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}>↗ Export CSV</span>
           <div style={{ display: 'flex', gap: 4 }}>{['1D','1W','1M','3M','YTD'].map(p => <span key={p} style={{ fontFamily: fm, fontSize: 9, padding: '3px 8px', color: p === 'YTD' ? '#000' : 'rgba(255,255,255,0.4)', background: p === 'YTD' ? '#00d4a0' : 'transparent', cursor: 'pointer', letterSpacing: '0.05em' }}>{p}</span>)}</div>
         </div>

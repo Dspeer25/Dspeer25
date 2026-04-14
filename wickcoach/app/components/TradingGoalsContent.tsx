@@ -252,12 +252,14 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
           const isExpanded = expandedGoalId === g.id;
           return (
             <div key={g.id} style={{
-              background: '#141822',
-              border: isExpanded ? '1px solid rgba(0,212,160,0.35)' : '1px solid #1e1f2a',
+              background: '#1f2430',
+              border: isExpanded ? '1px solid rgba(0,212,160,0.5)' : '1px solid #2A3143',
               borderRadius: 12,
               padding: '24px 28px',
               marginBottom: 16,
-              boxShadow: isExpanded ? '0 0 15px rgba(0,212,160,0.18), 0 0 30px rgba(0,212,160,0.06)' : 'none',
+              boxShadow: isExpanded
+                ? '0 0 15px rgba(0,212,160,0.18), 0 0 30px rgba(0,212,160,0.06)'
+                : '0 2px 10px rgba(0,0,0,0.3)',
               transition: 'all 0.3s ease',
             }}>
               {/* Top row: number + title area + context button + delete */}
