@@ -31,6 +31,7 @@ export default function WickCoachFull() {
   const traderProfileTabRef = useRef<HTMLSpanElement>(null);
   const [floatingPlusOnes, setFloatingPlusOnes] = useState<{ id: string; startX: number; startY: number; endX: number; endY: number; animated: boolean }[]>([]);
   const [profileTabGlow, setProfileTabGlow] = useState(false);
+  const [showAllBrokers, setShowAllBrokers] = useState(false);
 
   const triggerFloatingPlusOne = (inputRect: DOMRect) => {
     const tabEl = traderProfileTabRef.current;
@@ -106,7 +107,7 @@ export default function WickCoachFull() {
   ];
 
   return (
-    <div style={{ background: "#0A0D14", backgroundImage: "linear-gradient(to bottom, #181c26 0px, #181c26 104px, #12151d 180px, #0A0D14 320px, #0A0D14 100%)", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>
+    <div style={{ background: "#0A0D14", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>
       {/* Subtle grid texture overlay — fades out past 80% of viewport */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0, maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)', WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)' }} />
       <SplashScreen />
@@ -162,56 +163,82 @@ export default function WickCoachFull() {
           <Hero textVisible={textVisible} />
         </div>
 
-        {/* CONNECTS TO ALL MAJOR BROKERS — 3×3 grid, green bold subheader */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '48px 20px 32px', background: '#0A0D14' }}>
-          <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
-            Connects to all major brokers
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, width: '100%', maxWidth: 720 }}>
-            {[
-              { name: 'WEBULL', domain: 'webull.com' },
-              { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
-              { name: 'NINJATRADER', domain: 'ninjatrader.com' },
-              { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
-              { name: 'ROBINHOOD', domain: 'robinhood.com' },
-              { name: 'METATRADER', domain: 'metatrader5.com' },
-              { name: 'TRADINGVIEW', domain: 'tradingview.com' },
-              { name: 'STERLING PRO', domain: null },
-              { name: 'ALL PROP FIRMS', domain: null },
-            ].map(b => (
-              <div
-                key={b.name}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10,
-                  padding: '14px 16px',
-                  background: '#141822',
-                  border: '1px solid #2A3143',
-                  borderRadius: 10,
-                  transition: 'border-color 0.2s ease, background 0.2s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; e.currentTarget.style.background = '#1a1f2a'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; e.currentTarget.style.background = '#141822'; }}
-              >
-                {b.domain && (
-                  <img
-                    src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
-                    alt=""
-                    width={22}
-                    height={22}
-                    style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 4, background: '#ffffff', padding: 2, flexShrink: 0 }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                  />
-                )}
-                <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em', fontWeight: 600, textAlign: 'center' }}>
-                  {b.name}
-                </span>
+        {/* CONNECTS TO ALL MAJOR BROKERS — 3×3 grid with See More expand */}
+        {(() => {
+          const brokers = [
+            // Brokers (row 1-3, shown by default)
+            { name: 'WEBULL', domain: 'webull.com' },
+            { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
+            { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
+            { name: 'ROBINHOOD', domain: 'robinhood.com' },
+            { name: 'E*TRADE', domain: 'etrade.com' },
+            { name: 'FIDELITY', domain: 'fidelity.com' },
+            { name: 'CHARLES SCHWAB', domain: 'schwab.com' },
+            { name: 'TRADESTATION', domain: 'tradestation.com' },
+            { name: 'TASTYTRADE', domain: 'tastytrade.com' },
+            // Platforms (shown after See More)
+            { name: 'TRADINGVIEW', domain: 'tradingview.com' },
+            { name: 'NINJATRADER', domain: 'ninjatrader.com' },
+            { name: 'METATRADER', domain: 'metatrader5.com' },
+            { name: 'STERLING PRO', domain: 'sterlingtradingtech.com' },
+            { name: 'DAS TRADER', domain: 'dastrader.com' },
+            // Prop firms (shown after See More)
+            { name: 'TOPSTEP', domain: 'topstep.com' },
+            { name: 'APEX TRADER FUNDING', domain: 'apextraderfunding.com' },
+            { name: 'FTMO', domain: 'ftmo.com' },
+            { name: 'THE FUNDED TRADER', domain: 'thefundedtraderprogram.com' },
+          ];
+          const visible = showAllBrokers ? brokers : brokers.slice(0, 9);
+          return (
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '48px 20px 32px', background: '#0A0D14' }}>
+              <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
+                Connects to all major brokers
               </div>
-            ))}
-          </div>
-        </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, width: '100%', maxWidth: 720 }}>
+                {visible.map(b => (
+                  <div
+                    key={b.name}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 10,
+                      padding: '14px 16px',
+                      background: '#141822',
+                      border: '1px solid #2A3143',
+                      borderRadius: 10,
+                      transition: 'border-color 0.2s ease, background 0.2s ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; e.currentTarget.style.background = '#1a1f2a'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; e.currentTarget.style.background = '#141822'; }}
+                  >
+                    {b.domain && (
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
+                        alt=""
+                        width={22}
+                        height={22}
+                        style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 4, background: '#ffffff', padding: 2, flexShrink: 0 }}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    )}
+                    <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.06em', fontWeight: 600, textAlign: 'center' }}>
+                      {b.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {brokers.length > 9 && (
+                <span
+                  onClick={() => setShowAllBrokers(s => !s)}
+                  style={{ fontFamily: fm, fontSize: 12, color: '#00d4a0', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', padding: '4px 0', marginTop: 4 }}
+                >
+                  {showAllBrokers ? 'See less ▲' : 'See more ▼'}
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {/* "See how this works" prompt — bridges the hero into the carousel */}
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 20px 16px', background: '#0A0D14' }}>

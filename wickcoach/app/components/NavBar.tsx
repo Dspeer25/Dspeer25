@@ -23,11 +23,11 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           <span onClick={onLogoClick} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
       )}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 104, borderBottom: "none", overflow: "visible", position: 'relative', background: 'transparent' }}>
-        <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 22, marginBottom: 22, cursor: view === 'app' ? 'pointer' : 'default' }}>
-          <Logo size={44} showText />
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 120, borderBottom: "none", overflow: "visible", position: 'relative', background: '#181c26' }}>
+        <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 24, marginBottom: 20, cursor: view === 'app' ? 'pointer' : 'default' }}>
+          <Logo size={54} showText />
         </div>
-        <span style={{ position: 'absolute', top: 40, right: 56, color: '#00d4a0', fontFamily: fm, fontSize: 18, cursor: 'pointer', fontWeight: 500 }}>Login</span>
+        <span style={{ position: 'absolute', top: 46, right: 56, color: '#00d4a0', fontFamily: fm, fontSize: 20, cursor: 'pointer', fontWeight: 500 }}>Login</span>
         <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 1000, marginBottom: 12 }}>
           {tabs.map((t, idx) => {
             const isActive = view === 'app' && activeTab === t;
@@ -39,10 +39,10 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#00d4a0'; e.currentTarget.style.background = 'rgba(0,212,160,0.2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? '#00d4a0' : 'rgba(0,212,160,0.6)'; e.currentTarget.style.background = isActive ? 'rgba(0,212,160,0.2)' : 'rgba(0,212,160,0.08)'; }}
                 style={{
-                  fontSize: 20,
+                  fontSize: 24,
                   color: '#00d4a0',
                   letterSpacing: "0.03em",
-                  padding: "10px 20px",
+                  padding: "14px 24px",
                   cursor: "pointer",
                   fontFamily: "Chakra Petch, sans-serif",
                   borderRadius: 8,

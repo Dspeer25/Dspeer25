@@ -260,9 +260,9 @@
             width: 4vw;
             max-width: 60px;
             min-width: 20px;
-            /* Lighter base gradient for visibility */
-            background: linear-gradient(to top, rgba(25, 25, 30, 0.9) 0%, rgba(45, 45, 55, 0.95) 100%);
-            border: 1px solid rgba(255,255,255,0.15);
+            /* Transparent base — no dark column behind candle colors */
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.08);
             border-bottom: none;
             transition: all 2s ease;
         }
