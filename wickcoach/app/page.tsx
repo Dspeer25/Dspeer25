@@ -88,7 +88,7 @@ export default function WickCoachFull() {
     return () => clearTimeout(t);
   }, [textVisible]);
 
-  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Tools", "Trader Profile"];
+  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Trader Profile", "Tools"];
 
   const privacyCards = [
     { icon: <Eye size={22} color={teal} />, title: "Your trades stay yours", text: "All data stored locally in your browser. Nothing leaves your machine." },
