@@ -106,7 +106,7 @@ export default function WickCoachFull() {
   ];
 
   return (
-    <div style={{ background: "#0A0D14", backgroundImage: "radial-gradient(circle at 50% 0%, #141822 0%, #0A0D14 40%)", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>
+    <div style={{ background: "#0A0D14", backgroundImage: "radial-gradient(ellipse 1200px 800px at 50% 0%, #181c26 0%, #12151d 25%, #0A0D14 60%)", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>
       {/* Subtle grid texture overlay — fades out past 80% of viewport */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0, maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)', WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)' }} />
       <SplashScreen />
@@ -156,9 +156,6 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
         </div>
-
-        {/* Gradient fade from nav area (lighter grey) into hero — all lands on #0A0D14 */}
-        <div style={{ width: '100%', height: 80, background: 'linear-gradient(to bottom, #1a1d26 0%, #0A0D14 100%)', pointerEvents: 'none', position: 'relative', zIndex: 1, marginBottom: -1 }} />
 
         {/* Hero */}
         <div style={{ position: 'relative', zIndex: 1 }}>
