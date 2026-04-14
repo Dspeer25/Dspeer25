@@ -23,7 +23,7 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           <span onClick={onLogoClick} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
       )}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 104, borderBottom: "1px solid rgba(0,212,160,0.3)", overflow: "visible", position: 'relative', background: 'transparent' }}>
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 104, borderBottom: "none", overflow: "visible", position: 'relative', background: 'transparent' }}>
         <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 22, marginBottom: 22, cursor: view === 'app' ? 'pointer' : 'default' }}>
           <Logo size={44} showText />
         </div>

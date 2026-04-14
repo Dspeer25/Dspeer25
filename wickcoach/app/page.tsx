@@ -185,11 +185,11 @@ export default function WickCoachFull() {
               <div key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 {b.domain && (
                   <img
-                    src={`https://logo.clearbit.com/${b.domain}`}
+                    src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
                     alt=""
                     width={20}
                     height={20}
-                    style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4, filter: 'brightness(1.1)' }}
+                    style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4, background: '#ffffff', padding: 2 }}
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                 )}
