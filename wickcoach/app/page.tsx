@@ -88,7 +88,7 @@ export default function WickCoachFull() {
     return () => clearTimeout(t);
   }, [textVisible]);
 
-  const tabs = ["Log a Trade", "Past Trades", "Trading Goals", "Analysis", "Trader Profile"];
+  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Trader Profile"];
 
   const privacyCards = [
     { icon: <Eye size={22} color={teal} />, title: "Your trades stay yours", text: "All data stored locally in your browser. Nothing leaves your machine." },
@@ -130,16 +130,16 @@ export default function WickCoachFull() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} />
         </div>
-        <div style={{ background: 'transparent', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
+        <div style={{ backgroundImage: 'linear-gradient(to bottom, #181c26 0px, #151923 120px, #12151d 260px, #0A0D14 420px, #0A0D14 100%)', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
           {activeTab === 'Log a Trade' && (
             <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
               <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} />
             </div>
           )}
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
-          {activeTab === 'Trading Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
+          {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
           {activeTab === 'Analysis' && <AnalysisContent />}
-          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Trading Goals' && activeTab !== 'Analysis' && (
+          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>
           )}
         </div>
@@ -190,7 +190,7 @@ export default function WickCoachFull() {
           ];
           const visible = showAllBrokers ? brokers : brokers.slice(0, 9);
           return (
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '12px 20px 32px', background: '#0A0D14', marginTop: -40 }}>
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '0px 20px 32px', background: '#0A0D14', marginTop: -60 }}>
               <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
                 Connects to all major brokers
               </div>

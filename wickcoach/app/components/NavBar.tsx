@@ -23,8 +23,8 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           <span onClick={onLogoClick} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
       )}
-      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 120, borderBottom: "none", overflow: "visible", position: 'relative', background: '#181c26' }}>
-        <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 24, marginBottom: 20, cursor: view === 'app' ? 'pointer' : 'default' }}>
+      <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 100, borderBottom: "none", overflow: "visible", position: 'relative', background: '#181c26' }}>
+        <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 14, marginBottom: 8, cursor: view === 'app' ? 'pointer' : 'default' }}>
           <Logo size={54} showText />
         </div>
         <span
@@ -47,7 +47,7 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
           onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.color = '#0A0D14'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ffffff'; }}
         >Login</span>
-        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 1000, marginBottom: 12 }}>
+        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 1000, marginBottom: 0 }}>
           {tabs.map((t, idx) => {
             const isActive = view === 'app' && activeTab === t;
             return (

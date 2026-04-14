@@ -194,7 +194,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 140px)', fontFamily: fm, background: 'transparent' }}>
       {/* ═══ LEFT SIDEBAR ═══ */}
-      <div style={{ width: 220, background: '#0e0f14', borderRight: '1px solid #1e1f2a', padding: '28px 20px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+      <div style={{ width: 220, background: '#141822', borderRight: '1px solid #2A3143', padding: '28px 20px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ fontFamily: fm, fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Navigation</div>
         <div style={{ fontFamily: fm, fontSize: 13, color: teal, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700, marginBottom: 16 }}>Goals Hierarchy</div>
         <div style={{ height: 1, background: '#2a2b32', marginBottom: 20 }} />
@@ -211,7 +211,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                 marginBottom: 4,
                 borderRadius: 6,
                 cursor: 'pointer',
-                background: isActive ? '#1a1c23' : 'transparent',
+                background: isActive ? '#1a1f2a' : 'transparent',
                 borderLeft: isActive ? `3px solid ${teal}` : '3px solid transparent',
                 color: isActive ? '#ffffff' : '#6b7280',
                 fontSize: 14,
@@ -252,7 +252,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
           const isExpanded = expandedGoalId === g.id;
           return (
             <div key={g.id} style={{
-              background: '#0e0f14',
+              background: '#141822',
               border: isExpanded ? '1px solid rgba(0,212,160,0.35)' : '1px solid #1e1f2a',
               borderRadius: 12,
               padding: '24px 28px',
@@ -385,7 +385,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                   <div style={{
                     flex: 1,
                     background: '#0a0b0f',
-                    border: '1px solid #1e1f2a',
+                    border: '1px solid #2A3143',
                     borderRadius: 8,
                     padding: 14,
                     minHeight: 450,
@@ -394,7 +394,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                     flexDirection: 'column',
                   }}>
                     {/* Progress bar */}
-                    <div style={{ height: 3, background: '#1a1b22', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ height: 3, background: '#2A3143', borderRadius: 2, marginBottom: 10, overflow: 'hidden', flexShrink: 0 }}>
                       <div style={{ width: `${getProgressPercent(g)}%`, height: '100%', background: teal, borderRadius: 2, transition: 'width 0.5s ease' }} />
                     </div>
                     {g.contextComplete && (
@@ -440,7 +440,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
                           placeholder={isReadyToLog(g) ? 'Add more context or click Log & Exit...' : 'Tell WickCoach why this matters...'}
                           rows={1}
-                          style={{ width: '100%', background: '#0e0f14', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: teal, boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
+                          style={{ width: '100%', background: '#141822', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: teal, boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
                         />
                       </div>
                     )}
