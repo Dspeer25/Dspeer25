@@ -157,18 +157,47 @@ export default function WickCoachFull() {
           <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
         </div>
 
-        {/* Hero — zero gap to carousel */}
+        {/* Gradient fade from nav area (grey) into hero (black) */}
+        <div style={{ width: '100%', height: 80, background: 'linear-gradient(to bottom, #1a1d26 0%, #0A0D14 50%, #030305 100%)', pointerEvents: 'none', position: 'relative', zIndex: 1, marginBottom: -1 }} />
+
+        {/* Hero */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Hero textVisible={textVisible} />
         </div>
 
         {/* CONNECTS TO ALL MAJOR BROKERS — fills gap under hero */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, padding: '40px 20px 28px', background: '#0A0D14' }}>
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: '40px 20px 28px', background: '#0A0D14' }}>
           <div style={{ fontFamily: fm, fontSize: 12, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 500 }}>
             Connects to all major brokers
           </div>
-          <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.12em', maxWidth: 900, textAlign: 'center', lineHeight: 2 }}>
-            WEBULL · THINKORSWIM · NINJATRADER · INTERACTIVE BROKERS · ROBINHOOD · METATRADER · TRADINGVIEW · STERLING PRO · ALL PROP FIRMS
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '14px 28px', maxWidth: 1000 }}>
+            {[
+              { name: 'WEBULL', domain: 'webull.com' },
+              { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
+              { name: 'NINJATRADER', domain: 'ninjatrader.com' },
+              { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
+              { name: 'ROBINHOOD', domain: 'robinhood.com' },
+              { name: 'METATRADER', domain: 'metatrader5.com' },
+              { name: 'TRADINGVIEW', domain: 'tradingview.com' },
+              { name: 'STERLING PRO', domain: null },
+              { name: 'ALL PROP FIRMS', domain: null },
+            ].map(b => (
+              <div key={b.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {b.domain && (
+                  <img
+                    src={`https://logo.clearbit.com/${b.domain}`}
+                    alt=""
+                    width={20}
+                    height={20}
+                    style={{ width: 20, height: 20, objectFit: 'contain', borderRadius: 4, filter: 'brightness(1.1)' }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                )}
+                <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                  {b.name}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
