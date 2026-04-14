@@ -88,7 +88,7 @@ export default function WickCoachFull() {
     return () => clearTimeout(t);
   }, [textVisible]);
 
-  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Trader Profile"];
+  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Tools", "Trader Profile"];
 
   const privacyCards = [
     { icon: <Eye size={22} color={teal} />, title: "Your trades stay yours", text: "All data stored locally in your browser. Nothing leaves your machine." },
@@ -139,7 +139,16 @@ export default function WickCoachFull() {
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
           {activeTab === 'Analysis' && <AnalysisContent />}
-          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && (
+          {activeTab === 'Tools' && (
+            <div style={{ textAlign: 'center', paddingTop: 120, paddingBottom: 120 }}>
+              <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', letterSpacing: '0.5px', marginBottom: 12 }}>Tools</div>
+              <p style={{ color: '#aab0bd', fontFamily: fm, fontSize: 15, maxWidth: 520, margin: '0 auto 28px', lineHeight: 1.7 }}>
+                Position sizer, scenario analysis, growth simulator, trade timeline and more — landing here soon.
+              </p>
+              <span style={{ display: 'inline-block', fontFamily: fm, fontSize: 12, color: teal, letterSpacing: 2, textTransform: 'uppercase', padding: '6px 14px', border: '1px solid rgba(0,212,160,0.4)', borderRadius: 999, background: 'rgba(0,212,160,0.06)' }}>Coming Soon</span>
+            </div>
+          )}
+          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>
           )}
         </div>
