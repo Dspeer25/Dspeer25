@@ -204,13 +204,13 @@ export default function WickCoachFull() {
                       justifyContent: 'center',
                       gap: 10,
                       padding: '14px 16px',
-                      background: '#141822',
+                      background: '#1f2430',
                       border: '1px solid #2A3143',
                       borderRadius: 10,
                       transition: 'border-color 0.2s ease, background 0.2s ease',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; e.currentTarget.style.background = '#1a1f2a'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; e.currentTarget.style.background = '#141822'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; e.currentTarget.style.background = '#262b38'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; e.currentTarget.style.background = '#1f2430'; }}
                   >
                     {b.domain && (
                       <img
@@ -258,14 +258,14 @@ export default function WickCoachFull() {
           <div style={{ position: 'relative' }}>
             <CarouselNav activeCategory={activeCategory} onCategoryClick={setActiveCategory} textVisible={textVisible} />
 
-            {/* iMac monitor frame (Fix 9) */}
+            {/* iMac monitor frame */}
             <div style={{ maxWidth: 1100, width: '90%', margin: '0 auto', position: 'relative' }}>
               {/* Top bezel + camera dot */}
-              <div style={{ background: 'linear-gradient(to bottom, #2A3143, #1e2330)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #2A3143', borderBottom: 'none' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#555' }} />
+              <div style={{ background: 'linear-gradient(to bottom, #4a5268, #363d4e)', borderRadius: '16px 16px 0 0', padding: '12px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #4a5268', borderBottom: 'none' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6b7280' }} />
               </div>
               {/* Screen area */}
-              <div style={{ background: '#0A0D14', border: '1px solid #2A3143', borderTop: 'none', overflow: 'hidden' }}>
+              <div style={{ background: '#0A0D14', border: '1px solid #4a5268', borderTop: 'none', borderBottom: 'none', overflow: 'hidden' }}>
                 <div className="carousel-card-scroll" onWheel={(e: React.WheelEvent) => e.stopPropagation()} style={{ background: 'transparent', overflowX: 'hidden', overflowY: 'auto', minHeight: 520, padding: 32 }}>
                   {activeCategory === 0 && <CarouselTradingGoals onAdvance={() => setActiveCategory(1)} frozen={!textVisible} />}
                   {activeCategory === 1 && <CarouselLogTrade onAdvance={() => setActiveCategory(2)} />}
@@ -277,10 +277,14 @@ export default function WickCoachFull() {
                   {activeCategory === 7 && <MockTradeTimeline />}
                 </div>
               </div>
+              {/* Bottom chin with WickCoach logo */}
+              <div style={{ background: 'linear-gradient(to bottom, #363d4e, #2c3240)', borderRadius: '0 0 16px 16px', padding: '14px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #4a5268', borderTop: 'none' }}>
+                <Logo size={22} showText />
+              </div>
               {/* Stand */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: 60, height: 40, background: '#1e2330', border: '1px solid #2A3143', borderTop: 'none' }} />
-                <div style={{ width: 120, height: 8, background: '#2A3143', borderRadius: '0 0 4px 4px' }} />
+                <div style={{ width: 60, height: 40, background: 'linear-gradient(to bottom, #363d4e, #2c3240)', border: '1px solid #4a5268', borderTop: 'none' }} />
+                <div style={{ width: 120, height: 8, background: '#4a5268', borderRadius: '0 0 4px 4px' }} />
               </div>
             </div>
 

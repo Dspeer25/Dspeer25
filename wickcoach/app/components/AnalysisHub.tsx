@@ -16,6 +16,14 @@ const strategies = [
   { name: 'Put Scalp', trades: 8, wr: 50.0, avg: 487.08, total: 3897, r: 1.0 },
 ];
 
+const tickerDomains: Record<string, string> = {
+  V: 'visa.com', META: 'meta.com', NVDA: 'nvidia.com', AMD: 'amd.com',
+  BA: 'boeing.com', MSFT: 'microsoft.com', JPM: 'jpmorganchase.com',
+  DIS: 'disney.com', NFLX: 'netflix.com', TSLA: 'tesla.com', AAPL: 'apple.com',
+  GOOGL: 'google.com', GOOG: 'google.com', AMZN: 'amazon.com', COIN: 'coinbase.com',
+  PLTR: 'palantir.com', CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com',
+};
+
 const tickers = [
   { t: 'V', color: '#1a1f71', trades: 14, wr: 78.6, pl: 10391 },
   { t: 'META', color: '#0668E1', trades: 9, wr: 77.8, pl: 6288 },
@@ -25,6 +33,18 @@ const tickers = [
   { t: 'MSFT', color: '#00a4ef', trades: 17, wr: 47.1, pl: 5805 },
   { t: 'JPM', color: '#006cb7', trades: 8, wr: 62.5, pl: 4200 },
   { t: 'DIS', color: '#113ccf', trades: 6, wr: 50.0, pl: 3450 },
+];
+
+// Loss performance — ticker-level losses (different subset/sort than wins)
+const tickerLosses = [
+  { t: 'DIS', color: '#113ccf', trades: 4, wr: 25.0, pl: -2847 },
+  { t: 'NFLX', color: '#e50914', trades: 5, wr: 20.0, pl: -1923 },
+  { t: 'BA', color: '#0039a6', trades: 3, wr: 0.0, pl: -1580 },
+  { t: 'META', color: '#0668E1', trades: 2, wr: 0.0, pl: -1245 },
+  { t: 'AMD', color: '#ed1c24', trades: 5, wr: 40.0, pl: -987 },
+  { t: 'MSFT', color: '#00a4ef', trades: 9, wr: 22.2, pl: -876 },
+  { t: 'TSLA', color: '#cc0000', trades: 4, wr: 25.0, pl: -712 },
+  { t: 'AAPL', color: '#555555', trades: 3, wr: 33.3, pl: -430 },
 ];
 
 const hours = [
@@ -103,6 +123,7 @@ export default function AnalysisContent() {
   const [heatmapMode, setHeatmapMode] = useState<'timeline' | 'best' | 'worst'>('timeline');
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
+  const [tickerView, setTickerView] = useState<'wins' | 'losses'>('wins');
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
 
   // ─── Analysis AI chat ───
@@ -472,27 +493,72 @@ export default function AnalysisContent() {
           );
         })()}
 
-        {/* Ticker Performance — horizontal bar ranking */}
+        {/* Ticker Performance — horizontal bar ranking with wins/losses toggle */}
         {(() => {
-          const sorted = [...tickers].sort((a, b) => b.pl - a.pl);
+          const source = tickerView === 'wins' ? tickers : tickerLosses;
+          const sorted = tickerView === 'wins'
+            ? [...source].sort((a, b) => b.pl - a.pl)
+            : [...source].sort((a, b) => a.pl - b.pl); // most negative first
           const maxPL = Math.max(...sorted.map(t => Math.abs(t.pl)));
           const visible = showAllTickers ? sorted : sorted.slice(0, 4);
+          const subtitle = tickerView === 'wins'
+            ? 'Top-profit tickers, sorted by total P/L'
+            : 'Worst loss tickers, sorted by total loss';
           return (
             <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
-              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
-              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 18 }}>P/L ranking across your tickers</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18 }}>
+                <div>
+                  <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
+                  <div style={{ fontSize: 13, color: '#aab0bd', marginTop: 4 }}>{subtitle}</div>
+                </div>
+                {/* Wins/Losses toggle */}
+                <div style={{ display: 'inline-flex', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 999, padding: 3, flexShrink: 0 }}>
+                  <button
+                    onClick={() => setTickerView('wins')}
+                    style={{
+                      padding: '6px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                      fontFamily: fm, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+                      background: tickerView === 'wins' ? teal : 'transparent',
+                      color: tickerView === 'wins' ? '#0A0D14' : '#aab0bd',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >Wins</button>
+                  <button
+                    onClick={() => setTickerView('losses')}
+                    style={{
+                      padding: '6px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                      fontFamily: fm, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+                      background: tickerView === 'losses' ? red : 'transparent',
+                      color: tickerView === 'losses' ? '#fff' : '#aab0bd',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >Losses</button>
+                </div>
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {visible.map((tk) => {
                   const positive = tk.pl >= 0;
                   const barWidth = (Math.abs(tk.pl) / maxPL) * 100;
+                  const domain = tickerDomains[tk.t];
                   return (
                     <div key={tk.t} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: 6, background: tk.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, color: '#fff' }}>{tk.t.charAt(0)}</span>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, background: '#ffffff', padding: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {domain ? (
+                          <img
+                            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+                            alt={tk.t}
+                            width={22}
+                            height={22}
+                            style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 3 }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span style={{ fontFamily: fd, fontSize: 11, fontWeight: 700, color: tk.color }}>{tk.t.charAt(0)}</span>
+                        )}
                       </div>
-                      <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#fff', width: 50, flexShrink: 0 }}>{tk.t}</div>
-                      <div style={{ flex: 1, position: 'relative', height: 24, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', width: 54, flexShrink: 0 }}>{tk.t}</div>
+                      <div style={{ flex: 1, position: 'relative', height: 26, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                         <div
                           style={{
                             position: 'absolute', top: 0, left: 0, bottom: 0,
@@ -505,7 +571,7 @@ export default function AnalysisContent() {
                           {tk.trades} trades · {fmtPct(tk.wr)} win
                         </div>
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: positive ? teal : red, fontFamily: fd, width: 80, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.pl)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: positive ? teal : red, fontFamily: fd, width: 86, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.pl)}</div>
                     </div>
                   );
                 })}
@@ -515,7 +581,7 @@ export default function AnalysisContent() {
                 onClick={() => setShowAllTickers(s => !s)}
                 style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 14, textAlign: 'center', fontFamily: fm, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}
               >
-                {showAllTickers ? 'Show less ↑' : `Show all ${tickers.length} ↓`}
+                {showAllTickers ? 'Show less ↑' : `Show all ${source.length} ↓`}
               </div>
             </div>
           );

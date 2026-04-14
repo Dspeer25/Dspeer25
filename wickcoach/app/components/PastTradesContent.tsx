@@ -7,42 +7,49 @@ import AIChatWidget from "./AIChatWidget";
 const teal = '#00d4a0';
 
 // Ticker tile color map. Each entry defines the tile's background, border, text color.
-// Unlisted tickers fall back to a generic dark tile with the first letter in white.
-const TICKER_TILES: Record<string, { bg: string; border: string; color: string; label: string; labelSize: number }> = {
-  DIS:   { bg: '#0f192b', border: '#1e345e', color: '#0063e5', label: 'DI',   labelSize: 10 },
-  NFLX:  { bg: '#2d0000', border: '#5e1e1e', color: '#e50914', label: 'N',    labelSize: 10 },
-  SPY:   { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'SPDR', labelSize: 7 },
-  MSFT:  { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'M',    labelSize: 10 },
-  TSLA:  { bg: '#2d0000', border: '#5e1e1e', color: '#cc0000', label: 'T',    labelSize: 10 },
-  AMD:   { bg: '#001a0d', border: '#1e5e33', color: '#00a651', label: 'AMD',  labelSize: 8 },
-  GOOGL: { bg: '#0d2618', border: '#1e5e3a', color: '#34a853', label: 'G',    labelSize: 10 },
-  GOOG:  { bg: '#0d2618', border: '#1e5e3a', color: '#34a853', label: 'G',    labelSize: 10 },
-  V:     { bg: '#0d0d2b', border: '#1e1e5e', color: '#1a1f71', label: 'V',    labelSize: 10 },
-  AAPL:  { bg: '#1a1a1a', border: '#333333', color: '#ffffff', label: 'A',    labelSize: 10 },
-  BA:    { bg: '#0d1a2b', border: '#1e3a5e', color: '#0033a0', label: 'B',    labelSize: 10 },
-  COIN:  { bg: '#0d1a2b', border: '#1e3a5e', color: '#0052ff', label: 'C',    labelSize: 10 },
-  META:  { bg: '#0d1a2e', border: '#1e3a6e', color: '#0668E1', label: 'M',    labelSize: 10 },
-  NVDA:  { bg: '#0d1a00', border: '#2e5e00', color: '#76b900', label: 'N',    labelSize: 10 },
-  AMZN:  { bg: '#2b1d00', border: '#5e4100', color: '#ff9900', label: 'A',    labelSize: 10 },
-  QQQ:   { bg: '#1a0d2b', border: '#3a1e5e', color: '#7b3fe4', label: 'Q',    labelSize: 10 },
-  JPM:   { bg: '#0d1a2b', border: '#1e3a5e', color: '#006cb7', label: 'J',    labelSize: 10 },
-  WMT:   { bg: '#0d1a2b', border: '#1e3a5e', color: '#0071dc', label: 'W',    labelSize: 10 },
+// Ticker → brand domain. Used to fetch the actual company logo via Google's
+// favicon service. Unlisted tickers fall back to a first-letter tile.
+const TICKER_DOMAINS: Record<string, string> = {
+  AAPL: 'apple.com', AMD: 'amd.com', AMZN: 'amazon.com', BA: 'boeing.com',
+  COIN: 'coinbase.com', DIS: 'disney.com', GOOG: 'google.com', GOOGL: 'google.com',
+  JPM: 'jpmorganchase.com', META: 'meta.com', MSFT: 'microsoft.com',
+  NFLX: 'netflix.com', NVDA: 'nvidia.com', QQQ: 'invesco.com', SPY: 'spglobal.com',
+  TSLA: 'tesla.com', V: 'visa.com', WMT: 'walmart.com',
+  PLTR: 'palantir.com', CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com',
+  NKE: 'nike.com', SBUX: 'starbucks.com', KO: 'coca-cola.com', PEP: 'pepsico.com',
+  ORCL: 'oracle.com', ADBE: 'adobe.com', INTC: 'intel.com', CSCO: 'cisco.com',
+  T: 'att.com', VZ: 'verizon.com',
 };
 
 const TickerTile = ({ ticker }: { ticker: string }) => {
-  const t = TICKER_TILES[ticker] || {
-    bg: '#1a1a1a', border: '#333333', color: '#ffffff',
-    label: ticker.charAt(0), labelSize: 10,
-  };
+  const domain = TICKER_DOMAINS[ticker];
+  if (domain) {
+    return (
+      <div style={{
+        width: 28, height: 28, borderRadius: 4, background: '#ffffff', padding: 3,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, marginRight: 8,
+      }}>
+        <img
+          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+          alt={ticker}
+          width={22}
+          height={22}
+          style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 3 }}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+        />
+      </div>
+    );
+  }
   return (
     <div style={{
       width: 28, height: 28, borderRadius: 4,
-      background: t.bg, border: `1px solid ${t.border}`, color: t.color,
+      background: '#1a1a1a', border: '1px solid #333', color: '#fff',
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: fd, fontWeight: 700, fontSize: t.labelSize,
-      flexShrink: 0, letterSpacing: t.labelSize < 10 ? 0 : 0.5, marginRight: 8,
+      fontFamily: fd, fontWeight: 700, fontSize: 11,
+      flexShrink: 0, marginRight: 8,
     }}>
-      {t.label}
+      {ticker.charAt(0)}
     </div>
   );
 };
@@ -281,8 +288,13 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
   }
 
   function autoFitColumn(colIndex: number) {
-    const targetWidth = colWidths[colIndex];
-    setColWidths(prev => prev.map(() => targetWidth));
+    // Use functional setter so we read the latest width if a drag-in-progress
+    // just modified it, then equalize all columns to that width.
+    setColWidths(prev => {
+      const target = prev[colIndex];
+      return prev.map(() => target);
+    });
+    setResizing(null); // cancel any drag the double-click may have started
   }
 
   return (
@@ -325,7 +337,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
         <div style={{ display: 'flex', gap: 0, marginBottom: 20, border: '1px solid #2A3143', borderRadius: 10, overflow: 'hidden', background: '#141822' }}>
           {/* Card 1 — TOTAL NET P/L */}
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Net P/L</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Net P/L</div>
             <div style={{ color: totalPL >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>
               {(totalPL >= 0 ? '+' : '-') + '$' + Math.abs(totalPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
@@ -335,8 +347,8 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           {/* Card 2 — WIN RATE */}
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</span>
-              <span style={{ color: 'rgba(255,255,255,0.3)', fontFamily: fm, fontSize: 11 }}>{wins.length}W / {losses.length}L</span>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Win Rate</span>
+              <span style={{ color: 'rgba(255,255,255,0.45)', fontFamily: fm, fontSize: 12 }}>{wins.length}W / {losses.length}L</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
               <span style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700 }}>{winRate}%</span>
@@ -350,18 +362,18 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
 
           {/* Card 3 — TOTAL EXECUTIONS */}
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Executions</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Executions</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>{statTrades.length}</div>
-            <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10, fontStyle: 'italic' as const }}>Consistent Volume</div>
+            <div style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 10, fontStyle: 'italic' as const }}>Consistent Volume</div>
           </div>
 
           {/* Card 4 — AVG R:R */}
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
               <span style={{ width: 6, height: 6, background: '#00d4a0', borderRadius: '50%', display: 'inline-block' }} />
-              <span style={{ fontFamily: fm, fontSize: 11, color: '#00d4a0' }}>Above Target</span>
+              <span style={{ fontFamily: fm, fontSize: 12, color: '#00d4a0' }}>Above Target</span>
             </div>
           </div>
 
@@ -392,7 +404,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             <div style={{ color: expectedValue >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 20, fontWeight: 700, marginTop: 6 }}>
               {(expectedValue >= 0 ? '+' : '-') + '$' + Math.abs(expectedValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 10 }}>Expected Value / Trade</div>
+            <div style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 10 }}>Expected Value / Trade</div>
           </div>
         </div>
 
@@ -543,7 +555,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               const isActive = sortField && sortBy.startsWith(sortField + '-');
               const isAsc = sortBy === sortField + '-asc';
               return (
-                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.35)', fontFamily: fm, fontSize: 11, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '12px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid rgba(42,49,67,0.5)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
+                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 700, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '14px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid rgba(42,49,67,0.5)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
                   {h}
                   {sortField && (
                     <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0, fontSize: 11, marginLeft: 2 }}>
@@ -576,9 +588,9 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                   {/* Date */}
                   <span style={{ color: '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
                   {/* Time */}
-                  <span style={{ color: '#9ca3af', fontSize: 12, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
+                  <span style={{ color: '#b8c0ce', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#c9cdd4', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
+                  <span style={{ color: '#d5dae2', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
                   {/* Direction */}
                   <span style={{ padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontFamily: fm, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(255,68,68,0.1)', border: t.direction === 'LONG' ? '1px solid rgba(0,212,160,0.15)' : '1px solid rgba(255,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ff4444' }}>{t.direction}</span>
@@ -592,7 +604,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                   {/* R:R */}
                   <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '12px 6px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Notes */}
-                  <div style={{ color: '#9ca3af', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  <div style={{ color: '#b8c0ce', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '12px 8px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                 </div>
               );
             })}
