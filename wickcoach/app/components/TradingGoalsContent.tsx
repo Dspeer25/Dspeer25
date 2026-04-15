@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GOAL_TYPES, DEFAULT_GOALS } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, DEFAULT_GOALS } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void }) {
@@ -82,7 +82,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   };
 
   const clearGoalContext = (id: string) => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, context: [], aiResponses: [], contextComplete: false, actionItems: [] } : g));
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, context: [], aiResponses: [], contextComplete: false, actionItems: [], completeness: undefined, scoringCriteria: undefined } : g));
   };
 
   const handleTextareaGrow = (e: React.ChangeEvent<HTMLTextAreaElement>, goalId: string) => {
@@ -125,22 +125,31 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
       });
       const data = await res.json();
       const aiReply: string = data.reply;
-      const readyToLog = exchangeNumber >= 5 || (exchangeNumber >= 3 && !aiReply.includes('?'));
+      const meta = data.metadata as { completeness?: number; scoring_criteria?: GoalScoringCriteria } | null;
+      const completeness = typeof meta?.completeness === 'number' ? meta.completeness : undefined;
+      const scoringCriteria = meta?.scoring_criteria;
       setGoals(prev => {
-        const next = prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, aiReply] } : g);
+        const next = prev.map(g => g.id === goalId ? {
+          ...g,
+          context: updatedContext,
+          aiResponses: [...g.aiResponses, aiReply],
+          ...(completeness !== undefined ? { completeness } : {}),
+          ...(scoringCriteria ? { scoringCriteria } : {}),
+        } : g);
         const profileData = JSON.parse(localStorage.getItem('wickcoach_trader_profile') || '{"goalContexts":[],"totalExchanges":0}');
         profileData.goalContexts = next.filter(g => g.context.length > 0).map(g => ({
           goalTitle: g.title,
           exchanges: g.context.map((c, i) => ({ user: c, ai: g.aiResponses[i] || '' })),
           actionItems: g.actionItems || [],
-          complete: g.contextComplete
+          complete: g.contextComplete,
+          completeness: g.completeness,
+          scoringCriteria: g.scoringCriteria,
         }));
         profileData.totalExchanges = profileData.goalContexts.reduce((sum: number, g: { exchanges: unknown[] }) => sum + g.exchanges.length, 0);
         profileData.lastUpdated = new Date().toISOString();
         localStorage.setItem('wickcoach_trader_profile', JSON.stringify(profileData));
         return next;
       });
-      void readyToLog;
     } catch {
       setGoals(prev => prev.map(g => g.id === goalId ? { ...g, context: updatedContext, aiResponses: [...g.aiResponses, 'Failed to connect to WickCoach.'] } : g));
     }
@@ -179,17 +188,9 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
     setExpandedGoalId(null);
   };
 
-  const isReadyToLog = (g: Goal) => {
-    const exchanges = g.context.length;
-    if (exchanges >= 5) return true;
-    if (exchanges >= 3 && g.aiResponses.length > 0) {
-      const lastReply = g.aiResponses[g.aiResponses.length - 1];
-      return !lastReply.includes('?');
-    }
-    return false;
-  };
+  const isReadyToLog = (g: Goal) => g.completeness === 100;
 
-  const getProgressPercent = (g: Goal) => Math.min(g.context.length * 20, 100);
+  const getProgressPercent = (g: Goal) => Math.max(0, Math.min(100, g.completeness ?? 0));
 
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 140px)', fontFamily: fm, background: 'transparent' }}>

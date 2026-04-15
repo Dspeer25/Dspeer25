@@ -30,6 +30,13 @@ export function formatDollar(n: number): string {
   return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+export interface GoalScoringCriteria {
+  measure: string;
+  compliance: string;
+  violation: string;
+  scope: string;
+}
+
 export interface Goal {
   id: string;
   title: string;
@@ -39,6 +46,10 @@ export interface Goal {
   actionItems: string[];
   createdAt: string;
   goalType: string;
+  /** Latest completeness score (0-100) emitted by the goal-clarification coach. */
+  completeness?: number;
+  /** Structured scoring criteria emitted by the coach once the goal is understood. */
+  scoringCriteria?: GoalScoringCriteria;
 }
 
 export const GOAL_TYPES = ['Trade Management', 'Entry Criteria', 'Patience / Setup', 'Risk Management', 'Psychology', 'General'];
