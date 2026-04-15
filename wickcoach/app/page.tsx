@@ -87,6 +87,11 @@ export default function WickCoachFull() {
         biggestStruggle: '',
         goodDayDescription: '',
         onboardingComplete: false,
+        quantitativeTargets: [
+          { id: 'target-rr', label: 'Target Risk:Reward', value: null, type: 'number'  },
+          { id: 'target-wr', label: 'Target Win Rate',    value: null, type: 'percent' },
+        ],
+        customQuantTargets: [] as unknown[],
       };
       const raw = localStorage.getItem('wickcoach_trader_profile');
       const current = raw ? JSON.parse(raw) : {};

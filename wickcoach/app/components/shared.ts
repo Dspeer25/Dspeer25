@@ -375,6 +375,72 @@ export function buildTraderStats(trades: Trade[]): string {
   ].join('\n');
 }
 
+// ─── Quantitative weekly targets ─────────────────────────────
+// Stored inside wickcoach_trader_profile alongside onboarding fields.
+// target-rr and target-wr are always present; traders can add custom
+// targets (dollar, number, or percent). `value: null` means unset.
+
+export type QuantTargetType = 'number' | 'percent' | 'dollar';
+
+export interface QuantitativeTarget {
+  id: string;
+  label: string;
+  value: number | null;
+  type: QuantTargetType;
+}
+
+export const DEFAULT_QUANT_TARGETS: QuantitativeTarget[] = [
+  { id: 'target-rr', label: 'Target Risk:Reward', value: null, type: 'number' },
+  { id: 'target-wr', label: 'Target Win Rate',    value: null, type: 'percent' },
+];
+
+export function readQuantTargets(): { quantitativeTargets: QuantitativeTarget[]; customQuantTargets: QuantitativeTarget[] } {
+  if (typeof window === 'undefined') return { quantitativeTargets: DEFAULT_QUANT_TARGETS.map(t => ({ ...t })), customQuantTargets: [] };
+  try {
+    const raw = localStorage.getItem('wickcoach_trader_profile');
+    const profile = raw ? JSON.parse(raw) : {};
+    const quantitativeTargets = Array.isArray(profile.quantitativeTargets) && profile.quantitativeTargets.length > 0
+      ? profile.quantitativeTargets as QuantitativeTarget[]
+      : DEFAULT_QUANT_TARGETS.map(t => ({ ...t }));
+    const customQuantTargets = Array.isArray(profile.customQuantTargets)
+      ? profile.customQuantTargets as QuantitativeTarget[]
+      : [];
+    return { quantitativeTargets, customQuantTargets };
+  } catch {
+    return { quantitativeTargets: DEFAULT_QUANT_TARGETS.map(t => ({ ...t })), customQuantTargets: [] };
+  }
+}
+
+function writeProfileFields(fields: Record<string, unknown>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem('wickcoach_trader_profile');
+    const profile = raw ? JSON.parse(raw) : {};
+    Object.assign(profile, fields);
+    localStorage.setItem('wickcoach_trader_profile', JSON.stringify(profile));
+  } catch { /* ignore quota errors */ }
+}
+
+export function updateQuantTarget(id: string, value: number | null): void {
+  const { quantitativeTargets, customQuantTargets } = readQuantTargets();
+  const nextQuant  = quantitativeTargets.map(t => t.id === id ? { ...t, value } : t);
+  const nextCustom = customQuantTargets.map(t => t.id === id ? { ...t, value } : t);
+  writeProfileFields({ quantitativeTargets: nextQuant, customQuantTargets: nextCustom });
+}
+
+export function addCustomQuantTarget(label: string, type: QuantTargetType = 'number'): QuantitativeTarget {
+  const { quantitativeTargets, customQuantTargets } = readQuantTargets();
+  const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const target: QuantitativeTarget = { id, label, value: null, type };
+  writeProfileFields({ quantitativeTargets, customQuantTargets: [...customQuantTargets, target] });
+  return target;
+}
+
+export function removeCustomQuantTarget(id: string): void {
+  const { quantitativeTargets, customQuantTargets } = readQuantTargets();
+  writeProfileFields({ quantitativeTargets, customQuantTargets: customQuantTargets.filter(t => t.id !== id) });
+}
+
 // ─── Shared AI context — read from localStorage at call time ─────
 // Every /api/coach caller uses these so every bot sees the same picture
 // of who the trader is, what goals they've set, and what they've said
@@ -423,6 +489,21 @@ export function buildProfileContext(): string {
     if (p.experience)          lines.push(`Experience: ${p.experience}`);
     if (p.biggestStruggle)     lines.push(`Biggest struggle (self-reported): ${p.biggestStruggle}`);
     if (p.goodDayDescription)  lines.push(`What a good day looks like to them: ${p.goodDayDescription}`);
+
+    // Quantitative targets — included so every bot can compare real
+    // stats (win rate, avg R:R, custom metrics) to what the trader said
+    // they're aiming for.
+    const quant  = (Array.isArray(p.quantitativeTargets) ? p.quantitativeTargets : []) as QuantitativeTarget[];
+    const custom = (Array.isArray(p.customQuantTargets)  ? p.customQuantTargets  : []) as QuantitativeTarget[];
+    const setTargets = [...quant, ...custom].filter(t => t && t.value !== null && t.value !== undefined);
+    if (setTargets.length > 0) {
+      lines.push('Weekly quantitative targets the trader has set:');
+      setTargets.forEach(t => {
+        const suffix = t.type === 'percent' ? '%' : t.type === 'dollar' ? ' USD' : '';
+        lines.push(`- ${t.label}: ${t.value}${suffix}`);
+      });
+    }
+
     return lines.join('\n');
   } catch {
     return '';

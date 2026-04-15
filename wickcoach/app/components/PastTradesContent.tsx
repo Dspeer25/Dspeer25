@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, buildGoalsContext, buildProfileContext } from "./shared";
+import { fm, fd, Trade, formatDollar, buildGoalsContext, buildProfileContext, readQuantTargets } from "./shared";
 import AIChatWidget from "./AIChatWidget";
 
 // Local green — all greens in this file resolve to this single swatch.
@@ -222,7 +222,14 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
   const tradesPerDay = statTrades.length / statDays;
   // Avg R numeric value for target comparison.
   const avgRRNumeric = winRRValues.length > 0 ? winRRValues.reduce((a, b) => a + b, 0) / winRRValues.length : 0;
-  const isAboveTarget = avgRRNumeric >= 1.0;
+
+  // Compare real stats against the trader's own targets (set in Weekly
+  // Goals → Numerical). If no target is set, we don't pass judgment.
+  const { quantitativeTargets } = readQuantTargets();
+  const targetRR = quantitativeTargets.find(t => t.id === 'target-rr')?.value ?? null;
+  const targetWR = quantitativeTargets.find(t => t.id === 'target-wr')?.value ?? null;
+  const rrVsTarget = targetRR !== null ? (avgRRNumeric >= targetRR) : null;
+  const wrVsTarget = targetWR !== null ? (winRate >= targetWR) : null;
 
   // P/L sparkline points
   const sparkPoints = (() => {
@@ -394,6 +401,11 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                   {wrDelta >= 0 ? '+' : ''}{wrDelta}% MoM
                 </span>
               )}
+              {wrVsTarget !== null && (
+                <span style={{ color: wrVsTarget ? '#00d4a0' : '#ff4444', fontFamily: fm, fontSize: 12 }}>
+                  {wrVsTarget ? 'Above Target' : 'Below Target'}
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#2A3143' }}>
               {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: '#00d4a0' }} />}
@@ -412,10 +424,12 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
-              <span style={{ width: 6, height: 6, background: isAboveTarget ? '#00d4a0' : '#ff4444', borderRadius: '50%', display: 'inline-block' }} />
-              <span style={{ fontFamily: fm, fontSize: 12, color: isAboveTarget ? '#00d4a0' : '#ff4444' }}>{isAboveTarget ? 'Above Target' : 'Below Target'}</span>
-            </div>
+            {rrVsTarget !== null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                <span style={{ width: 6, height: 6, background: rrVsTarget ? '#00d4a0' : '#ff4444', borderRadius: '50%', display: 'inline-block' }} />
+                <span style={{ fontFamily: fm, fontSize: 12, color: rrVsTarget ? '#00d4a0' : '#ff4444' }}>{rrVsTarget ? 'Above Target' : 'Below Target'}</span>
+              </div>
+            )}
           </div>
 
           {/* Card 5 — HIGH-LEVEL ANALYSIS */}

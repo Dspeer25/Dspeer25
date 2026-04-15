@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, DEFAULT_GOALS, buildGoalsContext, buildProfileContext, buildTraderStats } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, DEFAULT_GOALS, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void }) {
@@ -14,6 +14,38 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   const [hoveredContextBtn, setHoveredContextBtn] = useState<string | null>(null);
   const [loggingGoalId, setLoggingGoalId] = useState<string | null>(null);
   const [hoveredAddBtn, setHoveredAddBtn] = useState(false);
+
+  // Psychology vs Numerical toggle + quantitative-target state
+  const [goalMode, setGoalMode] = useState<'psychology' | 'numerical'>('psychology');
+  const [quantTargets, setQuantTargets] = useState<QuantitativeTarget[]>([]);
+  const [customTargets, setCustomTargets] = useState<QuantitativeTarget[]>([]);
+  const [newCustomLabel, setNewCustomLabel] = useState('');
+  const [newCustomType, setNewCustomType] = useState<QuantTargetType>('number');
+  const refreshQuantTargets = () => {
+    const r = readQuantTargets();
+    setQuantTargets(r.quantitativeTargets);
+    setCustomTargets(r.customQuantTargets);
+  };
+  useEffect(() => { refreshQuantTargets(); }, []);
+
+  const handleQuantValueChange = (id: string, raw: string) => {
+    const n = raw.trim() === '' ? null : Number(raw);
+    const finalValue = n === null || Number.isNaN(n) ? null : n;
+    updateQuantTarget(id, finalValue);
+    refreshQuantTargets();
+  };
+  const handleAddCustomTarget = () => {
+    const label = newCustomLabel.trim();
+    if (!label) return;
+    addCustomQuantTarget(label, newCustomType);
+    setNewCustomLabel('');
+    setNewCustomType('number');
+    refreshQuantTargets();
+  };
+  const handleRemoveCustomTarget = (id: string) => {
+    removeCustomQuantTarget(id);
+    refreshQuantTargets();
+  };
   const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
@@ -249,23 +281,52 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
       {/* ═══ MAIN CONTENT ═══ */}
       <div style={{ flex: 1, padding: '40px 36px 32px', overflowY: 'auto' }}>
         {/* Header row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-          <div>
-            <h2 style={{ fontFamily: fd, fontSize: 28, color: '#ffffff', fontWeight: 700, margin: 0, letterSpacing: '0.02em' }}>
-              {activeView === 'weekly' ? 'Weekly Goals' : activeView === 'monthly' ? 'Monthly Goals' : 'Behavioral'}
-            </h2>
-            <p style={{ fontFamily: fm, fontSize: 14, color: '#888', margin: '8px 0 0' }}>
-              Active behavioral and technical parameters for the current week.
-            </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <div>
+              <h2 style={{ fontFamily: fd, fontSize: 28, color: '#ffffff', fontWeight: 700, margin: 0, letterSpacing: '0.02em' }}>
+                {activeView === 'weekly' ? 'Weekly Goals' : activeView === 'monthly' ? 'Monthly Goals' : 'Behavioral'}
+              </h2>
+              <p style={{ fontFamily: fm, fontSize: 14, color: '#888', margin: '8px 0 0' }}>
+                {goalMode === 'psychology'
+                  ? 'Active behavioral and technical parameters for the current week.'
+                  : 'Quantitative targets for the current week. What numbers are you aiming for?'}
+              </p>
+            </div>
+            {/* Psychology / Numerical toggle */}
+            {activeView === 'weekly' && (
+              <div style={{ display: 'inline-flex', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 999, padding: 3, marginTop: 4 }}>
+                {(['psychology', 'numerical'] as const).map(m => {
+                  const active = goalMode === m;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setGoalMode(m)}
+                      style={{
+                        padding: '8px 18px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                        fontFamily: fm, fontSize: 12, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase',
+                        background: active ? teal : 'transparent',
+                        color: active ? '#0A0D14' : '#aab0bd',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >{m}</button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginTop: 6 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: teal }} />
-            <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>{goals.length} Active Rule{goals.length !== 1 ? 's' : ''}</span>
+            <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>
+              {goalMode === 'psychology'
+                ? `${goals.length} Active Rule${goals.length !== 1 ? 's' : ''}`
+                : `${[...quantTargets, ...customTargets].filter(t => t.value !== null).length} / ${quantTargets.length + customTargets.length} targets set`}
+            </span>
           </div>
         </div>
 
-        {/* ═══ GOAL CARDS ═══ */}
-        {goals.map((g, idx) => {
+        {/* ═══ GOAL CARDS (Psychology view) ═══ */}
+        {goalMode === 'psychology' && goals.map((g, idx) => {
           const isExpanded = expandedGoalId === g.id;
           return (
             <div key={g.id} style={{
@@ -516,30 +577,180 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
           );
         })}
 
-        {/* ═══ Add New Goal Button ═══ */}
-        <div
-          onClick={addNewGoal}
-          onMouseEnter={() => setHoveredAddBtn(true)}
-          onMouseLeave={() => setHoveredAddBtn(false)}
-          style={{
-            border: `1px dashed ${hoveredAddBtn ? teal : '#2a2b32'}`,
-            borderRadius: 12,
-            padding: '22px 20px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            marginTop: 8,
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <span style={{
-            fontSize: 14,
-            color: hoveredAddBtn ? teal : '#666',
-            fontFamily: fm,
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-            transition: 'color 0.15s ease',
-          }}>+ Initialize New Parameter</span>
-        </div>
+        {/* ═══ Add New Goal Button (Psychology view only) ═══ */}
+        {goalMode === 'psychology' && (
+          <div
+            onClick={addNewGoal}
+            onMouseEnter={() => setHoveredAddBtn(true)}
+            onMouseLeave={() => setHoveredAddBtn(false)}
+            style={{
+              border: `1px dashed ${hoveredAddBtn ? teal : '#2a2b32'}`,
+              borderRadius: 12,
+              padding: '22px 20px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              marginTop: 8,
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span style={{
+              fontSize: 14,
+              color: hoveredAddBtn ? teal : '#666',
+              fontFamily: fm,
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+              transition: 'color 0.15s ease',
+            }}>+ Initialize New Parameter</span>
+          </div>
+        )}
+
+        {/* ═══ NUMERICAL VIEW — quantitative weekly targets ═══ */}
+        {goalMode === 'numerical' && (
+          <>
+            {[...quantTargets, ...customTargets].map((t, idx) => {
+              const isCustom = !quantTargets.find(q => q.id === t.id);
+              const suffix = t.type === 'percent' ? '%' : t.type === 'dollar' ? '$' : '';
+              return (
+                <div key={t.id} style={{
+                  background: '#1f2430',
+                  border: '1px solid #2A3143',
+                  borderRadius: 12,
+                  padding: '24px 28px',
+                  marginBottom: 16,
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                }}>
+                  {/* Numbered circle */}
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%', border: `2px solid ${teal}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: teal, fontFamily: fm, lineHeight: 1 }}>{idx + 1}</span>
+                  </div>
+
+                  {/* Label */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: fd, fontSize: 18, color: '#ffffff', fontWeight: 600, letterSpacing: '0.02em' }}>{t.label.toUpperCase()}</div>
+                    <div style={{ fontFamily: fm, fontSize: 12, color: '#888', marginTop: 4, letterSpacing: 1, textTransform: 'uppercase' }}>
+                      {t.type === 'percent' ? 'Percentage' : t.type === 'dollar' ? 'Dollars' : 'Number'}
+                    </div>
+                  </div>
+
+                  {/* Value input */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    {t.type === 'dollar' && <span style={{ color: '#aab0bd', fontFamily: fm, fontSize: 16 }}>$</span>}
+                    {t.id === 'target-rr' && <span style={{ color: '#aab0bd', fontFamily: fm, fontSize: 16 }}>1 :</span>}
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      value={t.value === null ? '' : t.value}
+                      onChange={e => handleQuantValueChange(t.id, e.target.value)}
+                      placeholder="—"
+                      style={{
+                        width: 100,
+                        background: '#141822',
+                        border: '1px solid #2A3143',
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        color: '#ffffff',
+                        fontFamily: fd,
+                        fontSize: 18,
+                        fontWeight: 700,
+                        textAlign: 'right',
+                        outline: 'none',
+                      }}
+                    />
+                    {t.type === 'percent' && <span style={{ color: '#aab0bd', fontFamily: fm, fontSize: 16 }}>%</span>}
+                    {t.type === 'number' && t.id !== 'target-rr' && suffix && <span style={{ color: '#aab0bd', fontFamily: fm, fontSize: 16 }}>{suffix}</span>}
+                  </div>
+
+                  {/* Delete (only for custom targets) */}
+                  {isCustom && (
+                    <span
+                      onClick={() => handleRemoveCustomTarget(t.id)}
+                      style={{ fontSize: 16, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4, padding: 4 }}
+                      title="Remove custom target"
+                    >✕</span>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* "Type to record" add-custom-target card */}
+            <div style={{
+              background: '#1f2430',
+              border: '1px dashed #2a2b32',
+              borderRadius: 12,
+              padding: '22px 20px',
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+            }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%', border: '2px dashed #3a3d48',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <span style={{ fontSize: 16, color: '#3a3d48', fontFamily: fm, lineHeight: 1 }}>+</span>
+              </div>
+              <input
+                value={newCustomLabel}
+                onChange={e => setNewCustomLabel(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomTarget(); } }}
+                placeholder="Type to record a new target..."
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: fm,
+                  fontSize: 15,
+                  color: '#ffffff',
+                  padding: '8px 0',
+                }}
+              />
+              <select
+                value={newCustomType}
+                onChange={e => setNewCustomType(e.target.value as QuantTargetType)}
+                style={{
+                  background: '#141822',
+                  border: '1px solid #2A3143',
+                  borderRadius: 8,
+                  padding: '8px 10px',
+                  color: '#c9cdd4',
+                  fontFamily: fm,
+                  fontSize: 12,
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="number">Number</option>
+                <option value="percent">Percent</option>
+                <option value="dollar">Dollar</option>
+              </select>
+              <button
+                onClick={handleAddCustomTarget}
+                disabled={!newCustomLabel.trim()}
+                style={{
+                  background: newCustomLabel.trim() ? teal : '#1a1b22',
+                  color: newCustomLabel.trim() ? '#0A0D14' : '#4a4d58',
+                  fontFamily: fm,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  border: 'none',
+                  cursor: newCustomLabel.trim() ? 'pointer' : 'default',
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                }}
+              >Add</button>
+            </div>
+          </>
+        )}
       </div>
       <style>{`@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
     </div>
