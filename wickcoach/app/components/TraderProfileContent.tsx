@@ -1,39 +1,10 @@
 'use client';
-import React, { useState } from 'react';
-import { fm, fd, Trade, buildTraderStats } from './shared';
+import React, { useEffect, useState } from 'react';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
 const red = '#ff4444';
-
-interface PatternRow {
-  friction: { name: string; trades: string; pct: number };
-  middle: React.ReactNode;
-  momentum: { name: string; trades: string; pct: number };
-}
-
-const patternRows: PatternRow[] = [
-  {
-    friction: { name: 'Ignoring Rules', trades: '19 trades', pct: 56 },
-    middle: <><strong style={{ color: '#fff' }}>+0.5R</strong> vs <strong style={{ color: teal }}>+1.1R</strong> expectancy gap</>,
-    momentum: { name: 'Patience', trades: '39 trades · 56% win rate when you wait', pct: 68 },
-  },
-  {
-    friction: { name: 'Impulse Entries', trades: '16 trades', pct: 34 },
-    middle: <><strong style={{ color: red }}>19%</strong> win rate vs <strong style={{ color: '#fff' }}>61%</strong> patient</>,
-    momentum: { name: 'Clean Execution', trades: '31 trades · Avg +1.6R per textbook trade', pct: 66 },
-  },
-  {
-    friction: { name: 'Revenge Trading', trades: '15 trades', pct: 50 },
-    middle: <>Cost you <strong style={{ color: red }}>+$35.90</strong> this window</>,
-    momentum: { name: 'Stop Discipline', trades: '15 trades · Clean losses avg $492', pct: 50 },
-  },
-  {
-    friction: { name: 'FOMO / Chasing', trades: '12 trades', pct: 46 },
-    middle: <>Win rate drops to <strong style={{ color: red }}>0%</strong> when chasing</>,
-    momentum: { name: 'Trusting Process', trades: '14 trades · 14 entries, resilience building', pct: 54 },
-  },
-];
 
 const timeframes = ['5', '10', '15', '30', '50', '100', 'All'];
 
@@ -46,11 +17,79 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  const deepPsychWelcome =
-    "I've been watching your patterns. Here's what the data says about the trader you actually are, not the one you tell yourself you are.\n\n" +
-    "Your **psychology score** is **61**. Patient execution wins you **+1.1R** on average. Impulse entries drag you to **+0.5R**. The gap is not small. It is who you are **19 trades out of every 100**.\n\n" +
-    "You've kept the same three goals on the board for weeks now. Some are showing genuine progress. Others aren't moving at all.\n\n" +
-    "Where do you want to start? I can press on a specific pattern (revenge trading, FOMO, the Monday fade), or you can tell me what you think your problem actually is and I'll tell you whether the data agrees.";
+  // Live analytics — everything on this page reads from here.
+  const a = computeAnalytics(trades);
+  const { totals, psychScore, processSplit, patterns } = a;
+
+  // Load the trader's top goal from localStorage for the observations
+  // board footer so "LET TRADES BREATHE 3+..." is real text.
+  const [topGoal, setTopGoal] = useState<Goal | null>(null);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('wickcoach_goals');
+      if (saved) {
+        const parsed: Goal[] = JSON.parse(saved);
+        const firstWithTitle = parsed.find(g => g.title);
+        setTopGoal(firstWithTitle || null);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Derived numbers for the observations-board middle callouts.
+  const procR = processSplit.process.n ? processSplit.process.rTotal / processSplit.process.n : 0;
+  const impR  = processSplit.impulse.n ? processSplit.impulse.rTotal / processSplit.impulse.n : 0;
+  const fmtR = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}R`;
+  const pct = (x: number) => totals.n ? Math.round((x / totals.n) * 100) : 0;
+
+  // Revenge dollar cost — aggregate P/L of trades tagged as revenge in journal.
+  const revengeCost = trades.reduce((s, t) => {
+    const j = (t.journal || '').toLowerCase();
+    if (/revenge|tilt|frustrat|angry|got back|pissed/.test(j)) return s + t.pl;
+    return s;
+  }, 0);
+  // Chasing win rate
+  const chasingTrades = trades.filter(t => /fomo|chas|missed|scared to miss/.test((t.journal || '').toLowerCase()));
+  const chasingWR = chasingTrades.length
+    ? (chasingTrades.filter(t => t.pl > 0).length / chasingTrades.length) * 100
+    : 0;
+
+  // Pattern rows built from real pattern counts + real derived metrics.
+  const patternRows: Array<{
+    friction: { name: string; trades: string; pct: number };
+    middle: React.ReactNode;
+    momentum: { name: string; trades: string; pct: number };
+  }> = [
+    {
+      friction: { name: 'Ignoring Rules', trades: `${patterns.ignoringRules} trades`, pct: pct(patterns.ignoringRules) },
+      middle: <><strong style={{ color: '#fff' }}>{fmtR(impR)}</strong> vs <strong style={{ color: teal }}>{fmtR(procR)}</strong> expectancy gap</>,
+      momentum: { name: 'Patience', trades: `${patterns.patience} trades`, pct: pct(patterns.patience) },
+    },
+    {
+      friction: { name: 'Impulse Entries', trades: `${patterns.impulseEntries} trades`, pct: pct(patterns.impulseEntries) },
+      middle: <><strong style={{ color: red }}>{processSplit.impulse.wr.toFixed(0)}%</strong> win rate vs <strong style={{ color: '#fff' }}>{processSplit.process.wr.toFixed(0)}%</strong> patient</>,
+      momentum: { name: 'Clean Execution', trades: `${patterns.cleanExecution} trades`, pct: pct(patterns.cleanExecution) },
+    },
+    {
+      friction: { name: 'Revenge Trading', trades: `${patterns.revengeTrading} trades`, pct: pct(patterns.revengeTrading) },
+      middle: <>Cost you <strong style={{ color: red }}>{revengeCost >= 0 ? '+' : '-'}${Math.abs(revengeCost).toFixed(0)}</strong> this window</>,
+      momentum: { name: 'Stop Discipline', trades: `${patterns.stopDiscipline} trades`, pct: pct(patterns.stopDiscipline) },
+    },
+    {
+      friction: { name: 'FOMO / Chasing', trades: `${patterns.fomoChasing} trades`, pct: pct(patterns.fomoChasing) },
+      middle: <>Win rate drops to <strong style={{ color: red }}>{chasingWR.toFixed(0)}%</strong> when chasing</>,
+      momentum: { name: 'Trusting Process', trades: `${patterns.trustingProcess} trades`, pct: pct(patterns.trustingProcess) },
+    },
+  ];
+
+  // Welcome message built from real numbers, not canned stats.
+  const deepPsychWelcome = totals.n === 0
+    ? "You haven't logged any trades yet. Once you have some history on the board, I'll start showing you the trader you actually are."
+    : `I've been watching your patterns. Here's what the data says about the trader you actually are, not the one you tell yourself you are.\n\n` +
+      `Your **psychology score** is **${psychScore}**. ` +
+      (processSplit.process.n && processSplit.impulse.n
+        ? `Patient execution wins you ${fmtR(procR)} on average. Impulse entries drag you to ${fmtR(impR)}. That gap is who you are ${patterns.impulseEntries} trades out of every ${totals.n}.\n\n`
+        : `Not enough journal detail yet to separate process trades from impulse ones — write more about *why* you took each trade and I'll have sharper observations.\n\n`) +
+      `Where do you want to start? I can press on a specific pattern (revenge trading, FOMO, the losing-hour fade), or you can tell me what you think your problem actually is and I'll tell you whether the data agrees.`;
 
   async function sendToCoach() {
     if (!aiInput.trim() || aiLoading) return;
@@ -186,10 +225,10 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
               width: 100, height: 100, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative',
-              background: `radial-gradient(circle at center, #141822 58%, transparent 59%), conic-gradient(${teal} 0% 61%, #3e4252 61% 100%)`,
+              background: `radial-gradient(circle at center, #141822 58%, transparent 59%), conic-gradient(${teal} 0% ${psychScore}%, #3e4252 ${psychScore}% 100%)`,
               boxShadow: 'inset 0 0 20px rgba(0,212,160,0.1), 0 0 30px rgba(0,0,0,0.5)',
             }}>
-              <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 32, color: '#fff' }}>61</span>
+              <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 32, color: '#fff' }}>{psychScore}</span>
             </div>
             <span style={{ color: '#888', fontSize: 11, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1, background: '#141822', padding: '2px 8px', borderRadius: 4 }}>Psychology Score</span>
           </div>
@@ -234,17 +273,21 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
           </div>
         ))}
 
-        {/* Goals relation inside the board */}
-        <div style={{ padding: '20px 40px 0', marginTop: 8 }}>
-          <h4 style={{ fontFamily: fd, fontSize: 16, color: '#fff', margin: '0 0 12px' }}>How these patterns relate to your goals</h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 24, height: 24, borderRadius: '50%', border: `1px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal, flexShrink: 0 }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        {/* Goals relation inside the board — reads the trader's top goal from localStorage */}
+        {topGoal && (
+          <div style={{ padding: '20px 40px 0', marginTop: 8 }}>
+            <h4 style={{ fontFamily: fd, fontSize: 16, color: '#fff', margin: '0 0 12px' }}>How these patterns relate to your goals</h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', border: `1px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal, flexShrink: 0 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              </div>
+              <span style={{ color: '#ccc', fontSize: 13, letterSpacing: 0.5 }}>{topGoal.title.toUpperCase()}</span>
+              <span style={{ marginLeft: 'auto', background: 'rgba(0,212,160,0.1)', color: teal, padding: '4px 10px', borderRadius: 4, fontSize: 11 }}>
+                {typeof topGoal.completeness === 'number' ? `${topGoal.completeness}% understood` : 'In progress'}
+              </span>
             </div>
-            <span style={{ color: '#ccc', fontSize: 13, letterSpacing: 0.5 }}>LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN</span>
-            <span style={{ marginLeft: 'auto', background: 'rgba(0,212,160,0.1)', color: teal, padding: '4px 10px', borderRadius: 4, fontSize: 11 }}>On track</span>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ═══ DEEP PSYCH CHAT WIDGET ═══ */}

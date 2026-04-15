@@ -1,21 +1,12 @@
 'use client';
-import React, { useState } from 'react';
-import { fm, fd, Trade, buildTraderStats } from './shared';
+import React, { useEffect, useState } from 'react';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
 const red = '#ff4444';
 
-// ─── Static data ──────────────────────────────────────────────
-const strategies = [
-  { name: '0DTE Call', trades: 60, wr: 46.7, avg: 325.84, total: 19550, r: 0.7 },
-  { name: '0DTE Put', trades: 54, wr: 42.6, avg: 247.07, total: 13341, r: 0.5 },
-  { name: 'Call Debit Spread', trades: 18, wr: 61.1, avg: 493.94, total: 8891, r: 1.0 },
-  { name: 'Put Debit Spread', trades: 19, wr: 52.6, avg: 355.96, total: 6763, r: 0.7 },
-  { name: 'Call Scalp', trades: 16, wr: 56.3, avg: 396.17, total: 6339, r: 0.8 },
-  { name: 'Put Scalp', trades: 8, wr: 50.0, avg: 487.08, total: 3897, r: 1.0 },
-];
-
+// Logo-domain lookup — reference data, not stats.
 const tickerDomains: Record<string, string> = {
   V: 'visa.com', META: 'meta.com', NVDA: 'nvidia.com', AMD: 'amd.com',
   BA: 'boeing.com', MSFT: 'microsoft.com', JPM: 'jpmorganchase.com',
@@ -24,97 +15,8 @@ const tickerDomains: Record<string, string> = {
   PLTR: 'palantir.com', CRM: 'salesforce.com', COST: 'costco.com', HD: 'homedepot.com',
 };
 
-const tickers = [
-  { t: 'V', color: '#1a1f71', trades: 14, wr: 78.6, pl: 10391 },
-  { t: 'META', color: '#0668E1', trades: 9, wr: 77.8, pl: 6288 },
-  { t: 'NVDA', color: '#76b900', trades: 14, wr: 50.0, pl: 6129 },
-  { t: 'AMD', color: '#ed1c24', trades: 11, wr: 54.5, pl: 5929 },
-  { t: 'BA', color: '#0039a6', trades: 9, wr: 66.7, pl: 5018 },
-  { t: 'MSFT', color: '#00a4ef', trades: 17, wr: 47.1, pl: 5805 },
-  { t: 'JPM', color: '#006cb7', trades: 8, wr: 62.5, pl: 4200 },
-  { t: 'DIS', color: '#113ccf', trades: 6, wr: 50.0, pl: 3450 },
-];
-
-// Loss performance — ticker-level losses (different subset/sort than wins)
-const tickerLosses = [
-  { t: 'DIS', color: '#113ccf', trades: 4, wr: 25.0, pl: -2847 },
-  { t: 'NFLX', color: '#e50914', trades: 5, wr: 20.0, pl: -1923 },
-  { t: 'BA', color: '#0039a6', trades: 3, wr: 0.0, pl: -1580 },
-  { t: 'META', color: '#0668E1', trades: 2, wr: 0.0, pl: -1245 },
-  { t: 'AMD', color: '#ed1c24', trades: 5, wr: 40.0, pl: -987 },
-  { t: 'MSFT', color: '#00a4ef', trades: 9, wr: 22.2, pl: -876 },
-  { t: 'TSLA', color: '#cc0000', trades: 4, wr: 25.0, pl: -712 },
-  { t: 'AAPL', color: '#555555', trades: 3, wr: 33.3, pl: -430 },
-];
-
-const hours = [
-  { h: '9-10AM', pl: 18500, count: 45 },
-  { h: '10-11AM', pl: 13006, count: 38 },
-  { h: '11-12PM', pl: 9781, count: 28 },
-  { h: '12-1PM', pl: 2176, count: 22 },
-  { h: '1-2PM', pl: 7653, count: 30 },
-  { h: '2-3PM', pl: 5726, count: 25 },
-  { h: '3-4PM', pl: 3124, count: 18 },
-];
-
-// Blue used by "Trades vs. Goals" sliders — complementary to the teal
+// Blue used by "Trades vs. Goals" sliders — complementary to teal.
 const blue = '#4a9eff';
-
-// ─── Weekly goals snapshot — mock per-week data ───────────────
-interface WeeklyGoalSnapshot {
-  weekLabel: string;      // e.g. "Apr 6 – Apr 12, 2026"
-  goals: {
-    title: string;
-    type: string;         // PATIENCE, DISCIPLINE, TIMING, RISK, etc.
-    trades: { actual: number; target: number; unitLabel: string };  // for blue slider
-    psych: { actual: number; target: number; unitLabel: string };   // for green slider
-  }[];
-}
-
-const weekHistory: WeeklyGoalSnapshot[] = [
-  {
-    weekLabel: 'Apr 6 – Apr 12, 2026',
-    goals: [
-      { title: 'Let trades breathe 3+ min at break-even', type: 'PATIENCE',
-        trades: { actual: 14, target: 15, unitLabel: 'held 3+ min' },
-        psych:  { actual: 8,  target: 10, unitLabel: 'journal entries mentioning patience' } },
-      { title: 'Max 3 trades per day',                   type: 'DISCIPLINE',
-        trades: { actual: 11, target: 15, unitLabel: 'days under cap' },
-        psych:  { actual: 9,  target: 12, unitLabel: 'sessions rated "controlled"' } },
-      { title: 'No trades before 10:15 AM ET',           type: 'TIMING',
-        trades: { actual: 17, target: 20, unitLabel: 'open avoided' },
-        psych:  { actual: 12, target: 15, unitLabel: 'waited for confirmation' } },
-    ],
-  },
-  {
-    weekLabel: 'Mar 30 – Apr 5, 2026',
-    goals: [
-      { title: 'Cap risk at 1R per trade',               type: 'RISK',
-        trades: { actual: 18, target: 22, unitLabel: 'trades within 1R' },
-        psych:  { actual: 14, target: 18, unitLabel: 'size plans logged' } },
-      { title: 'Journal every loss',                     type: 'DISCIPLINE',
-        trades: { actual: 7,  target: 9,  unitLabel: 'losses journaled' },
-        psych:  { actual: 7,  target: 9,  unitLabel: 'reflections written' } },
-      { title: 'No revenge re-entry after stop-out',     type: 'PATIENCE',
-        trades: { actual: 12, target: 13, unitLabel: 'clean stops held' },
-        psych:  { actual: 10, target: 13, unitLabel: 'stop-outs accepted' } },
-    ],
-  },
-  {
-    weekLabel: 'Mar 23 – Mar 29, 2026',
-    goals: [
-      { title: 'Only trade A+ setups',                   type: 'DISCIPLINE',
-        trades: { actual: 16, target: 20, unitLabel: 'setups graded A+' },
-        psych:  { actual: 11, target: 15, unitLabel: 'grades logged pre-entry' } },
-      { title: 'Scale out in thirds',                    type: 'EXECUTION',
-        trades: { actual: 9,  target: 12, unitLabel: 'trades scaled' },
-        psych:  { actual: 8,  target: 12, unitLabel: 'exit plans pre-committed' } },
-      { title: 'Stop trading after 2 losses',            type: 'RISK',
-        trades: { actual: 4,  target: 5,  unitLabel: 'hard-stop days' },
-        psych:  { actual: 4,  target: 5,  unitLabel: 'checks-in after 2nd loss' } },
-    ],
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────
 const fmtDollar = (n: number, withCents = false) => {
@@ -126,25 +28,50 @@ const fmtDollar = (n: number, withCents = false) => {
 const fmtR = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1) + 'R';
 const fmtPct = (n: number) => n.toFixed(1) + '%';
 
-// Pinwheel hover data — static for mock
-const winsCopy = {
-  title: 'MAJOR PSYCHOLOGICAL WINS',
-  points: [
-    'Patience: 39 trades with a 56% win rate when you wait for setup',
-    'Clean Execution: +1.6R average on 31 textbook trades',
-    'Stop Discipline: clean exits avg $492 — you honor your stops',
-    'Trusting the Process: 14 entries show building resilience',
-  ],
-};
-const issuesCopy = {
-  title: 'MAJOR PSYCHOLOGICAL ISSUES',
-  points: [
-    'Revenge Trading: 15 trades costing +$35.90 this window',
-    'Impulse Entries: 19% win rate vs 61% when patient',
-    'FOMO / Chasing: win rate drops to 0% when chasing',
-    'Ignoring Rules: +0.5R vs +1.1R expectancy gap',
-  ],
-};
+// ─── Weekly goals snapshot ─────────────────────────────────────
+// Real trades get bucketed into ISO weeks; real goals (from localStorage)
+// are the cards shown per week. Compliance numbers are derived from the
+// trade counts in that week. No hardcoded weekly stats.
+interface WeekBucket {
+  weekLabel: string;
+  start: Date;
+  end: Date;
+  trades: Trade[];
+}
+
+function startOfWeek(d: Date): Date {
+  const day = d.getDay();              // Sun = 0
+  const diff = (day === 0 ? -6 : 1) - day; // snap back to Monday
+  const s = new Date(d);
+  s.setHours(0, 0, 0, 0);
+  s.setDate(s.getDate() + diff);
+  return s;
+}
+
+function fmtWeekRange(start: Date, end: Date): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const sameMonth = start.getMonth() === end.getMonth();
+  const left = `${months[start.getMonth()]} ${start.getDate()}`;
+  const right = sameMonth ? `${end.getDate()}, ${end.getFullYear()}` : `${months[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
+  return `${left} – ${right}`;
+}
+
+// Build the 3 most recent week buckets that contain any trades. Falls
+// back to the current week + previous two so the UI always has something.
+function buildWeekBuckets(trades: Trade[]): WeekBucket[] {
+  const today = new Date();
+  const buckets: WeekBucket[] = [];
+  for (let i = 0; i < 3; i++) {
+    const start = startOfWeek(new Date(today.getTime() - i * 7 * 86400000));
+    const end = new Date(start.getTime() + 6 * 86400000);
+    const inWeek = trades.filter(t => {
+      const d = new Date(t.date);
+      return d >= start && d <= new Date(end.getTime() + 86400000 - 1);
+    });
+    buckets.push({ weekLabel: fmtWeekRange(start, end), start, end, trades: inWeek });
+  }
+  return buckets;
+}
 
 // ─── Component ────────────────────────────────────────────────
 export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
@@ -161,13 +88,24 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  const analysisWelcome =
-    "I've analyzed your 200 executions. Here's what the data is telling me:\n\n" +
-    "• Your edge: **Patience setups** — 56% win rate when you wait 3+ minutes after opening range, vs 19% on impulse entries. That one pattern alone explains most of your profit.\n\n" +
-    "• Your leak: **Revenge trading** — 15 trades cost you $35.90 and dragged your expectancy from +1.1R to +0.5R. It's concentrated in the 12–1PM slot where your edge is weakest.\n\n" +
-    "• **0DTE Calls** carry your book (+$19.5K on 60 trades, 46.7% WR, +0.7R avg). **0DTE Puts** trail (+$13.3K, 42.6% WR).\n\n" +
-    "• Ticker concentration: **V**, **META**, **NVDA** and **AMD** generate 54% of your P/L across just 48 trades. The rest of your watchlist is noise.\n\n" +
-    "What would you like to dig into? I can slice this by session, by setup, or by the emotional state you logged in the journal.";
+  // Live analytics derived from the trades prop. Every card, bar, pill,
+  // and tooltip on this page reads from here — no hardcoded numbers.
+  const a = computeAnalytics(trades);
+  const { totals, strategies, tickers, tickerLosses, hours, processSplit, whatIfPL, indisciplineCost, patterns } = a;
+
+  // Top-4 tickers contribution for the welcome message
+  const top4Tickers = tickers.slice(0, 4);
+  const top4Pct = totals.totalPL !== 0
+    ? (top4Tickers.reduce((s, t) => s + t.pl, 0) / totals.totalPL) * 100
+    : 0;
+  const bestStrategy = strategies[0];
+  const analysisWelcome = totals.n === 0
+    ? "No trades logged yet. Once you log a few, I'll have something to analyze."
+    : `I've analyzed your ${totals.n} executions. Here's what the data is telling me:\n\n` +
+      `Process trades: ${processSplit.process.n} at ${processSplit.process.wr.toFixed(1)}% win rate. Impulse trades: ${processSplit.impulse.n} at ${processSplit.impulse.wr.toFixed(1)}% win rate. The gap is your edge, the gap is your leak.\n\n` +
+      (bestStrategy ? `${bestStrategy.name} carries your book (${fmtDollar(bestStrategy.total)} on ${bestStrategy.trades} trades, ${fmtPct(bestStrategy.wr)} WR, ${fmtR(bestStrategy.r)} avg).\n\n` : '') +
+      (top4Tickers.length ? `Ticker concentration: ${top4Tickers.map(t => t.t).join(', ')} generate ${top4Pct.toFixed(0)}% of P/L across ${top4Tickers.reduce((s, t) => s + t.trades, 0)} trades.\n\n` : '') +
+      `What would you like to dig into? I can slice by session, setup, or journal sentiment.`;
 
   async function sendToCoach() {
     if (!aiInput.trim() || aiLoading) return;
@@ -197,26 +135,69 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     setAiLoading(false);
   }
 
-  // Pinwheel data
-  const totalTrades = 200;
-  const wins = 92;
-  const losses = 80;
-  const be = totalTrades - wins - losses;
-  const winPct = wins / totalTrades;
-  const lossPct = losses / totalTrades;
-  const bePct = be / totalTrades;
+  // Pinwheel geometry — all counts come from analytics.
+  const totalTrades = totals.n;
+  const wins = totals.wins;
+  const losses = totals.losses;
+  const be = totals.breakeven;
+  const winPct = totalTrades ? wins / totalTrades : 0;
+  const lossPct = totalTrades ? losses / totalTrades : 0;
+  const bePct = totalTrades ? be / totalTrades : 0;
   const circ = 2 * Math.PI * 40; // r=40
 
-  const maxAbsHourPL = Math.max(...hours.map(h => Math.abs(h.pl)));
+  // Hourly heatmap — computed from real trade times in shared.ts
+  const maxAbsHourPL = Math.max(1, ...hours.map(h => Math.abs(h.pl))); // avoid div-by-zero
   const sortedHours = heatmapMode === 'best'
     ? [...hours].sort((a, b) => b.pl - a.pl)
     : heatmapMode === 'worst'
       ? [...hours].sort((a, b) => a.pl - b.pl)
       : hours;
-  const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0];
-  const worstHour = [...hours].sort((a, b) => a.pl - b.pl)[0];
+  const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0] || { h: '—', pl: 0, count: 0 };
+  const worstHour = [...hours].sort((a, b) => a.pl - b.pl)[0] || { h: '—', pl: 0, count: 0 };
 
-  const selectedWeek = weekHistory[selectedWeekIdx];
+  // Load real goals from localStorage so Rules vs Execution reflects
+  // whatever the trader has actually set, not mock text.
+  const [realGoals, setRealGoals] = useState<Goal[]>([]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('wickcoach_goals');
+      if (saved) setRealGoals(JSON.parse(saved));
+    } catch { /* ignore */ }
+  }, []);
+
+  // Per-week trade buckets for the Rules vs Execution section.
+  const weekBuckets = buildWeekBuckets(trades);
+  const selectedWeekBucket = weekBuckets[selectedWeekIdx] || weekBuckets[0];
+
+  // Derive per-goal slider values from the selected week's real trades.
+  // Trades side: trade count as a proxy for execution volume.
+  // Psych side: journal entries whose text matches the goal type.
+  const goalTypeKeywords: Record<string, string[]> = {
+    'Trade Management': ['managed', 'held', 'breathe', 'exit'],
+    'Entry Criteria':   ['entry', 'confirmation', 'confirmed', 'setup'],
+    'Patience / Setup': ['patient', 'waited', 'setup'],
+    'Risk Management':  ['risk', 'sized', 'size', 'stop', 'cap'],
+    'Psychology':       ['calm', 'focused', 'discipline', 'mindset'],
+    'General':          ['plan', 'rule', 'process'],
+  };
+  const selectedWeekGoals = realGoals.slice(0, 3).map((g) => {
+    const weekTrades = selectedWeekBucket?.trades || [];
+    const psychTarget = Math.max(5, Math.floor(weekTrades.length * 0.6));
+    const kws = goalTypeKeywords[g.goalType] || goalTypeKeywords['General'];
+    const psychActual = weekTrades.filter(t => {
+      const j = (t.journal || '').toLowerCase();
+      return kws.some(k => j.includes(k));
+    }).length;
+    const tradesTarget = Math.max(5, weekTrades.length || 5);
+    const tradesActual = weekTrades.length;
+    return {
+      title: g.title || '(untitled)',
+      type: (g.goalType || 'General').toUpperCase().split(' ')[0],
+      trades: { actual: tradesActual, target: tradesTarget, unitLabel: 'trades this week' },
+      psych:  { actual: psychActual,  target: psychTarget,  unitLabel: `journal mentions "${kws[0]}"` },
+    };
+  });
+  const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
 
   return (
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
@@ -226,7 +207,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         <div>
           <h2 style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Analysis</h2>
           <p style={{ color: '#bbb', fontSize: 14, margin: '6px 0 0' }}>Behavioral pattern recognition across your trade history.</p>
-          <p style={{ color: '#999', fontSize: 12, margin: '4px 0 0' }}>200 executions analyzed</p>
+          <p style={{ color: '#999', fontSize: 12, margin: '4px 0 0' }}>{totalTrades.toLocaleString()} execution{totalTrades === 1 ? '' : 's'} analyzed</p>
         </div>
 
         {/* WickCoach AI — Click for analysis */}
@@ -356,10 +337,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
                     <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
                   </svg>
-                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, letterSpacing: 1.5 }}>{winsCopy.title}</div>
+                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, letterSpacing: 1.5 }}>MAJOR PSYCHOLOGICAL WINS</div>
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {winsCopy.points.map(p => (
+                  {[
+                    `Patience: ${patterns.patience} trades journaled as patient waits`,
+                    `Clean Execution: ${patterns.cleanExecution} textbook trades`,
+                    `Stop Discipline: ${patterns.stopDiscipline} clean stop-outs`,
+                    `Trusting Process: ${patterns.trustingProcess} entries kept you on plan`,
+                  ].map(p => (
                     <li key={p} style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{p}</li>
                   ))}
                 </ul>
@@ -378,10 +364,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={red} opacity="0.9" />
                     <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={red} strokeWidth="0.8" />
                   </svg>
-                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: red, letterSpacing: 1.5 }}>{issuesCopy.title}</div>
+                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: red, letterSpacing: 1.5 }}>MAJOR PSYCHOLOGICAL ISSUES</div>
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {issuesCopy.points.map(p => (
+                  {[
+                    `Revenge Trading: ${patterns.revengeTrading} trades journaled as revenge`,
+                    `Impulse Entries: ${patterns.impulseEntries} entries with no setup`,
+                    `FOMO / Chasing: ${patterns.fomoChasing} trades chasing price`,
+                    `Ignoring Rules: ${patterns.ignoringRules} trades broke your plan`,
+                  ].map(p => (
                     <li key={p} style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{p}</li>
                   ))}
                 </ul>
@@ -401,29 +392,29 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         {/* Total Trades */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px' }}>
           <div style={{ fontSize: 11, color: '#aaa', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>200</div>
-          <div style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Win Rate: 46.0%</div>
+          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{totals.n.toLocaleString()}</div>
+          <div style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Win Rate: {fmtPct(totals.winRate)}</div>
           <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginTop: 10 }}>
-            <div style={{ width: '46%', background: teal }} />
-            <div style={{ width: '40%', background: red }} />
-            <div style={{ width: '14%', background: '#4b5563' }} />
+            <div style={{ width: `${(winPct * 100).toFixed(2)}%`, background: teal }} />
+            <div style={{ width: `${(lossPct * 100).toFixed(2)}%`, background: red }} />
+            <div style={{ width: `${(bePct * 100).toFixed(2)}%`, background: '#4b5563' }} />
           </div>
         </div>
 
         {/* Process */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
           <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Process</div>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>137</div>
-          <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: 61.3%</div>
-          <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>+150.9R total</div>
+          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.process.n.toLocaleString()}</div>
+          <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.process.wr)}</div>
+          <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(processSplit.process.rTotal)} total</div>
         </div>
 
         {/* Impulse */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
           <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Impulse</div>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>63</div>
-          <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: 12.7%</div>
-          <div style={{ fontSize: 12, color: red, marginTop: 4 }}>-31.3R total</div>
+          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.impulse.n.toLocaleString()}</div>
+          <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.impulse.wr)}</div>
+          <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(processSplit.impulse.rTotal)} total</div>
         </div>
 
         {/* What If? */}
@@ -432,10 +423,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took process trades</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 12, color: '#bbb' }}>Actual P/L</span>
-            <span style={{ fontSize: 13, color: '#fff' }}>+$58,532.00</span>
+            <span style={{ fontSize: 13, color: '#fff' }}>{fmtDollar(totals.totalPL, true)}</span>
           </div>
-          <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 700, color: teal }}>+$74,791.90</div>
-          <div style={{ fontSize: 12, color: red, marginTop: 4 }}>Indiscipline cost you $16,259.10</div>
+          <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 700, color: teal }}>{fmtDollar(whatIfPL, true)}</div>
+          {indisciplineCost !== 0 && (
+            <div style={{ fontSize: 12, color: red, marginTop: 4 }}>Indiscipline cost you ${Math.abs(indisciplineCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          )}
         </div>
       </div>
 
@@ -640,7 +633,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 outline: 'none',
               }}
             >
-              {weekHistory.map((w, i) => (
+              {weekBuckets.map((w, i) => (
                 <option key={i} value={i} style={{ background: '#1f2430', color: '#e8e8f0' }}>{w.weekLabel}</option>
               ))}
             </select>

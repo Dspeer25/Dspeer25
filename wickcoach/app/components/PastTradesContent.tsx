@@ -203,6 +203,25 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
   const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pl, 0) / losses.length) : 0;
   const expectedValue = statTrades.length > 0 ? (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss : 0;
 
+  // Derived labels for the stat cards — no hardcoded flavor text.
+  // Month-over-month win rate delta (this 30 days vs prior 30 days).
+  const now = new Date();
+  const monthStart = new Date(now.getTime() - 30 * 86400000);
+  const prevMonthStart = new Date(now.getTime() - 60 * 86400000);
+  const currMonth = filtered.filter(t => new Date(t.date) >= monthStart);
+  const prevMonth = filtered.filter(t => new Date(t.date) >= prevMonthStart && new Date(t.date) < monthStart);
+  const currWR = currMonth.length ? (currMonth.filter(t => t.pl > 0).length / currMonth.length) * 100 : 0;
+  const prevWR = prevMonth.length ? (prevMonth.filter(t => t.pl > 0).length / prevMonth.length) * 100 : 0;
+  const wrDelta = prevMonth.length > 0 ? Math.round(currWR - prevWR) : null;
+  // Average trades per active day in the stat window.
+  const statDays = statTrades.length > 0
+    ? Math.max(1, Math.ceil((now.getTime() - Math.min(...statTrades.map(t => new Date(t.date).getTime()))) / 86400000))
+    : 1;
+  const tradesPerDay = statTrades.length / statDays;
+  // Avg R numeric value for target comparison.
+  const avgRRNumeric = winRRValues.length > 0 ? winRRValues.reduce((a, b) => a + b, 0) / winRRValues.length : 0;
+  const isAboveTarget = avgRRNumeric >= 1.0;
+
   // P/L sparkline points
   const sparkPoints = (() => {
     if (filtered.length === 0) return 'M0,12 L60,12';
@@ -368,7 +387,11 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 6 }}>
               <span style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700 }}>{winRate}%</span>
-              <span style={{ color: '#00d4a0', fontFamily: fm, fontSize: 13 }}>+4% MoM</span>
+              {wrDelta !== null && (
+                <span style={{ color: wrDelta >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fm, fontSize: 13 }}>
+                  {wrDelta >= 0 ? '+' : ''}{wrDelta}% MoM
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#2A3143' }}>
               {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: '#00d4a0' }} />}
@@ -380,7 +403,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
             <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Executions</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}>{statTrades.length}</div>
-            <div style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 10, fontStyle: 'italic' as const }}>Consistent Volume</div>
+            <div style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 10, fontStyle: 'italic' as const }}>{tradesPerDay.toFixed(1)} trades / day</div>
           </div>
 
           {/* Card 4 — AVG R:R */}
@@ -388,8 +411,8 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
             <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
-              <span style={{ width: 6, height: 6, background: '#00d4a0', borderRadius: '50%', display: 'inline-block' }} />
-              <span style={{ fontFamily: fm, fontSize: 12, color: '#00d4a0' }}>Above Target</span>
+              <span style={{ width: 6, height: 6, background: isAboveTarget ? '#00d4a0' : '#ff4444', borderRadius: '50%', display: 'inline-block' }} />
+              <span style={{ fontFamily: fm, fontSize: 12, color: isAboveTarget ? '#00d4a0' : '#ff4444' }}>{isAboveTarget ? 'Above Target' : 'Below Target'}</span>
             </div>
           </div>
 
