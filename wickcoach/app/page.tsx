@@ -381,8 +381,8 @@ export default function WickCoachFull() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer style={{ background: "#0a0b10", borderTop: "1px solid #1a1b22", padding: "60px 48px 30px", position: 'relative', zIndex: 1 }}>
+        {/* Footer — gradient-bridged into the body so there's no visible seam */}
+        <footer style={{ backgroundImage: "linear-gradient(to bottom, rgba(10,13,20,0) 0px, #0a0b10 120px, #0a0b10 100%)", padding: "120px 48px 30px", position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: 1000, margin: "0 auto", display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 40 }}>
             <div>
               <Logo size={22} showText />
@@ -400,7 +400,7 @@ export default function WickCoachFull() {
               <div style={{ fontSize: 15, color: teal, marginTop: 20, fontWeight: 600, fontFamily: fm }}>From $55 one-time</div>
             </div>
           </div>
-          <div style={{ maxWidth: 1000, margin: "40px auto 0", borderTop: "1px solid #1a1b22", paddingTop: 20, textAlign: "center" }}>
+          <div style={{ maxWidth: 1000, margin: "40px auto 0", paddingTop: 20, textAlign: "center", backgroundImage: "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%)", backgroundSize: "100% 1px", backgroundRepeat: "no-repeat", backgroundPosition: "top center" }}>
             <div style={{ fontSize: 11, color: "#3a3d48", fontFamily: fm }}>&copy; 2026 WickCoach. All rights reserved.</div>
           </div>
         </footer>

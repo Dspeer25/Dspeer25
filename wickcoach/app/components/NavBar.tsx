@@ -19,8 +19,8 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
   return (
     <>
       {view === 'app' && (
-        <div style={{ padding: "12px 24px" }}>
-          <span onClick={onLogoClick} style={{ color: "#6b7280", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
+        <div style={{ padding: "12px 24px", background: '#181c26' }}>
+          <span onClick={onLogoClick} style={{ color: "#8a8d98", fontFamily: fm, fontSize: 13, cursor: "pointer" }}>&larr; Back to home</span>
         </div>
       )}
       <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 100, borderBottom: "none", overflow: "visible", position: 'relative', background: '#181c26' }}>

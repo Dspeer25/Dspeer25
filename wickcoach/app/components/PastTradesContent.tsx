@@ -63,6 +63,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
   const [colWidths, setColWidths] = useState<number[]>([80, 95, 75, 120, 80, 55, 140, 105, 80, 200]);
   const [aiOpen, setAiOpen] = useState(false);
   const [resizing, setResizing] = useState<{ col: number; startX: number; startW: number } | null>(null);
+  const didResizeRef = React.useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [eqHover, setEqHover] = useState<{ x: number; y: number; date: string; value: number } | null>(null);
   const [eqRange, setEqRange] = useState('YTD');
@@ -76,13 +77,19 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     if (!resizing) return;
     const onMove = (e: MouseEvent) => {
       const diff = e.clientX - resizing.startX;
+      if (Math.abs(diff) > 2) didResizeRef.current = true;
       setColWidths(prev => {
         const next = [...prev];
         next[resizing.col] = Math.max(40, resizing.startW + diff);
         return next;
       });
     };
-    const onUp = () => setResizing(null);
+    const onUp = () => {
+      setResizing(null);
+      // Keep the "did resize" flag set briefly so the click that
+      // follows mouseup on the header span is ignored.
+      setTimeout(() => { didResizeRef.current = false; }, 120);
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
@@ -555,7 +562,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               const isActive = sortField && sortBy.startsWith(sortField + '-');
               const isAsc = sortBy === sortField + '-asc';
               return (
-                <span key={h} onClick={() => { if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 700, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '14px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid rgba(42,49,67,0.5)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
+                <span key={h} onClick={() => { if (didResizeRef.current || resizing) return; if (sortField) toggleSort(sortField); }} style={{ color: isActive ? teal : 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 700, position: 'relative', userSelect: resizing ? 'none' : 'auto', padding: '14px 8px', borderRight: hi < colHeaders.length - 1 ? '1px solid rgba(42,49,67,0.5)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap', cursor: sortField ? 'pointer' : 'default', gap: 4 }}>
                   {h}
                   {sortField && (
                     <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 0, fontSize: 11, marginLeft: 2 }}>
@@ -563,7 +570,14 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                       <span style={{ color: isActive && !isAsc ? teal : '#3a3b42' }}>&#9660;</span>
                     </span>
                   )}
-                  <span onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }} onDoubleClick={e => { e.stopPropagation(); autoFitColumn(hi); }} style={{ position: 'absolute', right: -4, top: 0, width: 8, height: '100%', cursor: 'col-resize', zIndex: 2, background: 'transparent' }} onMouseEnter={e => { e.currentTarget.style.borderRight = `3px solid ${teal}`; }} onMouseLeave={e => { if (!resizing || resizing.col !== hi) e.currentTarget.style.borderRight = 'none'; }} />
+                  <span
+                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); didResizeRef.current = false; setResizing({ col: hi, startX: e.clientX, startW: colWidths[hi] }); }}
+                    onClick={e => { e.stopPropagation(); }}
+                    onDoubleClick={e => { e.preventDefault(); e.stopPropagation(); didResizeRef.current = true; autoFitColumn(hi); setTimeout(() => { didResizeRef.current = false; }, 120); }}
+                    style={{ position: 'absolute', right: -4, top: 0, width: 8, height: '100%', cursor: 'col-resize', zIndex: 2, background: 'transparent' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderRight = `3px solid ${teal}`; }}
+                    onMouseLeave={e => { if (!resizing || resizing.col !== hi) e.currentTarget.style.borderRight = 'none'; }}
+                  />
                 </span>
               );
             })}
