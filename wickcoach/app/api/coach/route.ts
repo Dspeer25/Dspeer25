@@ -128,15 +128,51 @@ Output format:
 
 Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action items.`;
 
+  // ────────────────────────────────────────────────────────────
+  // Mode: Classify — batch trade scoring (Haiku, utility, no persona)
+  // ────────────────────────────────────────────────────────────
+  const classifyMode = `You are scoring a batch of trades against a trader's stated goals. For each trade, determine per-goal compliance (1 if the trade complied with the goal, 0 if it violated it) based on the journal entry and the trade data. Also classify each trade's psychological quality.
+
+Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is exactly:
+
+{
+  "results": [
+    {
+      "tradeId": "<string, matches the ID the user sent>",
+      "goalScores": [
+        {"goalIndex": 0, "compliance": 0 or 1, "reason": "one short sentence"}
+      ],
+      "psychScore": 0-100,
+      "tradeType": "process" or "impulse" or "neutral",
+      "psychReason": "one short sentence"
+    }
+  ]
+}
+
+Rules:
+- goalIndex matches the index of each goal in the Goals list the user provides (0, 1, 2, ...).
+- If no goals are provided, return goalScores as an empty array for every trade.
+- psychScore is a single 0-100 number for the trade quality overall.
+- tradeType is "process" when the journal shows the trader followed their plan / waited / executed cleanly, "impulse" when the journal shows chasing / revenge / FOMO / rule-breaking, and "neutral" when it's unclear.
+- reason and psychReason are short, plain-English, no markdown, no emojis.
+- Do not wrap the JSON in code fences. Do not add commentary before or after.`;
+
   const systemPrompt = mode === 'goals'
     ? `${baseIdentity}\n\n${goalsMode}`
     : mode === 'analysis'
       ? `${baseIdentity}\n\n${analysisMode}`
       : mode === 'actionItems'
         ? actionItemsMode
-        : mode === 'deepPsych'
-          ? `${baseIdentity}\n\n${deepPsychMode}`
-          : `${baseIdentity}\n\n${tradesMode}`;
+        : mode === 'classify'
+          ? classifyMode
+          : mode === 'deepPsych'
+            ? `${baseIdentity}\n\n${deepPsychMode}`
+            : `${baseIdentity}\n\n${tradesMode}`;
+
+  // Haiku is dramatically cheaper and fast enough for pure classification;
+  // every other mode keeps the Sonnet voice-capable model.
+  const model = mode === 'classify' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
+  const maxTokens = mode === 'classify' ? 4000 : 500;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -152,8 +188,8 @@ Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action item
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
+        model,
+        max_tokens: maxTokens,
         system: systemPrompt,
         messages: messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))
       })
@@ -162,14 +198,28 @@ Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action item
     const data = await response.json();
     const raw: string = data.content?.[0]?.text || 'Unable to process.';
 
-    // Strip the hidden JSON completeness block from goals mode replies
-    // so the trader never sees it; expose it as `metadata` for the UI.
     let reply = raw;
     let metadata: unknown = null;
+
     if (mode === 'goals') {
+      // Strip the hidden JSON completeness block so the trader never sees it;
+      // expose it as `metadata` for the UI.
       const extracted = extractGoalsMetadata(raw);
       reply = extracted.cleaned;
       metadata = extracted.metadata;
+    } else if (mode === 'classify') {
+      // Entire response should be a JSON object. Strip accidental fences
+      // and parse. On failure, surface nothing so the client falls back.
+      reply = '';
+      try {
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```\s*$/i, '')
+          .trim();
+        metadata = JSON.parse(cleaned);
+      } catch {
+        metadata = null;
+      }
     }
 
     return NextResponse.json({ reply, metadata });

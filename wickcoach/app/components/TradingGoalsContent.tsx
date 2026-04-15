@@ -353,8 +353,35 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                     border: '1px solid #2a2b32',
                     background: hoveredContextBtn === g.id ? 'rgba(0,212,160,0.06)' : '#13141a',
                     transition: 'all 0.15s ease',
+                    position: 'relative',
                   }}
                 >
+                  {/* Hover tooltip — explains why context makes WickCoach smarter */}
+                  {hoveredContextBtn === g.id && !isExpanded && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginBottom: 8,
+                        background: '#FCD34D',
+                        color: '#000',
+                        padding: '12px 16px',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontFamily: 'DM Mono, monospace',
+                        maxWidth: 280,
+                        width: 'max-content',
+                        lineHeight: 1.5,
+                        zIndex: 50,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      The more context you give, the smarter WickCoach gets at scoring your trades against this goal. Be specific about what this rule means to you and what violation looks like.
+                    </div>
+                  )}
                   <MiniStickFigure size={28} />
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <span style={{

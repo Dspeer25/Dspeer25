@@ -75,6 +75,33 @@ export default function WickCoachFull() {
     } catch {}
   }, []);
 
+  // Seed the trader profile with onboarding fields on first load. Preserve
+  // any existing keys (goalContexts, totalExchanges, etc.) that other parts
+  // of the app already write to the same localStorage entry.
+  useEffect(() => {
+    try {
+      const onboardingDefaults = {
+        instruments: '',
+        strategy: '',
+        experience: '',
+        biggestStruggle: '',
+        goodDayDescription: '',
+        onboardingComplete: false,
+      };
+      const raw = localStorage.getItem('wickcoach_trader_profile');
+      const current = raw ? JSON.parse(raw) : {};
+      let changed = false;
+      const next = { ...current };
+      for (const key of Object.keys(onboardingDefaults) as Array<keyof typeof onboardingDefaults>) {
+        if (!(key in next)) {
+          next[key] = onboardingDefaults[key];
+          changed = true;
+        }
+      }
+      if (changed) localStorage.setItem('wickcoach_trader_profile', JSON.stringify(next));
+    } catch { /* ignore storage errors */ }
+  }, []);
+
   useEffect(() => {
     const t = setTimeout(() => setTextVisible(true), 3500);
     return () => clearTimeout(t);

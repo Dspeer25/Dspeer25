@@ -375,6 +375,36 @@ export function buildTraderStats(trades: Trade[]): string {
   ].join('\n');
 }
 
+// ─── AI trade classification (Haiku-powered) ─────────────────
+// Cached result per-trade, keyed by trade.id in localStorage under
+// `wickcoach_trade_classifications`.
+export interface TradeClassification {
+  tradeId: string;
+  goalScores: Array<{ goalIndex: number; compliance: 0 | 1; reason: string }>;
+  psychScore: number;      // 0-100
+  tradeType: 'process' | 'impulse' | 'neutral';
+  psychReason: string;
+}
+
+export const CLASSIFICATION_STORE_KEY = 'wickcoach_trade_classifications';
+
+export function readClassifications(): Record<string, TradeClassification> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(CLASSIFICATION_STORE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeClassifications(map: Record<string, TradeClassification>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CLASSIFICATION_STORE_KEY, JSON.stringify(map));
+  } catch { /* ignore quota errors */ }
+}
+
 export interface GoalScoringCriteria {
   measure: string;
   compliance: string;

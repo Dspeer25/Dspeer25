@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, readClassifications, writeClassifications } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -165,13 +165,78 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     } catch { /* ignore */ }
   }, []);
 
+  // ── AI-backed trade classifications (Haiku, cached per trade.id) ──
+  // On mount we collect any current-week trades that haven't been scored
+  // yet and batch-send them to /api/coach in classify mode. Results are
+  // cached in localStorage; subsequent visits skip the API call.
+  const [classifications, setClassifications] = useState<Record<string, TradeClassification>>({});
+  useEffect(() => {
+    setClassifications(readClassifications());
+  }, []);
+  useEffect(() => {
+    if (!trades || trades.length === 0 || realGoals.length === 0) return;
+    const cache = readClassifications();
+
+    // Only re-score trades from the current calendar week that aren't cached.
+    const today = new Date();
+    const day = today.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    const weekStart = new Date(today);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekStart.getDate() + diff);
+
+    const unscored = trades.filter(t => {
+      const d = new Date(t.date);
+      return d >= weekStart && !cache[t.id];
+    });
+    if (unscored.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const goalsList = realGoals.slice(0, 10).map((g, i) => {
+          const ctx = g.context && g.context.length > 0 ? ` — context: ${g.context.join(' | ')}` : '';
+          const crit = g.scoringCriteria
+            ? ` — compliance: ${g.scoringCriteria.compliance}; violation: ${g.scoringCriteria.violation}; scope: ${g.scoringCriteria.scope}`
+            : '';
+          return `${i}. "${g.title || '(untitled)'}" [${g.goalType}]${ctx}${crit}`;
+        }).join('\n');
+
+        const tradesList = unscored.map(t => (
+          `- ID: ${t.id} | Date: ${t.date} | Time: ${t.time} | ${t.ticker} | ${t.strategy} | ${t.direction} | Qty: ${t.contracts} | Entry/Exit: $${t.entryPrice}/$${t.exitPrice} | P/L: $${t.pl} | Result: ${t.result} | R:R: ${t.riskReward} | Journal: "${(t.journal || '').replace(/"/g, '\\"')}"`
+        )).join('\n');
+
+        const userMsg = `Goals:\n${goalsList || '(none set)'}\n\nTrades to classify:\n${tradesList}`;
+
+        const res = await fetch('/api/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'classify',
+            messages: [{ role: 'user', content: userMsg }],
+          }),
+        });
+        const data = await res.json();
+        const meta = data.metadata as { results?: TradeClassification[] } | null;
+        if (cancelled || !meta?.results) return;
+
+        const next = { ...cache };
+        meta.results.forEach(r => { if (r && r.tradeId) next[r.tradeId] = r; });
+        writeClassifications(next);
+        setClassifications(next);
+      } catch { /* ignore — keyword fallback handles UI */ }
+    })();
+    return () => { cancelled = true; };
+  }, [trades, realGoals]);
+
   // Per-week trade buckets for the Rules vs Execution section.
   const weekBuckets = buildWeekBuckets(trades);
   const selectedWeekBucket = weekBuckets[selectedWeekIdx] || weekBuckets[0];
 
-  // Derive per-goal slider values from the selected week's real trades.
-  // Trades side: trade count as a proxy for execution volume.
-  // Psych side: journal entries whose text matches the goal type.
+  // Derive per-goal slider values. Preferred source: AI classifications
+  // from /api/coach (Haiku). Fallback: journal keyword matching so the
+  // UI still renders defensible numbers when the API is unavailable or
+  // when trades haven't been scored yet.
   const goalTypeKeywords: Record<string, string[]> = {
     'Trade Management': ['managed', 'held', 'breathe', 'exit'],
     'Entry Criteria':   ['entry', 'confirmation', 'confirmed', 'setup'],
@@ -180,9 +245,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     'Psychology':       ['calm', 'focused', 'discipline', 'mindset'],
     'General':          ['plan', 'rule', 'process'],
   };
-  const selectedWeekGoals = realGoals.slice(0, 3).map((g) => {
+  const selectedWeekGoals = realGoals.slice(0, 3).map((g, goalIdx) => {
     const weekTrades = selectedWeekBucket?.trades || [];
-    const psychTarget = Math.max(5, Math.floor(weekTrades.length * 0.6));
+    const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
+
+    // Primary: AI-scored per-goal compliance.
+    if (aiScoredTrades.length >= 3) {
+      const complied = aiScoredTrades.filter(t => {
+        const gs = classifications[t.id].goalScores.find(s => s.goalIndex === goalIdx);
+        return gs?.compliance === 1;
+      }).length;
+      const processCount = aiScoredTrades.filter(t => classifications[t.id].tradeType === 'process').length;
+      return {
+        title: g.title || '(untitled)',
+        type: (g.goalType || 'General').toUpperCase().split(' ')[0],
+        trades: { actual: complied, target: aiScoredTrades.length, unitLabel: 'trades complied (AI-scored)' },
+        psych:  { actual: processCount, target: aiScoredTrades.length, unitLabel: 'process-labeled trades' },
+      };
+    }
+
+    // Fallback: keyword proxy.
     const kws = goalTypeKeywords[g.goalType] || goalTypeKeywords['General'];
     const psychActual = weekTrades.filter(t => {
       const j = (t.journal || '').toLowerCase();
@@ -190,6 +272,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     }).length;
     const tradesTarget = Math.max(5, weekTrades.length || 5);
     const tradesActual = weekTrades.length;
+    const psychTarget = Math.max(5, Math.floor(weekTrades.length * 0.6));
     return {
       title: g.title || '(untitled)',
       type: (g.goalType || 'General').toUpperCase().split(' ')[0],
