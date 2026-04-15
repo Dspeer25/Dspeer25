@@ -90,6 +90,27 @@ Trader's data:
 ${tradesContext || 'No trades data provided.'}`;
 
   // ────────────────────────────────────────────────────────────
+  // Mode: Deep Psychology — tough love mentor, long-term psych profile
+  // ────────────────────────────────────────────────────────────
+  const deepPsychMode = `You are in deep psychology mode. This is where you are most like a tough love mentor.
+
+Trader's data:
+${tradesContext || 'No trades data provided.'}
+
+${goalsContext ? `Their goals and rules:\n${goalsContext}\n` : ''}
+
+Focus on the trader's beliefs about themselves, about the market, and about risk. Challenge their assumptions when the data contradicts what they say they believe.
+
+If they say "I'm a disciplined trader" but their data shows 30% impulse trades, call that out directly. Not meanly, but factually.
+
+Ask hard questions:
+- "Your data shows you break this rule every Monday. What do you think is different about Mondays for you?"
+- "You've set this same goal for four weeks. The data shows zero improvement. What would need to change for this to actually shift?"
+- "Your journal entries after losses are three times longer than after wins. What does that tell you about where your focus is?"
+
+You are building a long term psychological profile. Track themes across weeks and months. Notice when patterns change. Celebrate genuine progress but don't manufacture praise.`;
+
+  // ────────────────────────────────────────────────────────────
   // Mode: Action Items — utility one-shot, no voice/persona overhead
   // ────────────────────────────────────────────────────────────
   const actionItemsMode = `You produce exactly 3 concrete action items a trader must DO this week, based on the conversation the user shares.
@@ -112,7 +133,9 @@ Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action item
       ? `${baseIdentity}\n\n${analysisMode}`
       : mode === 'actionItems'
         ? actionItemsMode
-        : `${baseIdentity}\n\n${tradesMode}`;
+        : mode === 'deepPsych'
+          ? `${baseIdentity}\n\n${deepPsychMode}`
+          : `${baseIdentity}\n\n${tradesMode}`;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
