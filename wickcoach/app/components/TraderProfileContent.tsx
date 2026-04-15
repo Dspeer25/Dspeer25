@@ -1,6 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { fm, fd } from './shared';
+import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
 const red = '#ff4444';
@@ -39,13 +40,119 @@ const timeframes = ['5', '10', '15', '30', '50', '100', 'All'];
 const rowGrad = 'linear-gradient(90deg, rgba(255,68,68,0.03) 0%, rgba(26,28,35,1) 40%, rgba(26,28,35,1) 60%, rgba(0,212,160,0.03) 100%)';
 
 export default function TraderProfileContent() {
+  // ─── Deep psych chat state ─────────────────────────────────
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const deepPsychWelcome =
+    "I've been watching your patterns. Here's what the data says about the trader you actually are, not the one you tell yourself you are.\n\n" +
+    "Your **psychology score** is **61**. Patient execution wins you **+1.1R** on average. Impulse entries drag you to **+0.5R**. The gap is not small. It is who you are **19 trades out of every 100**.\n\n" +
+    "You've kept the same three goals on the board for weeks now. Some are showing genuine progress. Others aren't moving at all.\n\n" +
+    "Where do you want to start? I can press on a specific pattern (revenge trading, FOMO, the Monday fade), or you can tell me what you think your problem actually is and I'll tell you whether the data agrees.";
+
+  async function sendToCoach() {
+    if (!aiInput.trim() || aiLoading) return;
+    const userMsg = aiInput.trim();
+    setAiInput('');
+    setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setAiLoading(true);
+    try {
+      // Rich context so the coach can challenge beliefs against data
+      const tradesContext =
+        '200 total trades. 92 wins, 80 losses, 28 breakeven. Total P/L +$58,532. Win rate 46%. ' +
+        'Process trades 137 (61.3% WR, +150.9R). Impulse 63 (12.7% WR, -31.3R). Gap between the two personalities is enormous. ' +
+        'Psychology score: 61/100. ' +
+        'Rule-breaking patterns: Ignoring Rules 19t (+0.5R vs +1.1R expectancy gap). Impulse Entries 16t (19% WR vs 61% when patient). Revenge Trading 15t (cost $35.90 this window). FOMO/Chasing 12t (0% WR when chasing). ' +
+        'Constructive patterns: Patience 39t (56% WR when waiting). Clean Execution 31t (+1.6R avg). Stop Discipline 15t (clean losses avg $492). Trusting Process 14 entries building resilience. ' +
+        'Top winning tickers: V +$10,391 (14t 78.6%), META +$6,288 (9t 77.8%), NVDA +$6,129 (14t 50%), AMD +$5,929 (11t 54.5%). ' +
+        'Top losing tickers: DIS -$2,847 (4t 25%), NFLX -$1,923 (5t 20%), BA -$1,580 (3t 0%). ' +
+        'Hourly: 9-10AM +$18,500 (45t, best); 12-1PM +$2,176 (22t, worst). ' +
+        'Strategy edges: Call Debit Spread 18t 61.1% +1.0R; 0DTE Call 60t 46.7% +0.7R (book carrier); 0DTE Put 54t 42.6% +0.5R (drag).';
+
+      let goalsContext = '';
+      try {
+        const savedGoals = localStorage.getItem('wickcoach_goals');
+        if (savedGoals) {
+          const parsed: { title: string; goalType: string; completeness?: number; context?: string[] }[] = JSON.parse(savedGoals);
+          goalsContext = parsed
+            .filter(g => g.title)
+            .map(g => {
+              const pct = typeof g.completeness === 'number' ? `, ${g.completeness}% understood` : '';
+              const turns = g.context?.length ? `, ${g.context.length} clarification turns` : '';
+              return `"${g.title}" [${g.goalType}${pct}${turns}]`;
+            })
+            .join('; ');
+        }
+      } catch { /* ignore storage errors */ }
+
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            ...aiMessages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content: userMsg },
+          ],
+          tradesContext,
+          goalsContext,
+          mode: 'deepPsych',
+        }),
+      });
+      const data = await response.json();
+      setAiMessages(prev => [...prev, { role: 'assistant', content: data.reply || 'Unable to respond right now.' }]);
+    } catch {
+      setAiMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Try again.' }]);
+    }
+    setAiLoading(false);
+  }
+
   return (
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
 
       {/* ═══ HEADER ═══ */}
-      <div>
-        <h2 style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Trader Profile</h2>
-        <p style={{ color: '#bbb', fontSize: 14, margin: '6px 0 0' }}>Your psychological profile — WickCoach observations across your trading history.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h2 style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Trader Profile</h2>
+          <p style={{ color: '#bbb', fontSize: 14, margin: '6px 0 0' }}>Your psychological profile — WickCoach observations across your trading history.</p>
+        </div>
+
+        {/* WickCoach AI — tough love mentor */}
+        <div
+          onClick={() => setAiOpen(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '14px 20px',
+            background: 'rgba(0,212,160,0.08)',
+            border: '1px solid rgba(0,212,160,0.4)',
+            borderRadius: 12,
+            cursor: 'pointer',
+            transition: 'background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease',
+            boxShadow: '0 0 24px rgba(0,212,160,0.12)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.15)'; e.currentTarget.style.borderColor = '#00d4a0'; e.currentTarget.style.boxShadow = '0 0 32px rgba(0,212,160,0.25)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.4)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(0,212,160,0.12)'; }}
+        >
+          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(0,212,160,0.12)', border: '1px solid rgba(0,212,160,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="28" height="34" viewBox="0 0 20 24" fill="none">
+              <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+              <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+              <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+              <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+              <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+            </svg>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>WickCoach AI</span>
+            <span style={{ fontFamily: fm, fontSize: 12, color: teal, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>Deep psychology</span>
+          </div>
+        </div>
       </div>
 
       {/* ═══ WICKCOACH OBSERVATIONS BOARD ═══ */}
@@ -147,6 +254,18 @@ export default function TraderProfileContent() {
           </div>
         </div>
       </div>
+
+      {/* ═══ DEEP PSYCH CHAT WIDGET ═══ */}
+      <AIChatWidget
+        isOpen={aiOpen}
+        onClose={() => setAiOpen(false)}
+        messages={aiMessages}
+        input={aiInput}
+        setInput={setAiInput}
+        onSend={sendToCoach}
+        loading={aiLoading}
+        welcomeMsg={deepPsychWelcome}
+      />
     </div>
   );
 }
