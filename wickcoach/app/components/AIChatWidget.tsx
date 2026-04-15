@@ -45,19 +45,51 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   };
 
+  // Lightweight markdown-ish renderer:
+  //   **bold**            → teal bold
+  //   #, ##, ### headings → strip hashes, render the line as bold white
+  //   -  *  •  line start → bullet with teal dot
+  //   `code`              → stripped (no monospace treatment needed)
+  // Anything else stays as plain text, preserving line breaks.
   const formatAiText = (text: string): React.ReactNode[] => {
     const lines = text.split('\n');
     const nodes: React.ReactNode[] = [];
-    lines.forEach((line, li) => {
+    lines.forEach((rawLine, li) => {
       if (li > 0) nodes.push(<br key={`br-${li}`} />);
-      const bulletMatch = line.match(/^•\s*(.*)/);
+
+      let line = rawLine;
+
+      // Strip leading heading markers, remember we saw one
+      const headingMatch = line.match(/^#{1,6}\s+(.*)$/);
+      const isHeading = !!headingMatch;
+      if (headingMatch) line = headingMatch[1];
+
+      // Detect a bullet prefix (•, -, *) — but not the ** that opens bold
+      const bulletMatch = line.match(/^(?:•|-|\*)\s+(.*)$/) && !line.startsWith('**')
+        ? line.match(/^(?:•|-|\*)\s+(.*)$/)
+        : null;
       const content = bulletMatch ? bulletMatch[1] : line;
-      const parts = content.split(/\*\*(.*?)\*\*/g);
+
+      // Inline: split on **bold** and strip single backticks
+      const cleanedContent = content.replace(/`([^`]+)`/g, '$1');
+      const parts = cleanedContent.split(/\*\*(.*?)\*\*/g);
       const rendered = parts.map((part, pi) =>
-        pi % 2 === 1 ? <span key={pi} style={{ color: teal, fontWeight: 700 }}>{part}</span> : part
+        pi % 2 === 1
+          ? <span key={pi} style={{ color: teal, fontWeight: 700 }}>{part}</span>
+          : part
       );
+
       if (bulletMatch) {
-        nodes.push(<span key={`bullet-${li}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', marginTop: 4 }}><span style={{ color: teal, flexShrink: 0 }}>•</span><span>{rendered}</span></span>);
+        nodes.push(
+          <span key={`bullet-${li}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', marginTop: 4 }}>
+            <span style={{ color: teal, flexShrink: 0 }}>•</span>
+            <span>{rendered}</span>
+          </span>
+        );
+      } else if (isHeading) {
+        nodes.push(
+          <span key={`line-${li}`} style={{ fontWeight: 700, color: '#fff' }}>{rendered}</span>
+        );
       } else {
         nodes.push(<span key={`line-${li}`}>{rendered}</span>);
       }
@@ -170,7 +202,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
           >
             {!hasMessages && welcomeMsg && (
               <div style={{ alignSelf: 'flex-start', maxWidth: '85%', background: '#151C18', border: '1px solid #1F2E25', color: 'rgba(229,231,235,1)', borderRadius: '20px 20px 20px 4px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontFamily: fm }}>
-                {welcomeMsg}
+                {formatAiText(welcomeMsg)}
               </div>
             )}
 
