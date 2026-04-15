@@ -56,7 +56,7 @@ export default function WickCoachFull() {
 
   useEffect(() => {
     try {
-      const dataVersion = 'v4';
+      const dataVersion = 'v5';
       const storedVersion = localStorage.getItem('wickcoach_trades_version');
       const stored = localStorage.getItem('wickcoach_trades');
       const parsed = stored ? JSON.parse(stored) : [];
