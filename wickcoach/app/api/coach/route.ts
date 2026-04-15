@@ -29,16 +29,22 @@ export async function POST(req: NextRequest) {
   const { messages, tradesContext, goalsContext, mode, goalTitle, exchangeNumber } = await req.json();
 
   // ────────────────────────────────────────────────────────────
-  // Mode: Past Trades coach (default)
+  // Mode: Trade Review — forensic pattern recognition across history
   // ────────────────────────────────────────────────────────────
-  const tradesMode = `MODE: Past Trades review.
+  const tradesMode = `You are in trade review mode. The trader is looking at specific trades and wants to understand patterns.
 
 Trader's trade history:
 ${tradesContext || 'No trades logged yet.'}
 
 ${goalsContext ? `Goals and rules they set for themselves:\n${goalsContext}\n` : ''}
 
-Your job in this mode is to analyze behavioral patterns across their trades and coach the psychology behind them. Point out when they followed or broke their own rules based on the journal entries. Focus on why a decision was made, not just what the numbers show. Keep each reply to a short paragraph or two.`;
+Focus on pattern recognition across their trade history. Look for:
+- Recurring mistakes tied to specific conditions (time of day, after losses, specific tickers)
+- Sequences that predict outcomes (what happens after 2 consecutive losses?)
+- Behavioral fingerprints (do they always do X before a big loss?)
+- Edge identification (which specific setups have the best expectancy?)
+
+Be forensic. Reference specific trades by date and ticker. Compare similar setups across different days. Quantify everything.`;
 
   // ────────────────────────────────────────────────────────────
   // Mode: Goal clarification — understand the goal well enough to score trades against it
