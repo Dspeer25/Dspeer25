@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { fm, fd } from './shared';
+import { fm, fd, Trade, buildTraderStats } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -147,7 +147,7 @@ const issuesCopy = {
 };
 
 // ─── Component ────────────────────────────────────────────────
-export default function AnalysisContent() {
+export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [heatmapMode, setHeatmapMode] = useState<'timeline' | 'best' | 'worst'>('timeline');
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
@@ -176,12 +176,7 @@ export default function AnalysisContent() {
     setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setAiLoading(true);
     try {
-      const analysisContext =
-        '200 total trades. 92 wins, 80 losses, 28 breakeven. Total P/L +$58,532. Process trades 137 (61.3% WR, +150.9R). Impulse 63 (12.7% WR, -31.3R). ' +
-        'Strategies by P/L: 0DTE Call 60 trades 46.7% WR +$19,550 +0.7R; 0DTE Put 54 42.6% +$13,341 +0.5R; Call Debit Spread 18 61.1% +$8,891 +1.0R; Put Debit Spread 19 52.6% +$6,763 +0.7R; Call Scalp 16 56.3% +$6,339 +0.8R; Put Scalp 8 50% +$3,897 +1.0R. ' +
-        'Tickers by P/L: V +$10,391 (14t 78.6%); META +$6,288 (9t 77.8%); NVDA +$6,129 (14t 50%); AMD +$5,929 (11t 54.5%); BA +$5,018 (9t 66.7%); MSFT +$5,805 (17t 47.1%); JPM +$4,200 (8t 62.5%); DIS +$3,450 (6t 50%). ' +
-        'Hourly: 9-10AM +$18,500 (45t); 10-11AM +$13,006; 11-12PM +$9,781; 12-1PM +$2,176; 1-2PM +$7,653; 2-3PM +$5,726; 3-4PM +$3,124. ' +
-        'Psychology patterns: Ignoring Rules 19t (+0.5R vs +1.1R gap); Impulse Entries 16t (19% WR vs 61% patient); Revenge Trading 15t (cost $35.90); FOMO/Chasing 12t (0% WR); Patience 39t (56% WR when waiting); Clean Execution 31t (+1.6R); Stop Discipline 15t; Trusting Process 14t.';
+      const analysisContext = buildTraderStats(trades);
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

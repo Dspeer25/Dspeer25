@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { fm, fd } from './shared';
+import { fm, fd, Trade, buildTraderStats } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -39,7 +39,7 @@ const timeframes = ['5', '10', '15', '30', '50', '100', 'All'];
 
 const rowGrad = 'linear-gradient(90deg, rgba(255,68,68,0.03) 0%, rgba(26,28,35,1) 40%, rgba(26,28,35,1) 60%, rgba(0,212,160,0.03) 100%)';
 
-export default function TraderProfileContent() {
+export default function TraderProfileContent({ trades = [] }: { trades?: Trade[] }) {
   // ─── Deep psych chat state ─────────────────────────────────
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -59,17 +59,9 @@ export default function TraderProfileContent() {
     setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setAiLoading(true);
     try {
-      // Rich context so the coach can challenge beliefs against data
-      const tradesContext =
-        '200 total trades. 92 wins, 80 losses, 28 breakeven. Total P/L +$58,532. Win rate 46%. ' +
-        'Process trades 137 (61.3% WR, +150.9R). Impulse 63 (12.7% WR, -31.3R). Gap between the two personalities is enormous. ' +
-        'Psychology score: 61/100. ' +
-        'Rule-breaking patterns: Ignoring Rules 19t (+0.5R vs +1.1R expectancy gap). Impulse Entries 16t (19% WR vs 61% when patient). Revenge Trading 15t (cost $35.90 this window). FOMO/Chasing 12t (0% WR when chasing). ' +
-        'Constructive patterns: Patience 39t (56% WR when waiting). Clean Execution 31t (+1.6R avg). Stop Discipline 15t (clean losses avg $492). Trusting Process 14 entries building resilience. ' +
-        'Top winning tickers: V +$10,391 (14t 78.6%), META +$6,288 (9t 77.8%), NVDA +$6,129 (14t 50%), AMD +$5,929 (11t 54.5%). ' +
-        'Top losing tickers: DIS -$2,847 (4t 25%), NFLX -$1,923 (5t 20%), BA -$1,580 (3t 0%). ' +
-        'Hourly: 9-10AM +$18,500 (45t, best); 12-1PM +$2,176 (22t, worst). ' +
-        'Strategy edges: Call Debit Spread 18t 61.1% +1.0R; 0DTE Call 60t 46.7% +0.7R (book carrier); 0DTE Put 54t 42.6% +0.5R (drag).';
+      // Computed from the real trades state so the coach can challenge
+      // beliefs against actual data, not a frozen mock.
+      const tradesContext = buildTraderStats(trades);
 
       let goalsContext = '';
       try {

@@ -140,8 +140,8 @@ export default function WickCoachFull() {
           )}
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
-          {activeTab === 'Analysis' && <AnalysisContent />}
-          {activeTab === 'Trader Profile' && <TraderProfileContent />}
+          {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
+          {activeTab === 'Trader Profile' && <TraderProfileContent trades={trades} />}
           {activeTab === 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 120, paddingBottom: 120 }}>
               <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', letterSpacing: '0.5px', marginBottom: 12 }}>Tools</div>
