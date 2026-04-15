@@ -168,13 +168,15 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
       if (goal.aiResponses[i]) thread += `WickCoach: ${goal.aiResponses[i]}\n`;
     }
 
-    const actionPrompt = `Based on this conversation about the trader's goal "${goal.title}":\n\n${thread}\nGenerate exactly 3 concrete action items the trader must DO this week. Each must:\n- Start with a verb (Track, Record, Stop, Wait, Write, Measure, etc.)\n- Be specific enough to verify at end of week (yes/no, did I do it?)\n- Be under 10 words\n\nFormat:\n1. [action]\n2. [action]\n3. [action]\n\nNothing else. No intro. No explanation. Just 3 actionable items.`;
+    // The system prompt (mode: 'actionItems') carries all the format/shape
+    // rules — the user message just hands over the conversation context.
+    const actionPrompt = `Conversation about the trader's goal "${goal.title}":\n\n${thread}`;
 
     try {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: actionPrompt }], mode: 'trades' })
+        body: JSON.stringify({ messages: [{ role: 'user', content: actionPrompt }], mode: 'actionItems' })
       });
       const data = await res.json();
       const reply: string = data.reply || '';

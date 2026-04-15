@@ -89,11 +89,30 @@ Keep text responses to 2 to 3 sentences max, then show the data. If you can expr
 Trader's data:
 ${tradesContext || 'No trades data provided.'}`;
 
+  // ────────────────────────────────────────────────────────────
+  // Mode: Action Items — utility one-shot, no voice/persona overhead
+  // ────────────────────────────────────────────────────────────
+  const actionItemsMode = `You produce exactly 3 concrete action items a trader must DO this week, based on the conversation the user shares.
+
+Each action item must:
+- Start with a verb (Track, Record, Stop, Wait, Write, Measure, etc.)
+- Be specific enough to verify at the end of the week (yes/no, did I do it?)
+- Be under 10 words
+
+Output format:
+1. [action]
+2. [action]
+3. [action]
+
+Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action items.`;
+
   const systemPrompt = mode === 'goals'
     ? `${baseIdentity}\n\n${goalsMode}`
     : mode === 'analysis'
       ? `${baseIdentity}\n\n${analysisMode}`
-      : `${baseIdentity}\n\n${tradesMode}`;
+      : mode === 'actionItems'
+        ? actionItemsMode
+        : `${baseIdentity}\n\n${tradesMode}`;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
