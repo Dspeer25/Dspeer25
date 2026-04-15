@@ -102,9 +102,18 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setAiLoading(true);
     try {
-      const tradesContext = trades.map(t =>
-        `${t.ticker} ${t.strategy} ${t.direction} Entry:$${t.entryPrice} Exit:$${t.exitPrice} P/L:$${t.pl} R:R:${t.riskReward} Date:${t.date} Journal:"${t.journal}"`
-      ).join('\n');
+      // Mirror every column visible in the Past Trades table so the AI can
+      // reason about any field the trader can see on screen. Order follows the
+      // table header: Asset, Date, Time, Strategy, Direction, Qty, Entry/Exit,
+      // Net P/L, R:R, Analyst Notes. Result is included so wins/losses are
+      // unambiguous in prose (the table shows it via P/L sign + row color).
+      const tradesContext = trades.map(t => (
+        `Date:${t.date} Time:${t.time} ` +
+        `Asset:${t.ticker} Strategy:${t.strategy} Direction:${t.direction} Qty:${t.contracts} ` +
+        `Entry:$${t.entryPrice} Exit:$${t.exitPrice} ` +
+        `NetPL:$${t.pl} Result:${t.result} R:R:${t.riskReward} ` +
+        `Notes:"${t.journal}"`
+      )).join('\n');
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
