@@ -17,6 +17,7 @@ import AnalysisContent from "./components/AnalysisHub";
 import PastTradesContent from "./components/PastTradesContent";
 import TradingGoalsContent from "./components/TradingGoalsContent";
 import LogATradeContent from "./components/LogATradeContent";
+import TraderProfileContent from "./components/TraderProfileContent";
 import SplashScreen from "./components/SplashScreen";
 
 export default function WickCoachFull() {
@@ -97,7 +98,8 @@ export default function WickCoachFull() {
   ];
 
   const essentialFeatures = ["Trade logging", "Journal entries", "Past trades dashboard", "Equity curve", "Manual analytics"];
-  const completeFeatures = ["Everything in Essential", "AI psychology coach", "Journal entry analysis", "Behavioral pattern detection", "Weekly goal tracking", "Mark Douglas methodology", "All future updates"];
+  const completeFeatures = ["Everything in Essential", "AI psychology coach (20/day)", "Journal entry analysis", "Behavioral pattern detection", "Weekly goal tracking", "Mark Douglas methodology", "All future updates"];
+  const proFeatures = ["Everything in Complete", "100 AI interactions per day", "Priority AI response speed", "Advanced statistical analysis", "Deep pattern recognition", "Unlimited goal tracking", "Early access to new tools"];
 
   const faqs = [
     { q: "What is WickCoach?", a: "An AI trading journal that coaches your psychology by reading your trade logs AND your written journal entries." },
@@ -139,6 +141,7 @@ export default function WickCoachFull() {
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
           {activeTab === 'Analysis' && <AnalysisContent />}
+          {activeTab === 'Trader Profile' && <TraderProfileContent />}
           {activeTab === 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 120, paddingBottom: 120 }}>
               <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', letterSpacing: '0.5px', marginBottom: 12 }}>Tools</div>
@@ -148,7 +151,7 @@ export default function WickCoachFull() {
               <span style={{ display: 'inline-block', fontFamily: fm, fontSize: 12, color: teal, letterSpacing: 2, textTransform: 'uppercase', padding: '6px 14px', border: '1px solid rgba(0,212,160,0.4)', borderRadius: 999, background: 'rgba(0,212,160,0.06)' }}>Coming Soon</span>
             </div>
           )}
-          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Tools' && (
+          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Trader Profile' && activeTab !== 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>
           )}
         </div>
@@ -332,11 +335,11 @@ export default function WickCoachFull() {
 
         {/* Pricing */}
         <section style={{ background: "transparent", padding: "100px 48px", position: 'relative', zIndex: 1 }}>
-          <div style={{ maxWidth: 750, margin: "0 auto" }}>
+          <div style={{ maxWidth: 1120, margin: "0 auto" }}>
           <h2 style={{ fontSize: 36, fontWeight: 700, fontFamily: fd, marginBottom: 12, color: "#e8e8f0", textAlign: "center" }}>Choose your plan.</h2>
           <p style={{ fontSize: 15, color: "#6a6d78", fontFamily: fm, textAlign: "center", marginBottom: 50 }}>One-time payment with software updates included.</p>
-          <div style={{ display: "flex", gap: 20 }}>
-            <div className="price-card" style={{ flex: 1, background: "#141822", border: "1px solid #2A3143", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center" }}>
+          <div style={{ display: "flex", gap: 20, alignItems: "stretch" }}>
+            <div className="price-card" style={{ flex: 1, background: "#141822", border: "1px solid #2A3143", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center", display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 14, color: "#9a9da8", fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>ESSENTIAL</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$55</div>
               <div style={{ fontSize: 14, color: "#6a6d78", marginBottom: 24, fontFamily: fm }}>one-time</div>
@@ -344,9 +347,9 @@ export default function WickCoachFull() {
                 {essentialFeatures.map(f => (<div key={f} style={{ fontSize: 14, color: "#b0b4c0", fontFamily: fm }}><span style={{ color: teal, marginRight: 10 }}>+</span>{f}</div>))}
               </div>
               <div style={{ fontSize: 12, color: "#5a5d68", fontFamily: fm, marginBottom: 16 }}>No AI coach included</div>
-              <div style={{ background: "rgba(0,212,160,0.1)", color: teal, padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, border: "1px solid rgba(0,212,160,0.2)" }}>Get Essential</div>
+              <div style={{ marginTop: "auto", background: "rgba(0,212,160,0.1)", color: teal, padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, border: "1px solid rgba(0,212,160,0.2)" }}>Get Essential</div>
             </div>
-            <div className="price-card" style={{ flex: 1, background: "#141822", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center", position: "relative" }}>
+            <div className="price-card" style={{ flex: 1, background: "#141822", border: "2px solid rgba(0,212,160,0.3)", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center", position: "relative", display: "flex", flexDirection: "column" }}>
               <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: teal, color: "#0A0D14", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, fontFamily: fm }}>RECOMMENDED</div>
               <div style={{ fontSize: 14, color: teal, fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>COMPLETE</div>
               <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$99</div>
@@ -354,7 +357,17 @@ export default function WickCoachFull() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28, textAlign: "left" }}>
                 {completeFeatures.map(f => (<div key={f} style={{ fontSize: 14, color: "#b0b4c0", fontFamily: fm }}><span style={{ color: teal, marginRight: 10 }}>+</span>{f}</div>))}
               </div>
-              <div style={{ background: teal, color: "#0a0a0f", padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, boxShadow: "0 0 20px rgba(0,212,160,0.25)" }}>Get Complete</div>
+              <div style={{ marginTop: "auto", background: teal, color: "#0a0a0f", padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, boxShadow: "0 0 20px rgba(0,212,160,0.25)" }}>Get Complete</div>
+            </div>
+            <div className="price-card" style={{ flex: 1, background: "#141822", border: "1px solid #2A3143", borderRadius: 16, padding: 36, minHeight: 480, textAlign: "center", position: "relative", display: "flex", flexDirection: "column" }}>
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#ffffff", color: "#0A0D14", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, fontFamily: fm, letterSpacing: 1 }}>POWER USER</div>
+              <div style={{ fontSize: 14, color: "#ffffff", fontFamily: fm, fontWeight: 600, marginBottom: 6 }}>PRO</div>
+              <div style={{ fontSize: 44, fontWeight: 800, color: "#e8e8f0", fontFamily: fd, marginBottom: 4 }}>$149</div>
+              <div style={{ fontSize: 14, color: "#6a6d78", marginBottom: 24, fontFamily: fm }}>one-time</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28, textAlign: "left" }}>
+                {proFeatures.map(f => (<div key={f} style={{ fontSize: 14, color: "#b0b4c0", fontFamily: fm }}><span style={{ color: "#ffffff", marginRight: 10 }}>+</span>{f}</div>))}
+              </div>
+              <div style={{ marginTop: "auto", background: "#ffffff", color: "#0a0a0f", padding: "13px 28px", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: fm, boxShadow: "0 0 20px rgba(255,255,255,0.15)" }}>Get Pro</div>
             </div>
           </div>
           </div>

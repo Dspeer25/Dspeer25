@@ -65,10 +65,10 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = bgHover; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = isActive ? accent : borderIdle; e.currentTarget.style.background = isActive ? bgActive : bgIdle; }}
                 style={{
-                  fontSize: 24,
+                  fontSize: 17,
                   color: accent,
                   letterSpacing: "0.03em",
-                  padding: "14px 24px",
+                  padding: "10px 16px",
                   cursor: "pointer",
                   fontFamily: "Chakra Petch, sans-serif",
                   borderRadius: 8,

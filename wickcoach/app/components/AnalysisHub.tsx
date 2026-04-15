@@ -57,36 +57,64 @@ const hours = [
   { h: '3-4PM', pl: 3124, count: 18 },
 ];
 
-interface PatternRow {
-  friction: { name: string; trades: string; pct: number };
-  middle: React.ReactNode;
-  momentum: { name: string; trades: string; pct: number };
+// Blue used by "Trades vs. Goals" sliders — complementary to the teal
+const blue = '#4a9eff';
+
+// ─── Weekly goals snapshot — mock per-week data ───────────────
+interface WeeklyGoalSnapshot {
+  weekLabel: string;      // e.g. "Apr 6 – Apr 12, 2026"
+  goals: {
+    title: string;
+    type: string;         // PATIENCE, DISCIPLINE, TIMING, RISK, etc.
+    trades: { actual: number; target: number; unitLabel: string };  // for blue slider
+    psych: { actual: number; target: number; unitLabel: string };   // for green slider
+  }[];
 }
 
-const patternRows: PatternRow[] = [
+const weekHistory: WeeklyGoalSnapshot[] = [
   {
-    friction: { name: 'Ignoring Rules', trades: '19 trades', pct: 56 },
-    middle: <><strong style={{ color: '#fff' }}>+0.5R</strong> vs <strong style={{ color: teal }}>+1.1R</strong> expectancy gap</>,
-    momentum: { name: 'Patience', trades: '39 trades · 56% win rate when you wait', pct: 68 },
+    weekLabel: 'Apr 6 – Apr 12, 2026',
+    goals: [
+      { title: 'Let trades breathe 3+ min at break-even', type: 'PATIENCE',
+        trades: { actual: 14, target: 15, unitLabel: 'held 3+ min' },
+        psych:  { actual: 8,  target: 10, unitLabel: 'journal entries mentioning patience' } },
+      { title: 'Max 3 trades per day',                   type: 'DISCIPLINE',
+        trades: { actual: 11, target: 15, unitLabel: 'days under cap' },
+        psych:  { actual: 9,  target: 12, unitLabel: 'sessions rated "controlled"' } },
+      { title: 'No trades before 10:15 AM ET',           type: 'TIMING',
+        trades: { actual: 17, target: 20, unitLabel: 'open avoided' },
+        psych:  { actual: 12, target: 15, unitLabel: 'waited for confirmation' } },
+    ],
   },
   {
-    friction: { name: 'Impulse Entries', trades: '16 trades', pct: 34 },
-    middle: <><strong style={{ color: red }}>19%</strong> win rate vs <strong style={{ color: '#fff' }}>61%</strong> patient</>,
-    momentum: { name: 'Clean Execution', trades: '31 trades · Avg +1.6R per textbook trade', pct: 66 },
+    weekLabel: 'Mar 30 – Apr 5, 2026',
+    goals: [
+      { title: 'Cap risk at 1R per trade',               type: 'RISK',
+        trades: { actual: 18, target: 22, unitLabel: 'trades within 1R' },
+        psych:  { actual: 14, target: 18, unitLabel: 'size plans logged' } },
+      { title: 'Journal every loss',                     type: 'DISCIPLINE',
+        trades: { actual: 7,  target: 9,  unitLabel: 'losses journaled' },
+        psych:  { actual: 7,  target: 9,  unitLabel: 'reflections written' } },
+      { title: 'No revenge re-entry after stop-out',     type: 'PATIENCE',
+        trades: { actual: 12, target: 13, unitLabel: 'clean stops held' },
+        psych:  { actual: 10, target: 13, unitLabel: 'stop-outs accepted' } },
+    ],
   },
   {
-    friction: { name: 'Revenge Trading', trades: '15 trades', pct: 50 },
-    middle: <>Cost you <strong style={{ color: red }}>+$35.90</strong> this window</>,
-    momentum: { name: 'Stop Discipline', trades: '15 trades · Clean losses avg $492', pct: 50 },
-  },
-  {
-    friction: { name: 'FOMO / Chasing', trades: '12 trades', pct: 46 },
-    middle: <>Win rate drops to <strong style={{ color: red }}>0%</strong> when chasing</>,
-    momentum: { name: 'Trusting Process', trades: '14 trades · 14 entries, resilience building', pct: 54 },
+    weekLabel: 'Mar 23 – Mar 29, 2026',
+    goals: [
+      { title: 'Only trade A+ setups',                   type: 'DISCIPLINE',
+        trades: { actual: 16, target: 20, unitLabel: 'setups graded A+' },
+        psych:  { actual: 11, target: 15, unitLabel: 'grades logged pre-entry' } },
+      { title: 'Scale out in thirds',                    type: 'EXECUTION',
+        trades: { actual: 9,  target: 12, unitLabel: 'trades scaled' },
+        psych:  { actual: 8,  target: 12, unitLabel: 'exit plans pre-committed' } },
+      { title: 'Stop trading after 2 losses',            type: 'RISK',
+        trades: { actual: 4,  target: 5,  unitLabel: 'hard-stop days' },
+        psych:  { actual: 4,  target: 5,  unitLabel: 'checks-in after 2nd loss' } },
+    ],
   },
 ];
-
-const timeframes = ['5', '10', '15', '30', '50', '100', 'All'];
 
 // ─── Helpers ──────────────────────────────────────────────────
 const fmtDollar = (n: number, withCents = false) => {
@@ -125,6 +153,7 @@ export default function AnalysisContent() {
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses'>('wins');
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
 
   // ─── Analysis AI chat ───
   const [aiOpen, setAiOpen] = useState(false);
@@ -192,7 +221,7 @@ export default function AnalysisContent() {
   const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0];
   const worstHour = [...hours].sort((a, b) => a.pl - b.pl)[0];
 
-  const rowGrad = 'linear-gradient(90deg, rgba(255,68,68,0.03) 0%, rgba(26,28,35,1) 40%, rgba(26,28,35,1) 60%, rgba(0,212,160,0.03) 100%)';
+  const selectedWeek = weekHistory[selectedWeekIdx];
 
   return (
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
@@ -588,102 +617,159 @@ export default function AnalysisContent() {
         })()}
       </div>
 
-      {/* ═══ WICKCOACH OBSERVATIONS BOARD ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '32px 0 24px', position: 'relative' }}>
+      {/* ═══ RULES vs EXECUTION ═══ */}
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '28px 32px 32px' }}>
 
-        {/* Board-level header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0 40px 24px' }}>
-          <div>
-            <h3 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>WickCoach observations</h3>
-            <p style={{ color: '#888', fontSize: 12, margin: '6px 0 0' }}>AI-detected behavioral themes vs your stated goals</p>
-          </div>
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', border: '1px solid #2A3143', borderRadius: 6, padding: 4, gap: 2 }}>
-            {timeframes.map(t => {
-              const active = t === 'All';
-              return (
-                <span key={t} style={{
-                  color: active ? '#fff' : '#888',
-                  background: active ? '#3e4252' : 'transparent',
-                  fontSize: 12, padding: '4px 12px', cursor: 'pointer', borderRadius: 4,
-                  fontWeight: active ? 500 : 400,
-                }}>{t}</span>
-              );
-            })}
+        {/* Header + week dropdown (centered) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, gap: 8 }}>
+          <h3 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Rules vs. Execution</h3>
+          <p style={{ color: '#888', fontSize: 12, margin: 0 }}>How your trading and psychology compared to the rules you set</p>
+          <div style={{ position: 'relative', marginTop: 10 }}>
+            <select
+              value={selectedWeekIdx}
+              onChange={e => setSelectedWeekIdx(parseInt(e.target.value))}
+              style={{
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                background: '#1f2430',
+                border: '1px solid #2A3143',
+                color: '#e8e8f0',
+                fontFamily: fm,
+                fontSize: 13,
+                fontWeight: 600,
+                padding: '10px 38px 10px 18px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                letterSpacing: 0.5,
+                outline: 'none',
+              }}
+            >
+              {weekHistory.map((w, i) => (
+                <option key={i} value={i} style={{ background: '#1f2430', color: '#e8e8f0' }}>{w.weekLabel}</option>
+              ))}
+            </select>
+            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: teal, pointerEvents: 'none', fontSize: 10 }}>▼</span>
           </div>
         </div>
 
-        {/* Center axis line */}
-        <div style={{ position: 'absolute', top: 80, bottom: 0, left: '50%', width: 1, background: 'rgba(255,255,255,0.05)', zIndex: 0 }} />
-
-        {/* Friction / Score / Momentum row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 60px', marginBottom: 32, position: 'relative', zIndex: 2 }}>
-          <div style={{ flex: 1, textAlign: 'right', paddingRight: 80 }}>
-            <span style={{ color: red, fontFamily: fd, fontWeight: 700, fontSize: 16, letterSpacing: 2, textTransform: 'uppercase' }}>Friction</span>
-            <div style={{ height: 2, width: 60, background: red, marginLeft: 'auto', marginTop: 8, opacity: 0.5 }} />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{
-              width: 100, height: 100, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative',
-              background: `radial-gradient(circle at center, #141822 58%, transparent 59%), conic-gradient(${teal} 0% 61%, #3e4252 61% 100%)`,
-              boxShadow: 'inset 0 0 20px rgba(0,212,160,0.1), 0 0 30px rgba(0,0,0,0.5)',
+        {/* Compact goal cards (3) */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+          {selectedWeek.goals.map((g, idx) => (
+            <div key={idx} style={{
+              flex: '1 1 240px',
+              background: '#1f2430',
+              border: '1px solid #2A3143',
+              borderRadius: 10,
+              padding: '12px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
             }}>
-              <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 32, color: '#fff' }}>61</span>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'rgba(0,212,160,0.12)',
+                border: `1px solid ${teal}`,
+                color: teal,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: fd, fontSize: 13, fontWeight: 700,
+                flexShrink: 0,
+              }}>{idx + 1}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, color: '#e8e8f0', fontFamily: fm, fontWeight: 500, lineHeight: 1.35 }}>{g.title}</div>
+              </div>
+              <span style={{
+                background: 'rgba(0,212,160,0.12)', color: teal,
+                fontSize: 9.5, letterSpacing: 1.5, fontWeight: 700,
+                padding: '3px 8px', borderRadius: 999, fontFamily: fm, flexShrink: 0,
+              }}>{g.type}</span>
             </div>
-            <span style={{ color: '#888', fontSize: 11, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1, background: '#141822', padding: '2px 8px', borderRadius: 4 }}>Psychology Score</span>
-          </div>
-
-          <div style={{ flex: 1, textAlign: 'left', paddingLeft: 80 }}>
-            <span style={{ color: teal, fontFamily: fd, fontWeight: 700, fontSize: 16, letterSpacing: 2, textTransform: 'uppercase' }}>Momentum</span>
-            <div style={{ height: 2, width: 60, background: teal, marginTop: 8, opacity: 0.5 }} />
-          </div>
+          ))}
         </div>
 
-        {/* Pattern rows */}
-        {patternRows.map((row, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', minHeight: 80,
-            padding: '16px 40px', position: 'relative', zIndex: 2,
-            background: rowGrad,
-            borderBottom: i < patternRows.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+        {/* Split panel: Trades vs. Goals (blue) | Psych vs. Goals (green) */}
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+
+          {/* LEFT — Trades vs. Goals (BLUE) */}
+          <div style={{
+            flex: '1 1 320px',
+            background: '#12151d',
+            border: '1px solid #2A3143',
+            borderLeft: `3px solid ${blue}`,
+            borderRadius: 10,
+            padding: '20px 22px',
           }}>
-            {/* Friction side */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: 48 }}>
-              <span style={{ color: red, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{row.friction.name}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>{row.friction.trades}</span>
-              <div style={{ width: 180, height: 6, background: '#2A3143', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ width: `${row.friction.pct}%`, background: red, height: '100%' }} />
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ width: 8, height: 8, background: blue, borderRadius: 2, display: 'inline-block' }} />
+              <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
             </div>
+            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3 }}>Actual trading activity measured against the rules</p>
 
-            {/* Middle callout */}
-            <div style={{ width: 280, background: '#23252e', border: '1px solid #333642', borderRadius: 6, padding: '10px 16px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-              <p style={{ color: '#bbb', fontSize: 12, margin: 0 }}>{row.middle}</p>
-            </div>
-
-            {/* Momentum side with white wick */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 48 }}>
-              <span style={{ color: teal, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{row.momentum.name}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>{row.momentum.trades}</span>
-              <div style={{ width: 180, height: 6, background: '#2A3143', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex' }}>
-                <div style={{ width: `${row.momentum.pct}%`, background: teal, height: '100%' }} />
-                <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', height: '100%' }} />
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {selectedWeek.goals.map((g, i) => {
+                const pct = Math.round((g.trades.actual / g.trades.target) * 100);
+                const clamped = Math.min(100, pct);
+                return (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500 }}>#{i + 1} · {g.trades.unitLabel}</span>
+                      <span style={{ fontSize: 12, color: blue, fontFamily: fd, fontWeight: 700 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span></span>
+                    </div>
+                    <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${clamped}%`,
+                        height: '100%',
+                        background: `linear-gradient(to right, rgba(74,158,255,0.4), ${blue})`,
+                        boxShadow: `0 0 8px rgba(74,158,255,0.4)`,
+                        transition: 'width 0.5s ease',
+                      }} />
+                    </div>
+                    <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        ))}
 
-        {/* Goals relation inside the board */}
-        <div style={{ padding: '20px 40px 0', marginTop: 8 }}>
-          <h4 style={{ fontFamily: fd, fontSize: 16, color: '#fff', margin: '0 0 12px' }}>How these patterns relate to your goals</h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 24, height: 24, borderRadius: '50%', border: `1px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal, flexShrink: 0 }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          {/* RIGHT — Psych vs. Goals (GREEN) */}
+          <div style={{
+            flex: '1 1 320px',
+            background: '#12151d',
+            border: '1px solid #2A3143',
+            borderLeft: `3px solid ${teal}`,
+            borderRadius: 10,
+            padding: '20px 22px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ width: 8, height: 8, background: teal, borderRadius: 2, display: 'inline-block' }} />
+              <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Psych vs. Goals</h4>
             </div>
-            <span style={{ color: '#ccc', fontSize: 13, letterSpacing: 0.5 }}>LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN</span>
-            <span style={{ marginLeft: 'auto', background: 'rgba(0,212,160,0.1)', color: teal, padding: '4px 10px', borderRadius: 4, fontSize: 11 }}>On track</span>
+            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3 }}>Psychological alignment with the rules — from journal & tags</p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {selectedWeek.goals.map((g, i) => {
+                const pct = Math.round((g.psych.actual / g.psych.target) * 100);
+                const clamped = Math.min(100, pct);
+                return (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500 }}>#{i + 1} · {g.psych.unitLabel}</span>
+                      <span style={{ fontSize: 12, color: teal, fontFamily: fd, fontWeight: 700 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span></span>
+                    </div>
+                    <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${clamped}%`,
+                        height: '100%',
+                        background: `linear-gradient(to right, rgba(0,212,160,0.4), ${teal})`,
+                        boxShadow: `0 0 8px rgba(0,212,160,0.4)`,
+                        transition: 'width 0.5s ease',
+                      }} />
+                    </div>
+                    <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
