@@ -375,6 +375,60 @@ export function buildTraderStats(trades: Trade[]): string {
   ].join('\n');
 }
 
+// ─── Shared AI context — read from localStorage at call time ─────
+// Every /api/coach caller uses these so every bot sees the same picture
+// of who the trader is, what goals they've set, and what they've said
+// about those goals. Without this, each chat lives in its own silo.
+
+export function buildGoalsContext(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const saved = localStorage.getItem('wickcoach_goals');
+    if (!saved) return '';
+    const goals: Goal[] = JSON.parse(saved);
+    const real = (goals || []).filter(g => g.title);
+    if (real.length === 0) return '';
+    return real.map((g, i) => {
+      const lines: string[] = [];
+      lines.push(`${i + 1}. "${g.title}" [type: ${g.goalType}]`);
+      if (typeof g.completeness === 'number') lines.push(`   understood: ${g.completeness}%`);
+      if (g.scoringCriteria) {
+        lines.push(`   measure: ${g.scoringCriteria.measure}`);
+        lines.push(`   compliance looks like: ${g.scoringCriteria.compliance}`);
+        lines.push(`   violation looks like: ${g.scoringCriteria.violation}`);
+        lines.push(`   scope: ${g.scoringCriteria.scope}`);
+      }
+      if (g.context && g.context.length > 0) {
+        lines.push(`   trader's own words about this goal: ${g.context.join(' | ')}`);
+      }
+      if (g.actionItems && g.actionItems.length > 0) {
+        lines.push(`   committed action items: ${g.actionItems.join('; ')}`);
+      }
+      return lines.join('\n');
+    }).join('\n\n');
+  } catch {
+    return '';
+  }
+}
+
+export function buildProfileContext(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    const saved = localStorage.getItem('wickcoach_trader_profile');
+    if (!saved) return '';
+    const p = JSON.parse(saved);
+    const lines: string[] = [];
+    if (p.instruments)         lines.push(`Instruments traded: ${p.instruments}`);
+    if (p.strategy)            lines.push(`Primary strategy: ${p.strategy}`);
+    if (p.experience)          lines.push(`Experience: ${p.experience}`);
+    if (p.biggestStruggle)     lines.push(`Biggest struggle (self-reported): ${p.biggestStruggle}`);
+    if (p.goodDayDescription)  lines.push(`What a good day looks like to them: ${p.goodDayDescription}`);
+    return lines.join('\n');
+  } catch {
+    return '';
+  }
+}
+
 // ─── AI trade classification (Haiku-powered) ─────────────────
 // Cached result per-trade, keyed by trade.id in localStorage under
 // `wickcoach_trade_classifications`.

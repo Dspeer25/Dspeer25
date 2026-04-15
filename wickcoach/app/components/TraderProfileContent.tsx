@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, buildGoalsContext, buildProfileContext } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -101,23 +101,6 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
       // Computed from the real trades state so the coach can challenge
       // beliefs against actual data, not a frozen mock.
       const tradesContext = buildTraderStats(trades);
-
-      let goalsContext = '';
-      try {
-        const savedGoals = localStorage.getItem('wickcoach_goals');
-        if (savedGoals) {
-          const parsed: { title: string; goalType: string; completeness?: number; context?: string[] }[] = JSON.parse(savedGoals);
-          goalsContext = parsed
-            .filter(g => g.title)
-            .map(g => {
-              const pct = typeof g.completeness === 'number' ? `, ${g.completeness}% understood` : '';
-              const turns = g.context?.length ? `, ${g.context.length} clarification turns` : '';
-              return `"${g.title}" [${g.goalType}${pct}${turns}]`;
-            })
-            .join('; ');
-        }
-      } catch { /* ignore storage errors */ }
-
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -127,7 +110,8 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
             { role: 'user', content: userMsg },
           ],
           tradesContext,
-          goalsContext,
+          goalsContext: buildGoalsContext(),
+          profileContext: buildProfileContext(),
           mode: 'deepPsych',
         }),
       });

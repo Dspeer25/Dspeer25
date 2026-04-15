@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, DEFAULT_GOALS } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, DEFAULT_GOALS, buildGoalsContext, buildProfileContext, buildTraderStats } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void }) {
+  // trades is used in AI context payloads below
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activeView, setActiveView] = useState<'weekly' | 'monthly' | 'behavioral'>('weekly');
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
@@ -16,7 +17,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   const chatEndRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
-  void trades;
+  // trades is now threaded into AI context payloads below
 
   useEffect(() => {
     const saved = localStorage.getItem('wickcoach_goals');
@@ -121,7 +122,16 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, goalsContext, mode: 'goals', goalTitle: goal.title, exchangeNumber })
+        body: JSON.stringify({
+          messages,
+          goalsContext,                              // clarification thread for THIS goal
+          allGoalsContext: buildGoalsContext(),      // every goal the trader has set, for awareness
+          tradesContext: buildTraderStats(trades),   // so the bot can reference actual trades
+          profileContext: buildProfileContext(),
+          mode: 'goals',
+          goalTitle: goal.title,
+          exchangeNumber,
+        })
       });
       const data = await res.json();
       const aiReply: string = data.reply;
@@ -176,7 +186,11 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [{ role: 'user', content: actionPrompt }], mode: 'actionItems' })
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: actionPrompt }],
+          mode: 'actionItems',
+          profileContext: buildProfileContext(),
+        })
       });
       const data = await res.json();
       const reply: string = data.reply || '';

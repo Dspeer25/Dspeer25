@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar } from "./shared";
+import { fm, fd, Trade, formatDollar, buildGoalsContext, buildProfileContext } from "./shared";
 import AIChatWidget from "./AIChatWidget";
 
 // Local green — all greens in this file resolve to this single swatch.
@@ -122,7 +122,9 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             ...aiMessages.map(m => ({ role: m.role, content: m.content })),
             { role: 'user', content: userMsg }
           ],
-          tradesContext
+          tradesContext,
+          goalsContext: buildGoalsContext(),
+          profileContext: buildProfileContext(),
         })
       });
       const data = await response.json();

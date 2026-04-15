@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, readClassifications, writeClassifications } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, readClassifications, writeClassifications, buildGoalsContext, buildProfileContext } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -124,6 +124,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             { role: 'user', content: userMsg },
           ],
           tradesContext: analysisContext,
+          goalsContext: buildGoalsContext(),
+          profileContext: buildProfileContext(),
           mode: 'analysis',
         }),
       });
@@ -214,6 +216,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           body: JSON.stringify({
             mode: 'classify',
             messages: [{ role: 'user', content: userMsg }],
+            profileContext: buildProfileContext(),
           }),
         });
         const data = await res.json();

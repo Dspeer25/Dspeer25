@@ -27,23 +27,29 @@ You have access to:
 You maintain continuity. If a trader told you something three weeks ago, you remember it and reference it when relevant.`;
 
 export async function POST(req: NextRequest) {
-  const { messages, tradesContext, goalsContext, mode, goalTitle, exchangeNumber } = await req.json();
+  const { messages, tradesContext, goalsContext, profileContext, allGoalsContext, mode, goalTitle, exchangeNumber } = await req.json();
+
+  // Shared "who this trader is" block — prepended to every data-aware
+  // mode so every bot knows the trader's profile across the app.
+  const profileBlock = profileContext
+    ? `\n\nWHO THIS TRADER IS:\n${profileContext}\n`
+    : '';
 
   // ────────────────────────────────────────────────────────────
   // Mode: Trade Review — forensic pattern recognition across history
   // ────────────────────────────────────────────────────────────
   const tradesMode = `You are in trade review mode. The trader is looking at specific trades and wants to understand patterns.
-
+${profileBlock}
 Trader's trade history:
 ${tradesContext || 'No trades logged yet.'}
 
-${goalsContext ? `Goals and rules they set for themselves:\n${goalsContext}\n` : ''}
-
+${goalsContext ? `Goals and rules they set for themselves:\n${goalsContext}\n` : 'The trader has not set any goals yet.\n'}
 Focus on pattern recognition across their trade history. Look for:
 - Recurring mistakes tied to specific conditions (time of day, after losses, specific tickers)
 - Sequences that predict outcomes (what happens after 2 consecutive losses?)
 - Behavioral fingerprints (do they always do X before a big loss?)
 - Edge identification (which specific setups have the best expectancy?)
+- Compliance with the trader's own stated goals (cite specific trades that followed or broke them).
 
 Be forensic. Reference specific trades by date and ticker. Compare similar setups across different days. Quantify everything.`;
 
@@ -51,12 +57,13 @@ Be forensic. Reference specific trades by date and ticker. Compare similar setup
   // Mode: Goal clarification — understand the goal well enough to score trades against it
   // ────────────────────────────────────────────────────────────
   const goalsMode = `You are in goal clarification mode. The trader just set a new goal or is providing context on an existing one. Your job is to understand this goal well enough to score future trades against it.
-
+${profileBlock}
 The trader set this goal: "${goalTitle || 'Unknown goal'}"
 Turn: ${exchangeNumber || 1}
-Previous conversation:
+Previous conversation for THIS goal:
 ${goalsContext || 'None yet.'}
 
+${allGoalsContext ? `Other goals this trader has set (for awareness — do not clarify these here):\n${allGoalsContext}\n` : ''}
 You need to understand four things before you're satisfied:
 1. What specific behavior or metric does this goal target?
 2. What does compliance look like in their actual trade data or journal?
@@ -86,20 +93,21 @@ Capabilities you should demonstrate:
 - Comparative analysis (this week vs last month, process trades vs impulse trades)
 
 Keep text responses to 2 to 3 sentences max, then show the data. If you can express something as a number, do that instead of a paragraph.
-
+${profileBlock}
 Trader's data:
-${tradesContext || 'No trades data provided.'}`;
+${tradesContext || 'No trades data provided.'}
+
+${goalsContext ? `Goals and rules the trader has set for themselves (use these for compliance analysis):\n${goalsContext}\n` : 'The trader has not set any goals yet.\n'}`;
 
   // ────────────────────────────────────────────────────────────
   // Mode: Deep Psychology — tough love mentor, long-term psych profile
   // ────────────────────────────────────────────────────────────
   const deepPsychMode = `You are in deep psychology mode. This is where you are most like a tough love mentor.
-
+${profileBlock}
 Trader's data:
 ${tradesContext || 'No trades data provided.'}
 
-${goalsContext ? `Their goals and rules:\n${goalsContext}\n` : ''}
-
+${goalsContext ? `Their goals and rules (use these to call out belief-vs-behavior gaps):\n${goalsContext}\n` : 'The trader has not set any goals yet.\n'}
 Focus on the trader's beliefs about themselves, about the market, and about risk. Challenge their assumptions when the data contradicts what they say they believe.
 
 If they say "I'm a disciplined trader" but their data shows 30% impulse trades, call that out directly. Not meanly, but factually.
@@ -115,7 +123,7 @@ You are building a long term psychological profile. Track themes across weeks an
   // Mode: Action Items — utility one-shot, no voice/persona overhead
   // ────────────────────────────────────────────────────────────
   const actionItemsMode = `You produce exactly 3 concrete action items a trader must DO this week, based on the conversation the user shares.
-
+${profileBlock}
 Each action item must:
 - Start with a verb (Track, Record, Stop, Wait, Write, Measure, etc.)
 - Be specific enough to verify at the end of the week (yes/no, did I do it?)
@@ -132,6 +140,7 @@ Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action item
   // Mode: Classify — batch trade scoring (Haiku, utility, no persona)
   // ────────────────────────────────────────────────────────────
   const classifyMode = `You are scoring a batch of trades against a trader's stated goals. For each trade, determine per-goal compliance (1 if the trade complied with the goal, 0 if it violated it) based on the journal entry and the trade data. Also classify each trade's psychological quality.
+${profileBlock}
 
 Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is exactly:
 
