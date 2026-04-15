@@ -519,6 +519,34 @@ export interface TradeClassification {
   psychScore: number;      // 0-100
   tradeType: 'process' | 'impulse' | 'neutral';
   psychReason: string;
+  /** Per-trade numeric targets scored by Haiku (target-rr, custom numerics). */
+  targetScores?: Array<{ targetId: string; met: boolean; actual: number; target: number }>;
+}
+
+/** Batch-level classification summary returned by Haiku alongside per-trade results. */
+export interface ClassificationBatchSummary {
+  winRateActual?: number;
+  winRateTarget?: number | null;
+  customTargetsNote?: string;
+}
+
+export const CLASSIFICATION_SUMMARY_KEY = 'wickcoach_classification_summary';
+
+export function readClassificationSummary(): ClassificationBatchSummary {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(CLASSIFICATION_SUMMARY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeClassificationSummary(s: ClassificationBatchSummary): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CLASSIFICATION_SUMMARY_KEY, JSON.stringify(s));
+  } catch { /* ignore */ }
 }
 
 export const CLASSIFICATION_STORE_KEY = 'wickcoach_trade_classifications';

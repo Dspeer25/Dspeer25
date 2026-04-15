@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, readClassifications, writeClassifications, buildGoalsContext, buildProfileContext } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -172,8 +172,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   // yet and batch-send them to /api/coach in classify mode. Results are
   // cached in localStorage; subsequent visits skip the API call.
   const [classifications, setClassifications] = useState<Record<string, TradeClassification>>({});
+  const [classificationSummary, setClassificationSummary] = useState<ClassificationBatchSummary>({});
+  const [quantTargetsSnapshot, setQuantTargetsSnapshot] = useState<{ quantitativeTargets: QuantitativeTarget[]; customQuantTargets: QuantitativeTarget[] }>({ quantitativeTargets: [], customQuantTargets: [] });
   useEffect(() => {
     setClassifications(readClassifications());
+    setClassificationSummary(readClassificationSummary());
+    setQuantTargetsSnapshot(readQuantTargets());
   }, []);
   useEffect(() => {
     if (!trades || trades.length === 0 || realGoals.length === 0) return;
@@ -204,11 +208,22 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return `${i}. "${g.title || '(untitled)'}" [${g.goalType}]${ctx}${crit}`;
         }).join('\n');
 
+        // Quantitative targets — sent so Haiku can score each trade against
+        // target-rr and produce a batch winRateActual/winRateTarget summary.
+        const { quantitativeTargets, customQuantTargets } = readQuantTargets();
+        const allTargets = [...quantitativeTargets, ...customQuantTargets];
+        const targetsList = allTargets.length > 0
+          ? allTargets.map(t => {
+              const valStr = t.value === null ? '(not set)' : String(t.value);
+              return `- ${t.id}: ${t.label} = ${valStr} (${t.type})`;
+            }).join('\n')
+          : '(none set)';
+
         const tradesList = unscored.map(t => (
           `- ID: ${t.id} | Date: ${t.date} | Time: ${t.time} | ${t.ticker} | ${t.strategy} | ${t.direction} | Qty: ${t.contracts} | Entry/Exit: $${t.entryPrice}/$${t.exitPrice} | P/L: $${t.pl} | Result: ${t.result} | R:R: ${t.riskReward} | Journal: "${(t.journal || '').replace(/"/g, '\\"')}"`
         )).join('\n');
 
-        const userMsg = `Goals:\n${goalsList || '(none set)'}\n\nTrades to classify:\n${tradesList}`;
+        const userMsg = `Goals:\n${goalsList || '(none set)'}\n\nQuantitative targets:\n${targetsList}\n\nTrades to classify:\n${tradesList}`;
 
         const res = await fetch('/api/coach', {
           method: 'POST',
@@ -220,13 +235,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           }),
         });
         const data = await res.json();
-        const meta = data.metadata as { results?: TradeClassification[] } | null;
+        const meta = data.metadata as {
+          results?: TradeClassification[];
+          winRateActual?: number;
+          winRateTarget?: number | null;
+          customTargetsNote?: string;
+        } | null;
         if (cancelled || !meta?.results) return;
 
         const next = { ...cache };
         meta.results.forEach(r => { if (r && r.tradeId) next[r.tradeId] = r; });
         writeClassifications(next);
         setClassifications(next);
+
+        const summary: ClassificationBatchSummary = {
+          winRateActual: meta.winRateActual,
+          winRateTarget: meta.winRateTarget ?? null,
+          customTargetsNote: meta.customTargetsNote,
+        };
+        writeClassificationSummary(summary);
+        setClassificationSummary(summary);
       } catch { /* ignore — keyword fallback handles UI */ }
     })();
     return () => { cancelled = true; };
@@ -846,6 +874,75 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             </div>
           </div>
         </div>
+
+        {/* ═══ QUANTITATIVE TARGETS — actual vs trader's set targets ═══ */}
+        {(quantTargetsSnapshot.quantitativeTargets.length > 0 || quantTargetsSnapshot.customQuantTargets.length > 0) && (
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #2A3143' }}>
+            <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Quantitative Targets</h4>
+            <p style={{ color: '#888', fontSize: 11.5, margin: '4px 0 14px', letterSpacing: 0.3 }}>Actual numbers vs the targets you set in Weekly Goals → Numerical</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {[...quantTargetsSnapshot.quantitativeTargets, ...quantTargetsSnapshot.customQuantTargets].map(t => {
+                // Compute actual from real analytics where we can
+                let actual: number | null = null;
+                let unit = '';
+                if (t.id === 'target-rr') { actual = totals.avgR; unit = ''; }
+                else if (t.id === 'target-wr') { actual = totals.winRate; unit = '%'; }
+                // custom targets: no automatic computation — we rely on the Haiku customTargetsNote below
+
+                const target = t.value;
+                const hasTarget = target !== null && target !== undefined;
+                const hasActual = actual !== null;
+
+                // Progress + color: green if >= target, yellow within 10%, red if below by more than 10%
+                let pct = 0;
+                let color: string = '#6b7280';
+                if (hasTarget && hasActual) {
+                  pct = Math.max(0, Math.min(100, (actual! / target!) * 100));
+                  if (actual! >= target!) color = teal;
+                  else if ((target! - actual!) / target! <= 0.10) color = '#FCD34D';
+                  else color = red;
+                }
+
+                const fmtNum = (n: number | null | undefined, withUnit: string) => {
+                  if (n === null || n === undefined) return '—';
+                  const u = t.type === 'percent' ? '%' : t.type === 'dollar' ? '' : withUnit;
+                  const prefix = t.type === 'dollar' ? '$' : '';
+                  return `${prefix}${Number(n).toFixed(t.type === 'percent' ? 1 : 2)}${u}`;
+                };
+
+                return (
+                  <div key={t.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500 }}>{t.label}</span>
+                      <span style={{ fontSize: 12, color, fontFamily: fd, fontWeight: 700 }}>
+                        {hasActual ? fmtNum(actual, unit) : '—'}
+                        <span style={{ color: '#666' }}>{' / '}{hasTarget ? fmtNum(target, unit) : 'not set'}</span>
+                      </span>
+                    </div>
+                    <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${pct}%`,
+                        height: '100%',
+                        background: color,
+                        transition: 'width 0.5s ease, background 0.3s ease',
+                      }} />
+                    </div>
+                    {!hasTarget && (
+                      <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>No target set — open Weekly Goals → Numerical to set one</div>
+                    )}
+                    {hasTarget && !hasActual && (
+                      <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>
+                        {classificationSummary.customTargetsNote
+                          ? classificationSummary.customTargetsNote
+                          : 'Custom target — no automatic comparison against trade data.'}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ═══ TIME-OF-DAY PERFORMANCE ═══ */}

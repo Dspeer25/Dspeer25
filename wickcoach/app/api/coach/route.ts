@@ -139,9 +139,14 @@ Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action item
   // ────────────────────────────────────────────────────────────
   // Mode: Classify — batch trade scoring (Haiku, utility, no persona)
   // ────────────────────────────────────────────────────────────
-  const classifyMode = `You are scoring a batch of trades against a trader's stated goals. For each trade, determine per-goal compliance (1 if the trade complied with the goal, 0 if it violated it) based on the journal entry and the trade data. Also classify each trade's psychological quality.
-${profileBlock}
+  const classifyMode = `You are scoring a batch of trades against a trader's stated goals AND their quantitative targets. For each trade you will:
 
+1. Decide per-goal compliance (1 complied, 0 violated) based on the journal entry and trade data.
+2. Classify the trade's psychological quality (psychScore, tradeType, psychReason).
+3. Score per-trade numeric targets (for example target-rr — was the trade's R:R at or above the trader's target?).
+
+Then compute batch-level summary numbers (like winRateActual vs winRateTarget) across the whole batch.
+${profileBlock}
 Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is exactly:
 
 {
@@ -153,9 +158,15 @@ Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is
       ],
       "psychScore": 0-100,
       "tradeType": "process" or "impulse" or "neutral",
-      "psychReason": "one short sentence"
+      "psychReason": "one short sentence",
+      "targetScores": [
+        {"targetId": "target-rr", "met": true or false, "actual": <number>, "target": <number>}
+      ]
     }
-  ]
+  ],
+  "winRateActual": <percent number, e.g. 44.4>,
+  "winRateTarget": <percent the trader set, or null if none>,
+  "customTargetsNote": "one short sentence if any custom targets look relevant to this batch, otherwise empty string"
 }
 
 Rules:
@@ -163,7 +174,9 @@ Rules:
 - If no goals are provided, return goalScores as an empty array for every trade.
 - psychScore is a single 0-100 number for the trade quality overall.
 - tradeType is "process" when the journal shows the trader followed their plan / waited / executed cleanly, "impulse" when the journal shows chasing / revenge / FOMO / rule-breaking, and "neutral" when it's unclear.
-- reason and psychReason are short, plain-English, no markdown, no emojis.
+- targetScores is per-trade. Include target-rr when the trader has set one (compare the trade's own R:R ratio, e.g. 1:2.3 -> 2.3, to target-rr). Include any custom per-trade numeric target the user passes in the Quantitative targets list. If the trader has set no per-trade targets, return targetScores as an empty array.
+- target-wr is NOT per-trade. Summarize it at the top level: winRateActual is the win rate of THIS batch (percent, 0-100). winRateTarget is the trader's target (number) or null.
+- reason, psychReason, and customTargetsNote are short, plain-English, no markdown, no emojis.
 - Do not wrap the JSON in code fences. Do not add commentary before or after.`;
 
   const systemPrompt = mode === 'goals'
