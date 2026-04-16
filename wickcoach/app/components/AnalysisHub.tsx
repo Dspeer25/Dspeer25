@@ -96,13 +96,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     setRegResult(null);
 
     // ── Phase 1: Deterministic math in JavaScript ──────────────
-    const xExtractor = resolveTradeVariable(regVar1.trim());
-    const yExtractor = resolveTradeVariable(regVar2.trim());
+    // "test [var1] against [var2]" → var1 is the dependent (Y), var2 is the predictor (X).
+    // "loss size against time of day" → Y = loss size, X = time of day.
+    const yExtractor = resolveTradeVariable(regVar1.trim());
+    const xExtractor = resolveTradeVariable(regVar2.trim());
 
-    if (!xExtractor || !yExtractor) {
+    if (!yExtractor || !xExtractor) {
       setRegResult({
         stats: null,
-        plainEnglish: `Could not map "${!xExtractor ? regVar1 : regVar2}" to a trade data field. Try: P/L, time of day, R:R, entry price, exit price, contracts, risk, day of week, win rate.`,
+        plainEnglish: `Could not map "${!yExtractor ? regVar1 : regVar2}" to a trade data field. Try: P/L, time of day, R:R, entry price, exit price, contracts, risk, day of week, win rate.`,
         warning: 'Variable not recognized.',
       });
       setRegLoading(false);
@@ -134,8 +136,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     const stats = linearRegression(
       pairs.map(p => p.x),
       pairs.map(p => p.y),
-      regVar1.trim(),
-      regVar2.trim(),
+      regVar2.trim(),   // X label (predictor)
+      regVar1.trim(),   // Y label (dependent / outcome)
     );
 
     if (!stats) {

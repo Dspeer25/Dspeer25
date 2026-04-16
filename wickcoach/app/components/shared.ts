@@ -66,6 +66,9 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
   // Win = 1, Loss = 0
   if (/win/.test(n)) return t => t.pl > 0 ? 1 : 0;
 
+  // Loss size (absolute value of negative P/L, null for winners)
+  if (/loss.?size|loss.?amount|loss/.test(n)) return t => t.pl < 0 ? Math.abs(t.pl) : null;
+
   return null; // unknown variable
 }
 
@@ -73,6 +76,35 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
 export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) | null {
   if (!condition || !condition.trim()) return null;
   const c = condition.toLowerCase().trim();
+
+  const DAY_NAMES: Record<string, number> = {
+    sunday: 0, sun: 0,
+    monday: 1, mon: 1,
+    tuesday: 2, tue: 2, tues: 2,
+    wednesday: 3, wed: 3,
+    thursday: 4, thu: 4, thurs: 4,
+    friday: 5, fri: 5,
+    saturday: 6, sat: 6,
+  };
+
+  // "day other than Wednesday" / "not Wednesday" / "exclude Wednesday" / "except Wednesday"
+  const dayExcludeMatch = c.match(/(?:day\s+)?(?:other\s+than|not|except|exclude|excluding|!=)\s+(\w+)/);
+  if (dayExcludeMatch) {
+    const dayNum = DAY_NAMES[dayExcludeMatch[1].toLowerCase()];
+    if (dayNum !== undefined) {
+      return t => new Date(t.date).getDay() !== dayNum;
+    }
+  }
+
+  // "day is Monday" / "on Monday" / "only Monday" / "Monday only"
+  const dayIncludeMatch = c.match(/(?:day\s*(?:is|=|:)\s*|on\s+|only\s+)(\w+)|(\w+)\s+only$/);
+  if (dayIncludeMatch) {
+    const dayWord = (dayIncludeMatch[1] || dayIncludeMatch[2] || '').toLowerCase();
+    const dayNum = DAY_NAMES[dayWord];
+    if (dayNum !== undefined) {
+      return t => new Date(t.date).getDay() === dayNum;
+    }
+  }
 
   // "strategy is X" / "strategy = X"
   const stratMatch = c.match(/strategy\s*(?:is|=|==|:)\s*(.+)/);
@@ -113,6 +145,18 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
       return dir === 'before' ? th < h : th >= h;
     };
   }
+
+  // Last resort: check if the condition contains a day name directly
+  // e.g. just "wednesday" or "not on friday"
+  for (const [name, num] of Object.entries(DAY_NAMES)) {
+    if (c.includes(name)) {
+      const isExclude = /not|other|except|exclud|!=/.test(c);
+      return isExclude
+        ? t => new Date(t.date).getDay() !== num
+        : t => new Date(t.date).getDay() === num;
+    }
+  }
+
   return null;
 }
 
