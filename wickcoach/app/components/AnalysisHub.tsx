@@ -881,6 +881,22 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     ? Math.max(0, Math.min(100, (actual! / target!) * 100))
                     : 0;
 
+                  // Color reflects proximity to target:
+                  //   >= 100% → green (#00d4a0)
+                  //   >= 90%  → yellow-green (#8dd47e) — close, almost there
+                  //   >= 75%  → orange (#f59e0b)
+                  //   < 75%   → red (#ff4444)
+                  //   no target → muted grey
+                  let candleColor = '#6b7280';
+                  if (hasTarget && hasActual) {
+                    if (fillPct >= 100) candleColor = teal;
+                    else if (fillPct >= 90) candleColor = '#8dd47e';
+                    else if (fillPct >= 75) candleColor = '#f59e0b';
+                    else candleColor = '#ff4444';
+                  } else if (hasActual) {
+                    candleColor = teal; // no target set, just show green
+                  }
+
                   const fmtVal = (n: number | null | undefined) => {
                     if (n === null || n === undefined) return '—';
                     const prefix = t.id === 'target-rr' ? 'R ' : t.type === 'dollar' ? '$' : '';
@@ -892,7 +908,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   return (
                     <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70 }}>
                       {/* Actual value above */}
-                      <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: hasActual ? teal : '#555' }}>
+                      <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: hasActual ? candleColor : '#555' }}>
                         {fmtVal(actual)}
                       </div>
 
@@ -905,7 +921,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                           left: '50%',
                           width: WICK_W,
                           height: WICK_EXT,
-                          background: teal,
+                          background: candleColor,
                           opacity: 0.5,
                           transform: 'translateX(-50%)',
                           borderRadius: 1,
@@ -917,9 +933,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                           left: 0,
                           width: CANDLE_W,
                           height: CANDLE_H,
-                          border: `2px solid ${teal}`,
+                          border: `2px solid ${candleColor}`,
                           borderRadius: 4,
-                          background: 'rgba(0,212,160,0.04)',
+                          background: `${candleColor}0A`,
                           overflow: 'hidden',
                         }}>
                           {/* Glass fill from bottom */}
@@ -929,10 +945,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                             left: 0,
                             right: 0,
                             height: `${fillPct}%`,
-                            background: 'linear-gradient(to top, rgba(0,212,160,0.25), rgba(0,212,160,0.10))',
+                            background: `linear-gradient(to top, ${candleColor}40, ${candleColor}1A)`,
                             backdropFilter: 'blur(4px)',
                             WebkitBackdropFilter: 'blur(4px)',
-                            transition: 'height 0.6s ease',
+                            transition: 'height 0.6s ease, background 0.4s ease',
                           }} />
                           {/* Subtle inner glow at the top of the fill */}
                           {fillPct > 0 && (
@@ -942,7 +958,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                               left: 0,
                               right: 0,
                               height: 1,
-                              background: teal,
+                              background: candleColor,
                               opacity: 0.4,
                               transform: 'translateY(0.5px)',
                             }} />
@@ -955,7 +971,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                           left: '50%',
                           width: WICK_W,
                           height: WICK_EXT,
-                          background: teal,
+                          background: candleColor,
                           opacity: 0.5,
                           transform: 'translateX(-50%)',
                           borderRadius: 1,
@@ -963,11 +979,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                       </div>
 
                       {/* Target value */}
-                      <div style={{ fontFamily: fm, fontSize: 13, color: teal }}>
+                      <div style={{ fontFamily: fm, fontSize: 13, color: candleColor }}>
                         {hasTarget ? `target ${fmtVal(target)}` : 'no target'}
                       </div>
                       {/* Label */}
-                      <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: teal, letterSpacing: 0.5, textAlign: 'center' }}>
+                      <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: candleColor, letterSpacing: 0.5, textAlign: 'center' }}>
                         {shortLabel}
                       </div>
                     </div>
