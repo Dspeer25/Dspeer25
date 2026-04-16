@@ -1,14 +1,11 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, buildGoalsContext, buildProfileContext } from './shared';
+import React, { useState } from 'react';
+import { fm, fd, Trade, buildTraderStats, computeAnalytics, buildGoalsContext, buildProfileContext } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
 const red = '#ff4444';
 
-const timeframes = ['5', '10', '15', '30', '50', '100', 'All'];
-
-const rowGrad = 'linear-gradient(90deg, rgba(255,68,68,0.03) 0%, rgba(26,28,35,1) 40%, rgba(26,28,35,1) 60%, rgba(0,212,160,0.03) 100%)';
 
 export default function TraderProfileContent({ trades = [] }: { trades?: Trade[] }) {
   // ─── Deep psych chat state ─────────────────────────────────
@@ -21,65 +18,10 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
   const a = computeAnalytics(trades);
   const { totals, psychScore, processSplit, patterns } = a;
 
-  // Load the trader's top goal from localStorage for the observations
-  // board footer so "LET TRADES BREATHE 3+..." is real text.
-  const [topGoal, setTopGoal] = useState<Goal | null>(null);
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('wickcoach_goals');
-      if (saved) {
-        const parsed: Goal[] = JSON.parse(saved);
-        const firstWithTitle = parsed.find(g => g.title);
-        setTopGoal(firstWithTitle || null);
-      }
-    } catch { /* ignore */ }
-  }, []);
 
-  // Derived numbers for the observations-board middle callouts.
+  // Avg R for plan-following vs rule-breaking trades
   const procR = processSplit.process.n ? processSplit.process.rTotal / processSplit.process.n : 0;
   const impR  = processSplit.impulse.n ? processSplit.impulse.rTotal / processSplit.impulse.n : 0;
-  const fmtR = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}R`;
-  const pct = (x: number) => totals.n ? Math.round((x / totals.n) * 100) : 0;
-
-  // Revenge dollar cost — aggregate P/L of trades tagged as revenge in journal.
-  const revengeCost = trades.reduce((s, t) => {
-    const j = (t.journal || '').toLowerCase();
-    if (/revenge|tilt|frustrat|angry|got back|pissed/.test(j)) return s + t.pl;
-    return s;
-  }, 0);
-  // Chasing win rate
-  const chasingTrades = trades.filter(t => /fomo|chas|missed|scared to miss/.test((t.journal || '').toLowerCase()));
-  const chasingWR = chasingTrades.length
-    ? (chasingTrades.filter(t => t.pl > 0).length / chasingTrades.length) * 100
-    : 0;
-
-  // Pattern rows built from real pattern counts + real derived metrics.
-  const patternRows: Array<{
-    friction: { name: string; trades: string; pct: number };
-    middle: React.ReactNode;
-    momentum: { name: string; trades: string; pct: number };
-  }> = [
-    {
-      friction: { name: 'Ignoring Rules', trades: `${patterns.ignoringRules} trades`, pct: pct(patterns.ignoringRules) },
-      middle: <><strong style={{ color: '#fff' }}>{fmtR(impR)}</strong> vs <strong style={{ color: teal }}>{fmtR(procR)}</strong> expectancy gap</>,
-      momentum: { name: 'Patience', trades: `${patterns.patience} trades`, pct: pct(patterns.patience) },
-    },
-    {
-      friction: { name: 'Impulse Entries', trades: `${patterns.impulseEntries} trades`, pct: pct(patterns.impulseEntries) },
-      middle: <><strong style={{ color: red }}>{processSplit.impulse.wr.toFixed(0)}%</strong> win rate vs <strong style={{ color: '#fff' }}>{processSplit.process.wr.toFixed(0)}%</strong> patient</>,
-      momentum: { name: 'Clean Execution', trades: `${patterns.cleanExecution} trades`, pct: pct(patterns.cleanExecution) },
-    },
-    {
-      friction: { name: 'Revenge Trading', trades: `${patterns.revengeTrading} trades`, pct: pct(patterns.revengeTrading) },
-      middle: <>Cost you <strong style={{ color: red }}>{revengeCost >= 0 ? '+' : '-'}${Math.abs(revengeCost).toFixed(0)}</strong> this window</>,
-      momentum: { name: 'Stop Discipline', trades: `${patterns.stopDiscipline} trades`, pct: pct(patterns.stopDiscipline) },
-    },
-    {
-      friction: { name: 'FOMO / Chasing', trades: `${patterns.fomoChasing} trades`, pct: pct(patterns.fomoChasing) },
-      middle: <>Win rate drops to <strong style={{ color: red }}>{chasingWR.toFixed(0)}%</strong> when chasing</>,
-      momentum: { name: 'Trusting Process', trades: `${patterns.trustingProcess} trades`, pct: pct(patterns.trustingProcess) },
-    },
-  ];
 
   // Welcome message built from real numbers, not canned stats.
   const deepPsychWelcome = totals.n === 0
@@ -87,7 +29,7 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
     : `I've been watching your patterns. Here's what the data says about the trader you actually are, not the one you tell yourself you are.\n\n` +
       `Your **psychology score** is **${psychScore}**. ` +
       (processSplit.process.n && processSplit.impulse.n
-        ? `Patient execution wins you ${fmtR(procR)} on average. Impulse entries drag you to ${fmtR(impR)}. That gap is who you are ${patterns.impulseEntries} trades out of every ${totals.n}.\n\n`
+        ? `Patient execution wins you R ${procR.toFixed(1)} on average. Impulse entries drag you to R ${impR.toFixed(1)}. That gap is who you are ${patterns.impulseEntries} trades out of every ${totals.n}.\n\n`
         : `Not enough journal detail yet to separate process trades from impulse ones — write more about *why* you took each trade and I'll have sharper observations.\n\n`) +
       `Where do you want to start? I can press on a specific pattern (revenge trading, FOMO, the losing-hour fade), or you can tell me what you think your problem actually is and I'll tell you whether the data agrees.`;
 
@@ -170,109 +112,104 @@ export default function TraderProfileContent({ trades = [] }: { trades?: Trade[]
         </div>
       </div>
 
-      {/* ═══ WICKCOACH OBSERVATIONS BOARD ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '32px 0 24px', position: 'relative' }}>
-
-        {/* Board-level header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '0 40px 24px' }}>
-          <div>
-            <h3 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>WickCoach observations</h3>
-            <p style={{ color: '#888', fontSize: 12, margin: '6px 0 0' }}>AI-detected behavioral themes vs your stated goals</p>
-          </div>
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', border: '1px solid #2A3143', borderRadius: 6, padding: 4, gap: 2 }}>
-            {timeframes.map(t => {
-              const active = t === 'All';
-              return (
-                <span key={t} style={{
-                  color: active ? '#fff' : '#888',
-                  background: active ? '#3e4252' : 'transparent',
-                  fontSize: 12, padding: '4px 12px', cursor: 'pointer', borderRadius: 4,
-                  fontWeight: active ? 500 : 400,
-                }}>{t}</span>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Center axis line */}
-        <div style={{ position: 'absolute', top: 80, bottom: 0, left: '50%', width: 1, background: 'rgba(255,255,255,0.05)', zIndex: 0 }} />
-
-        {/* Friction / Score / Momentum row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 60px', marginBottom: 32, position: 'relative', zIndex: 2 }}>
-          <div style={{ flex: 1, textAlign: 'right', paddingRight: 80 }}>
-            <span style={{ color: red, fontFamily: fd, fontWeight: 700, fontSize: 16, letterSpacing: 2, textTransform: 'uppercase' }}>Friction</span>
-            <div style={{ height: 2, width: 60, background: red, marginLeft: 'auto', marginTop: 8, opacity: 0.5 }} />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{
-              width: 100, height: 100, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              position: 'relative',
-              background: `radial-gradient(circle at center, #141822 58%, transparent 59%), conic-gradient(${teal} 0% ${psychScore}%, #3e4252 ${psychScore}% 100%)`,
-              boxShadow: 'inset 0 0 20px rgba(0,212,160,0.1), 0 0 30px rgba(0,0,0,0.5)',
-            }}>
-              <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 32, color: '#fff' }}>{psychScore}</span>
-            </div>
-            <span style={{ color: '#888', fontSize: 11, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1, background: '#141822', padding: '2px 8px', borderRadius: 4 }}>Psychology Score</span>
-          </div>
-
-          <div style={{ flex: 1, textAlign: 'left', paddingLeft: 80 }}>
-            <span style={{ color: teal, fontFamily: fd, fontWeight: 700, fontSize: 16, letterSpacing: 2, textTransform: 'uppercase' }}>Momentum</span>
-            <div style={{ height: 2, width: 60, background: teal, marginTop: 8, opacity: 0.5 }} />
-          </div>
-        </div>
-
-        {/* Pattern rows */}
-        {patternRows.map((row, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'center', minHeight: 80,
-            padding: '16px 40px', position: 'relative', zIndex: 2,
-            background: rowGrad,
-            borderBottom: i < patternRows.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none',
+      {/* ═══ PSYCHOLOGY SCORE ═══ */}
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '28px 32px', display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
+        {/* Score circle */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{
+            width: 90, height: 90, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(circle at center, #141822 55%, transparent 56%), conic-gradient(${teal} 0% ${psychScore}%, #3e4252 ${psychScore}% 100%)`,
+            boxShadow: 'inset 0 0 16px rgba(0,212,160,0.1), 0 0 20px rgba(0,0,0,0.4)',
           }}>
-            {/* Friction side */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: 48 }}>
-              <span style={{ color: red, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{row.friction.name}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>{row.friction.trades}</span>
-              <div style={{ width: 180, height: 6, background: '#2A3143', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ width: `${row.friction.pct}%`, background: red, height: '100%' }} />
-              </div>
-            </div>
-
-            {/* Middle callout */}
-            <div style={{ width: 280, background: '#23252e', border: '1px solid #333642', borderRadius: 6, padding: '10px 16px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
-              <p style={{ color: '#bbb', fontSize: 12, margin: 0 }}>{row.middle}</p>
-            </div>
-
-            {/* Momentum side with white wick */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 48 }}>
-              <span style={{ color: teal, fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{row.momentum.name}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>{row.momentum.trades}</span>
-              <div style={{ width: 180, height: 6, background: '#2A3143', borderRadius: 3, marginTop: 8, overflow: 'hidden', display: 'flex' }}>
-                <div style={{ width: `${row.momentum.pct}%`, background: teal, height: '100%' }} />
-                <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', height: '100%' }} />
-              </div>
-            </div>
+            <span style={{ fontFamily: fd, fontWeight: 700, fontSize: 28, color: '#fff' }}>{psychScore}</span>
           </div>
-        ))}
-
-        {/* Goals relation inside the board — reads the trader's top goal from localStorage */}
-        {topGoal && (
-          <div style={{ padding: '20px 40px 0', marginTop: 8 }}>
-            <h4 style={{ fontFamily: fd, fontSize: 16, color: '#fff', margin: '0 0 12px' }}>How these patterns relate to your goals</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', border: `1px solid ${teal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: teal, flexShrink: 0 }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              </div>
-              <span style={{ color: '#ccc', fontSize: 13, letterSpacing: 0.5 }}>{topGoal.title.toUpperCase()}</span>
-              <span style={{ marginLeft: 'auto', background: 'rgba(0,212,160,0.1)', color: teal, padding: '4px 10px', borderRadius: 4, fontSize: 11 }}>
-                {typeof topGoal.completeness === 'number' ? `${topGoal.completeness}% understood` : 'In progress'}
-              </span>
-            </div>
+          <span style={{ color: '#888', fontSize: 10, marginTop: 8, textTransform: 'uppercase', letterSpacing: 1, fontFamily: fm }}>Psychology Score</span>
+        </div>
+        {/* Explanation */}
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Behavioral Profile</div>
+          <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', lineHeight: 1.7 }}>
+            Based on {totals.n > 0 ? `${totals.n} trade journal${totals.n === 1 ? '' : 's'}` : 'no trades yet'}. WickCoach reads what you wrote about each trade and classifies it as disciplined or impulsive. Your score blends your win rate ({totals.winRate.toFixed(0)}%) with how often you follow your plan ({totals.n > 0 ? `${processSplit.process.n} of ${totals.n} trades` : '—'}).
           </div>
-        )}
+        </div>
       </div>
+
+      {/* ═══ STRENGTHS + WEAKNESSES ═══ */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        {/* Strengths */}
+        <div style={{ flex: 1, minWidth: 280, background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${teal}`, borderRadius: 12, padding: '24px 28px' }}>
+          <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: teal, marginBottom: 4, letterSpacing: 0.5 }}>Your strengths</div>
+          <div style={{ fontFamily: fm, fontSize: 11, color: '#888', marginBottom: 16 }}>Patterns from your journal entries that show discipline</div>
+          {[
+            { name: 'Patience', count: patterns.patience, desc: 'Waited for the setup' },
+            { name: 'Clean Execution', count: patterns.cleanExecution, desc: 'Followed the plan' },
+            { name: 'Stop Discipline', count: patterns.stopDiscipline, desc: 'Honored your stop' },
+            { name: 'Trusting Process', count: patterns.trustingProcess, desc: 'Stuck to your rules' },
+          ].filter(p => p.count > 0).map(p => (
+            <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(42,49,67,0.4)' }}>
+              <div>
+                <div style={{ fontFamily: fm, fontSize: 14, color: '#e8e8f0', fontWeight: 500 }}>{p.name}</div>
+                <div style={{ fontFamily: fm, fontSize: 11, color: '#888', marginTop: 2 }}>{p.desc}</div>
+              </div>
+              <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: teal, flexShrink: 0, marginLeft: 16 }}>{p.count}</div>
+            </div>
+          ))}
+          {[patterns.patience, patterns.cleanExecution, patterns.stopDiscipline, patterns.trustingProcess].every(c => c === 0) && (
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#666', padding: '20px 0', textAlign: 'center' }}>
+              No strength patterns detected yet. Write more about why you took each trade.
+            </div>
+          )}
+        </div>
+
+        {/* Weaknesses */}
+        <div style={{ flex: 1, minWidth: 280, background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${red}`, borderRadius: 12, padding: '24px 28px' }}>
+          <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: red, marginBottom: 4, letterSpacing: 0.5 }}>Areas to improve</div>
+          <div style={{ fontFamily: fm, fontSize: 11, color: '#888', marginBottom: 16 }}>Patterns from your journal entries that show rule-breaking</div>
+          {[
+            { name: 'Ignoring Rules', count: patterns.ignoringRules, desc: 'Traded against your own plan' },
+            { name: 'Impulse Entries', count: patterns.impulseEntries, desc: 'Entered without a setup' },
+            { name: 'Revenge Trading', count: patterns.revengeTrading, desc: 'Traded to recover a loss' },
+            { name: 'FOMO / Chasing', count: patterns.fomoChasing, desc: 'Chased price instead of waiting' },
+          ].filter(p => p.count > 0).map(p => (
+            <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(42,49,67,0.4)' }}>
+              <div>
+                <div style={{ fontFamily: fm, fontSize: 14, color: '#e8e8f0', fontWeight: 500 }}>{p.name}</div>
+                <div style={{ fontFamily: fm, fontSize: 11, color: '#888', marginTop: 2 }}>{p.desc}</div>
+              </div>
+              <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: red, flexShrink: 0, marginLeft: 16 }}>{p.count}</div>
+            </div>
+          ))}
+          {[patterns.ignoringRules, patterns.impulseEntries, patterns.revengeTrading, patterns.fomoChasing].every(c => c === 0) && (
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#666', padding: '20px 0', textAlign: 'center' }}>
+              No weakness patterns detected yet. Write more about why you took each trade.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ KEY INSIGHT — expectancy gap ═══ */}
+      {processSplit.process.n > 0 && processSplit.impulse.n > 0 && (
+        <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px' }}>
+          <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>The gap that matters</div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>When you follow the plan</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>R {procR.toFixed(1)}</span>
+                <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>avg · {processSplit.process.wr.toFixed(0)}% WR · {processSplit.process.n} trades</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>When you break the rules</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: red }}>R {impR.toFixed(1)}</span>
+                <span style={{ fontFamily: fm, fontSize: 13, color: red }}>avg · {processSplit.impulse.wr.toFixed(0)}% WR · {processSplit.impulse.n} trades</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ DEEP PSYCH CHAT WIDGET ═══ */}
       <AIChatWidget

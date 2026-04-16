@@ -551,55 +551,50 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
       {/* ═══ STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-        {/* Strategy Breakdown — visual bars */}
+        {/* Strategy Breakdown — clean table */}
         {(() => {
-          const visible = showAllStrategies ? strategies : strategies.slice(0, 3);
+          const visible = showAllStrategies ? strategies : strategies.slice(0, 4);
+          const colStyle: React.CSSProperties = { fontFamily: fm, fontSize: 13, color: '#aab0bd', textAlign: 'right', whiteSpace: 'nowrap' };
           return (
             <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
               <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy breakdown</div>
-              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 18 }}>Performance by setup type — sorted by total P/L</div>
+              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 14 }}>Sorted by total P/L</div>
 
-              {visible.map((s, i) => {
-                const isBest = i === 0;
-                return (
-                  <div key={s.name} style={{
-                    padding: '14px 16px',
-                    background: i % 2 === 0 ? '#1a1f2a' : '#141822',
-                    border: '1px solid #2A3143',
-                    borderLeft: isBest ? `3px solid ${teal}` : '3px solid #2A3143',
-                    borderRadius: 8,
-                    marginBottom: 8,
-                  }}>
-                    {/* Row 1: name + trades + total P/L */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                      <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, flex: 1 }}>{s.name}</div>
-                      <div style={{ fontSize: 13, color: '#aab0bd', fontFamily: fm, letterSpacing: 1, fontWeight: 500 }}>{s.trades} TRADES</div>
-                      <div style={{ fontSize: 15, color: s.total >= 0 ? teal : red, fontWeight: 700, fontFamily: fd, minWidth: 90, textAlign: 'right' }}>{fmtDollar(s.total)}</div>
-                    </div>
-                    {/* Row 2: 3 large stat numbers — all teal, no sliders */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fm }}>Win Rate</div>
-                        <div style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{fmtPct(s.wr)}</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fm }}>Avg R</div>
-                        <div style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{fmtR(s.r)}</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fm }}>Avg P/L</div>
-                        <div style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{fmtDollar(s.avg, true)}</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div
-                onClick={() => setShowAllStrategies(s => !s)}
-                style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center', fontFamily: fm, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}
-              >
-                {showAllStrategies ? 'Show less ↑' : `Show all ${strategies.length} ↓`}
+              {/* Table header */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.6fr 0.7fr 0.6fr 0.8fr 1fr', gap: 0, padding: '0 0 8px', borderBottom: '1px solid #2A3143' }}>
+                {['Strategy', 'Trades', 'Win Rate', 'Avg R', 'Avg P/L', 'Total'].map(h => (
+                  <div key={h} style={{ fontFamily: fm, fontSize: 10, color: '#666', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: h === 'Strategy' ? 'left' : 'right' }}>{h}</div>
+                ))}
               </div>
+
+              {/* Table rows */}
+              {visible.map((s, i) => (
+                <div key={s.name} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1.8fr 0.6fr 0.7fr 0.6fr 0.8fr 1fr',
+                  gap: 0,
+                  padding: '12px 0',
+                  borderBottom: i < visible.length - 1 ? '1px solid rgba(42,49,67,0.4)' : 'none',
+                  borderLeft: i === 0 ? `3px solid ${teal}` : '3px solid transparent',
+                  paddingLeft: 12,
+                }}>
+                  <div style={{ fontFamily: fm, fontSize: 14, color: '#fff', fontWeight: 600 }}>{s.name}</div>
+                  <div style={{ ...colStyle }}>{s.trades}</div>
+                  <div style={{ ...colStyle, color: teal, fontWeight: 700 }}>{fmtPct(s.wr)}</div>
+                  <div style={{ ...colStyle, color: teal, fontWeight: 700 }}>R {s.r.toFixed(1)}</div>
+                  <div style={{ ...colStyle, color: '#d0d0d8' }}>{fmtDollar(s.avg, true)}</div>
+                  <div style={{ ...colStyle, color: s.total >= 0 ? teal : red, fontFamily: fd, fontWeight: 700, fontSize: 14 }}>{fmtDollar(s.total)}</div>
+                </div>
+              ))}
+
+              {strategies.length > 4 && (
+                <div
+                  onClick={() => setShowAllStrategies(s => !s)}
+                  style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center', fontFamily: fm, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}
+                >
+                  {showAllStrategies ? 'Show less' : `Show all ${strategies.length}`}
+                </div>
+              )}
             </div>
           );
         })()}
