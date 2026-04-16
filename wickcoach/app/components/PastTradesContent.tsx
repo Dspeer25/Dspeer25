@@ -422,8 +422,11 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
 
           {/* Card 4 — AVG R:R */}
           <div style={{ flex: 1, padding: '20px 24px', borderRight: '1px solid #2A3143' }}>
-            <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R:R</div>
-            <div style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700, marginTop: 6 }}><span>1</span><span style={{ margin: '0 6px' }}>:</span><span>{avgRR}</span></div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontFamily: fm, fontSize: 12, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Avg R</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
+              <span style={{ color: '#aab0bd', fontFamily: fd, fontSize: 16, fontWeight: 600 }}>R</span>
+              <span style={{ color: '#fff', fontFamily: fd, fontSize: 24, fontWeight: 700 }}>{avgRR}</span>
+            </div>
             {rrVsTarget !== null && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
                 <span style={{ width: 6, height: 6, background: rrVsTarget ? '#00d4a0' : '#ff4444', borderRadius: '50%', display: 'inline-block' }} />

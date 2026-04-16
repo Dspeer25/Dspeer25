@@ -290,8 +290,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       return {
         title: g.title || '(untitled)',
         type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-        trades: { actual: complied, target: aiScoredTrades.length, unitLabel: `complied this week (${aiScoredTrades.length} trades scored)` },
-        psych:  { actual: processCount, target: aiScoredTrades.length, unitLabel: `process trades this week (${aiScoredTrades.length} scored)` },
+        trades: { actual: complied, target: aiScoredTrades.length },
+        psych:  { actual: processCount, target: aiScoredTrades.length },
       };
     }
 
@@ -307,8 +307,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     return {
       title: g.title || '(untitled)',
       type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-      trades: { actual: tradesActual, target: tradesTarget, unitLabel: 'trades this week' },
-      psych:  { actual: psychActual,  target: psychTarget,  unitLabel: `journal mentions "${kws[0]}"` },
+      trades: { actual: tradesActual, target: tradesTarget },
+      psych:  { actual: psychActual,  target: psychTarget },
     };
   });
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
@@ -515,26 +515,28 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           </div>
         </div>
 
-        {/* Process */}
+        {/* Process — trades where the journal indicates discipline */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
-          <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Process</div>
+          <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Followed the Plan</div>
+          <div style={{ fontSize: 10.5, color: '#888', marginBottom: 8 }}>Trades where your journal shows patience, a clean setup, or rule-following</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.process.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.process.wr)}</div>
           <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(processSplit.process.rTotal)} total</div>
         </div>
 
-        {/* Impulse */}
+        {/* Impulse — trades where the journal indicates rule-breaking */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
-          <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Impulse</div>
+          <div style={{ fontSize: 11, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Broke the Rules</div>
+          <div style={{ fontSize: 10.5, color: '#888', marginBottom: 8 }}>Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.impulse.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.impulse.wr)}</div>
           <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(processSplit.impulse.rTotal)} total</div>
         </div>
 
-        {/* What If? */}
+        {/* What If? — how much better your P/L would be without rule-breaking trades */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
           <div style={{ fontSize: 11, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
-          <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your P/L if you only took process trades</div>
+          <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your total P/L if you removed every trade where you broke your own rules</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 12, color: '#bbb' }}>Actual P/L</span>
             <span style={{ fontSize: 13, color: '#fff' }}>{fmtDollar(totals.totalPL, true)}</span>
@@ -814,8 +816,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 return (
                   <div key={i}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500 }}>#{i + 1} · {g.trades.unitLabel}</span>
-                      <span style={{ fontSize: 12, color: blue, fontFamily: fd, fontWeight: 700 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span></span>
+                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
+                      <span style={{ fontSize: 12, color: blue, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#888', fontWeight: 400, fontSize: 10, marginLeft: 4 }}>trades</span></span>
                     </div>
                     <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{
@@ -855,8 +857,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 return (
                   <div key={i}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500 }}>#{i + 1} · {g.psych.unitLabel}</span>
-                      <span style={{ fontSize: 12, color: teal, fontFamily: fd, fontWeight: 700 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span></span>
+                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
+                      <span style={{ fontSize: 12, color: teal, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#888', fontWeight: 400, fontSize: 10, marginLeft: 4 }}>trades</span></span>
                     </div>
                     <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{
