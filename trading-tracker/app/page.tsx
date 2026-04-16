@@ -1167,7 +1167,45 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
               if (!sel || sel.rangeCount === 0) return;
               if (e.key === "Tab") {
                 e.preventDefault();
-                document.execCommand("insertText", false, "    ");
+                const range = sel.getRangeAt(0);
+                let blockNode: Node | null = range.startContainer;
+                while (blockNode && blockNode !== editorRef.current) {
+                  if (blockNode.nodeType === 1 && ["DIV","P"].includes((blockNode as Element).tagName)) break;
+                  blockNode = blockNode.parentNode;
+                }
+                const lineText = blockNode === editorRef.current
+                  ? (range.startContainer.textContent ?? "")
+                  : ((blockNode as Element)?.textContent ?? "");
+                const isDash = /^\s*-/.test(lineText);
+                if (isDash) {
+                  const firstText = blockNode === editorRef.current
+                    ? range.startContainer
+                    : blockNode?.firstChild;
+                  if (firstText && firstText.nodeType === 3) {
+                    if (!e.shiftKey) {
+                      const r = document.createRange();
+                      r.setStart(firstText, 0);
+                      r.collapse(true);
+                      sel.removeAllRanges();
+                      sel.addRange(r);
+                      document.execCommand("insertText", false, "    ");
+                    } else {
+                      const text = firstText.textContent ?? "";
+                      const remove = Math.min(text.length - text.trimStart().length, 4);
+                      if (remove > 0) {
+                        const r = document.createRange();
+                        r.setStart(firstText, 0);
+                        r.setEnd(firstText, remove);
+                        sel.removeAllRanges();
+                        sel.addRange(r);
+                        document.execCommand("delete");
+                      }
+                    }
+                  }
+                } else {
+                  document.execCommand("insertText", false, "    ");
+                }
+                if (editorRef.current) set("observations", editorRef.current.innerHTML);
                 return;
               }
               if (e.key === "Enter" && !e.shiftKey) {
