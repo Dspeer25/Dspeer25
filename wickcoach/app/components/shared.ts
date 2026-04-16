@@ -22,20 +22,61 @@ export interface RegressionResult {
   yLabel: string;
 }
 
+/** Supported variable names for the Regression Lab. Shown in error messages. */
+export const REGRESSION_VARIABLE_ALIASES = [
+  'P/L, profit, pnl, gains, net, returns, profit amount',
+  'loss size, loss amount, losses',
+  'win size, win amount, wins',
+  'R:R, risk reward, RR, risk to reward',
+  'time of day, hour, entry time, time',
+  'trade duration, time in trade, hold time, how long',
+  'day of week, weekday, day',
+  'entry price, entry, open',
+  'exit price, exit, close',
+  'position size, contracts, quantity, size',
+  'risk, risk amount',
+  'return %, return percent, % return',
+  'expected value, EV, expectancy',
+  'win rate',
+];
+
 /** Map a human-readable variable name to a numeric extractor on Trade. */
 export function resolveTradeVariable(name: string): ((t: Trade) => number | null) | null {
   const n = name.toLowerCase().trim();
 
-  // P/L variants
-  if (/^(p\/?l|profit|net|pnl|result)/.test(n)) return t => t.pl;
-  if (/^pl.?percent|return/.test(n))              return t => t.plPercent;
+  // ── P/L / profit ────────────────────────────────────────────
+  if (/p\/?l|profit|pnl|gains(?!.*loss)|net(?!.*loss)|^returns?$|profit.?amount/.test(n))
+    return t => t.pl;
 
-  // R:R
-  if (/^(r:?r|risk.?reward|reward|avg.?r|r$)/.test(n))
+  // ── Return % ────────────────────────────────────────────────
+  if (/return.?%|return.?percent|%.?return|pl.?percent/.test(n))
+    return t => t.plPercent;
+
+  // ── Loss size (absolute P/L for losers, null for winners) ───
+  if (/loss.?(size|amount)|^losses?$/.test(n))
+    return t => t.pl < 0 ? Math.abs(t.pl) : null;
+
+  // ── Win size (P/L for winners, null for losers) ─────────────
+  if (/win.?(size|amount)|^wins$/.test(n))
+    return t => t.pl > 0 ? t.pl : null;
+
+  // ── Win rate (1 for win, 0 for loss — regress to see rates) ─
+  if (/win.?rate/.test(n))
+    return t => t.pl > 0 ? 1 : 0;
+
+  // ── R:R / risk reward ───────────────────────────────────────
+  if (/r:r|risk.?reward|^rr$|risk.?to.?reward|avg.?r|^r$/.test(n))
     return t => { const p = (t.riskReward || '').split(':'); return parseFloat(p[1]) || null; };
 
-  // Time of day → hour as a number (9, 10, 11, …)
-  if (/time|hour|tod|time.?of.?day/.test(n))
+  // ── Expected value / EV / expectancy ────────────────────────
+  // Per-trade EV = P/L (the realized expectancy for that trade).
+  // Across many trades the regression slope shows how EV shifts
+  // with the X variable.
+  if (/expected.?value|^ev$|expectancy/.test(n))
+    return t => t.pl;
+
+  // ── Time of day → hour as a number (9, 10, 11, …) ──────────
+  if (/time.?of.?day|^hour$|entry.?time|^time$|^tod$/.test(n))
     return t => {
       const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
       if (!m) return null;
@@ -46,30 +87,28 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
       return h;
     };
 
-  // Entry/exit price
-  if (/entry|open/.test(n))  return t => t.entryPrice;
-  if (/exit|close/.test(n))  return t => t.exitPrice;
+  // ── Trade duration / hold time ──────────────────────────────
+  // We don't have exit timestamps, so proxy = |exit - entry| price
+  // move. Not perfect but captures the magnitude of the move held.
+  if (/trade.?duration|time.?in.?trade|hold.?time|how.?long|duration/.test(n))
+    return t => Math.abs(t.exitPrice - t.entryPrice);
 
-  // Contracts / size / qty
-  if (/contract|size|qty|quantity|position/.test(n)) return t => t.contracts;
-
-  // Risk
-  if (/risk/.test(n)) return t => t.riskAmount;
-
-  // Hold time (exit - entry price as a proxy since we lack time-in-trade)
-  if (/hold|duration/.test(n)) return t => Math.abs(t.exitPrice - t.entryPrice);
-
-  // Day of week → 0-6
-  if (/day|weekday|dow/.test(n))
+  // ── Day of week → 0-6 ──────────────────────────────────────
+  if (/day.?of.?week|weekday|^day$|^dow$/.test(n))
     return t => new Date(t.date).getDay();
 
-  // Win = 1, Loss = 0
-  if (/win/.test(n)) return t => t.pl > 0 ? 1 : 0;
+  // ── Entry / exit price ──────────────────────────────────────
+  if (/entry.?price|^entry$|^open$/.test(n))  return t => t.entryPrice;
+  if (/exit.?price|^exit$|^close$/.test(n))   return t => t.exitPrice;
 
-  // Loss size (absolute value of negative P/L, null for winners)
-  if (/loss.?size|loss.?amount|loss/.test(n)) return t => t.pl < 0 ? Math.abs(t.pl) : null;
+  // ── Position size / contracts ───────────────────────────────
+  if (/position.?size|contract|^size$|quantity|^qty$/.test(n))
+    return t => t.contracts;
 
-  return null; // unknown variable
+  // ── Risk amount ─────────────────────────────────────────────
+  if (/risk.?amount|^risk$/.test(n)) return t => t.riskAmount;
+
+  return null; // unknown — caller shows alias list
 }
 
 /** Resolve a plain-English filter condition to a predicate on Trade. */

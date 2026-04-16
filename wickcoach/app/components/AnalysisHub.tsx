@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -102,10 +102,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     const xExtractor = resolveTradeVariable(regVar2.trim());
 
     if (!yExtractor || !xExtractor) {
+      const bad = !yExtractor ? regVar1 : regVar2;
       setRegResult({
         stats: null,
-        plainEnglish: `Could not map "${!yExtractor ? regVar1 : regVar2}" to a trade data field. Try: P/L, time of day, R:R, entry price, exit price, contracts, risk, day of week, win rate.`,
-        warning: 'Variable not recognized.',
+        plainEnglish: `Could not map "${bad}" to a trade data field. Supported variables:\n${REGRESSION_VARIABLE_ALIASES.join('\n')}`,
+        warning: 'Variable not recognized. Try one of the aliases listed below.',
       });
       setRegLoading(false);
       return;
