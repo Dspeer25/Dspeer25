@@ -81,6 +81,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [tickerView, setTickerView] = useState<'wins' | 'losses'>('wins');
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
+  const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
 
   // ─── Analysis AI chat ───
   const [aiOpen, setAiOpen] = useState(false);
@@ -552,8 +553,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
         {/* Strategy Breakdown — visual bars */}
         {(() => {
-          const maxTotal = Math.max(...strategies.map(s => Math.abs(s.total)));
-          const maxR = Math.max(...strategies.map(s => Math.abs(s.r)), 1.5);
           const visible = showAllStrategies ? strategies : strategies.slice(0, 3);
           return (
             <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
@@ -561,9 +560,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 18 }}>Performance by setup type — sorted by total P/L</div>
 
               {visible.map((s, i) => {
-                const winBar = Math.max(0, Math.min(100, s.wr));
-                const totalBar = (Math.abs(s.total) / maxTotal) * 100;
-                const rBar = (Math.abs(s.r) / maxR) * 100;
                 const isBest = i === 0;
                 return (
                   <div key={s.name} style={{
@@ -574,43 +570,25 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     borderRadius: 8,
                     marginBottom: 8,
                   }}>
-                    {/* Row 1: name + trades + total */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                    {/* Row 1: name + trades + total P/L */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                       <div style={{ fontSize: 14, color: '#fff', fontWeight: 600, flex: 1 }}>{s.name}</div>
                       <div style={{ fontSize: 13, color: '#aab0bd', fontFamily: fm, letterSpacing: 1, fontWeight: 500 }}>{s.trades} TRADES</div>
                       <div style={{ fontSize: 15, color: s.total >= 0 ? teal : red, fontWeight: 700, fontFamily: fd, minWidth: 90, textAlign: 'right' }}>{fmtDollar(s.total)}</div>
                     </div>
-                    {/* Row 2: 3 inline bars */}
+                    {/* Row 2: 3 large stat numbers — all teal, no sliders */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                      {/* Win rate */}
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>
-                          <span>Win Rate</span>
-                          <span style={{ color: s.wr >= 50 ? teal : red, fontWeight: 700 }}>{fmtPct(s.wr)}</span>
-                        </div>
-                        <div style={{ height: 6, background: '#2A3143', borderRadius: 3, overflow: 'hidden' }}>
-                          <div style={{ width: `${winBar}%`, height: '100%', background: s.wr >= 50 ? teal : red, transition: 'width 0.4s ease' }} />
-                        </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fm }}>Win Rate</div>
+                        <div style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{fmtPct(s.wr)}</div>
                       </div>
-                      {/* Avg R */}
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>
-                          <span>Avg R</span>
-                          <span style={{ color: s.r >= 0 ? teal : red, fontWeight: 700 }}>{fmtR(s.r)}</span>
-                        </div>
-                        <div style={{ height: 6, background: '#2A3143', borderRadius: 3, overflow: 'hidden' }}>
-                          <div style={{ width: `${rBar}%`, height: '100%', background: s.r >= 0 ? teal : red, transition: 'width 0.4s ease' }} />
-                        </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fm }}>Avg R</div>
+                        <div style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{fmtR(s.r)}</div>
                       </div>
-                      {/* Total P/L share */}
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>
-                          <span>Avg P/L</span>
-                          <span style={{ color: s.avg >= 0 ? teal : red, fontWeight: 700 }}>{fmtDollar(s.avg, true)}</span>
-                        </div>
-                        <div style={{ height: 6, background: '#2A3143', borderRadius: 3, overflow: 'hidden' }}>
-                          <div style={{ width: `${totalBar}%`, height: '100%', background: s.total >= 0 ? teal : red, transition: 'width 0.4s ease' }} />
-                        </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fm }}>Avg P/L</div>
+                        <div style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{fmtDollar(s.avg, true)}</div>
                       </div>
                     </div>
                   </div>
@@ -795,19 +773,23 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
 
           {/* LEFT — Trades vs. Goals (BLUE) */}
-          <div style={{
-            flex: '1 1 320px',
-            background: '#12151d',
-            border: '1px solid #2A3143',
-            borderLeft: `3px solid ${blue}`,
-            borderRadius: 10,
-            padding: '20px 22px',
-          }}>
+          <div
+            onMouseEnter={() => setHoveredPanel('trades')}
+            onMouseLeave={() => setHoveredPanel(null)}
+            style={{
+              flex: '1 1 320px',
+              background: '#12151d',
+              border: '1px solid #2A3143',
+              borderLeft: `3px solid ${blue}`,
+              borderRadius: 10,
+              padding: '20px 22px',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, background: blue, borderRadius: 2, display: 'inline-block' }} />
               <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
             </div>
-            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3 }}>Actual trading activity measured against the rules</p>
+            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3, height: hoveredPanel === 'trades' ? 'auto' : 0, overflow: 'hidden', opacity: hoveredPanel === 'trades' ? 1 : 0, transition: 'opacity 0.2s ease' }}>Actual trading activity measured against the rules</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {selectedWeek.goals.map((g, i) => {
@@ -843,12 +825,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             borderLeft: `3px solid ${teal}`,
             borderRadius: 10,
             padding: '20px 22px',
-          }}>
+          }}
+            onMouseEnter={() => setHoveredPanel('psych')}
+            onMouseLeave={() => setHoveredPanel(null)}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, background: teal, borderRadius: 2, display: 'inline-block' }} />
               <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Psych vs. Goals</h4>
             </div>
-            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3 }}>Psychological alignment with the rules — from journal & tags</p>
+            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3, height: hoveredPanel === 'psych' ? 'auto' : 0, overflow: 'hidden', opacity: hoveredPanel === 'psych' ? 1 : 0, transition: 'opacity 0.2s ease' }}>Psychological alignment with the rules — from journal & tags</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {selectedWeek.goals.map((g, i) => {
