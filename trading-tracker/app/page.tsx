@@ -1182,23 +1182,24 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
                     ? range.startContainer
                     : blockNode?.firstChild;
                   if (firstText && firstText.nodeType === 3) {
+                    const origOffset = range.startContainer === firstText ? range.startOffset : null;
                     if (!e.shiftKey) {
+                      firstText.textContent = "    " + (firstText.textContent ?? "");
                       const r = document.createRange();
-                      r.setStart(firstText, 0);
+                      r.setStart(firstText, origOffset !== null ? origOffset + 4 : 4);
                       r.collapse(true);
                       sel.removeAllRanges();
                       sel.addRange(r);
-                      document.execCommand("insertText", false, "    ");
                     } else {
                       const text = firstText.textContent ?? "";
                       const remove = Math.min(text.length - text.trimStart().length, 4);
                       if (remove > 0) {
+                        firstText.textContent = text.slice(remove);
                         const r = document.createRange();
-                        r.setStart(firstText, 0);
-                        r.setEnd(firstText, remove);
+                        r.setStart(firstText, origOffset !== null ? Math.max(0, origOffset - remove) : 0);
+                        r.collapse(true);
                         sel.removeAllRanges();
                         sel.addRange(r);
-                        document.execCommand("delete");
                       }
                     }
                   }
