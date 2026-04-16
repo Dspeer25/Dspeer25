@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -88,46 +88,107 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [regVar2, setRegVar2] = useState('');
   const [regCondition, setRegCondition] = useState('');
   const [regLoading, setRegLoading] = useState(false);
-  const [regResult, setRegResult] = useState<{ statistics?: { n?: number; r_squared?: number; adjusted_r_squared?: number; p_value?: number; equation?: string; ci_lower?: number; ci_upper?: number }; plainEnglish?: string; warning?: string | null } | null>(null);
+  const [regResult, setRegResult] = useState<{ stats: RegressionResult | null; plainEnglish: string; warning: string | null } | null>(null);
 
   const runRegression = async () => {
     if (!regVar1.trim() || !regVar2.trim() || regLoading) return;
     setRegLoading(true);
     setRegResult(null);
+
+    // ── Phase 1: Deterministic math in JavaScript ──────────────
+    const xExtractor = resolveTradeVariable(regVar1.trim());
+    const yExtractor = resolveTradeVariable(regVar2.trim());
+
+    if (!xExtractor || !yExtractor) {
+      setRegResult({
+        stats: null,
+        plainEnglish: `Could not map "${!xExtractor ? regVar1 : regVar2}" to a trade data field. Try: P/L, time of day, R:R, entry price, exit price, contracts, risk, day of week, win rate.`,
+        warning: 'Variable not recognized.',
+      });
+      setRegLoading(false);
+      return;
+    }
+
+    const filter = resolveTradeFilter(regCondition.trim());
+    const filtered = filter ? trades.filter(filter) : trades;
+
+    const pairs: { x: number; y: number }[] = [];
+    for (const t of filtered) {
+      const x = xExtractor(t);
+      const y = yExtractor(t);
+      if (x !== null && y !== null && isFinite(x) && isFinite(y)) {
+        pairs.push({ x, y });
+      }
+    }
+
+    if (pairs.length < 3) {
+      setRegResult({
+        stats: null,
+        plainEnglish: `Only ${pairs.length} valid data points after filtering. Need at least 3 to run a regression.`,
+        warning: 'Sample too small.',
+      });
+      setRegLoading(false);
+      return;
+    }
+
+    const stats = linearRegression(
+      pairs.map(p => p.x),
+      pairs.map(p => p.y),
+      regVar1.trim(),
+      regVar2.trim(),
+    );
+
+    if (!stats) {
+      setRegResult({ stats: null, plainEnglish: 'Regression could not be computed — the X variable may have no variance.', warning: null });
+      setRegLoading(false);
+      return;
+    }
+
+    // ── Phase 2: Send pre-computed stats to AI for plain English ──
     try {
-      const query = `I want to test ${regVar1.trim()} against ${regVar2.trim()}${regCondition.trim() ? `, if ${regCondition.trim()}` : ''}`;
+      const statsText = [
+        `Variables: ${stats.xLabel} (X) vs ${stats.yLabel} (Y)`,
+        `Sample size: n = ${stats.n}`,
+        `Slope: ${stats.slope.toFixed(4)}`,
+        `Intercept: ${stats.intercept.toFixed(4)}`,
+        `R² = ${stats.r_squared.toFixed(4)}, Adjusted R² = ${stats.adjusted_r_squared.toFixed(4)}`,
+        `p-value = ${stats.p_value.toFixed(6)}`,
+        `F-statistic = ${stats.f_stat.toFixed(4)}`,
+        `Standard error = ${stats.standard_error.toFixed(4)}`,
+        `95% CI for slope: [${stats.ci_lower.toFixed(4)}, ${stats.ci_upper.toFixed(4)}]`,
+        `Equation: ${stats.equation}`,
+        regCondition.trim() ? `Filter applied: ${regCondition.trim()}` : 'No filter applied.',
+      ].join('\n');
+
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode: 'regression',
-          messages: [{ role: 'user', content: query }],
-          tradesContext: buildTraderStats(trades),
-          goalsContext: buildGoalsContext(),
+          messages: [{ role: 'user', content: `Here are the pre-computed regression results. Explain them in plain English:\n\n${statsText}` }],
           profileContext: buildProfileContext(),
         }),
       });
       const data = await res.json();
-      if (data.metadata) {
-        setRegResult(data.metadata);
-        try {
-          const cache = JSON.parse(localStorage.getItem('wickcoach_regressions') || '[]');
-          cache.unshift({ query, result: data.metadata, ts: new Date().toISOString() });
-          localStorage.setItem('wickcoach_regressions', JSON.stringify(cache.slice(0, 10)));
-        } catch { /* ignore */ }
-      } else {
-        // Haiku returned non-JSON or an error — show the raw reply as plain English fallback
-        setRegResult({
-          statistics: { n: totals.n, r_squared: 0, adjusted_r_squared: 0, p_value: 1, equation: '—', ci_lower: 0, ci_upper: 0 },
-          plainEnglish: data.reply || 'The analysis could not be completed. Try rephrasing your query.',
-          warning: 'The model returned a non-standard response. The plain-English section may still be useful.',
-        });
-      }
+      const meta = data.metadata as { plainEnglish?: string; warning?: string | null } | null;
+      const plainEnglish = meta?.plainEnglish || data.reply || 'Explanation unavailable.';
+      const warning = meta?.warning || (stats.n < 30 ? `Sample size is ${stats.n}, which is below the 30-trade threshold for reliable conclusions.` : null);
+      const result = { stats, plainEnglish, warning };
+      setRegResult(result);
+
+      // Cache
+      try {
+        const query = `${regVar1} vs ${regVar2}${regCondition ? ` if ${regCondition}` : ''}`;
+        const cache = JSON.parse(localStorage.getItem('wickcoach_regressions') || '[]');
+        cache.unshift({ query, result, ts: new Date().toISOString() });
+        localStorage.setItem('wickcoach_regressions', JSON.stringify(cache.slice(0, 10)));
+      } catch { /* ignore */ }
     } catch {
+      // Math succeeded even if AI explanation failed — still show stats
       setRegResult({
-        statistics: { n: 0, r_squared: 0, adjusted_r_squared: 0, p_value: 1, equation: '—', ci_lower: 0, ci_upper: 0 },
-        plainEnglish: 'Connection error. Check that your API key is configured and try again.',
-        warning: 'Failed to connect to the analysis service.',
+        stats,
+        plainEnglish: 'Could not connect to AI for the explanation, but the statistics above are computed from your real data.',
+        warning: null,
       });
     }
     setRegLoading(false);
@@ -1144,17 +1205,21 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
             )}
 
-            {/* Statistics */}
-            {regResult.statistics ? (
+            {/* Statistics — computed in JavaScript, deterministic */}
+            {regResult.stats ? (
               <div style={{ flex: '0 0 280px', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '16px 20px' }}>
                 <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>The Numbers</div>
                 {[
-                  ['Sample size (n)', String(regResult.statistics.n ?? '—')],
-                  ['R\u00B2', regResult.statistics.r_squared != null ? regResult.statistics.r_squared.toFixed(4) : '—'],
-                  ['Adj R\u00B2', regResult.statistics.adjusted_r_squared != null ? regResult.statistics.adjusted_r_squared.toFixed(4) : '—'],
-                  ['p-value', regResult.statistics.p_value != null ? regResult.statistics.p_value.toFixed(4) : '—'],
-                  ['Equation', regResult.statistics.equation || '—'],
-                  ['95% CI', regResult.statistics.ci_lower != null && regResult.statistics.ci_upper != null ? `[${regResult.statistics.ci_lower.toFixed(3)}, ${regResult.statistics.ci_upper.toFixed(3)}]` : '—'],
+                  ['Sample size (n)', String(regResult.stats.n)],
+                  ['R\u00B2', regResult.stats.r_squared.toFixed(4)],
+                  ['Adj R\u00B2', regResult.stats.adjusted_r_squared.toFixed(4)],
+                  ['p-value', regResult.stats.p_value.toFixed(6)],
+                  ['F-statistic', regResult.stats.f_stat.toFixed(4)],
+                  ['Std Error', regResult.stats.standard_error.toFixed(4)],
+                  ['Slope', regResult.stats.slope.toFixed(4)],
+                  ['Intercept', regResult.stats.intercept.toFixed(4)],
+                  ['95% CI', `[${regResult.stats.ci_lower.toFixed(3)}, ${regResult.stats.ci_upper.toFixed(3)}]`],
+                  ['Equation', regResult.stats.equation],
                 ].map(([label, val]) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(42,49,67,0.3)' }}>
                     <span style={{ fontFamily: fm, fontSize: 12, color: '#888' }}>{label}</span>
@@ -1165,11 +1230,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             ) : (
               <div style={{ flex: '0 0 280px', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '16px 20px' }}>
                 <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>The Numbers</div>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>Statistics not available for this query. Try rephrasing or adding more detail.</div>
+                <div style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>Could not compute statistics. Try different variables.</div>
               </div>
             )}
 
-            {/* Plain English */}
+            {/* Plain English — AI explains the pre-computed stats */}
             <div style={{ flex: 1, minWidth: 280, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '20px 24px' }}>
               <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>What This Means</div>
               <div style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8', lineHeight: 1.8 }}>

@@ -2,6 +2,253 @@ export const fm = "'DM Mono', monospace";
 export const fd = "'Chakra Petch', sans-serif";
 export const teal = "#00d4a0";
 
+// ─── Deterministic linear regression ─────────────────────────
+// All math is done here in JavaScript — never by the AI. The AI
+// only gets pre-computed results to explain in plain English.
+
+export interface RegressionResult {
+  n: number;
+  slope: number;
+  intercept: number;
+  r_squared: number;
+  adjusted_r_squared: number;
+  p_value: number;
+  f_stat: number;
+  standard_error: number;
+  ci_lower: number;   // 95% CI for slope
+  ci_upper: number;
+  equation: string;
+  xLabel: string;
+  yLabel: string;
+}
+
+/** Map a human-readable variable name to a numeric extractor on Trade. */
+export function resolveTradeVariable(name: string): ((t: Trade) => number | null) | null {
+  const n = name.toLowerCase().trim();
+
+  // P/L variants
+  if (/^(p\/?l|profit|net|pnl|result)/.test(n)) return t => t.pl;
+  if (/^pl.?percent|return/.test(n))              return t => t.plPercent;
+
+  // R:R
+  if (/^(r:?r|risk.?reward|reward|avg.?r|r$)/.test(n))
+    return t => { const p = (t.riskReward || '').split(':'); return parseFloat(p[1]) || null; };
+
+  // Time of day → hour as a number (9, 10, 11, …)
+  if (/time|hour|tod|time.?of.?day/.test(n))
+    return t => {
+      const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!m) return null;
+      let h = parseInt(m[1]);
+      const ap = (m[3] || '').toUpperCase();
+      if (ap === 'PM' && h !== 12) h += 12;
+      if (ap === 'AM' && h === 12) h = 0;
+      return h;
+    };
+
+  // Entry/exit price
+  if (/entry|open/.test(n))  return t => t.entryPrice;
+  if (/exit|close/.test(n))  return t => t.exitPrice;
+
+  // Contracts / size / qty
+  if (/contract|size|qty|quantity|position/.test(n)) return t => t.contracts;
+
+  // Risk
+  if (/risk/.test(n)) return t => t.riskAmount;
+
+  // Hold time (exit - entry price as a proxy since we lack time-in-trade)
+  if (/hold|duration/.test(n)) return t => Math.abs(t.exitPrice - t.entryPrice);
+
+  // Day of week → 0-6
+  if (/day|weekday|dow/.test(n))
+    return t => new Date(t.date).getDay();
+
+  // Win = 1, Loss = 0
+  if (/win/.test(n)) return t => t.pl > 0 ? 1 : 0;
+
+  return null; // unknown variable
+}
+
+/** Resolve a plain-English filter condition to a predicate on Trade. */
+export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) | null {
+  if (!condition || !condition.trim()) return null;
+  const c = condition.toLowerCase().trim();
+
+  // "strategy is X" / "strategy = X"
+  const stratMatch = c.match(/strategy\s*(?:is|=|==|:)\s*(.+)/);
+  if (stratMatch) {
+    const strat = stratMatch[1].trim().toLowerCase();
+    return t => t.strategy.toLowerCase().includes(strat);
+  }
+  // "ticker is X" / "ticker = X"
+  const tickerMatch = c.match(/ticker\s*(?:is|=|==|:)\s*(.+)/);
+  if (tickerMatch) {
+    const tick = tickerMatch[1].trim().toUpperCase();
+    return t => t.ticker === tick;
+  }
+  // "direction is long/short"
+  const dirMatch = c.match(/direction\s*(?:is|=|==|:)\s*(long|short)/i);
+  if (dirMatch) {
+    const dir = dirMatch[1].toUpperCase();
+    return t => t.direction === dir;
+  }
+  // "wins only" / "losses only"
+  if (/win/.test(c)) return t => t.pl > 0;
+  if (/loss|losing/.test(c)) return t => t.pl < 0;
+  // "before 11" / "after 1pm"
+  const timeMatch = c.match(/(before|after)\s*(\d{1,2})\s*(am|pm)?/i);
+  if (timeMatch) {
+    const dir = timeMatch[1].toLowerCase();
+    let h = parseInt(timeMatch[2]);
+    const ap = (timeMatch[3] || '').toUpperCase();
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    return t => {
+      const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!m) return false;
+      let th = parseInt(m[1]);
+      const tap = (m[3] || '').toUpperCase();
+      if (tap === 'PM' && th !== 12) th += 12;
+      if (tap === 'AM' && th === 12) th = 0;
+      return dir === 'before' ? th < h : th >= h;
+    };
+  }
+  return null;
+}
+
+/**
+ * Run an OLS linear regression on two numeric arrays.
+ * Returns all statistics deterministically — no AI involved.
+ * Uses the t-distribution approximation for p-value and CI.
+ */
+export function linearRegression(
+  xVals: number[],
+  yVals: number[],
+  xLabel: string,
+  yLabel: string,
+): RegressionResult | null {
+  if (xVals.length !== yVals.length || xVals.length < 3) return null;
+
+  const n = xVals.length;
+  const sumX = xVals.reduce((a, b) => a + b, 0);
+  const sumY = yVals.reduce((a, b) => a + b, 0);
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+
+  let ssXX = 0, ssXY = 0, ssYY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xVals[i] - meanX;
+    const dy = yVals[i] - meanY;
+    ssXX += dx * dx;
+    ssXY += dx * dy;
+    ssYY += dy * dy;
+  }
+
+  if (ssXX === 0) return null; // no variance in X
+
+  const slope = ssXY / ssXX;
+  const intercept = meanY - slope * meanX;
+
+  // Residuals
+  let ssRes = 0;
+  for (let i = 0; i < n; i++) {
+    const predicted = intercept + slope * xVals[i];
+    const resid = yVals[i] - predicted;
+    ssRes += resid * resid;
+  }
+  const ssTot = ssYY;
+  const r_squared = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+  const adjusted_r_squared = n > 2 ? 1 - ((1 - r_squared) * (n - 1)) / (n - 2) : r_squared;
+
+  // Standard error of the slope
+  const mse = ssRes / (n - 2);
+  const se_slope = Math.sqrt(mse / ssXX);
+  const standard_error = Math.sqrt(mse);
+
+  // t-statistic and p-value (two-tailed, using approximation for t-dist)
+  const t_stat = se_slope > 0 ? slope / se_slope : 0;
+  const f_stat = t_stat * t_stat;
+  // Approximate two-tailed p-value from t-distribution using a rational
+  // approximation (Abramowitz & Stegun). Good enough for n > 10.
+  const df = n - 2;
+  const p_value = tDistPValue(Math.abs(t_stat), df);
+
+  // 95% confidence interval for slope (t_crit ≈ 1.96 for large n, use lookup for small n)
+  const t_crit = tCritical(df);
+  const ci_lower = slope - t_crit * se_slope;
+  const ci_upper = slope + t_crit * se_slope;
+
+  const fmtCoeff = (v: number) => v >= 0 ? `+ ${v.toFixed(4)}` : `- ${Math.abs(v).toFixed(4)}`;
+  const equation = `${yLabel} = ${slope.toFixed(4)} × ${xLabel} ${fmtCoeff(intercept)}`.replace('+ -', '- ');
+
+  return {
+    n, slope, intercept, r_squared, adjusted_r_squared,
+    p_value, f_stat, standard_error, ci_lower, ci_upper,
+    equation, xLabel, yLabel,
+  };
+}
+
+// Approximate two-tailed p-value from t-distribution.
+function tDistPValue(t: number, df: number): number {
+  // Use the regularized incomplete beta function approximation.
+  const x = df / (df + t * t);
+  return betaIncomplete(df / 2, 0.5, x);
+}
+
+// Regularized incomplete beta function Ix(a, b) via continued fraction.
+function betaIncomplete(a: number, b: number, x: number): number {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  const lnBeta = lgamma(a) + lgamma(b) - lgamma(a + b);
+  const front = Math.exp(Math.log(x) * a + Math.log(1 - x) * b - lnBeta) / a;
+  // Lentz's continued fraction
+  let f = 1, c = 1, d = 1 - (a + b) * x / (a + 1);
+  if (Math.abs(d) < 1e-30) d = 1e-30;
+  d = 1 / d;
+  f = d;
+  for (let m = 1; m <= 200; m++) {
+    // even step
+    let num = m * (b - m) * x / ((a + 2 * m - 1) * (a + 2 * m));
+    d = 1 + num * d; if (Math.abs(d) < 1e-30) d = 1e-30; d = 1 / d;
+    c = 1 + num / c; if (Math.abs(c) < 1e-30) c = 1e-30;
+    f *= d * c;
+    // odd step
+    num = -((a + m) * (a + b + m) * x) / ((a + 2 * m) * (a + 2 * m + 1));
+    d = 1 + num * d; if (Math.abs(d) < 1e-30) d = 1e-30; d = 1 / d;
+    c = 1 + num / c; if (Math.abs(c) < 1e-30) c = 1e-30;
+    f *= d * c;
+    if (Math.abs(d * c - 1) < 1e-8) break;
+  }
+  return front * f;
+}
+
+// Log-gamma (Stirling approximation + Lanczos for small values)
+function lgamma(x: number): number {
+  if (x <= 0) return 0;
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
+    -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x, tmp = x + 5.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (let j = 0; j < 6; j++) ser += c[j] / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+
+// Approximate t-critical value for 95% CI (two-tailed, alpha=0.05).
+function tCritical(df: number): number {
+  if (df >= 120) return 1.96;
+  if (df >= 60) return 2.00;
+  if (df >= 40) return 2.021;
+  if (df >= 30) return 2.042;
+  if (df >= 25) return 2.060;
+  if (df >= 20) return 2.086;
+  if (df >= 15) return 2.131;
+  if (df >= 10) return 2.228;
+  if (df >= 5)  return 2.571;
+  if (df >= 3)  return 3.182;
+  return 4.303;
+}
+
 export interface Trade {
   id: string;
   ticker: string;

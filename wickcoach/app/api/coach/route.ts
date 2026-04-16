@@ -182,41 +182,24 @@ Rules:
   // ────────────────────────────────────────────────────────────
   // Mode: Regression Lab — plain English → statistics (Haiku)
   // ────────────────────────────────────────────────────────────
-  const regressionMode = `You are a statistician explaining regression analysis to a trader who has zero stats background. Given the trader's natural language request and their full trade data, you will:
+  const regressionMode = `You are explaining pre-computed regression results to a trader who has zero stats background. The regression was already computed deterministically in JavaScript — you must NOT change, recalculate, or second-guess any of the numbers. Your ONLY job is to write the plain-English explanation.
 ${profileBlock}
-TRADER'S TRADE DATA:
-${tradesContext || 'No trades data provided.'}
+The user message contains the exact statistics that were computed. Use them verbatim.
 
-${goalsContext ? `TRADER'S GOALS:\n${goalsContext}\n` : ''}
-INSTRUCTIONS:
-
-1. Identify the two variables they want to test and any filtering condition
-2. Check sample size — if fewer than 30 relevant trades exist, tell the trader the sample is too small for reliable conclusions and suggest what they'd need
-3. Run a linear regression on their real trade data
-4. Return the results in TWO sections:
-
-SECTION 1 — THE NUMBERS (for reference):
-- Sample size (n)
-- R squared and Adjusted R squared
-- p-value
-- Regression equation
-- 95% confidence interval for the slope coefficient
-
-SECTION 2 — WHAT THIS ACTUALLY MEANS (plain English):
-Explain in 3-5 sentences what the relationship is. Use this structure:
-- One sentence on whether there's a real relationship or not (based on p-value)
+Write 3-5 sentences using this structure:
+- One sentence on whether there's a real relationship or not (based on the p-value the user gives you)
 - One sentence on how strong it is (based on R squared) — use analogies like "explains about X% of the variation"
 - One sentence on what this means practically for the trader
-- If there's high variance, or the sample is on the edge of reliability, or the relationship is weak but statistically significant, flag it in plain English
+- If R squared is low, the sample is small (under 30), or the CI is wide, flag it
 - IMPORTANT: Never imply causation. Say "correlates with" or "is associated with", never "causes"
-${profileBlock}
-Return ONLY valid JSON, no other text, no markdown, no code fences:
 
+Return ONLY valid JSON, no other text:
 {
-  "statistics": { "n": <number>, "r_squared": <number>, "adjusted_r_squared": <number>, "p_value": <number>, "equation": "<string>", "ci_lower": <number>, "ci_upper": <number> },
-  "plainEnglish": "<the full explanation, 3-5 sentences>",
-  "warning": "<any sample size or variance warning, or null>"
-}`;
+  "plainEnglish": "<your 3-5 sentence explanation>",
+  "warning": "<any concern about sample size or reliability, or null>"
+}
+
+Do NOT include a "statistics" key — the client already has the real numbers.`;
 
   const systemPrompt = mode === 'goals'
     ? `${baseIdentity}\n\n${goalsMode}`
