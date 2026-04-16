@@ -553,7 +553,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
         {/* Strategy Breakdown — clean table */}
         {(() => {
-          const visible = showAllStrategies ? strategies : strategies.slice(0, 4);
+          const visible = showAllStrategies ? strategies : strategies.slice(0, 6);
           const colStyle: React.CSSProperties = { fontFamily: fm, fontSize: 13, color: '#aab0bd', textAlign: 'right', whiteSpace: 'nowrap' };
           return (
             <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
@@ -587,7 +587,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 </div>
               ))}
 
-              {strategies.length > 4 && (
+              {strategies.length > 6 && (
                 <div
                   onClick={() => setShowAllStrategies(s => !s)}
                   style={{ color: teal, fontSize: 12, cursor: 'pointer', marginTop: 12, textAlign: 'center', fontFamily: fm, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 600 }}
@@ -857,74 +857,127 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           </div>
         </div>
 
-        {/* ═══ QUANTITATIVE TARGETS — actual vs trader's set targets ═══ */}
-        {(quantTargetsSnapshot.quantitativeTargets.length > 0 || quantTargetsSnapshot.customQuantTargets.length > 0) && (
-          <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #2A3143' }}>
-            <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Quantitative Targets</h4>
-            <p style={{ color: '#888', fontSize: 11.5, margin: '4px 0 14px', letterSpacing: 0.3 }}>Actual numbers vs the targets you set in Weekly Goals → Numerical</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {[...quantTargetsSnapshot.quantitativeTargets, ...quantTargetsSnapshot.customQuantTargets].map(t => {
-                // Compute actual from real analytics where we can
-                let actual: number | null = null;
-                let unit = '';
-                if (t.id === 'target-rr') { actual = totals.avgR; unit = ''; }
-                else if (t.id === 'target-wr') { actual = totals.winRate; unit = '%'; }
-                // custom targets: no automatic computation — we rely on the Haiku customTargetsNote below
+        {/* ═══ QUANTITATIVE TARGETS — vertical candlestick indicators ═══ */}
+        {(quantTargetsSnapshot.quantitativeTargets.length > 0 || quantTargetsSnapshot.customQuantTargets.length > 0) && (() => {
+          const allTargets = [...quantTargetsSnapshot.quantitativeTargets, ...quantTargetsSnapshot.customQuantTargets];
+          const CANDLE_H = 120;
+          return (
+            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #2A3143' }}>
+              <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Quantitative Targets</h4>
+              <p style={{ color: '#888', fontSize: 11.5, margin: '4px 0 18px', letterSpacing: 0.3 }}>Weekly Goals → Numerical</p>
+              <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+                {allTargets.map(t => {
+                  let actual: number | null = null;
+                  if (t.id === 'target-rr') actual = totals.avgR;
+                  else if (t.id === 'target-wr') actual = totals.winRate;
 
-                const target = t.value;
-                const hasTarget = target !== null && target !== undefined;
-                const hasActual = actual !== null;
+                  const target = t.value;
+                  const hasTarget = target !== null && target !== undefined;
+                  const hasActual = actual !== null;
 
-                // Progress + color: green if >= target, yellow within 10%, red if below by more than 10%
-                let pct = 0;
-                let color: string = '#6b7280';
-                if (hasTarget && hasActual) {
-                  pct = Math.max(0, Math.min(100, (actual! / target!) * 100));
-                  if (actual! >= target!) color = teal;
-                  else if ((target! - actual!) / target! <= 0.10) color = '#FCD34D';
-                  else color = red;
-                }
+                  let fillPct = 0;
+                  let color: string = '#6b7280';
+                  if (hasTarget && hasActual) {
+                    fillPct = Math.max(0, Math.min(100, (actual! / target!) * 100));
+                    if (actual! >= target!) color = teal;
+                    else if ((target! - actual!) / target! <= 0.10) color = '#FCD34D';
+                    else color = red;
+                  }
 
-                const fmtNum = (n: number | null | undefined, withUnit: string) => {
-                  if (n === null || n === undefined) return '—';
-                  const u = t.type === 'percent' ? '%' : t.type === 'dollar' ? '' : withUnit;
-                  const prefix = t.type === 'dollar' ? '$' : '';
-                  return `${prefix}${Number(n).toFixed(t.type === 'percent' ? 1 : 2)}${u}`;
-                };
+                  const fmtVal = (n: number | null | undefined) => {
+                    if (n === null || n === undefined) return '—';
+                    const prefix = t.id === 'target-rr' ? 'R ' : t.type === 'dollar' ? '$' : '';
+                    const suffix = t.type === 'percent' ? '%' : '';
+                    return `${prefix}${Number(n).toFixed(t.type === 'percent' ? 1 : 2)}${suffix}`;
+                  };
 
-                return (
-                  <div key={t.id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500 }}>{t.label}</span>
-                      <span style={{ fontSize: 12, color, fontFamily: fd, fontWeight: 700 }}>
-                        {hasActual ? fmtNum(actual, unit) : '—'}
-                        <span style={{ color: '#666' }}>{' / '}{hasTarget ? fmtNum(target, unit) : 'not set'}</span>
-                      </span>
-                    </div>
-                    <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{
-                        width: `${pct}%`,
-                        height: '100%',
-                        background: color,
-                        transition: 'width 0.5s ease, background 0.3s ease',
-                      }} />
-                    </div>
-                    {!hasTarget && (
-                      <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>No target set — open Weekly Goals → Numerical to set one</div>
-                    )}
-                    {hasTarget && !hasActual && (
-                      <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>
-                        {classificationSummary.customTargetsNote
-                          ? classificationSummary.customTargetsNote
-                          : 'Custom target — no automatic comparison against trade data.'}
+                  // Short label for display
+                  const shortLabel = t.id === 'target-rr' ? 'Avg R' : t.id === 'target-wr' ? 'Win Rate' : t.label;
+
+                  return (
+                    <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 80 }}>
+                      {/* Actual value */}
+                      <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: hasActual ? color : '#666' }}>
+                        {fmtVal(actual)}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+
+                      {/* Candlestick body */}
+                      <div style={{
+                        width: 28,
+                        height: CANDLE_H,
+                        background: '#1a1f2a',
+                        border: '1px solid #2A3143',
+                        borderRadius: 4,
+                        position: 'relative',
+                        overflow: 'hidden',
+                      }}>
+                        {/* Fill from bottom */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: `${fillPct}%`,
+                          background: color,
+                          borderRadius: '0 0 3px 3px',
+                          transition: 'height 0.5s ease, background 0.3s ease',
+                          boxShadow: color !== '#6b7280' ? `0 0 8px ${color}40` : 'none',
+                        }} />
+                        {/* Target line marker */}
+                        {hasTarget && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            left: -3,
+                            right: -3,
+                            borderBottom: '2px dashed rgba(255,255,255,0.3)',
+                            transform: 'translateY(1px)',
+                          }} />
+                        )}
+                        {/* Wick — thin line above the body */}
+                        <div style={{
+                          position: 'absolute',
+                          top: -8,
+                          left: '50%',
+                          width: 2,
+                          height: 8,
+                          background: color !== '#6b7280' ? color : '#2A3143',
+                          transform: 'translateX(-50%)',
+                          borderRadius: 1,
+                        }} />
+                        {/* Wick — thin line below the body */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: -8,
+                          left: '50%',
+                          width: 2,
+                          height: 8,
+                          background: '#2A3143',
+                          transform: 'translateX(-50%)',
+                          borderRadius: 1,
+                        }} />
+                      </div>
+
+                      {/* Target value */}
+                      <div style={{ fontFamily: fm, fontSize: 11, color: '#888' }}>
+                        {hasTarget ? fmtVal(target) : 'not set'}
+                      </div>
+
+                      {/* Label */}
+                      <div style={{ fontFamily: fm, fontSize: 10, color: '#666', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', maxWidth: 100 }}>
+                        {shortLabel}
+                      </div>
+
+                      {!hasTarget && (
+                        <div style={{ fontFamily: fm, fontSize: 9, color: '#555', textAlign: 'center', maxWidth: 90 }}>Set in Goals</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* ═══ TIME-OF-DAY PERFORMANCE ═══ */}
