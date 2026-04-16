@@ -44,6 +44,9 @@ type Journal = {
   monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string }[];
   longTickers?: [string, string, string];
   shortTickers?: [string, string, string];
+  greenLabel?: string;
+  redLabel?: string;
+  watchlistFlipped?: boolean;
   tickerToEmploy?: string;
 };
 
@@ -1217,49 +1220,73 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
 
         {/* Right: Ticker Watchlist */}
         <div className="w-80 flex-shrink-0 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-slate-200 text-center">Watchlist</h3>
-          {/* Stronger */}
-          <div className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl overflow-hidden flex-shrink-0">
-            <div className="px-4 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Stronger</span>
-            </div>
-            <div className="p-4 space-y-3">
-              {[0, 1, 2].map((i) => (
-                <input key={i}
-                  value={(journal.longTickers ?? ["","",""])[i] ?? ""}
-                  onChange={e => {
-                    const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
-                    t[i] = e.target.value.toUpperCase();
-                    onChange({ ...journal, longTickers: t });
-                  }}
-                  placeholder="Ticker"
-                  className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
-                />
-              ))}
-            </div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-200">Watchlist</h3>
+            <button
+              type="button"
+              title="Swap order"
+              onClick={() => onChange({ ...journal, watchlistFlipped: !journal.watchlistFlipped })}
+              className="text-slate-500 hover:text-slate-300 text-xs px-2 py-0.5 rounded border border-[#3d3f5e] hover:border-slate-500 transition-colors"
+            >⇅</button>
           </div>
-          {/* Weaker */}
-          <div className="bg-[#1a1b2e] border border-red-500/20 rounded-xl overflow-hidden flex-shrink-0">
-            <div className="px-4 py-2.5 bg-red-500/10 border-b border-red-500/20 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-xs font-bold tracking-widest text-red-400 uppercase">Weaker</span>
-            </div>
-            <div className="p-4 space-y-3">
-              {[0, 1, 2].map((i) => (
-                <input key={i}
-                  value={(journal.shortTickers ?? ["","",""])[i] ?? ""}
-                  onChange={e => {
-                    const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
-                    t[i] = e.target.value.toUpperCase();
-                    onChange({ ...journal, shortTickers: t });
-                  }}
-                  placeholder="Ticker"
-                  className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
-                />
-              ))}
-            </div>
-          </div>
+          {(() => {
+            const flipped = journal.watchlistFlipped;
+            const greenBlock = (
+              <div key="green" className="bg-[#1a1b2e] border border-emerald-500/20 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                  <input
+                    value={journal.greenLabel ?? ""}
+                    onChange={e => onChange({ ...journal, greenLabel: e.target.value })}
+                    placeholder="type"
+                    className="bg-transparent text-emerald-400 text-xs font-bold tracking-widest uppercase w-full focus:outline-none placeholder-slate-600 italic"
+                  />
+                </div>
+                <div className="p-4 space-y-3">
+                  {[0, 1, 2].map((i) => (
+                    <input key={i}
+                      value={(journal.longTickers ?? ["","",""])[i] ?? ""}
+                      onChange={e => {
+                        const t: [string,string,string] = [...(journal.longTickers ?? ["","",""])] as [string,string,string];
+                        t[i] = e.target.value.toUpperCase();
+                        onChange({ ...journal, longTickers: t });
+                      }}
+                      placeholder="Ticker"
+                      className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono tracking-widest uppercase"
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+            const redBlock = (
+              <div key="red" className="bg-[#1a1b2e] border border-red-500/20 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
+                  <input
+                    value={journal.redLabel ?? ""}
+                    onChange={e => onChange({ ...journal, redLabel: e.target.value })}
+                    placeholder="type"
+                    className="bg-transparent text-red-400 text-xs font-bold tracking-widest uppercase w-full focus:outline-none placeholder-slate-600 italic"
+                  />
+                </div>
+                <div className="p-4 space-y-3">
+                  {[0, 1, 2].map((i) => (
+                    <input key={i}
+                      value={(journal.shortTickers ?? ["","",""])[i] ?? ""}
+                      onChange={e => {
+                        const t: [string,string,string] = [...(journal.shortTickers ?? ["","",""])] as [string,string,string];
+                        t[i] = e.target.value.toUpperCase();
+                        onChange({ ...journal, shortTickers: t });
+                      }}
+                      placeholder="Ticker"
+                      className="w-full bg-[#13142a] border border-[#3d3f5e] rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-red-500 font-mono tracking-widest uppercase"
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+            return flipped ? [redBlock, greenBlock] : [greenBlock, redBlock];
+          })()}
         </div>
       </div>
 
