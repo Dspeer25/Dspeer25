@@ -793,8 +793,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 return (
                   <div key={i}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
-                      <span style={{ fontSize: 12, color: blue, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#888', fontWeight: 400, fontSize: 10, marginLeft: 4 }}>trades</span></span>
+                      <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
+                      <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 11, marginLeft: 4 }}>trades</span></span>
                     </div>
                     <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{
@@ -805,7 +805,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                         transition: 'width 0.5s ease',
                       }} />
                     </div>
-                    <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
+                    <div style={{ fontSize: 12, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
                   </div>
                 );
               })}
@@ -837,8 +837,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 return (
                   <div key={i}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, color: '#d0d0d8', fontFamily: fm, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
-                      <span style={{ fontSize: 12, color: teal, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#888', fontWeight: 400, fontSize: 10, marginLeft: 4 }}>trades</span></span>
+                      <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
+                      <span style={{ fontSize: 14, color: teal, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 11, marginLeft: 4 }}>trades</span></span>
                     </div>
                     <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{
@@ -849,7 +849,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                         transition: 'width 0.5s ease',
                       }} />
                     </div>
-                    <div style={{ fontSize: 10.5, color: '#888', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
+                    <div style={{ fontSize: 12, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
                   </div>
                 );
               })}
@@ -963,11 +963,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                       </div>
 
                       {/* Target value */}
-                      <div style={{ fontFamily: fm, fontSize: 12, color: '#888' }}>
+                      <div style={{ fontFamily: fm, fontSize: 13, color: teal }}>
                         {hasTarget ? `target ${fmtVal(target)}` : 'no target'}
                       </div>
                       {/* Label */}
-                      <div style={{ fontFamily: fm, fontSize: 10, color: '#666', letterSpacing: 1.2, textTransform: 'uppercase', textAlign: 'center' }}>
+                      <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: teal, letterSpacing: 0.5, textAlign: 'center' }}>
                         {shortLabel}
                       </div>
                     </div>
