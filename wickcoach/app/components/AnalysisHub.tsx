@@ -864,37 +864,69 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const CANDLE_W = 36;
           const WICK_W = 2;
           const WICK_EXT = 14;
+
+          // Week-scoped stats for weekly targets — use the first (current) week bucket.
+          const weekTrades = weekBuckets[0]?.trades || [];
+          const weekWins = weekTrades.filter(t => t.pl > 0);
+          const weekWR = weekTrades.length > 0 ? (weekWins.length / weekTrades.length) * 100 : 0;
+          const weekRRValues = weekWins.map(t => parseFloat((t.riskReward || '').split(':')[1]) || 0);
+          const weekAvgR = weekRRValues.length > 0 ? weekRRValues.reduce((a, b) => a + b, 0) / weekRRValues.length : 0;
+          const weekTradeCount = weekTrades.length;
+
           return (
             <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #2A3143' }}>
               <h4 style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Quantitative Targets</h4>
-              <p style={{ color: '#888', fontSize: 11.5, margin: '4px 0 22px', letterSpacing: 0.3 }}>Weekly Goals → Numerical</p>
+              <p style={{ color: '#888', fontSize: 11.5, margin: '4px 0 22px', letterSpacing: 0.3 }}>This week vs your weekly targets</p>
               <div style={{ display: 'flex', gap: 40, justifyContent: 'center', flexWrap: 'wrap' }}>
                 {allTargets.map(t => {
+                  // Compute actual from THIS WEEK's trades, not all-time.
                   let actual: number | null = null;
-                  if (t.id === 'target-rr') actual = totals.avgR;
-                  else if (t.id === 'target-wr') actual = totals.winRate;
+                  if (t.id === 'target-rr') actual = weekAvgR;
+                  else if (t.id === 'target-wr') actual = weekWR;
+                  else {
+                    // Custom targets: infer actual from trade data when possible.
+                    const lbl = (t.label || '').toLowerCase();
+                    if (lbl.includes('trade') || lbl.includes('execution') || lbl.includes('entry') || lbl.includes('entries')) {
+                      actual = weekTradeCount;
+                    } else if (lbl.includes('win') && t.type === 'percent') {
+                      actual = weekWR;
+                    } else if (lbl.includes('p/l') || lbl.includes('profit') || lbl.includes('pnl')) {
+                      actual = weekTrades.reduce((s, tr) => s + tr.pl, 0);
+                    }
+                    // If none of those match, actual stays null (grey candle).
+                  }
 
                   const target = t.value;
                   const hasTarget = target !== null && target !== undefined;
                   const hasActual = actual !== null;
-                  const fillPct = hasTarget && hasActual
-                    ? Math.max(0, Math.min(100, (actual! / target!) * 100))
-                    : 0;
 
-                  // Color reflects proximity to target:
-                  //   >= 100% → green (#00d4a0)
-                  //   >= 90%  → yellow-green (#8dd47e) — close, almost there
-                  //   >= 75%  → orange (#f59e0b)
-                  //   < 75%   → red (#ff4444)
-                  //   no target → muted grey
+                  // Detect "max" / "cap" / "limit" targets where LOWER is better.
+                  const lbl = (t.label || '').toLowerCase();
+                  const isMaxType = lbl.includes('max') || lbl.includes('cap') || lbl.includes('limit') || lbl.includes('no more');
+
+                  let fillPct = 0;
+                  if (hasTarget && hasActual) {
+                    fillPct = Math.max(0, Math.min(100, (actual! / target!) * 100));
+                  }
+
+                  // Color logic depends on whether this is a "max" (ceiling) or normal (floor) target.
+                  // Floor (higher = better): green at target, red when far below.
+                  // Ceiling (lower = better): green when under, red when at/over.
                   let candleColor = '#6b7280';
                   if (hasTarget && hasActual) {
-                    if (fillPct >= 100) candleColor = teal;
-                    else if (fillPct >= 90) candleColor = '#8dd47e';
-                    else if (fillPct >= 75) candleColor = '#f59e0b';
-                    else candleColor = '#ff4444';
+                    if (isMaxType) {
+                      if (fillPct <= 60) candleColor = teal;
+                      else if (fillPct <= 80) candleColor = '#8dd47e';
+                      else if (fillPct <= 100) candleColor = '#f59e0b';
+                      else candleColor = '#ff4444';
+                    } else {
+                      if (fillPct >= 100) candleColor = teal;
+                      else if (fillPct >= 90) candleColor = '#8dd47e';
+                      else if (fillPct >= 75) candleColor = '#f59e0b';
+                      else candleColor = '#ff4444';
+                    }
                   } else if (hasActual) {
-                    candleColor = teal; // no target set, just show green
+                    candleColor = teal;
                   }
 
                   const fmtVal = (n: number | null | undefined) => {
