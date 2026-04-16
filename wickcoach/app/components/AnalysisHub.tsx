@@ -290,8 +290,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       return {
         title: g.title || '(untitled)',
         type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-        trades: { actual: complied, target: aiScoredTrades.length, unitLabel: 'trades complied (AI-scored)' },
-        psych:  { actual: processCount, target: aiScoredTrades.length, unitLabel: 'process-labeled trades' },
+        trades: { actual: complied, target: aiScoredTrades.length, unitLabel: `complied this week (${aiScoredTrades.length} trades scored)` },
+        psych:  { actual: processCount, target: aiScoredTrades.length, unitLabel: `process trades this week (${aiScoredTrades.length} scored)` },
       };
     }
 

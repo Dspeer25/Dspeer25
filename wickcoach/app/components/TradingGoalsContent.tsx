@@ -545,7 +545,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                           value={contextInputs[g.id] || ''}
                           onChange={e => handleTextareaGrow(e, g.id)}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGoalContext(g.id); } }}
-                          placeholder={isReadyToLog(g) ? 'Add more context or click Log & Exit...' : 'Tell WickCoach why this matters...'}
+                          placeholder={isReadyToLog(g) ? 'Add more or click Log & Exit...' : 'Why does this rule matter to you?'}
                           rows={1}
                           style={{ width: '100%', background: '#141822', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ffffff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box', minHeight: 44, maxHeight: 120, caretColor: teal, boxShadow: 'inset 0 0 20px rgba(0,212,160,0.03)', resize: 'none', overflow: 'hidden', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
                         />
@@ -641,7 +641,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                   {/* Value input */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     {t.type === 'dollar' && <span style={{ color: '#aab0bd', fontFamily: fm, fontSize: 16 }}>$</span>}
-                    {t.id === 'target-rr' && <span style={{ color: '#aab0bd', fontFamily: fm, fontSize: 16 }}>1 :</span>}
+                    {t.id === 'target-rr' && <span style={{ color: '#aab0bd', fontFamily: fd, fontSize: 16, fontWeight: 600 }}>R</span>}
                     <input
                       type="number"
                       inputMode="decimal"
