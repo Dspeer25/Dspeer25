@@ -75,13 +75,55 @@ function buildWeekBuckets(trades: Trade[]): WeekBucket[] {
 
 // ─── Component ────────────────────────────────────────────────
 export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
-  const [heatmapMode, setHeatmapMode] = useState<'timeline' | 'best' | 'worst'>('timeline');
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses'>('wins');
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
+
+  // Regression Lab state
+  const [regVar1, setRegVar1] = useState('');
+  const [regVar2, setRegVar2] = useState('');
+  const [regCondition, setRegCondition] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+  const [regResult, setRegResult] = useState<{ statistics: { n: number; r_squared: number; adjusted_r_squared: number; p_value: number; equation: string; ci_lower: number; ci_upper: number }; plainEnglish: string; warning: string | null } | null>(null);
+
+  const runRegression = async () => {
+    if (!regVar1.trim() || !regVar2.trim() || regLoading) return;
+    setRegLoading(true);
+    setRegResult(null);
+    try {
+      const query = `I want to test ${regVar1.trim()} against ${regVar2.trim()}${regCondition.trim() ? `, if ${regCondition.trim()}` : ''}`;
+      const res = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'regression',
+          messages: [{ role: 'user', content: query }],
+          tradesContext: buildTraderStats(trades),
+          goalsContext: buildGoalsContext(),
+          profileContext: buildProfileContext(),
+        }),
+      });
+      const data = await res.json();
+      if (data.metadata) {
+        setRegResult(data.metadata);
+        // Cache in localStorage
+        try {
+          const cache = JSON.parse(localStorage.getItem('wickcoach_regressions') || '[]');
+          cache.unshift({ query, result: data.metadata, ts: new Date().toISOString() });
+          localStorage.setItem('wickcoach_regressions', JSON.stringify(cache.slice(0, 10)));
+        } catch { /* ignore */ }
+      }
+    } catch { /* ignore */ }
+    setRegLoading(false);
+  };
+
+  // Section number badge
+  const SectionNum = ({ n }: { n: number }) => (
+    <span style={{ position: 'absolute', top: 12, left: 14, fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#ffffff', opacity: 0.7, lineHeight: 1, zIndex: 3, pointerEvents: 'none' }}>{n}</span>
+  );
 
   // ─── Analysis AI chat ───
   const [aiOpen, setAiOpen] = useState(false);
@@ -148,13 +190,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const bePct = totalTrades ? be / totalTrades : 0;
   const circ = 2 * Math.PI * 40; // r=40
 
-  // Hourly heatmap — computed from real trade times in shared.ts
-  const maxAbsHourPL = Math.max(1, ...hours.map(h => Math.abs(h.pl))); // avoid div-by-zero
-  const sortedHours = heatmapMode === 'best'
-    ? [...hours].sort((a, b) => b.pl - a.pl)
-    : heatmapMode === 'worst'
-      ? [...hours].sort((a, b) => a.pl - b.pl)
-      : hours;
   const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0] || { h: '—', pl: 0, count: 0 };
   const worstHour = [...hours].sort((a, b) => a.pl - b.pl)[0] || { h: '—', pl: 0, count: 0 };
 
@@ -362,8 +397,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         </div>
       </div>
 
-      {/* ═══ PINWHEEL ═══ */}
+      {/* ═══ 1 · PINWHEEL ═══ */}
       <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 16, padding: '32px 28px', display: 'flex', alignItems: 'center', gap: 40, position: 'relative', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <SectionNum n={1} />
 
         {/* Pie chart */}
         <div style={{ position: 'relative', width: 220, height: 220, flexShrink: 0 }}>
@@ -549,8 +585,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         </div>
       </div>
 
-      {/* ═══ STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+      {/* ═══ 2 · STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
+      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', position: 'relative' }}>
+        <SectionNum n={2} />
         {/* Strategy Breakdown — clean table */}
         {(() => {
           const visible = showAllStrategies ? strategies : strategies.slice(0, 6);
@@ -694,8 +731,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         })()}
       </div>
 
-      {/* ═══ RULES vs EXECUTION ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '28px 32px 32px' }}>
+      {/* ═══ 3 · RULES vs EXECUTION ═══ */}
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '28px 32px 32px', position: 'relative' }}>
+        <SectionNum n={3} />
 
         {/* Header + week dropdown (centered) */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, gap: 8 }}>
@@ -1027,64 +1065,219 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         })()}
       </div>
 
-      {/* ═══ TIME-OF-DAY PERFORMANCE ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Time-of-day performance</div>
-            <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>When your edge is sharpest — and when it bleeds</div>
-          </div>
-          <div style={{ display: 'flex', background: '#141822', borderRadius: 8, padding: 3, gap: 2 }}>
-            {(['timeline', 'best', 'worst'] as const).map(mode => {
-              const active = heatmapMode === mode;
-              const label = mode === 'timeline' ? 'Timeline' : mode === 'best' ? 'Best hours' : 'Worst hours';
-              const bg = active ? (mode === 'timeline' ? '#2a2b32' : mode === 'best' ? teal : red) : 'transparent';
-              const color = active ? (mode === 'best' ? '#0A0D14' : '#fff') : '#999';
-              return (
-                <button key={mode} onClick={() => setHeatmapMode(mode)} style={{
-                  padding: '6px 16px', borderRadius: 6, fontSize: 12, fontFamily: fm, cursor: 'pointer', border: 'none',
-                  background: bg, color, fontWeight: active ? 700 : 400, transition: 'all 0.2s',
-                }}>{label}</button>
-              );
-            })}
-          </div>
+      {/* ═══ 4 · REGRESSION LAB ═══ */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(0,212,160,0.05) 0%, rgba(0,212,160,0.02) 50%, #141822 100%)',
+        border: '1px solid rgba(0,212,160,0.2)',
+        borderRadius: 12,
+        padding: '28px 32px 32px',
+        position: 'relative',
+      }}>
+        <SectionNum n={4} />
+        <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4, paddingLeft: 24 }}>Regression Lab</div>
+        <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 20, paddingLeft: 24 }}>Test relationships in your trading data. Plain English in, statistics out.</div>
+
+        {/* Input sentence */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, fontFamily: fm, fontSize: 16, color: '#d0d0d8', marginBottom: 20 }}>
+          <span>I want to test</span>
+          <input
+            value={regVar1}
+            onChange={e => setRegVar1(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') runRegression(); }}
+            placeholder="variable 1"
+            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regVar1 ? teal : '#2A3143'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#fff', padding: '4px 2px', width: 160, transition: 'border-color 0.2s' }}
+          />
+          <span>against</span>
+          <input
+            value={regVar2}
+            onChange={e => setRegVar2(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') runRegression(); }}
+            placeholder="variable 2"
+            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regVar2 ? teal : '#2A3143'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#fff', padding: '4px 2px', width: 160, transition: 'border-color 0.2s' }}
+          />
+          <span style={{ color: '#888', fontStyle: 'italic' }}>, if</span>
+          <input
+            value={regCondition}
+            onChange={e => setRegCondition(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') runRegression(); }}
+            placeholder="condition (optional)"
+            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regCondition ? teal : '#1f2430'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#aab0bd', fontStyle: 'italic', padding: '4px 2px', width: 200, transition: 'border-color 0.2s' }}
+          />
+          <button
+            onClick={runRegression}
+            disabled={regLoading || !regVar1.trim() || !regVar2.trim()}
+            style={{
+              background: regVar1.trim() && regVar2.trim() ? teal : '#1a1b22',
+              color: regVar1.trim() && regVar2.trim() ? '#0A0D14' : '#4a4d58',
+              fontFamily: fm, fontSize: 12, fontWeight: 700, padding: '8px 18px', borderRadius: 6,
+              border: 'none', cursor: regVar1.trim() && regVar2.trim() ? 'pointer' : 'default',
+              letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8,
+            }}
+          >{regLoading ? 'Running...' : 'Run'}</button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          {sortedHours.map(d => {
-            const opacity = 0.15 + (Math.abs(d.pl) / maxAbsHourPL) * 0.35;
-            const bg = heatmapMode === 'best'
-              ? `rgba(0,212,160,${opacity.toFixed(2)})`
-              : heatmapMode === 'worst'
-                ? `rgba(255,68,68,${opacity.toFixed(2)})`
-                : d.pl >= 0 ? `rgba(0,212,160,${opacity.toFixed(2)})` : `rgba(255,68,68,${opacity.toFixed(2)})`;
-            return (
-              <div key={d.h} style={{
-                flex: 1, height: 75, borderRadius: 8, background: bg,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-              }}>
-                <span style={{ fontSize: 12, color: '#ccc' }}>{d.h}</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: fd }}>{fmtDollar(d.pl)}</span>
-                <span style={{ fontSize: 11, color: '#999' }}>{d.count} trades</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {heatmapMode === 'timeline' && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, padding: '0 4px' }}>
-            <span style={{ color: teal, fontSize: 11, letterSpacing: '1px' }}>OPEN</span>
-            <span style={{ color: '#999', fontSize: 11, letterSpacing: '1px' }}>MIDDAY</span>
-            <span style={{ color: '#ffb400', fontSize: 11, letterSpacing: '1px' }}>CLOSE</span>
-          </div>
+        {/* Loading */}
+        {regLoading && (
+          <div style={{ fontFamily: fm, fontSize: 14, color: teal, padding: '20px 0', textAlign: 'center' }}>Analyzing {totals.n} trades...</div>
         )}
 
-        <div style={{ fontSize: 13, color: '#bbb', marginTop: 14 }}>
-          Best hour: <span style={{ color: teal }}>{bestHour.h} ({fmtDollar(bestHour.pl)})</span>
-          {' · '}
-          Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
-        </div>
+        {/* Results */}
+        {regResult && (
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 8 }}>
+            {/* Warning */}
+            {regResult.warning && (
+              <div style={{ width: '100%', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 8, padding: '10px 16px', fontFamily: fm, fontSize: 13, color: '#FCD34D', marginBottom: 4 }}>
+                {regResult.warning}
+              </div>
+            )}
+
+            {/* Statistics */}
+            <div style={{ flex: '0 0 280px', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '16px 20px' }}>
+              <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>The Numbers</div>
+              {[
+                ['Sample size (n)', String(regResult.statistics.n)],
+                ['R\u00B2', regResult.statistics.r_squared?.toFixed(4)],
+                ['Adj R\u00B2', regResult.statistics.adjusted_r_squared?.toFixed(4)],
+                ['p-value', regResult.statistics.p_value?.toFixed(4)],
+                ['Equation', regResult.statistics.equation],
+                ['95% CI', `[${regResult.statistics.ci_lower?.toFixed(3)}, ${regResult.statistics.ci_upper?.toFixed(3)}]`],
+              ].map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(42,49,67,0.3)' }}>
+                  <span style={{ fontFamily: fm, fontSize: 12, color: '#888' }}>{label}</span>
+                  <span style={{ fontFamily: fm, fontSize: 12, color: '#e8e8f0', fontWeight: 600 }}>{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Plain English */}
+            <div style={{ flex: 1, minWidth: 280, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '20px 24px' }}>
+              <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>What This Means</div>
+              <div style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8', lineHeight: 1.8 }}>
+                {regResult.plainEnglish}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ═══ 5 · TIME-OF-DAY PERFORMANCE — line chart ═══ */}
+      {(() => {
+        // Compute per-hour P/L split: winners and losers separately.
+        const hourLabels = hours.map(h => h.h.replace('AM', '').replace('PM', ''));
+        const hourWinPL = hours.map(h => {
+          const label = h.h;
+          const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
+          const bucket = trades.filter(t => {
+            const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (!m) return false;
+            let hr = parseInt(m[1]);
+            const ap = (m[3] || '').toUpperCase();
+            if (ap === 'PM' && hr !== 12) hr += 12;
+            if (ap === 'AM' && hr === 12) hr = 0;
+            return hr === startH;
+          });
+          return bucket.filter(t => t.pl > 0).reduce((s, t) => s + t.pl, 0);
+        });
+        const hourLossPL = hours.map(h => {
+          const label = h.h;
+          const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
+          const bucket = trades.filter(t => {
+            const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (!m) return false;
+            let hr = parseInt(m[1]);
+            const ap = (m[3] || '').toUpperCase();
+            if (ap === 'PM' && hr !== 12) hr += 12;
+            if (ap === 'AM' && hr === 12) hr = 0;
+            return hr === startH;
+          });
+          return bucket.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0);
+        });
+
+        const allVals = [...hourWinPL, ...hourLossPL];
+        const yMax = Math.max(1, ...allVals.map(Math.abs));
+        const W = 700;
+        const H = 200;
+        const pad = { top: 20, bottom: 30, left: 60, right: 20 };
+        const plotW = W - pad.left - pad.right;
+        const plotH = H - pad.top - pad.bottom;
+        const n = hours.length;
+        const xStep = n > 1 ? plotW / (n - 1) : 0;
+
+        const toPath = (vals: number[]) =>
+          vals.map((v, i) => {
+            const x = pad.left + i * xStep;
+            const y = pad.top + plotH / 2 - (v / yMax) * (plotH / 2);
+            return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+          }).join(' ');
+
+        const winPath = toPath(hourWinPL);
+        const lossPath = toPath(hourLossPL);
+        const zeroY = pad.top + plotH / 2;
+
+        return (
+          <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', position: 'relative' }}>
+            <SectionNum n={5} />
+            <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', paddingLeft: 24 }}>Time-of-day performance</div>
+            <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 16, paddingLeft: 24 }}>P/L by hour — green is winning trades, red is losing trades</div>
+
+            <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+              {/* Grid lines */}
+              {[-1, -0.5, 0, 0.5, 1].map(frac => {
+                const y = pad.top + plotH / 2 - frac * (plotH / 2);
+                return (
+                  <g key={frac}>
+                    <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.4)" strokeWidth="1" />
+                    <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="10" fontFamily="DM Mono, monospace">
+                      {frac === 0 ? '$0' : fmtDollar(Math.round(frac * yMax))}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Winner line (green) */}
+              <path d={winPath} fill="none" stroke={teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Winner dots */}
+              {hourWinPL.map((v, i) => (
+                <circle key={`w${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={teal} />
+              ))}
+
+              {/* Loser line (red) */}
+              <path d={lossPath} fill="none" stroke={red} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Loser dots */}
+              {hourLossPL.map((v, i) => (
+                <circle key={`l${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={red} />
+              ))}
+
+              {/* Zero line */}
+              <line x1={pad.left} x2={W - pad.right} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4,4" />
+
+              {/* X-axis labels */}
+              {hours.map((h, i) => (
+                <text key={h.h} x={pad.left + i * xStep} y={H - 6} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace">
+                  {h.h}
+                </text>
+              ))}
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 12, height: 3, background: teal, borderRadius: 2, display: 'inline-block' }} />
+                <span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Winning trades P/L</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 12, height: 3, background: red, borderRadius: 2, display: 'inline-block' }} />
+                <span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Losing trades P/L</span>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 13, color: '#bbb', marginTop: 10, textAlign: 'center' }}>
+              Best hour: <span style={{ color: teal }}>{bestHour.h} ({fmtDollar(bestHour.pl)})</span>
+              {' · '}
+              Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ═══ ANALYSIS AI CHAT WIDGET ═══ */}
       <AIChatWidget

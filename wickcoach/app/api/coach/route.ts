@@ -179,6 +179,39 @@ Rules:
 - reason, psychReason, and customTargetsNote are short, plain-English, no markdown, no emojis.
 - Do not wrap the JSON in code fences. Do not add commentary before or after.`;
 
+  // ────────────────────────────────────────────────────────────
+  // Mode: Regression Lab — plain English → statistics (Haiku)
+  // ────────────────────────────────────────────────────────────
+  const regressionMode = `You are a statistician explaining regression analysis to a trader who has zero stats background. Given the trader's natural language request and their full trade data, you will:
+
+1. Identify the two variables they want to test and any filtering condition
+2. Check sample size — if fewer than 30 relevant trades exist, tell the trader the sample is too small for reliable conclusions and suggest what they'd need
+3. Run a linear regression on their real trade data
+4. Return the results in TWO sections:
+
+SECTION 1 — THE NUMBERS (for reference):
+- Sample size (n)
+- R squared and Adjusted R squared
+- p-value
+- Regression equation
+- 95% confidence interval for the slope coefficient
+
+SECTION 2 — WHAT THIS ACTUALLY MEANS (plain English):
+Explain in 3-5 sentences what the relationship is. Use this structure:
+- One sentence on whether there's a real relationship or not (based on p-value)
+- One sentence on how strong it is (based on R squared) — use analogies like "explains about X% of the variation"
+- One sentence on what this means practically for the trader
+- If there's high variance, or the sample is on the edge of reliability, or the relationship is weak but statistically significant, flag it in plain English
+- IMPORTANT: Never imply causation. Say "correlates with" or "is associated with", never "causes"
+${profileBlock}
+Return ONLY valid JSON, no other text, no markdown, no code fences:
+
+{
+  "statistics": { "n": <number>, "r_squared": <number>, "adjusted_r_squared": <number>, "p_value": <number>, "equation": "<string>", "ci_lower": <number>, "ci_upper": <number> },
+  "plainEnglish": "<the full explanation, 3-5 sentences>",
+  "warning": "<any sample size or variance warning, or null>"
+}`;
+
   const systemPrompt = mode === 'goals'
     ? `${baseIdentity}\n\n${goalsMode}`
     : mode === 'analysis'
@@ -187,14 +220,17 @@ Rules:
         ? actionItemsMode
         : mode === 'classify'
           ? classifyMode
-          : mode === 'deepPsych'
-            ? `${baseIdentity}\n\n${deepPsychMode}`
-            : `${baseIdentity}\n\n${tradesMode}`;
+          : mode === 'regression'
+            ? regressionMode
+            : mode === 'deepPsych'
+              ? `${baseIdentity}\n\n${deepPsychMode}`
+              : `${baseIdentity}\n\n${tradesMode}`;
 
   // Haiku is dramatically cheaper and fast enough for pure classification;
   // every other mode keeps the Sonnet voice-capable model.
-  const model = mode === 'classify' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
-  const maxTokens = mode === 'classify' ? 4000 : 500;
+  const useHaiku = mode === 'classify' || mode === 'regression';
+  const model = useHaiku ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
+  const maxTokens = useHaiku ? 4000 : 500;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -229,7 +265,7 @@ Rules:
       const extracted = extractGoalsMetadata(raw);
       reply = extracted.cleaned;
       metadata = extracted.metadata;
-    } else if (mode === 'classify') {
+    } else if (mode === 'classify' || mode === 'regression') {
       // Entire response should be a JSON object. Strip accidental fences
       // and parse. On failure, surface nothing so the client falls back.
       reply = '';
