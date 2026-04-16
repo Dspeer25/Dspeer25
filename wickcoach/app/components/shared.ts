@@ -29,7 +29,7 @@ export const REGRESSION_VARIABLE_ALIASES = [
   'win size, win amount, wins',
   'R:R, risk reward, RR, risk to reward',
   'time of day, hour, entry time, time',
-  'trade duration, time in trade, hold time, how long',
+  'trade duration, time in trade, hold time (NOT AVAILABLE — data lacks exit timestamps)',
   'day of week, weekday, day',
   'entry price, entry, open',
   'exit price, exit, close',
@@ -88,14 +88,14 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
     };
 
   // ── Trade duration / hold time ──────────────────────────────
-  // We don't have exit timestamps, so proxy = |exit - entry| price
-  // move. Not perfect but captures the magnitude of the move held.
-  if (/trade.?duration|time.?in.?trade|hold.?time|how.?long|duration/.test(n))
-    return t => Math.abs(t.exitPrice - t.entryPrice);
+  // We only have entry time, not exit time. Return null so the
+  // regression shows a clear error instead of using bogus values.
+  if (/trade.?duration|time.?in.?trade|hold.?time|how.?long|^duration$/.test(n))
+    return null; // data lacks exit timestamps
 
   // ── Day of week → 0-6 ──────────────────────────────────────
   if (/day.?of.?week|weekday|^day$|^dow$/.test(n))
-    return t => new Date(t.date).getDay();
+    return t => new Date(t.date).getUTCDay();
 
   // ── Entry / exit price ──────────────────────────────────────
   if (/entry.?price|^entry$|^open$/.test(n))  return t => t.entryPrice;
@@ -131,7 +131,7 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
   if (dayExcludeMatch) {
     const dayNum = DAY_NAMES[dayExcludeMatch[1].toLowerCase()];
     if (dayNum !== undefined) {
-      return t => new Date(t.date).getDay() !== dayNum;
+      return t => new Date(t.date).getUTCDay() !== dayNum;
     }
   }
 
@@ -141,7 +141,7 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
     const dayWord = (dayIncludeMatch[1] || dayIncludeMatch[2] || '').toLowerCase();
     const dayNum = DAY_NAMES[dayWord];
     if (dayNum !== undefined) {
-      return t => new Date(t.date).getDay() === dayNum;
+      return t => new Date(t.date).getUTCDay() === dayNum;
     }
   }
 
@@ -191,8 +191,8 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
     if (c.includes(name)) {
       const isExclude = /not|other|except|exclud|!=/.test(c);
       return isExclude
-        ? t => new Date(t.date).getDay() !== num
-        : t => new Date(t.date).getDay() === num;
+        ? t => new Date(t.date).getUTCDay() !== num
+        : t => new Date(t.date).getUTCDay() === num;
     }
   }
 
@@ -665,7 +665,7 @@ export function buildTraderStats(trades: Trade[]): string {
   const byHour = group(t => parseHourBucket(t.time));
   const byDay = group(t => {
     const d = new Date(t.date);
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] as string;
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] as string;
   });
 
   const fmtAgg = (label: string, entries: [string, { count: number; wins: number; pl: number; rSum: number }][]) => {
