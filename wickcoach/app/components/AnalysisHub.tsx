@@ -88,7 +88,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [regVar2, setRegVar2] = useState('');
   const [regCondition, setRegCondition] = useState('');
   const [regLoading, setRegLoading] = useState(false);
-  const [regResult, setRegResult] = useState<{ statistics: { n: number; r_squared: number; adjusted_r_squared: number; p_value: number; equation: string; ci_lower: number; ci_upper: number }; plainEnglish: string; warning: string | null } | null>(null);
+  const [regResult, setRegResult] = useState<{ statistics?: { n?: number; r_squared?: number; adjusted_r_squared?: number; p_value?: number; equation?: string; ci_lower?: number; ci_upper?: number }; plainEnglish?: string; warning?: string | null } | null>(null);
 
   const runRegression = async () => {
     if (!regVar1.trim() || !regVar2.trim() || regLoading) return;
@@ -1145,22 +1145,29 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             )}
 
             {/* Statistics */}
-            <div style={{ flex: '0 0 280px', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '16px 20px' }}>
-              <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>The Numbers</div>
-              {[
-                ['Sample size (n)', String(regResult.statistics.n)],
-                ['R\u00B2', regResult.statistics.r_squared?.toFixed(4)],
-                ['Adj R\u00B2', regResult.statistics.adjusted_r_squared?.toFixed(4)],
-                ['p-value', regResult.statistics.p_value?.toFixed(4)],
-                ['Equation', regResult.statistics.equation],
-                ['95% CI', `[${regResult.statistics.ci_lower?.toFixed(3)}, ${regResult.statistics.ci_upper?.toFixed(3)}]`],
-              ].map(([label, val]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(42,49,67,0.3)' }}>
-                  <span style={{ fontFamily: fm, fontSize: 12, color: '#888' }}>{label}</span>
-                  <span style={{ fontFamily: fm, fontSize: 12, color: '#e8e8f0', fontWeight: 600 }}>{val}</span>
-                </div>
-              ))}
-            </div>
+            {regResult.statistics ? (
+              <div style={{ flex: '0 0 280px', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '16px 20px' }}>
+                <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>The Numbers</div>
+                {[
+                  ['Sample size (n)', String(regResult.statistics.n ?? '—')],
+                  ['R\u00B2', regResult.statistics.r_squared != null ? regResult.statistics.r_squared.toFixed(4) : '—'],
+                  ['Adj R\u00B2', regResult.statistics.adjusted_r_squared != null ? regResult.statistics.adjusted_r_squared.toFixed(4) : '—'],
+                  ['p-value', regResult.statistics.p_value != null ? regResult.statistics.p_value.toFixed(4) : '—'],
+                  ['Equation', regResult.statistics.equation || '—'],
+                  ['95% CI', regResult.statistics.ci_lower != null && regResult.statistics.ci_upper != null ? `[${regResult.statistics.ci_lower.toFixed(3)}, ${regResult.statistics.ci_upper.toFixed(3)}]` : '—'],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(42,49,67,0.3)' }}>
+                    <span style={{ fontFamily: fm, fontSize: 12, color: '#888' }}>{label}</span>
+                    <span style={{ fontFamily: fm, fontSize: 12, color: '#e8e8f0', fontWeight: 600 }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ flex: '0 0 280px', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '16px 20px' }}>
+                <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>The Numbers</div>
+                <div style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>Statistics not available for this query. Try rephrasing or adding more detail.</div>
+              </div>
+            )}
 
             {/* Plain English */}
             <div style={{ flex: 1, minWidth: 280, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '20px 24px' }}>
