@@ -81,6 +81,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
+  const [chartZoom, setChartZoom] = useState(1); // 0.5 to 2
 
   // Regression Lab state
   const [regVar1, setRegVar1] = useState('');
@@ -109,20 +110,32 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       const data = await res.json();
       if (data.metadata) {
         setRegResult(data.metadata);
-        // Cache in localStorage
         try {
           const cache = JSON.parse(localStorage.getItem('wickcoach_regressions') || '[]');
           cache.unshift({ query, result: data.metadata, ts: new Date().toISOString() });
           localStorage.setItem('wickcoach_regressions', JSON.stringify(cache.slice(0, 10)));
         } catch { /* ignore */ }
+      } else {
+        // Haiku returned non-JSON or an error — show the raw reply as plain English fallback
+        setRegResult({
+          statistics: { n: totals.n, r_squared: 0, adjusted_r_squared: 0, p_value: 1, equation: '—', ci_lower: 0, ci_upper: 0 },
+          plainEnglish: data.reply || 'The analysis could not be completed. Try rephrasing your query.',
+          warning: 'The model returned a non-standard response. The plain-English section may still be useful.',
+        });
       }
-    } catch { /* ignore */ }
+    } catch {
+      setRegResult({
+        statistics: { n: 0, r_squared: 0, adjusted_r_squared: 0, p_value: 1, equation: '—', ci_lower: 0, ci_upper: 0 },
+        plainEnglish: 'Connection error. Check that your API key is configured and try again.',
+        warning: 'Failed to connect to the analysis service.',
+      });
+    }
     setRegLoading(false);
   };
 
-  // Section number badge
+  // Section number badge — sits on the corner of each section box
   const SectionNum = ({ n }: { n: number }) => (
-    <span style={{ position: 'absolute', top: 12, left: 14, fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#ffffff', opacity: 0.7, lineHeight: 1, zIndex: 3, pointerEvents: 'none' }}>{n}</span>
+    <span style={{ position: 'absolute', top: -1, left: -1, fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#ffffff', lineHeight: 1, zIndex: 3, pointerEvents: 'none', background: '#2A3143', borderRadius: '0 0 8px 0', padding: '4px 10px 5px 8px' }}>{n}</span>
   );
 
   // ─── Analysis AI chat ───
@@ -1085,7 +1098,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             onChange={e => setRegVar1(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') runRegression(); }}
             placeholder="variable 1"
-            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regVar1 ? teal : '#2A3143'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#fff', padding: '4px 2px', width: 160, transition: 'border-color 0.2s' }}
+            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regVar1 ? teal : '#2A3143'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#fff', padding: '4px 2px', width: 160, minWidth: 80, maxWidth: 220, transition: 'border-color 0.2s', overflowX: 'auto' }}
           />
           <span>against</span>
           <input
@@ -1093,7 +1106,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             onChange={e => setRegVar2(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') runRegression(); }}
             placeholder="variable 2"
-            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regVar2 ? teal : '#2A3143'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#fff', padding: '4px 2px', width: 160, transition: 'border-color 0.2s' }}
+            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regVar2 ? teal : '#2A3143'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#fff', padding: '4px 2px', width: 160, minWidth: 80, maxWidth: 220, transition: 'border-color 0.2s', overflowX: 'auto' }}
           />
           <span style={{ color: '#888', fontStyle: 'italic' }}>, if</span>
           <input
@@ -1101,7 +1114,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             onChange={e => setRegCondition(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') runRegression(); }}
             placeholder="condition (optional)"
-            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regCondition ? teal : '#1f2430'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#aab0bd', fontStyle: 'italic', padding: '4px 2px', width: 200, transition: 'border-color 0.2s' }}
+            style={{ background: 'transparent', border: 'none', borderBottom: `2px solid ${regCondition ? teal : '#1f2430'}`, outline: 'none', fontFamily: fm, fontSize: 16, color: '#aab0bd', fontStyle: 'italic', padding: '4px 2px', width: 200, minWidth: 100, maxWidth: 280, transition: 'border-color 0.2s', overflowX: 'auto' }}
           />
           <button
             onClick={runRegression}
@@ -1196,7 +1209,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         const allVals = [...hourWinPL, ...hourLossPL];
         const yMax = Math.max(1, ...allVals.map(Math.abs));
         const W = 700;
-        const H = 200;
+        const H = Math.round(200 * chartZoom);
         const pad = { top: 20, bottom: 30, left: 60, right: 20 };
         const plotW = W - pad.left - pad.right;
         const plotH = H - pad.top - pad.bottom;
@@ -1217,8 +1230,23 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         return (
           <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', position: 'relative' }}>
             <SectionNum n={5} />
-            <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', paddingLeft: 24 }}>Time-of-day performance</div>
-            <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 16, paddingLeft: 24 }}>P/L by hour — green is winning trades, red is losing trades</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div>
+                <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', paddingLeft: 24 }}>Time-of-day performance</div>
+                <div style={{ fontSize: 13, color: '#aab0bd', paddingLeft: 24 }}>P/L by hour — green is winning trades, red is losing trades</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <button
+                  onClick={() => setChartZoom(z => Math.max(0.6, z - 0.2))}
+                  style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                >−</button>
+                <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
+                <button
+                  onClick={() => setChartZoom(z => Math.min(2, z + 0.2))}
+                  style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                >+</button>
+              </div>
+            </div>
 
             <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
               {/* Grid lines */}

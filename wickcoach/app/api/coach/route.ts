@@ -183,6 +183,12 @@ Rules:
   // Mode: Regression Lab — plain English → statistics (Haiku)
   // ────────────────────────────────────────────────────────────
   const regressionMode = `You are a statistician explaining regression analysis to a trader who has zero stats background. Given the trader's natural language request and their full trade data, you will:
+${profileBlock}
+TRADER'S TRADE DATA:
+${tradesContext || 'No trades data provided.'}
+
+${goalsContext ? `TRADER'S GOALS:\n${goalsContext}\n` : ''}
+INSTRUCTIONS:
 
 1. Identify the two variables they want to test and any filtering condition
 2. Check sample size — if fewer than 30 relevant trades exist, tell the trader the sample is too small for reliable conclusions and suggest what they'd need
