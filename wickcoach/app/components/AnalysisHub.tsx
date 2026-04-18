@@ -82,6 +82,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
   const [chartZoom, setChartZoom] = useState(1); // 0.5 to 2
+  const [section5Tab, setSection5Tab] = useState<'timeOfDay' | 'sizeEfficiency'>('timeOfDay');
 
   // Regression Lab state
   const [regVar1, setRegVar1] = useState('');
@@ -1248,139 +1249,249 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         )}
       </div>
 
-      {/* ═══ 5 · TIME-OF-DAY PERFORMANCE — line chart ═══ */}
-      {(() => {
-        // Compute per-hour P/L split: winners and losers separately.
-        const hourLabels = hours.map(h => h.h.replace('AM', '').replace('PM', ''));
-        const hourWinPL = hours.map(h => {
-          const label = h.h;
-          const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
-          const bucket = trades.filter(t => {
-            const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-            if (!m) return false;
-            let hr = parseInt(m[1]);
-            const ap = (m[3] || '').toUpperCase();
-            if (ap === 'PM' && hr !== 12) hr += 12;
-            if (ap === 'AM' && hr === 12) hr = 0;
-            return hr === startH;
+      {/* ═══ 5 · TABBED: TIME-OF-DAY + SIZE EFFICIENCY ═══ */}
+      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', position: 'relative' }}>
+        <SectionNum n={5} />
+
+        {/* Tab bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 18, paddingLeft: 24 }}>
+          {([
+            { key: 'timeOfDay' as const, label: 'Time of Day Performance' },
+            { key: 'sizeEfficiency' as const, label: 'Size Efficiency' },
+          ]).map(tab => {
+            const active = section5Tab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setSection5Tab(tab.key)}
+                style={{
+                  padding: '10px 20px', border: 'none', cursor: 'pointer',
+                  fontFamily: fd, fontSize: 14, fontWeight: 700, letterSpacing: 0.5,
+                  background: active ? 'rgba(0,212,160,0.1)' : 'transparent',
+                  color: active ? teal : '#666',
+                  borderBottom: active ? `2px solid ${teal}` : '2px solid transparent',
+                  transition: 'all 0.2s',
+                }}
+              >{tab.label}</button>
+            );
+          })}
+        </div>
+
+        {/* ── TIME OF DAY TAB ── */}
+        {section5Tab === 'timeOfDay' && (() => {
+          const hourWinPL = hours.map(h => {
+            const label = h.h;
+            const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
+            const bucket = trades.filter(t => {
+              const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+              if (!m) return false;
+              let hr = parseInt(m[1]);
+              const ap = (m[3] || '').toUpperCase();
+              if (ap === 'PM' && hr !== 12) hr += 12;
+              if (ap === 'AM' && hr === 12) hr = 0;
+              return hr === startH;
+            });
+            return bucket.filter(t => t.pl > 0).reduce((s, t) => s + t.pl, 0);
           });
-          return bucket.filter(t => t.pl > 0).reduce((s, t) => s + t.pl, 0);
-        });
-        const hourLossPL = hours.map(h => {
-          const label = h.h;
-          const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
-          const bucket = trades.filter(t => {
-            const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-            if (!m) return false;
-            let hr = parseInt(m[1]);
-            const ap = (m[3] || '').toUpperCase();
-            if (ap === 'PM' && hr !== 12) hr += 12;
-            if (ap === 'AM' && hr === 12) hr = 0;
-            return hr === startH;
+          const hourLossPL = hours.map(h => {
+            const label = h.h;
+            const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
+            const bucket = trades.filter(t => {
+              const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+              if (!m) return false;
+              let hr = parseInt(m[1]);
+              const ap = (m[3] || '').toUpperCase();
+              if (ap === 'PM' && hr !== 12) hr += 12;
+              if (ap === 'AM' && hr === 12) hr = 0;
+              return hr === startH;
+            });
+            return bucket.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0);
           });
-          return bucket.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0);
-        });
 
-        const allVals = [...hourWinPL, ...hourLossPL];
-        const yMax = Math.max(1, ...allVals.map(Math.abs));
-        const W = 700;
-        const H = Math.round(200 * chartZoom);
-        const pad = { top: 20, bottom: 30, left: 60, right: 20 };
-        const plotW = W - pad.left - pad.right;
-        const plotH = H - pad.top - pad.bottom;
-        const n = hours.length;
-        const xStep = n > 1 ? plotW / (n - 1) : 0;
+          const allVals = [...hourWinPL, ...hourLossPL];
+          const yMax = Math.max(1, ...allVals.map(Math.abs));
+          const W = 700;
+          const H = Math.round(200 * chartZoom);
+          const pad = { top: 20, bottom: 30, left: 60, right: 20 };
+          const plotW = W - pad.left - pad.right;
+          const plotH = H - pad.top - pad.bottom;
+          const numH = hours.length;
+          const xStep = numH > 1 ? plotW / (numH - 1) : 0;
 
-        const toPath = (vals: number[]) =>
-          vals.map((v, i) => {
-            const x = pad.left + i * xStep;
-            const y = pad.top + plotH / 2 - (v / yMax) * (plotH / 2);
-            return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-          }).join(' ');
+          const toPath = (vals: number[]) =>
+            vals.map((v, i) => {
+              const x = pad.left + i * xStep;
+              const y = pad.top + plotH / 2 - (v / yMax) * (plotH / 2);
+              return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
 
-        const winPath = toPath(hourWinPL);
-        const lossPath = toPath(hourLossPL);
-        const zeroY = pad.top + plotH / 2;
+          const winPath = toPath(hourWinPL);
+          const lossPath = toPath(hourLossPL);
+          const zeroY = pad.top + plotH / 2;
 
-        return (
-          <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', position: 'relative' }}>
-            <SectionNum n={5} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-              <div>
-                <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', paddingLeft: 24 }}>Time-of-day performance</div>
-                <div style={{ fontSize: 13, color: '#aab0bd', paddingLeft: 24 }}>P/L by hour — green is winning trades, red is losing trades</div>
+          return (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ fontSize: 13, color: '#aab0bd', paddingLeft: 2 }}>P/L by hour — green is winning trades, red is losing trades</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => setChartZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                  <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
+                  <button onClick={() => setChartZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                <button
-                  onClick={() => setChartZoom(z => Math.max(0.6, z - 0.2))}
-                  style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-                >−</button>
-                <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
-                <button
-                  onClick={() => setChartZoom(z => Math.min(2, z + 0.2))}
-                  style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-                >+</button>
+
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+                {[-1, -0.5, 0, 0.5, 1].map(frac => {
+                  const y = pad.top + plotH / 2 - frac * (plotH / 2);
+                  return (
+                    <g key={frac}>
+                      <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.4)" strokeWidth="1" />
+                      <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="10" fontFamily="DM Mono, monospace">{frac === 0 ? '$0' : fmtDollar(Math.round(frac * yMax))}</text>
+                    </g>
+                  );
+                })}
+                <path d={winPath} fill="none" stroke={teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {hourWinPL.map((v, i) => (<circle key={`w${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={teal} />))}
+                <path d={lossPath} fill="none" stroke={red} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {hourLossPL.map((v, i) => (<circle key={`l${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={red} />))}
+                <line x1={pad.left} x2={W - pad.right} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4,4" />
+                {hours.map((h, i) => (<text key={h.h} x={pad.left + i * xStep} y={H - 6} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace">{h.h}</text>))}
+              </svg>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 3, background: teal, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Winning trades P/L</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 3, background: red, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Losing trades P/L</span></div>
               </div>
-            </div>
-
-            <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-              {/* Grid lines */}
-              {[-1, -0.5, 0, 0.5, 1].map(frac => {
-                const y = pad.top + plotH / 2 - frac * (plotH / 2);
-                return (
-                  <g key={frac}>
-                    <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.4)" strokeWidth="1" />
-                    <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="10" fontFamily="DM Mono, monospace">
-                      {frac === 0 ? '$0' : fmtDollar(Math.round(frac * yMax))}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Winner line (green) */}
-              <path d={winPath} fill="none" stroke={teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Winner dots */}
-              {hourWinPL.map((v, i) => (
-                <circle key={`w${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={teal} />
-              ))}
-
-              {/* Loser line (red) */}
-              <path d={lossPath} fill="none" stroke={red} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              {/* Loser dots */}
-              {hourLossPL.map((v, i) => (
-                <circle key={`l${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={red} />
-              ))}
-
-              {/* Zero line */}
-              <line x1={pad.left} x2={W - pad.right} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4,4" />
-
-              {/* X-axis labels */}
-              {hours.map((h, i) => (
-                <text key={h.h} x={pad.left + i * xStep} y={H - 6} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace">
-                  {h.h}
-                </text>
-              ))}
-            </svg>
-
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 12, height: 3, background: teal, borderRadius: 2, display: 'inline-block' }} />
-                <span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Winning trades P/L</span>
+              <div style={{ fontSize: 13, color: '#bbb', marginTop: 10, textAlign: 'center' }}>
+                Best hour: <span style={{ color: teal }}>{bestHour.h} ({fmtDollar(bestHour.pl)})</span>
+                {' · '}
+                Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 12, height: 3, background: red, borderRadius: 2, display: 'inline-block' }} />
-                <span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Losing trades P/L</span>
-              </div>
-            </div>
+            </>
+          );
+        })()}
 
-            <div style={{ fontSize: 13, color: '#bbb', marginTop: 10, textAlign: 'center' }}>
-              Best hour: <span style={{ color: teal }}>{bestHour.h} ({fmtDollar(bestHour.pl)})</span>
-              {' · '}
-              Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
-            </div>
-          </div>
-        );
-      })()}
+        {/* ── SIZE EFFICIENCY TAB ── */}
+        {section5Tab === 'sizeEfficiency' && (() => {
+          // Scatter: riskAmount (X) vs P/L (Y) with regression line
+          const pairs = trades
+            .filter(t => t.riskAmount != null && isFinite(t.riskAmount) && isFinite(t.pl))
+            .map(t => ({ x: t.riskAmount, y: t.pl }));
+          const xArr = pairs.map(p => p.x);
+          const yArr = pairs.map(p => p.y);
+          const reg = pairs.length >= 3 ? linearRegression(xArr, yArr, 'risk amount', 'P/L') : null;
+
+          const W = 700;
+          const H = 320;
+          const pad = { top: 20, bottom: 40, left: 70, right: 20 };
+          const plotW = W - pad.left - pad.right;
+          const plotH = H - pad.top - pad.bottom;
+
+          const xMin = Math.min(...xArr, 0);
+          const xMax = Math.max(...xArr, 1);
+          const yMin = Math.min(...yArr, 0);
+          const yMax = Math.max(...yArr, 1);
+          const xRange = xMax - xMin || 1;
+          const yRange = yMax - yMin || 1;
+
+          const toSvgX = (v: number) => pad.left + ((v - xMin) / xRange) * plotW;
+          const toSvgY = (v: number) => pad.top + plotH - ((v - yMin) / yRange) * plotH;
+
+          // Interpretation
+          let interpretation = '';
+          if (reg) {
+            if (reg.slope > 1.0) {
+              interpretation = `Slope is ${reg.slope.toFixed(2)}. When you risk $100 more, you make >$100 more on average. Sizing up is working for you.`;
+            } else if (reg.slope > 0) {
+              interpretation = `Slope is ${reg.slope.toFixed(2)}. When you risk $100 more, you only make $${(reg.slope * 100).toFixed(0)} more. You may be cutting winners short on larger positions.`;
+            } else {
+              interpretation = `Slope is ${reg.slope.toFixed(2)}. Larger positions are associated with worse outcomes. Classic sign of taking profits too early when size makes you uncomfortable.`;
+            }
+          }
+
+          // Y-axis grid
+          const ySteps = 5;
+          const yStepVal = yRange / ySteps;
+
+          return (
+            <>
+              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 14 }}>Does risking more lead to proportionally more profit? Scatter: risk amount (X) vs P/L (Y).</div>
+
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
+                {/* Grid */}
+                {Array.from({ length: ySteps + 1 }).map((_, i) => {
+                  const val = yMin + i * yStepVal;
+                  const y = toSvgY(val);
+                  return (
+                    <g key={i}>
+                      <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
+                      <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="9" fontFamily="DM Mono, monospace">{fmtDollar(Math.round(val))}</text>
+                    </g>
+                  );
+                })}
+
+                {/* Zero line */}
+                {yMin < 0 && yMax > 0 && (
+                  <line x1={pad.left} x2={W - pad.right} y1={toSvgY(0)} y2={toSvgY(0)} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="4,4" />
+                )}
+
+                {/* Regression line */}
+                {reg && (
+                  <line
+                    x1={toSvgX(xMin)} y1={toSvgY(reg.intercept + reg.slope * xMin)}
+                    x2={toSvgX(xMax)} y2={toSvgY(reg.intercept + reg.slope * xMax)}
+                    stroke={teal} strokeWidth="2" strokeDasharray="6,4" opacity="0.7"
+                  />
+                )}
+
+                {/* Scatter dots */}
+                {pairs.map((p, i) => (
+                  <circle
+                    key={i}
+                    cx={toSvgX(p.x)}
+                    cy={toSvgY(p.y)}
+                    r="3.5"
+                    fill={p.y >= 0 ? teal : red}
+                    opacity="0.55"
+                  />
+                ))}
+
+                {/* X-axis label */}
+                <text x={pad.left + plotW / 2} y={H - 6} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace">Risk Amount ($)</text>
+                {/* Y-axis label */}
+                <text x={14} y={pad.top + plotH / 2} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace" transform={`rotate(-90, 14, ${pad.top + plotH / 2})`}>P/L ($)</text>
+              </svg>
+
+              {/* Stats row */}
+              {reg && (
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, justifyContent: 'center' }}>
+                  {[
+                    ['n', String(reg.n)],
+                    ['Slope', reg.slope.toFixed(4)],
+                    ['R\u00B2', reg.r_squared.toFixed(4)],
+                    ['p-value', reg.p_value.toFixed(4)],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ textAlign: 'center' }}>
+                      <div style={{ fontFamily: fm, fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: teal }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Plain English interpretation */}
+              {interpretation && (
+                <div style={{ marginTop: 16, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '14px 18px', fontFamily: fm, fontSize: 14, color: '#d0d0d8', lineHeight: 1.7 }}>
+                  {interpretation}
+                  {reg && reg.p_value > 0.05 && (
+                    <span style={{ color: '#FCD34D' }}> Note: p-value is {reg.p_value.toFixed(3)} (above 0.05), so this relationship is not statistically significant in your current data.</span>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
+      </div>
 
       {/* ═══ ANALYSIS AI CHAT WIDGET ═══ */}
       <AIChatWidget
