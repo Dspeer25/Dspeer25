@@ -210,91 +210,91 @@ export default function WickCoachFull() {
           <Hero textVisible={textVisible} />
         </div>
 
-        {/* CONNECTS TO ALL MAJOR BROKERS — 3×3 grid with See More expand */}
-        {(() => {
-          const brokers = [
-            // Brokers (shown first — row 1-3 by default)
-            { name: 'WEBULL', domain: 'webull.com' },
-            { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
-            { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
-            { name: 'ROBINHOOD', domain: 'robinhood.com' },
-            { name: 'E*TRADE', domain: 'etrade.com' },
-            { name: 'FIDELITY', domain: 'fidelity.com' },
-            { name: 'CHARLES SCHWAB', domain: 'schwab.com' },
-            { name: 'TRADESTATION', domain: 'tradestation.com' },
-            { name: 'TASTYTRADE', domain: 'tastytrade.com' },
-            { name: 'MOOMOO', domain: 'moomoo.com' },
-            { name: 'ETORO', domain: 'etoro.com' },
-            { name: 'LIGHTSPEED', domain: 'lightspeed.com' },
-            { name: 'COBRA TRADING', domain: 'cobratrading.com' },
-            // Platforms (shown after See More)
-            { name: 'TRADINGVIEW', domain: 'tradingview.com' },
-            { name: 'NINJATRADER', domain: 'ninjatrader.com' },
-            { name: 'METATRADER', domain: 'metatrader5.com' },
-            { name: 'STERLING PRO', domain: 'sterlingtradingtech.com' },
-            { name: 'DAS TRADER', domain: 'dastrader.com' },
-            { name: 'TRENDSPIDER', domain: 'trendspider.com' },
-            { name: 'BOOKMAP', domain: 'bookmap.com' },
-            // Prop firms (shown after See More)
-            { name: 'TOPSTEP', domain: 'topstep.com' },
-            { name: 'APEX TRADER FUNDING', domain: 'apextraderfunding.com' },
-            { name: 'FTMO', domain: 'ftmo.com' },
-            { name: 'THE FUNDED TRADER', domain: 'thefundedtraderprogram.com' },
-            { name: 'MYFUNDEDFUTURES', domain: 'myfundedfutures.com' },
-            { name: 'EARN2TRADE', domain: 'earn2trade.com' },
-            { name: 'TAKE PROFIT TRADER', domain: 'takeprofittrader.com' },
-          ];
-          const visible = showAllBrokers ? brokers : brokers.slice(0, 9);
-          return (
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '40px 20px 32px', backgroundImage: 'linear-gradient(to bottom, transparent 0px, #0A0D14 60px)', marginTop: -60 }}>
-              <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
-                Connects to all major brokers
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, width: '100%', maxWidth: 720 }}>
-                {visible.map(b => (
-                  <div
-                    key={b.name}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 10,
-                      padding: '14px 16px',
-                      background: '#1f2430',
-                      border: '1px solid #2A3143',
-                      borderRadius: 10,
-                      transition: 'border-color 0.2s ease, background 0.2s ease',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; e.currentTarget.style.background = '#262b38'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; e.currentTarget.style.background = '#1f2430'; }}
+        {/* BRING YOUR TRADES — split: API connect | OR | File upload */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28, padding: '40px 20px 40px', backgroundImage: 'linear-gradient(to bottom, transparent 0px, #0A0D14 60px)', marginTop: -60 }}>
+          <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: teal, textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
+            Bring Your Trades
+          </div>
+
+          <div style={{ display: 'flex', gap: 0, width: '100%', maxWidth: 900, alignItems: 'stretch' }}>
+
+            {/* LEFT — Direct API connection */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 24px' }}>
+              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Direct API Connection</div>
+              <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', marginBottom: 20, textAlign: 'center' }}>Connect your brokerage account to automatically sync trades</div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, width: '100%', maxWidth: 320, marginBottom: 20 }}>
+                {[
+                  { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
+                  { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
+                  { name: 'TASTYTRADE', domain: 'tastytrade.com' },
+                  { name: 'TRADESTATION', domain: 'tradestation.com' },
+                  { name: 'E*TRADE', domain: 'etrade.com' },
+                  { name: 'TRADIER', domain: 'tradier.com' },
+                ].map(b => (
+                  <div key={b.name} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '10px 12px', background: '#1f2430', border: '1px solid #2A3143',
+                    borderRadius: 8, transition: 'border-color 0.2s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; }}
                   >
-                    {b.domain && (
-                      <img
-                        src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
-                        alt=""
-                        width={22}
-                        height={22}
-                        style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 4, background: '#ffffff', padding: 2, flexShrink: 0 }}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    )}
-                    <span style={{ fontFamily: fm, fontSize: 11, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.06em', fontWeight: 600, textAlign: 'center' }}>
-                      {b.name}
-                    </span>
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
+                      alt="" width={18} height={18}
+                      style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 3, background: '#fff', padding: 1, flexShrink: 0 }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                    />
+                    <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.05em', fontWeight: 600, textAlign: 'center' }}>{b.name}</span>
                   </div>
                 ))}
               </div>
-              {brokers.length > 9 && (
-                <span
-                  onClick={() => setShowAllBrokers(s => !s)}
-                  style={{ fontFamily: fm, fontSize: 12, color: '#00d4a0', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', padding: '4px 0', marginTop: 4 }}
-                >
-                  {showAllBrokers ? 'See less ▲' : 'See more ▼'}
-                </span>
-              )}
+
+              <button style={{ background: teal, color: '#0A0D14', fontFamily: fd, fontSize: 15, fontWeight: 700, padding: '14px 36px', borderRadius: 10, border: 'none', cursor: 'pointer', boxShadow: '0 0 20px rgba(0,212,160,0.2)' }}>Connect Broker</button>
             </div>
-          );
-        })()}
+
+            {/* CENTER — OR divider */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 20px', flexShrink: 0 }}>
+              <div style={{ width: 1, flex: 1, background: 'linear-gradient(to bottom, transparent, #2A3143 30%, #2A3143 70%, transparent)' }} />
+              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#555', padding: '16px 0', letterSpacing: 2 }}>OR</div>
+              <div style={{ width: 1, flex: 1, background: 'linear-gradient(to bottom, transparent, #2A3143 30%, #2A3143 70%, transparent)' }} />
+            </div>
+
+            {/* RIGHT — Upload trade history */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 24px' }}>
+              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Upload Trade History</div>
+              <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', marginBottom: 20, textAlign: 'center' }}>Export from any broker or platform and drop it here</div>
+
+              {/* Upload zone */}
+              <div style={{
+                width: '100%', maxWidth: 340, border: '2px dashed #2A3143', borderRadius: 12,
+                padding: '36px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 10, cursor: 'pointer', transition: 'border-color 0.2s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#2A3143'; }}
+              >
+                {/* Upload icon */}
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <div style={{ fontFamily: fm, fontSize: 14, color: '#d0d0d8', textAlign: 'center' }}>Drag your trade history file here</div>
+                <div style={{ fontFamily: fm, fontSize: 12, color: '#888' }}>or click to browse</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <span style={{ fontFamily: fm, fontSize: 11, color: teal, background: 'rgba(0,212,160,0.1)', padding: '3px 10px', borderRadius: 4, fontWeight: 600 }}>.csv</span>
+                  <span style={{ fontFamily: fm, fontSize: 11, color: teal, background: 'rgba(0,212,160,0.1)', padding: '3px 10px', borderRadius: 4, fontWeight: 600 }}>.xlsx</span>
+                </div>
+              </div>
+
+              <div style={{ fontFamily: fm, fontSize: 12, color: '#888', marginTop: 14, textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>
+                Webull, Robinhood, Fidelity, NinjaTrader, MetaTrader, and 20+ more
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* "See how this works" prompt — bridges the hero into the carousel */}
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 20px 16px', background: 'transparent' }}>
