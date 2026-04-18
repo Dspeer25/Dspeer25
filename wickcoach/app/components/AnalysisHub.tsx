@@ -1249,14 +1249,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         )}
       </div>
 
-      {/* ═══ 5 · TABBED: TIME-OF-DAY + SIZE EFFICIENCY ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', position: 'relative' }}>
+      {/* ═══ 5 · ADVANCED ANALYSIS TOOLS ═══ */}
+      <div style={{ position: 'relative' }}>
         <SectionNum n={5} />
 
-        {/* Tab bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 18, paddingLeft: 24 }}>
+        {/* Section title */}
+        <div style={{ paddingLeft: 28, marginBottom: 16 }}>
+          <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>Advanced Analysis Tools</div>
+        </div>
+
+        {/* Browser-style tabs */}
+        <div style={{ display: 'flex', gap: 0, paddingLeft: 0 }}>
           {([
-            { key: 'timeOfDay' as const, label: 'Time of Day Performance' },
+            { key: 'timeOfDay' as const, label: 'Time of Day' },
             { key: 'sizeEfficiency' as const, label: 'Size Efficiency' },
             { key: 'streakMomentum' as const, label: 'Streak Momentum' },
           ]).map(tab => {
@@ -1266,17 +1271,29 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 key={tab.key}
                 onClick={() => setSection5Tab(tab.key)}
                 style={{
-                  padding: '10px 20px', border: 'none', cursor: 'pointer',
-                  fontFamily: fd, fontSize: 14, fontWeight: 700, letterSpacing: 0.5,
-                  background: active ? 'rgba(0,212,160,0.1)' : 'transparent',
-                  color: active ? teal : '#666',
-                  borderBottom: active ? `2px solid ${teal}` : '2px solid transparent',
+                  padding: '14px 28px',
+                  cursor: 'pointer',
+                  fontFamily: fd,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  letterSpacing: 0.5,
+                  border: active ? '1px solid #2A3143' : '1px solid transparent',
+                  borderBottom: active ? '1px solid #141822' : '1px solid #2A3143',
+                  borderRadius: active ? '10px 10px 0 0' : '10px 10px 0 0',
+                  background: active ? '#141822' : 'transparent',
+                  color: active ? '#fff' : '#666',
                   transition: 'all 0.2s',
+                  position: 'relative',
+                  zIndex: active ? 2 : 1,
+                  marginBottom: -1,
                 }}
               >{tab.label}</button>
             );
           })}
         </div>
+
+        {/* Tab content panel */}
+        <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: '0 12px 12px 12px', padding: '24px 28px' }}>
 
         {/* ── TIME OF DAY TAB ── */}
         {section5Tab === 'timeOfDay' && (() => {
@@ -1374,12 +1391,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         {/* ── SIZE EFFICIENCY TAB ── */}
         {section5Tab === 'sizeEfficiency' && (() => {
-          // Grouped bar chart: 4 risk buckets, each with risk-ref / avg-win / avg-loss bars
+          // Grouped bar chart: trades bucketed by how much was risked
           const bucketDefs = [
-            { label: '< $300', min: 0, max: 300 },
-            { label: '$300–$500', min: 300, max: 500 },
-            { label: '$500–$700', min: 500, max: 700 },
-            { label: '$700+', min: 700, max: Infinity },
+            { label: 'Under $300', desc: 'Small risk trades', min: 0, max: 300 },
+            { label: '$300 – $500', desc: 'Medium risk trades', min: 300, max: 500 },
+            { label: '$500 – $700', desc: 'Larger risk trades', min: 500, max: 700 },
+            { label: 'Over $700', desc: 'Biggest risk trades', min: 700, max: Infinity },
           ];
 
           const buckets = bucketDefs.map(b => {
@@ -1387,8 +1404,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             const wins = inBucket.filter(t => t.result === 'WIN' || (t.result !== 'LOSS' && t.pl > 0));
             const losses = inBucket.filter(t => t.result === 'LOSS' || (t.result !== 'WIN' && t.pl < 0));
             return {
-              label: b.label,
+              ...b,
               count: inBucket.length,
+              winCount: wins.length,
+              lossCount: losses.length,
               avgRisk: inBucket.length > 0 ? inBucket.reduce((s, t) => s + t.riskAmount, 0) / inBucket.length : 0,
               avgWin: wins.length > 0 ? wins.reduce((s, t) => s + t.pl, 0) / wins.length : 0,
               avgLoss: losses.length > 0 ? losses.reduce((s, t) => s + t.pl, 0) / losses.length : 0,
@@ -1398,134 +1417,119 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
           const allBarVals = buckets.flatMap(b => [b.avgRisk, b.avgWin, Math.abs(b.avgLoss)]);
           const barMax = Math.max(1, ...allBarVals);
-          const yMax = barMax * 1.15;
+          const yMax = barMax * 1.2;
 
           const W = 700;
-          const H = 280;
-          const pad = { top: 30, bottom: 40, left: 60, right: 20 };
+          const H = 320;
+          const pad = { top: 30, bottom: 50, left: 80, right: 20 };
           const plotW = W - pad.left - pad.right;
           const plotH = H - pad.top - pad.bottom;
           const groupW = plotW / buckets.length;
           const barW = groupW * 0.22;
           const barGap = groupW * 0.04;
-
-          const toY = (v: number) => {
-            // 0 sits at the bottom (pad.top + plotH), positive goes up
-            const ratio = Math.abs(v) / yMax;
-            return v >= 0
-              ? pad.top + plotH - ratio * plotH
-              : pad.top + plotH; // losses drawn downward from baseline (clipped)
-          };
           const barH = (v: number) => (Math.abs(v) / yMax) * plotH;
           const baselineY = pad.top + plotH;
-
-          // Y grid
-          const gridSteps = [0, 0.25, 0.5, 0.75, 1.0];
+          const toY = (v: number) => baselineY - (Math.abs(v) / yMax) * plotH;
 
           return (
             <>
-              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 10 }}>Average win vs average loss by risk bucket — do your wins scale with your risk?</div>
+              {/* Title */}
+              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Do your wins scale when you risk more?</div>
+              <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd', marginBottom: 18, lineHeight: 1.6 }}>
+                Your trades are grouped by how much you risked. For each group, the chart compares what you risked (faded bar) to what you actually won (green) or lost (red) on average.
+              </div>
 
               {/* Legend */}
-              <div style={{ display: 'flex', gap: 18, marginBottom: 14, justifyContent: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 12, height: 12, background: teal, opacity: 0.15, borderRadius: 2, display: 'inline-block', border: `1px solid ${teal}` }} />
-                  <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>Risk amount (reference)</span>
+              <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 16, height: 16, background: teal, opacity: 0.15, borderRadius: 3, display: 'inline-block', border: `1.5px solid ${teal}` }} />
+                  <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}>Avg risk per trade</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 12, height: 12, background: teal, borderRadius: 2, display: 'inline-block' }} />
-                  <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>Avg win</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 16, height: 16, background: teal, borderRadius: 3, display: 'inline-block' }} />
+                  <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}>Avg win per trade</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 12, height: 12, background: red, borderRadius: 2, display: 'inline-block' }} />
-                  <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>Avg loss</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 16, height: 16, background: red, borderRadius: 3, display: 'inline-block' }} />
+                  <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}>Avg loss per trade</span>
                 </div>
               </div>
 
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-                {/* Y grid */}
-                {gridSteps.map(frac => {
+                {/* Y-axis label */}
+                <text x={12} y={pad.top + plotH / 2} textAnchor="middle" fill="#aab0bd" fontSize="12" fontFamily="DM Mono, monospace" transform={`rotate(-90, 12, ${pad.top + plotH / 2})`}>Dollar Amount</text>
+
+                {/* Y grid + labels */}
+                {[0, 0.25, 0.5, 0.75, 1.0].map(frac => {
                   const val = frac * yMax;
                   const y = baselineY - frac * plotH;
                   return (
                     <g key={frac}>
                       <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
-                      <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="9" fontFamily="DM Mono, monospace">
-                        {frac === 0 ? '$0' : `+$${Math.round(val).toLocaleString()}`}
+                      <text x={pad.left - 10} y={y + 4} textAnchor="end" fill="#aab0bd" fontSize="11" fontFamily="DM Mono, monospace">
+                        ${Math.round(val).toLocaleString()}
                       </text>
                     </g>
                   );
                 })}
 
+                {/* X-axis label */}
+                <text x={pad.left + plotW / 2} y={H - 4} textAnchor="middle" fill="#aab0bd" fontSize="12" fontFamily="DM Mono, monospace">Risk Amount Per Trade</text>
+
                 {/* Bucket groups */}
                 {buckets.map((b, gi) => {
-                  const groupX = pad.left + gi * groupW + groupW * 0.12;
+                  const groupX = pad.left + gi * groupW + groupW * 0.1;
                   return (
                     <g key={b.label}>
                       {/* Risk reference bar (faded) */}
-                      <rect
-                        x={groupX}
-                        y={toY(b.avgRisk)}
-                        width={barW}
-                        height={barH(b.avgRisk)}
-                        rx={3}
-                        fill={teal}
-                        opacity={0.15}
-                        stroke={teal}
-                        strokeWidth={0.5}
-                        strokeOpacity={0.4}
-                      />
+                      <rect x={groupX} y={toY(b.avgRisk)} width={barW} height={barH(b.avgRisk)} rx={4} fill={teal} opacity={0.15} stroke={teal} strokeWidth={1} strokeOpacity={0.35} />
                       {/* Avg win bar */}
-                      <rect
-                        x={groupX + barW + barGap}
-                        y={toY(b.avgWin)}
-                        width={barW}
-                        height={barH(b.avgWin)}
-                        rx={3}
-                        fill={teal}
-                      />
-                      {/* Avg loss bar (hangs below baseline) */}
-                      <rect
-                        x={groupX + 2 * (barW + barGap)}
-                        y={baselineY - barH(b.avgLoss)}
-                        width={barW}
-                        height={barH(b.avgLoss)}
-                        rx={3}
-                        fill={red}
-                      />
+                      <rect x={groupX + barW + barGap} y={toY(b.avgWin)} width={barW} height={barH(b.avgWin)} rx={4} fill={teal} />
+                      {/* Avg loss bar */}
+                      <rect x={groupX + 2 * (barW + barGap)} y={toY(Math.abs(b.avgLoss))} width={barW} height={barH(b.avgLoss)} rx={4} fill={red} />
 
-                      {/* Value labels on bars */}
+                      {/* Value labels above bars */}
                       {b.avgRisk > 0 && (
-                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 4} textAnchor="middle" fill="#888" fontSize="8" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
+                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 6} textAnchor="middle" fill="#aab0bd" fontSize="10" fontWeight="600" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
                       )}
                       {b.avgWin > 0 && (
-                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 4} textAnchor="middle" fill={teal} fontSize="8" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
+                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 6} textAnchor="middle" fill={teal} fontSize="10" fontWeight="700" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
                       )}
                       {b.avgLoss < 0 && (
-                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={baselineY - barH(b.avgLoss) - 4} textAnchor="middle" fill={red} fontSize="8" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
+                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 6} textAnchor="middle" fill={red} fontSize="10" fontWeight="700" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
                       )}
 
-                      {/* X-axis label */}
-                      <text x={pad.left + gi * groupW + groupW / 2} y={H - 8} textAnchor="middle" fill="#aab0bd" fontSize="11" fontFamily="DM Mono, monospace">{b.label}</text>
+                      {/* X-axis bucket label */}
+                      <text x={pad.left + gi * groupW + groupW / 2} y={baselineY + 18} textAnchor="middle" fill="#d0d0d8" fontSize="12" fontWeight="600" fontFamily="DM Mono, monospace">{b.label}</text>
                     </g>
                   );
                 })}
               </svg>
 
               {/* Stat cards per bucket */}
-              <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
                 {buckets.map(b => (
-                  <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '10px 14px', textAlign: 'center' }}>
-                    <div style={{ fontFamily: fm, fontSize: 11, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>{b.label}</div>
-                    <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: teal }}>{b.count}</div>
-                    <div style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd', marginTop: 2 }}>{b.winRate.toFixed(0)}% WR</div>
+                  <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '14px 16px' }}>
+                    <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{b.label}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Trades</span>
+                      <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: teal }}>{b.count}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Win rate</span>
+                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Record</span>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Interpretation */}
-              <div style={{ marginTop: 16, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '14px 18px', fontFamily: fm, fontSize: 14, color: '#d0d0d8', lineHeight: 1.7 }}>
-                If your green bars grow proportionally with the faded reference bar, sizing up is working. If green bars flatten while red bars grow, you are cutting winners short at higher size.
+              <div style={{ marginTop: 18, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '16px 20px', fontFamily: fm, fontSize: 14, color: '#d0d0d8', lineHeight: 1.7 }}>
+                <strong style={{ color: '#fff' }}>How to read this:</strong> If the green bar (avg win) grows proportionally with the faded bar (avg risk) as you move right, sizing up is working for you. If the green bar flattens while the red bar grows, you are likely cutting winners short when the position size makes you uncomfortable.
               </div>
             </>
           );
@@ -1673,6 +1677,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             </>
           );
         })()}
+        </div>
       </div>
 
       {/* ═══ ANALYSIS AI CHAT WIDGET ═══ */}
