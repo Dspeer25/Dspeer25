@@ -1434,8 +1434,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return (
             <>
               {/* Title */}
-              <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Do your wins scale when you risk more?</div>
-              <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd', marginBottom: 18, lineHeight: 1.6 }}>
+              <div style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Win Size vs. Increase in Risk</div>
+              <div style={{ fontFamily: fm, fontSize: 16, color: '#d0d0d8', marginBottom: 18, lineHeight: 1.6 }}>
                 Your trades are grouped by how much you risked. For each group, the chart compares what you risked (faded bar) to what you actually won (green) or lost (red) on average.
               </div>
 
@@ -1474,7 +1474,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 })}
 
                 {/* X-axis label */}
-                <text x={pad.left + plotW / 2} y={H - 2} textAnchor="middle" fill="#d0d0d8" fontSize="13" fontWeight="600" fontFamily="DM Mono, monospace">Risk Amount Per Trade</text>
+                <text x={pad.left + plotW / 2} y={H - 4} textAnchor="middle" fill="#888" fontSize="10" fontFamily="DM Mono, monospace">Risk Amount Per Trade</text>
 
                 {/* Bucket groups */}
                 {buckets.map((b, gi) => {
@@ -1509,19 +1509,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               {/* Stat cards per bucket */}
               <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
                 {buckets.map(b => (
-                  <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '14px 16px' }}>
-                    <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{b.label}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Trades</span>
-                      <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: teal }}>{b.count}</span>
+                  <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '16px 18px' }}>
+                    <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{b.label}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                      <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Trades</span>
+                      <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{b.count}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Win rate</span>
-                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                      <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Win rate</span>
+                      <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Record</span>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
+                      <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Record</span>
+                      <span style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
                     </div>
                   </div>
                 ))}
