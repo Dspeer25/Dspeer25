@@ -634,8 +634,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         {/* Process — trades where the journal indicates discipline */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
-          <div style={{ fontSize: 13, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Followed the Plan</div>
-          <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 8 }}>Trades where your journal shows patience, a clean setup, or rule-following</div>
+          <div style={{ fontSize: 14, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Followed the Plan</div>
+          <div style={{ fontSize: 14, color: '#bbb', marginBottom: 8 }}>Trades where your journal shows patience, a clean setup, or rule-following</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.process.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.process.wr)}</div>
           <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(processSplit.process.rTotal)} total</div>
@@ -643,8 +643,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         {/* Impulse — trades where the journal indicates rule-breaking */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
-          <div style={{ fontSize: 13, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Broke the Rules</div>
-          <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 8 }}>Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup</div>
+          <div style={{ fontSize: 14, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Broke the Rules</div>
+          <div style={{ fontSize: 14, color: '#bbb', marginBottom: 8 }}>Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.impulse.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.impulse.wr)}</div>
           <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(processSplit.impulse.rTotal)} total</div>
@@ -652,7 +652,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         {/* What If? — how much better your P/L would be without rule-breaking trades */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
-          <div style={{ fontSize: 13, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
+          <div style={{ fontSize: 14, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
           <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your total P/L if you removed every trade where you broke your own rules</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 12, color: '#bbb' }}>Actual P/L</span>
@@ -671,7 +671,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         {/* Strategy Breakdown — clean table */}
         {(() => {
           const visible = showAllStrategies ? strategies : strategies.slice(0, 6);
-          const colStyle: React.CSSProperties = { fontFamily: fm, fontSize: 13, color: '#aab0bd', textAlign: 'right', whiteSpace: 'nowrap' };
+          const colStyle: React.CSSProperties = { fontFamily: fm, fontSize: 14, color: '#aab0bd', textAlign: 'center', whiteSpace: 'nowrap' };
           return (
             <div style={{ flex: '0 0 60%', minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
               <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Strategy Breakdown</div>
@@ -680,7 +680,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               {/* Table header */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.6fr 0.7fr 0.6fr 0.8fr 1fr', gap: 0, padding: '0 0 8px', borderBottom: '1px solid #2A3143' }}>
                 {['Strategy', 'Trades', 'Win Rate', 'Avg R', 'Avg P/L', 'Total'].map(h => (
-                  <div key={h} style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: h === 'Strategy' ? 'left' : 'right' }}>{h}</div>
+                  <div key={h} style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: h === 'Strategy' ? 'left' : 'center' }}>{h}</div>
                 ))}
               </div>
 
@@ -700,7 +700,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   <div style={{ ...colStyle, color: teal, fontWeight: 700 }}>{fmtPct(s.wr)}</div>
                   <div style={{ ...colStyle, color: teal, fontWeight: 700 }}>R {s.r.toFixed(1)}</div>
                   <div style={{ ...colStyle, color: '#d0d0d8' }}>{fmtDollar(s.avg, true)}</div>
-                  <div style={{ ...colStyle, color: s.total >= 0 ? teal : red, fontFamily: fd, fontWeight: 700, fontSize: 14 }}>{fmtDollar(s.total)}</div>
+                  <div style={{ ...colStyle, color: s.total >= 0 ? teal : red, fontFamily: fd, fontWeight: 700, fontSize: 15 }}>{fmtDollar(s.total)}</div>
                 </div>
               ))}
 
