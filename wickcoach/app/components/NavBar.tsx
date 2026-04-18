@@ -13,9 +13,10 @@ interface NavBarProps {
   tabGlow?: boolean;
   profileTabGlow?: boolean;
   traderProfileTabRef?: React.RefObject<HTMLSpanElement | null>;
+  onLoginClick?: () => void;
 }
 
-export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick, showClickHint = false, tabGlow = false, profileTabGlow = false, traderProfileTabRef }: NavBarProps) {
+export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick, showClickHint = false, tabGlow = false, profileTabGlow = false, traderProfileTabRef, onLoginClick }: NavBarProps) {
   return (
     <>
       {view === 'app' && (
@@ -44,6 +45,7 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
             letterSpacing: '0.05em',
             transition: 'background 0.2s ease, color 0.2s ease',
           }}
+          onClick={onLoginClick}
           onMouseEnter={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.color = '#0A0D14'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ffffff'; }}
         >Login</span>

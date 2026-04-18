@@ -33,6 +33,9 @@ export default function WickCoachFull() {
   const [floatingPlusOnes, setFloatingPlusOnes] = useState<{ id: string; startX: number; startY: number; endX: number; endY: number; animated: boolean }[]>([]);
   const [profileTabGlow, setProfileTabGlow] = useState(false);
   const [showAllBrokers, setShowAllBrokers] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginName, setLoginName] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
 
   const triggerFloatingPlusOne = (inputRect: DOMRect) => {
     const tabEl = traderProfileTabRef.current;
@@ -162,7 +165,7 @@ export default function WickCoachFull() {
       {/* ═══ APP VIEW ═══ */}
       {view === 'app' && (<>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} />
+          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} onLoginClick={() => setShowLogin(true)} />
         </div>
         <div style={{ backgroundImage: 'linear-gradient(to bottom, #181c26 0px, #151923 120px, #12151d 260px, #0A0D14 420px, #0A0D14 100%)', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
           {activeTab === 'Log a Trade' && (
@@ -199,7 +202,7 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
         <StockChartBackground />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} />
+          <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} onLoginClick={() => setShowLogin(true)} />
         </div>
 
         {/* Hero */}
@@ -243,7 +246,7 @@ export default function WickCoachFull() {
           ];
           const visible = showAllBrokers ? brokers : brokers.slice(0, 9);
           return (
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '0px 20px 32px', background: '#0A0D14', marginTop: -60 }}>
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: '40px 20px 32px', backgroundImage: 'linear-gradient(to bottom, transparent 0px, #0A0D14 60px)', marginTop: -60 }}>
               <div style={{ fontFamily: fd, fontSize: 18, letterSpacing: '0.2em', color: '#00d4a0', textTransform: 'uppercase', fontWeight: 700, textShadow: '0 0 20px rgba(0,212,160,0.3)' }}>
                 Connects to all major brokers
               </div>
@@ -294,7 +297,7 @@ export default function WickCoachFull() {
         })()}
 
         {/* "See how this works" prompt — bridges the hero into the carousel */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 20px 16px', background: '#0A0D14' }}>
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 20px 16px', background: 'transparent' }}>
           <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, letterSpacing: '0.15em', color: '#00d4a0', textTransform: 'uppercase', textShadow: '0 0 20px rgba(0,212,160,0.4)' }}>
             See how this works
           </div>
@@ -437,6 +440,29 @@ export default function WickCoachFull() {
           </div>
         </footer>
       </>)}
+
+      {/* ═══ LOGIN MODAL ═══ */}
+      {showLogin && (
+        <>
+          <div onClick={() => setShowLogin(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 60 }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 61, background: '#141822', border: '1px solid #2A3143', borderRadius: 16, padding: '40px 36px', width: 380, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+            <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6, textAlign: 'center' }}>Welcome to WickCoach</div>
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', marginBottom: 24, textAlign: 'center' }}>Enter your details to get started</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontFamily: fm, fontSize: 12, color: '#888', letterSpacing: 1, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Name</label>
+                <input value={loginName} onChange={e => setLoginName(e.target.value)} placeholder="Your name" style={{ width: '100%', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '12px 14px', color: '#fff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontFamily: fm, fontSize: 12, color: '#888', letterSpacing: 1, textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Email</label>
+                <input value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="you@email.com" type="email" style={{ width: '100%', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 8, padding: '12px 14px', color: '#fff', fontFamily: fm, fontSize: 15, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <button onClick={() => { setShowLogin(false); setView('app'); }} style={{ marginTop: 8, width: '100%', background: teal, color: '#0A0D14', fontFamily: fd, fontSize: 16, fontWeight: 700, padding: '14px 0', borderRadius: 10, border: 'none', cursor: 'pointer', boxShadow: '0 0 20px rgba(0,212,160,0.2)' }}>Continue</button>
+            </div>
+            <span onClick={() => setShowLogin(false)} style={{ position: 'absolute', top: 14, right: 18, color: '#555', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

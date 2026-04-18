@@ -19,6 +19,8 @@ export default function Hero({ textVisible }: HeroProps) {
         }}
         title="WickCoach Hero"
       />
+      {/* Bottom gradient fade so hero blends into the content below */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, background: 'linear-gradient(to bottom, transparent, #0A0D14)', pointerEvents: 'none' }} />
     </div>
   );
 }
