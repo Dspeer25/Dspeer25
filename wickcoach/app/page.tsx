@@ -345,7 +345,7 @@ export default function WickCoachFull() {
             </div>
 
             <div style={{ textAlign: 'center', marginTop: 48 }}>
-              <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 16, fontWeight: 600, padding: '18px 64px', borderRadius: 12, border: 'none', cursor: 'pointer', letterSpacing: 1, boxShadow: '0 0 30px rgba(0,212,160,0.2)' }}>Sign Up</button>
+              <button onClick={() => setView('app')} style={{ background: teal, color: '#0e0f14', fontFamily: fd, fontSize: 20, fontWeight: 700, padding: '20px 80px', borderRadius: 14, border: 'none', cursor: 'pointer', letterSpacing: 1.5, boxShadow: '0 0 40px rgba(0,212,160,0.3)' }}>Sign Up</button>
               <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 14, marginTop: 16 }}>One-time payment. No subscription. No data collection.</p>
             </div>
           </div>

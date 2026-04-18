@@ -7,7 +7,16 @@ interface HeroProps {
 
 export default function Hero({ textVisible }: HeroProps) {
   return (
-    <div style={{ width: '100%', height: '80vh', position: 'relative', overflow: 'hidden', marginBottom: -2, paddingBottom: 0, background: '#0A0D14' }}>
+    <div style={{
+      width: '100%',
+      height: '80vh',
+      position: 'relative',
+      overflow: 'hidden',
+      marginBottom: 0,
+      paddingBottom: 0,
+      // Match the nav bg so there's zero seam at the top edge
+      background: 'linear-gradient(to bottom, #181c26 0%, #0f1218 30%, #0A0D14 60%)',
+    }}>
       <iframe
         src="/hero.html"
         style={{
@@ -19,10 +28,22 @@ export default function Hero({ textVisible }: HeroProps) {
         }}
         title="WickCoach Hero"
       />
-      {/* Top gradient — blends nav (#181c26) into the hero content */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to bottom, #181c26 0%, rgba(24,28,38,0.6) 40%, transparent 100%)', pointerEvents: 'none', zIndex: 1 }} />
-      {/* Bottom gradient — blends hero into the content below (#0A0D14) */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to bottom, transparent 0%, #0A0D14 100%)', pointerEvents: 'none', zIndex: 1 }} />
+      {/* Top fade — matches nav color, dissolves into iframe content */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        height: 220,
+        background: 'linear-gradient(to bottom, #181c26 0%, rgba(24,28,38,0.8) 30%, rgba(24,28,38,0.3) 60%, transparent 100%)',
+        pointerEvents: 'none',
+        zIndex: 2,
+      }} />
+      {/* Bottom fade — dissolves into the page bg below */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height: 250,
+        background: 'linear-gradient(to bottom, transparent 0%, rgba(10,13,20,0.5) 40%, #0A0D14 100%)',
+        pointerEvents: 'none',
+        zIndex: 2,
+      }} />
     </div>
   );
 }

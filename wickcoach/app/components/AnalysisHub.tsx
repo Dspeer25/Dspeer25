@@ -83,8 +83,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
   const [chartZoom, setChartZoom] = useState(1);
   const [sizeZoom, setSizeZoom] = useState(1);
-  const [streakZoom, setStreakZoom] = useState(1);
-  const [section5Tab, setSection5Tab] = useState<'timeOfDay' | 'sizeEfficiency' | 'streakMomentum'>('timeOfDay');
+  const [section5Tab, setSection5Tab] = useState<'timeOfDay' | 'sizeEfficiency'>('timeOfDay');
 
   // Regression Lab state
   const [regVar1, setRegVar1] = useState('');
@@ -1269,7 +1268,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           {([
             { key: 'timeOfDay' as const, label: 'Time of Day' },
             { key: 'sizeEfficiency' as const, label: 'Size Efficiency' },
-            { key: 'streakMomentum' as const, label: 'Streak Momentum' },
           ]).map(tab => {
             const active = section5Tab === tab.key;
             return (
@@ -1280,7 +1278,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   padding: '14px 28px',
                   cursor: 'pointer',
                   fontFamily: fd,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: 700,
                   letterSpacing: 0.5,
                   border: active ? '1px solid #2A3143' : '1px solid transparent',
@@ -1557,136 +1555,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           );
         })()}
 
-        {/* ── STREAK MOMENTUM TAB ── */}
-        {section5Tab === 'streakMomentum' && (() => {
-          // Sort trades chronologically, compute streak at each trade.
-          const sorted = [...trades].sort((a, b) => {
-            const da = new Date(a.date + 'T' + (a.time || '00:00')).getTime();
-            const db = new Date(b.date + 'T' + (b.time || '00:00')).getTime();
-            return da - db;
-          });
-
-          const streakData: { streak: number; pl: number; result: string }[] = [];
-          let currentStreak = 0;
-          for (const t of sorted) {
-            // Record this trade with the streak value going INTO it
-            streakData.push({ streak: currentStreak, pl: t.pl, result: t.result });
-            // Update streak for the NEXT trade
-            if (t.pl === 0 || t.result === 'BREAKEVEN') {
-              currentStreak = 0;
-            } else if (t.pl > 0) {
-              currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
-            } else {
-              currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
-            }
-          }
-
-          const xArr = streakData.map(d => d.streak);
-          const yArr = streakData.map(d => d.pl);
-          const reg = streakData.length >= 3 ? linearRegression(xArr, yArr, 'streak length', 'P/L') : null;
-
-          const W = 700;
-          const H = Math.round(320 * streakZoom);
-          const pad = { top: 20, bottom: 40, left: 70, right: 20 };
-          const plotW = W - pad.left - pad.right;
-          const plotH = H - pad.top - pad.bottom;
-
-          const xMin = Math.min(...xArr, -1);
-          const xMax = Math.max(...xArr, 1);
-          const yMin = Math.min(...yArr, 0);
-          const yMax = Math.max(...yArr, 1);
-          const xRange = xMax - xMin || 1;
-          const yRange = yMax - yMin || 1;
-
-          const toSvgX = (v: number) => pad.left + ((v - xMin) / xRange) * plotW;
-          const toSvgY = (v: number) => pad.top + plotH - ((v - yMin) / yRange) * plotH;
-
-          let interpretation = '';
-          if (reg) {
-            const s = reg.slope;
-            if (Math.abs(s) < 5) {
-              interpretation = `Slope is ${s.toFixed(2)}. Your streak length does not meaningfully affect your next trade. You are treating each trade independently — this is ideal per Mark Douglas.`;
-            } else if (s > 0) {
-              interpretation = `Slope is ${s.toFixed(2)}. You trade better during winning streaks — momentum appears to carry over into subsequent trades.`;
-            } else {
-              interpretation = `Slope is ${s.toFixed(2)}. Your P/L drops during winning streaks. You may be getting overconfident or taking lower-quality setups when you are on a roll.`;
-            }
-          }
-
-          const ySteps = 5;
-          const yStepVal = yRange / ySteps;
-
-          return (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>Does momentum carry over — or does a hot streak make you sloppy?</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <button onClick={() => setStreakZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                  <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', minWidth: 36, textAlign: 'center' }}>{Math.round(streakZoom * 100)}%</span>
-                  <button onClick={() => setStreakZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
-                </div>
-              </div>
-
-              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-                {/* Y grid */}
-                {Array.from({ length: ySteps + 1 }).map((_, i) => {
-                  const val = yMin + i * yStepVal;
-                  const y = toSvgY(val);
-                  return (
-                    <g key={i}>
-                      <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
-                      <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#888" fontSize="10" fontFamily="DM Mono, monospace">{fmtDollar(Math.round(val))}</text>
-                    </g>
-                  );
-                })}
-
-                {yMin < 0 && yMax > 0 && (
-                  <line x1={pad.left} x2={W - pad.right} y1={toSvgY(0)} y2={toSvgY(0)} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="4,4" />
-                )}
-                {xMin < 0 && xMax > 0 && (
-                  <line x1={toSvgX(0)} x2={toSvgX(0)} y1={pad.top} y2={pad.top + plotH} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="4,4" />
-                )}
-                {reg && (
-                  <line
-                    x1={toSvgX(xMin)} y1={toSvgY(reg.intercept + reg.slope * xMin)}
-                    x2={toSvgX(xMax)} y2={toSvgY(reg.intercept + reg.slope * xMax)}
-                    stroke={teal} strokeWidth="2" strokeDasharray="6,4" opacity="0.7"
-                  />
-                )}
-                {streakData.map((d, i) => (
-                  <circle key={i} cx={toSvgX(d.streak)} cy={toSvgY(d.pl)} r="3" fill={d.pl > 0 ? teal : d.pl < 0 ? red : '#6b7280'} opacity="0.5" />
-                ))}
-              </svg>
-
-              {/* Stats row */}
-              {reg && (
-                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, justifyContent: 'center' }}>
-                  {[
-                    ['n', String(reg.n)],
-                    ['Slope', reg.slope.toFixed(4)],
-                    ['R\u00B2', reg.r_squared.toFixed(4)],
-                    ['p-value', reg.p_value.toFixed(4)],
-                  ].map(([label, val]) => (
-                    <div key={label} style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
-                      <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: teal }}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Interpretation */}
-              {interpretation && (
-                <div style={{ marginTop: 14, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '14px 18px', fontFamily: fm, fontSize: 13, color: '#ccc', lineHeight: 1.7 }}>
-                  {interpretation}
-                  {reg && reg.p_value > 0.05 && (
-                    <span style={{ color: '#FCD34D' }}> Note: p-value is {reg.p_value.toFixed(3)} — not statistically significant yet.</span>
-                  )}
-                </div>
-              )}
-            </>
-          );
-        })()}
         </div>
       </div>
 
