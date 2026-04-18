@@ -81,7 +81,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
-  const [chartZoom, setChartZoom] = useState(1); // 0.5 to 2
+  const [chartZoom, setChartZoom] = useState(1);
+  const [sizeZoom, setSizeZoom] = useState(1);
+  const [streakZoom, setStreakZoom] = useState(1);
   const [section5Tab, setSection5Tab] = useState<'timeOfDay' | 'sizeEfficiency' | 'streakMomentum'>('timeOfDay');
 
   // Regression Lab state
@@ -1420,7 +1422,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const yMax = barMax * 1.2;
 
           const W = 700;
-          const H = 320;
+          const H = Math.round(320 * sizeZoom);
           const pad = { top: 30, bottom: 50, left: 80, right: 20 };
           const plotW = W - pad.left - pad.right;
           const plotH = H - pad.top - pad.bottom;
@@ -1434,9 +1436,18 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return (
             <>
               {/* Title */}
-              <div style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Win Size vs. Increase in Risk</div>
-              <div style={{ fontFamily: fm, fontSize: 16, color: '#d0d0d8', marginBottom: 18, lineHeight: 1.6 }}>
-                Your trades are grouped by how much you risked. For each group, the chart compares what you risked (faded bar) to what you actually won (green) or lost (red) on average.
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                <div>
+                  <div style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Win Size vs. Increase in Risk</div>
+                  <div style={{ fontFamily: fm, fontSize: 16, color: '#d0d0d8', marginBottom: 18, lineHeight: 1.6 }}>
+                    Your trades grouped by how much you risked. For each group: what you risked (faded), what you won (green), and what you lost (red) on average.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 6 }}>
+                  <button onClick={() => setSizeZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                  <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(sizeZoom * 100)}%</span>
+                  <button onClick={() => setSizeZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                </div>
               </div>
 
               {/* Legend */}
@@ -1457,7 +1468,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
                 {/* Y-axis label */}
-                <text x={12} y={pad.top + plotH / 2} textAnchor="middle" fill="#aab0bd" fontSize="12" fontFamily="DM Mono, monospace" transform={`rotate(-90, 12, ${pad.top + plotH / 2})`}>Dollar Amount</text>
+                <text x={12} y={pad.top + plotH / 2} textAnchor="middle" fill="#888" fontSize="10" fontFamily="DM Mono, monospace" transform={`rotate(-90, 12, ${pad.top + plotH / 2})`}>Dollars</text>
 
                 {/* Y grid + labels */}
                 {[0, 0.25, 0.5, 0.75, 1.0].map(frac => {
@@ -1508,23 +1519,36 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
               {/* Stat cards per bucket */}
               <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
-                {buckets.map(b => (
-                  <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '16px 18px' }}>
-                    <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{b.label}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                      <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Trades</span>
-                      <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{b.count}</span>
+                {buckets.map(b => {
+                  const winPerDollar = b.avgRisk > 0 && b.avgWin > 0 ? b.avgWin / b.avgRisk : 0;
+                  const lossPerDollar = b.avgRisk > 0 && b.avgLoss < 0 ? Math.abs(b.avgLoss) / b.avgRisk : 0;
+                  return (
+                    <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '16px 18px' }}>
+                      <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{b.label}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Trades</span>
+                        <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{b.count}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Win rate</span>
+                        <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Record</span>
+                        <span style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
+                      </div>
+                      {b.count > 0 && (
+                        <div style={{ borderTop: '1px solid #2A3143', marginTop: 8, paddingTop: 8 }}>
+                          <div style={{ fontFamily: fm, fontSize: 12, color: '#888', letterSpacing: 0.5, marginBottom: 4 }}>Per $1 risked</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                            <span style={{ fontFamily: fm, fontSize: 14, color: teal, fontWeight: 600 }}>Win ${winPerDollar.toFixed(2)}</span>
+                            <span style={{ fontFamily: fm, fontSize: 14, color: red, fontWeight: 600 }}>Lose ${lossPerDollar.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                      <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Win rate</span>
-                      <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Record</span>
-                      <span style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Interpretation */}
@@ -1564,7 +1588,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const reg = streakData.length >= 3 ? linearRegression(xArr, yArr, 'streak length', 'P/L') : null;
 
           const W = 700;
-          const H = 320;
+          const H = Math.round(320 * streakZoom);
           const pad = { top: 20, bottom: 40, left: 70, right: 20 };
           const plotW = W - pad.left - pad.right;
           const plotH = H - pad.top - pad.bottom;
@@ -1596,7 +1620,14 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
           return (
             <>
-              <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 14 }}>Does momentum carry over — or does a hot streak make you sloppy?</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <div style={{ fontSize: 14, color: '#aab0bd' }}>Does momentum carry over — or does a hot streak make you sloppy?</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => setStreakZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                  <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(streakZoom * 100)}%</span>
+                  <button onClick={() => setStreakZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                </div>
+              </div>
 
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
                 {/* Y grid */}
