@@ -517,7 +517,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           {/* Center label */}
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <div style={{ fontFamily: fd, fontSize: 36, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{totalTrades}</div>
-            <div style={{ fontFamily: fm, fontSize: 10, color: '#999', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 }}>Total Trades</div>
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 }}>Total Trades</div>
           </div>
         </div>
 
@@ -528,19 +528,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
               <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Wins</span>
               <span style={{ color: teal, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{wins}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>({fmtPct(winPct * 100)})</span>
+              <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(winPct * 100)})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 10, height: 10, background: red, borderRadius: 2, display: 'inline-block' }} />
               <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Losses</span>
               <span style={{ color: red, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{losses}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>({fmtPct(lossPct * 100)})</span>
+              <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(lossPct * 100)})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 10, height: 10, background: '#6b7280', borderRadius: 2, display: 'inline-block' }} />
               <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Break Even</span>
               <span style={{ color: '#bbb', fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{be}</span>
-              <span style={{ color: '#888', fontSize: 12 }}>({fmtPct(bePct * 100)})</span>
+              <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(bePct * 100)})</span>
             </div>
           </div>
 
@@ -622,7 +622,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {/* Total Trades */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px' }}>
-          <div style={{ fontSize: 11, color: '#aaa', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
+          <div style={{ fontSize: 13, color: '#aab0bd', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{totals.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Win Rate: {fmtPct(totals.winRate)}</div>
           <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginTop: 10 }}>
@@ -635,7 +635,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         {/* Process — trades where the journal indicates discipline */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
           <div style={{ fontSize: 13, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Followed the Plan</div>
-          <div style={{ fontSize: 12, color: '#aab0bd', marginBottom: 8 }}>Trades where your journal shows patience, a clean setup, or rule-following</div>
+          <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 8 }}>Trades where your journal shows patience, a clean setup, or rule-following</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.process.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.process.wr)}</div>
           <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(processSplit.process.rTotal)} total</div>
@@ -644,7 +644,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         {/* Impulse — trades where the journal indicates rule-breaking */}
         <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
           <div style={{ fontSize: 13, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Broke the Rules</div>
-          <div style={{ fontSize: 12, color: '#aab0bd', marginBottom: 8 }}>Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup</div>
+          <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 8 }}>Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup</div>
           <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.impulse.n.toLocaleString()}</div>
           <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.impulse.wr)}</div>
           <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(processSplit.impulse.rTotal)} total</div>
@@ -680,7 +680,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               {/* Table header */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.6fr 0.7fr 0.6fr 0.8fr 1fr', gap: 0, padding: '0 0 8px', borderBottom: '1px solid #2A3143' }}>
                 {['Strategy', 'Trades', 'Win Rate', 'Avg R', 'Avg P/L', 'Total'].map(h => (
-                  <div key={h} style={{ fontFamily: fm, fontSize: 11, color: '#888', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: h === 'Strategy' ? 'left' : 'right' }}>{h}</div>
+                  <div key={h} style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: h === 'Strategy' ? 'left' : 'right' }}>{h}</div>
                 ))}
               </div>
 
@@ -902,7 +902,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               <span style={{ width: 8, height: 8, background: blue, borderRadius: 2, display: 'inline-block' }} />
               <h4 style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
             </div>
-            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3, height: hoveredPanel === 'trades' ? 'auto' : 0, overflow: 'hidden', opacity: hoveredPanel === 'trades' ? 1 : 0, transition: 'opacity 0.2s ease' }}>Actual trading activity measured against the rules</p>
+            <p style={{ color: '#888', fontSize: 14, margin: '0 0 18px', letterSpacing: 0.3, height: hoveredPanel === 'trades' ? 'auto' : 0, overflow: 'hidden', opacity: hoveredPanel === 'trades' ? 1 : 0, transition: 'opacity 0.2s ease' }}>Actual trading activity measured against the rules</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {selectedWeek.goals.map((g, i) => {
@@ -912,7 +912,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   <div key={i}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
                       <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
-                      <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 11, marginLeft: 4 }}>trades</span></span>
+                      <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
                     </div>
                     <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{
@@ -923,7 +923,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                         transition: 'width 0.5s ease',
                       }} />
                     </div>
-                    <div style={{ fontSize: 12, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
+                    <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
                   </div>
                 );
               })}
@@ -946,7 +946,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               <span style={{ width: 8, height: 8, background: teal, borderRadius: 2, display: 'inline-block' }} />
               <h4 style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Psych vs. Goals</h4>
             </div>
-            <p style={{ color: '#888', fontSize: 11.5, margin: '0 0 18px', letterSpacing: 0.3, height: hoveredPanel === 'psych' ? 'auto' : 0, overflow: 'hidden', opacity: hoveredPanel === 'psych' ? 1 : 0, transition: 'opacity 0.2s ease' }}>Psychological alignment with the rules — from journal & tags</p>
+            <p style={{ color: '#888', fontSize: 14, margin: '0 0 18px', letterSpacing: 0.3, height: hoveredPanel === 'psych' ? 'auto' : 0, overflow: 'hidden', opacity: hoveredPanel === 'psych' ? 1 : 0, transition: 'opacity 0.2s ease' }}>Psychological alignment with the rules — from journal & tags</p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {selectedWeek.goals.map((g, i) => {
@@ -956,7 +956,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   <div key={i}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
                       <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
-                      <span style={{ fontSize: 14, color: teal, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 11, marginLeft: 4 }}>trades</span></span>
+                      <span style={{ fontSize: 14, color: teal, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
                     </div>
                     <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
                       <div style={{
@@ -967,7 +967,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                         transition: 'width 0.5s ease',
                       }} />
                     </div>
-                    <div style={{ fontSize: 12, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
+                    <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
                   </div>
                 );
               })}
@@ -1359,7 +1359,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>P/L by hour — green is winning trades, red is losing trades</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                   <button onClick={() => setChartZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                  <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
+                  <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
                   <button onClick={() => setChartZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                 </div>
               </div>
@@ -1449,7 +1449,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 6 }}>
                   <button onClick={() => setSizeZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                  <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(sizeZoom * 100)}%</span>
+                  <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', minWidth: 36, textAlign: 'center' }}>{Math.round(sizeZoom * 100)}%</span>
                   <button onClick={() => setSizeZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                 </div>
               </div>
@@ -1537,7 +1537,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                       </div>
                       {b.count > 0 && (
                         <div style={{ borderTop: '1px solid #2A3143', marginTop: 8, paddingTop: 8 }}>
-                          <div style={{ fontFamily: fm, fontSize: 11, color: '#888', letterSpacing: 0.5, marginBottom: 4 }}>Per $1 risked</div>
+                          <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 0.5, marginBottom: 4 }}>Per $1 risked</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                             <span style={{ fontFamily: fm, fontSize: 13, color: teal, fontWeight: 600 }}>Win ${winPerDollar.toFixed(2)}</span>
                             <span style={{ fontFamily: fm, fontSize: 13, color: red, fontWeight: 600 }}>Lose ${lossPerDollar.toFixed(2)}</span>
@@ -1622,7 +1622,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>Does momentum carry over — or does a hot streak make you sloppy?</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                   <button onClick={() => setStreakZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                  <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(streakZoom * 100)}%</span>
+                  <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', minWidth: 36, textAlign: 'center' }}>{Math.round(streakZoom * 100)}%</span>
                   <button onClick={() => setStreakZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
                 </div>
               </div>
@@ -1668,7 +1668,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     ['p-value', reg.p_value.toFixed(4)],
                   ].map(([label, val]) => (
                     <div key={label} style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: fm, fontSize: 11, color: '#888', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
                       <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: teal }}>{val}</div>
                     </div>
                   ))}
