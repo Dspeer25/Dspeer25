@@ -1257,7 +1257,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         {/* Section title */}
         <div style={{ paddingLeft: 28, marginBottom: 16 }}>
-          <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>Advanced Analysis Tools</div>
+          <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 500, color: '#fff', letterSpacing: 0.5 }}>Advanced Analysis Tools</div>
         </div>
 
         {/* Browser-style tabs */}
@@ -1276,8 +1276,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   padding: '14px 28px',
                   cursor: 'pointer',
                   fontFamily: fd,
-                  fontSize: 15,
-                  fontWeight: 700,
+                  fontSize: 13,
+                  fontWeight: 600,
                   letterSpacing: 0.5,
                   border: active ? '1px solid #2A3143' : '1px solid transparent',
                   borderBottom: active ? '1px solid #141822' : '1px solid #2A3143',
@@ -1352,7 +1352,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontSize: 13, color: '#aab0bd', paddingLeft: 2 }}>P/L by hour — green is winning trades, red is losing trades</div>
+                <div style={{ fontFamily: fm, fontSize: 12, color: '#7a7d85' }}>P/L by hour — green is winning trades, red is losing trades</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                   <button onClick={() => setChartZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
                   <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
@@ -1366,23 +1366,23 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   return (
                     <g key={frac}>
                       <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.4)" strokeWidth="1" />
-                      <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="10" fontFamily="DM Mono, monospace">{frac === 0 ? '$0' : fmtDollar(Math.round(frac * yMax))}</text>
+                      <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#555" fontSize="9" fontFamily="DM Mono, monospace">{frac === 0 ? '$0' : fmtDollar(Math.round(frac * yMax))}</text>
                     </g>
                   );
                 })}
                 <path d={winPath} fill="none" stroke={teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {hourWinPL.map((v, i) => (<circle key={`w${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={teal} />))}
+                {hourWinPL.map((v, i) => (<circle key={`w${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="3.5" fill={teal} />))}
                 <path d={lossPath} fill="none" stroke={red} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {hourLossPL.map((v, i) => (<circle key={`l${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="4" fill={red} />))}
+                {hourLossPL.map((v, i) => (<circle key={`l${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="3.5" fill={red} />))}
                 <line x1={pad.left} x2={W - pad.right} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4,4" />
-                {hours.map((h, i) => (<text key={h.h} x={pad.left + i * xStep} y={H - 6} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace">{h.h}</text>))}
+                {hours.map((h, i) => (<text key={h.h} x={pad.left + i * xStep} y={H - 6} textAnchor="middle" fill="#555" fontSize="9" fontFamily="DM Mono, monospace">{h.h}</text>))}
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 3, background: teal, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Winning trades P/L</span></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 3, background: red, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd' }}>Losing trades P/L</span></div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 3, background: teal, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Winning trades</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 3, background: red, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Losing trades</span></div>
               </div>
-              <div style={{ fontSize: 13, color: '#bbb', marginTop: 10, textAlign: 'center' }}>
+              <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', marginTop: 8, textAlign: 'center' }}>
                 Best hour: <span style={{ color: teal }}>{bestHour.h} ({fmtDollar(bestHour.pl)})</span>
                 {' · '}
                 Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
@@ -1438,9 +1438,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               {/* Title */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                 <div>
-                  <div style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Win Size vs. Increase in Risk</div>
-                  <div style={{ fontFamily: fm, fontSize: 16, color: '#d0d0d8', marginBottom: 18, lineHeight: 1.6 }}>
-                    Your trades grouped by how much you risked. For each group: what you risked (faded), what you won (green), and what you lost (red) on average.
+                  <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 500, color: '#fff', marginBottom: 4 }}>Win Size vs. Increase in Risk</div>
+                  <div style={{ fontFamily: fm, fontSize: 12, color: '#7a7d85', marginBottom: 16, lineHeight: 1.5 }}>
+                    Trades grouped by risk amount. Each group shows avg risk (faded), avg win (green), avg loss (red).
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 6 }}>
@@ -1451,25 +1451,22 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
 
               {/* Legend */}
-              <div style={{ display: 'flex', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 16, height: 16, background: teal, opacity: 0.15, borderRadius: 3, display: 'inline-block', border: `1.5px solid ${teal}` }} />
-                  <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}>Avg risk per trade</span>
+              <div style={{ display: 'flex', gap: 18, marginBottom: 14, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, background: teal, opacity: 0.15, borderRadius: 2, display: 'inline-block', border: `1px solid ${teal}` }} />
+                  <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Avg risk</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 16, height: 16, background: teal, borderRadius: 3, display: 'inline-block' }} />
-                  <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}>Avg win per trade</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
+                  <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Avg win</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 16, height: 16, background: red, borderRadius: 3, display: 'inline-block' }} />
-                  <span style={{ fontFamily: fm, fontSize: 13, color: '#d0d0d8' }}>Avg loss per trade</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, background: red, borderRadius: 2, display: 'inline-block' }} />
+                  <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Avg loss</span>
                 </div>
               </div>
 
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-                {/* Y-axis label */}
-                <text x={12} y={pad.top + plotH / 2} textAnchor="middle" fill="#888" fontSize="10" fontFamily="DM Mono, monospace" transform={`rotate(-90, 12, ${pad.top + plotH / 2})`}>Dollars</text>
-
                 {/* Y grid + labels */}
                 {[0, 0.25, 0.5, 0.75, 1.0].map(frac => {
                   const val = frac * yMax;
@@ -1477,15 +1474,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   return (
                     <g key={frac}>
                       <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
-                      <text x={pad.left - 10} y={y + 4} textAnchor="end" fill="#aab0bd" fontSize="11" fontFamily="DM Mono, monospace">
+                      <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#555" fontSize="9" fontFamily="DM Mono, monospace">
                         ${Math.round(val).toLocaleString()}
                       </text>
                     </g>
                   );
                 })}
-
-                {/* X-axis label */}
-                <text x={pad.left + plotW / 2} y={H - 4} textAnchor="middle" fill="#888" fontSize="10" fontFamily="DM Mono, monospace">Risk Amount Per Trade</text>
 
                 {/* Bucket groups */}
                 {buckets.map((b, gi) => {
@@ -1501,17 +1495,17 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
                       {/* Value labels above bars */}
                       {b.avgRisk > 0 && (
-                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 5} textAnchor="middle" fill="#aab0bd" fontSize="8.5" fontWeight="600" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
+                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 4} textAnchor="middle" fill="#7a7d85" fontSize="8" fontWeight="500" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
                       )}
                       {b.avgWin > 0 && (
-                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 5} textAnchor="middle" fill={teal} fontSize="8.5" fontWeight="700" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
+                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 4} textAnchor="middle" fill={teal} fontSize="8" fontWeight="500" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
                       )}
                       {b.avgLoss < 0 && (
-                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 5} textAnchor="middle" fill={red} fontSize="8.5" fontWeight="700" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
+                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 4} textAnchor="middle" fill={red} fontSize="8" fontWeight="500" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
                       )}
 
                       {/* X-axis bucket label */}
-                      <text x={pad.left + gi * groupW + groupW / 2} y={baselineY + 18} textAnchor="middle" fill="#d0d0d8" fontSize="12" fontWeight="600" fontFamily="DM Mono, monospace">{b.label}</text>
+                      <text x={pad.left + gi * groupW + groupW / 2} y={baselineY + 16} textAnchor="middle" fill="#555" fontSize="9" fontFamily="DM Mono, monospace">{b.label}</text>
                     </g>
                   );
                 })}
@@ -1524,25 +1518,25 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   const lossPerDollar = b.avgRisk > 0 && b.avgLoss < 0 ? Math.abs(b.avgLoss) / b.avgRisk : 0;
                   return (
                     <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '16px 18px' }}>
-                      <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{b.label}</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                        <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Trades</span>
-                        <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: teal }}>{b.count}</span>
+                      <div style={{ fontFamily: fd, fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{b.label}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                        <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Trades</span>
+                        <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 500, color: teal }}>{b.count}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                        <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Win rate</span>
-                        <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                        <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Win rate</span>
+                        <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 500, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                        <span style={{ fontFamily: fm, fontSize: 15, color: '#d0d0d8' }}>Record</span>
-                        <span style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                        <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85' }}>Record</span>
+                        <span style={{ fontFamily: fm, fontSize: 11, fontWeight: 500, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
                       </div>
                       {b.count > 0 && (
                         <div style={{ borderTop: '1px solid #2A3143', marginTop: 8, paddingTop: 8 }}>
-                          <div style={{ fontFamily: fm, fontSize: 12, color: '#888', letterSpacing: 0.5, marginBottom: 4 }}>Per $1 risked</div>
+                          <div style={{ fontFamily: fm, fontSize: 10, color: '#555', letterSpacing: 0.5, marginBottom: 3 }}>Per $1 risked</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                            <span style={{ fontFamily: fm, fontSize: 14, color: teal, fontWeight: 600 }}>Win ${winPerDollar.toFixed(2)}</span>
-                            <span style={{ fontFamily: fm, fontSize: 14, color: red, fontWeight: 600 }}>Lose ${lossPerDollar.toFixed(2)}</span>
+                            <span style={{ fontFamily: fm, fontSize: 11, color: teal, fontWeight: 500 }}>Win ${winPerDollar.toFixed(2)}</span>
+                            <span style={{ fontFamily: fm, fontSize: 11, color: red, fontWeight: 500 }}>Lose ${lossPerDollar.toFixed(2)}</span>
                           </div>
                         </div>
                       )}
@@ -1552,8 +1546,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
 
               {/* Interpretation */}
-              <div style={{ marginTop: 18, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '18px 22px', fontFamily: fm, fontSize: 15, color: '#d0d0d8', lineHeight: 1.7 }}>
-                <strong style={{ color: '#fff', fontSize: 16 }}>How to read this:</strong> If the green bar (avg win) grows proportionally with the faded bar (avg risk) as you move right, sizing up is working for you. If the green bar flattens while the red bar grows, you are likely cutting winners short when the position size makes you uncomfortable.
+              <div style={{ marginTop: 14, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontFamily: fm, fontSize: 12, color: '#ccc', lineHeight: 1.7 }}>
+                <strong style={{ color: '#fff' }}>How to read this:</strong> If the green bar grows proportionally with the faded bar as you move right, sizing up is working. If green flattens while red grows, you are cutting winners short at higher size.
               </div>
             </>
           );
@@ -1621,7 +1615,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <div style={{ fontSize: 14, color: '#aab0bd' }}>Does momentum carry over — or does a hot streak make you sloppy?</div>
+                <div style={{ fontFamily: fm, fontSize: 12, color: '#7a7d85' }}>Does momentum carry over — or does a hot streak make you sloppy?</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                   <button onClick={() => setStreakZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
                   <span style={{ fontFamily: fm, fontSize: 11, color: '#888', minWidth: 36, textAlign: 'center' }}>{Math.round(streakZoom * 100)}%</span>
@@ -1637,22 +1631,17 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   return (
                     <g key={i}>
                       <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
-                      <text x={pad.left - 8} y={y + 4} textAnchor="end" fill="#666" fontSize="9" fontFamily="DM Mono, monospace">{fmtDollar(Math.round(val))}</text>
+                      <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#555" fontSize="9" fontFamily="DM Mono, monospace">{fmtDollar(Math.round(val))}</text>
                     </g>
                   );
                 })}
 
-                {/* Zero line */}
                 {yMin < 0 && yMax > 0 && (
                   <line x1={pad.left} x2={W - pad.right} y1={toSvgY(0)} y2={toSvgY(0)} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="4,4" />
                 )}
-
-                {/* Vertical zero (streak = 0) */}
                 {xMin < 0 && xMax > 0 && (
                   <line x1={toSvgX(0)} x2={toSvgX(0)} y1={pad.top} y2={pad.top + plotH} stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="4,4" />
                 )}
-
-                {/* Regression line */}
                 {reg && (
                   <line
                     x1={toSvgX(xMin)} y1={toSvgY(reg.intercept + reg.slope * xMin)}
@@ -1660,28 +1649,14 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     stroke={teal} strokeWidth="2" strokeDasharray="6,4" opacity="0.7"
                   />
                 )}
-
-                {/* Scatter dots */}
                 {streakData.map((d, i) => (
-                  <circle
-                    key={i}
-                    cx={toSvgX(d.streak)}
-                    cy={toSvgY(d.pl)}
-                    r="3.5"
-                    fill={d.pl > 0 ? teal : d.pl < 0 ? red : '#6b7280'}
-                    opacity="0.55"
-                  />
+                  <circle key={i} cx={toSvgX(d.streak)} cy={toSvgY(d.pl)} r="3" fill={d.pl > 0 ? teal : d.pl < 0 ? red : '#6b7280'} opacity="0.5" />
                 ))}
-
-                {/* X-axis label */}
-                <text x={pad.left + plotW / 2} y={H - 6} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace">Streak Length (neg = loss streak, pos = win streak)</text>
-                {/* Y-axis label */}
-                <text x={14} y={pad.top + plotH / 2} textAnchor="middle" fill="#888" fontSize="11" fontFamily="DM Mono, monospace" transform={`rotate(-90, 14, ${pad.top + plotH / 2})`}>P/L ($)</text>
               </svg>
 
               {/* Stats row */}
               {reg && (
-                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12, justifyContent: 'center' }}>
                   {[
                     ['n', String(reg.n)],
                     ['Slope', reg.slope.toFixed(4)],
@@ -1689,8 +1664,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     ['p-value', reg.p_value.toFixed(4)],
                   ].map(([label, val]) => (
                     <div key={label} style={{ textAlign: 'center' }}>
-                      <div style={{ fontFamily: fm, fontSize: 10, color: '#888', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
-                      <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: teal }}>{val}</div>
+                      <div style={{ fontFamily: fm, fontSize: 9, color: '#555', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontFamily: fm, fontSize: 14, fontWeight: 500, color: teal }}>{val}</div>
                     </div>
                   ))}
                 </div>
@@ -1698,10 +1673,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
               {/* Interpretation */}
               {interpretation && (
-                <div style={{ marginTop: 16, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '14px 18px', fontFamily: fm, fontSize: 14, color: '#d0d0d8', lineHeight: 1.7 }}>
+                <div style={{ marginTop: 12, background: 'rgba(0,212,160,0.04)', border: '1px solid rgba(0,212,160,0.15)', borderRadius: 8, padding: '12px 16px', fontFamily: fm, fontSize: 12, color: '#ccc', lineHeight: 1.7 }}>
                   {interpretation}
                   {reg && reg.p_value > 0.05 && (
-                    <span style={{ color: '#FCD34D' }}> Note: p-value is {reg.p_value.toFixed(3)} (above 0.05), so this relationship is not statistically significant in your current data.</span>
+                    <span style={{ color: '#FCD34D' }}> Note: p-value is {reg.p_value.toFixed(3)} — not statistically significant yet.</span>
                   )}
                 </div>
               )}
