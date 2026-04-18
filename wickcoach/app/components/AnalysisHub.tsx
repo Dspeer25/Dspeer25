@@ -1281,7 +1281,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   borderBottom: active ? '1px solid #141822' : '1px solid #2A3143',
                   borderRadius: active ? '10px 10px 0 0' : '10px 10px 0 0',
                   background: active ? '#141822' : 'transparent',
-                  color: active ? '#fff' : '#666',
+                  color: active ? '#fff' : '#7db8e0',
                   transition: 'all 0.2s',
                   position: 'relative',
                   zIndex: active ? 2 : 1,
@@ -1434,7 +1434,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return (
             <>
               {/* Title */}
-              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Do your wins scale when you risk more?</div>
+              <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Do your wins scale when you risk more?</div>
               <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd', marginBottom: 18, lineHeight: 1.6 }}>
                 Your trades are grouped by how much you risked. For each group, the chart compares what you risked (faded bar) to what you actually won (green) or lost (red) on average.
               </div>
@@ -1474,7 +1474,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 })}
 
                 {/* X-axis label */}
-                <text x={pad.left + plotW / 2} y={H - 4} textAnchor="middle" fill="#aab0bd" fontSize="12" fontFamily="DM Mono, monospace">Risk Amount Per Trade</text>
+                <text x={pad.left + plotW / 2} y={H - 2} textAnchor="middle" fill="#d0d0d8" fontSize="13" fontWeight="600" fontFamily="DM Mono, monospace">Risk Amount Per Trade</text>
 
                 {/* Bucket groups */}
                 {buckets.map((b, gi) => {
@@ -1490,13 +1490,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
                       {/* Value labels above bars */}
                       {b.avgRisk > 0 && (
-                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 6} textAnchor="middle" fill="#aab0bd" fontSize="10" fontWeight="600" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
+                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 5} textAnchor="middle" fill="#aab0bd" fontSize="8.5" fontWeight="600" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
                       )}
                       {b.avgWin > 0 && (
-                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 6} textAnchor="middle" fill={teal} fontSize="10" fontWeight="700" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
+                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 5} textAnchor="middle" fill={teal} fontSize="8.5" fontWeight="700" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
                       )}
                       {b.avgLoss < 0 && (
-                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 6} textAnchor="middle" fill={red} fontSize="10" fontWeight="700" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
+                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 5} textAnchor="middle" fill={red} fontSize="8.5" fontWeight="700" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
                       )}
 
                       {/* X-axis bucket label */}
@@ -1528,8 +1528,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
 
               {/* Interpretation */}
-              <div style={{ marginTop: 18, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '16px 20px', fontFamily: fm, fontSize: 14, color: '#d0d0d8', lineHeight: 1.7 }}>
-                <strong style={{ color: '#fff' }}>How to read this:</strong> If the green bar (avg win) grows proportionally with the faded bar (avg risk) as you move right, sizing up is working for you. If the green bar flattens while the red bar grows, you are likely cutting winners short when the position size makes you uncomfortable.
+              <div style={{ marginTop: 18, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '18px 22px', fontFamily: fm, fontSize: 15, color: '#d0d0d8', lineHeight: 1.7 }}>
+                <strong style={{ color: '#fff', fontSize: 16 }}>How to read this:</strong> If the green bar (avg win) grows proportionally with the faded bar (avg risk) as you move right, sizing up is working for you. If the green bar flattens while the red bar grows, you are likely cutting winners short when the position size makes you uncomfortable.
               </div>
             </>
           );
