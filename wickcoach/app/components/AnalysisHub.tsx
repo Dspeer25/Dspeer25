@@ -78,11 +78,28 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses'>('wins');
-  const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | null>(null);
+  const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | 'breakeven' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
   const [chartZoom, setChartZoom] = useState(1);
   const [sizeZoom, setSizeZoom] = useState(1);
+  const [sizeResizeDrag, setSizeResizeDrag] = useState<{ startY: number; startZoom: number } | null>(null);
+
+  // Size Efficiency chart resize: dragging the corner handle scales the
+  // chart height. 1px of vertical drag = ~0.005 zoom units, clamped to
+  // the same [0.6, 2] range the old ± buttons used.
+  useEffect(() => {
+    if (!sizeResizeDrag) return;
+    const onMove = (e: MouseEvent) => {
+      const delta = e.clientY - sizeResizeDrag.startY;
+      const next = sizeResizeDrag.startZoom + delta / 200;
+      setSizeZoom(Math.min(2, Math.max(0.6, next)));
+    };
+    const onUp = () => setSizeResizeDrag(null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [sizeResizeDrag]);
   const [section5Tab, setSection5Tab] = useState<'timeOfDay' | 'sizeEfficiency'>('timeOfDay');
 
   // Regression Lab state
@@ -445,20 +462,20 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
-            padding: '14px 20px',
+            gap: 20,
+            padding: '20px 30px',
             background: 'rgba(0,212,160,0.08)',
             border: '1px solid rgba(0,212,160,0.4)',
-            borderRadius: 12,
+            borderRadius: 14,
             cursor: 'pointer',
             transition: 'background 0.2s ease, border-color 0.2s ease, box-shadow 0.3s ease',
-            boxShadow: '0 0 24px rgba(0,212,160,0.12)',
+            boxShadow: '0 0 28px rgba(0,212,160,0.14)',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.15)'; e.currentTarget.style.borderColor = '#00d4a0'; e.currentTarget.style.boxShadow = '0 0 32px rgba(0,212,160,0.25)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.4)'; e.currentTarget.style.boxShadow = '0 0 24px rgba(0,212,160,0.12)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.15)'; e.currentTarget.style.borderColor = '#00d4a0'; e.currentTarget.style.boxShadow = '0 0 38px rgba(0,212,160,0.3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.08)'; e.currentTarget.style.borderColor = 'rgba(0,212,160,0.4)'; e.currentTarget.style.boxShadow = '0 0 28px rgba(0,212,160,0.14)'; }}
         >
-          <div style={{ width: 58, height: 58, borderRadius: '50%', background: 'rgba(0,212,160,0.12)', border: '1.5px solid rgba(0,212,160,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: -8, marginBottom: -8, boxShadow: '0 0 16px rgba(0,212,160,0.15)' }}>
-            <svg width="28" height="34" viewBox="0 0 20 24" fill="none">
+          <div style={{ width: 84, height: 84, borderRadius: '50%', background: 'rgba(0,212,160,0.12)', border: '2px solid rgba(0,212,160,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: -10, marginBottom: -10, boxShadow: '0 0 22px rgba(0,212,160,0.2)' }}>
+            <svg width="42" height="52" viewBox="0 0 20 24" fill="none">
               <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
               <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
               <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
@@ -470,54 +487,85 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             </svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>WickCoach AI</span>
-            <span style={{ fontFamily: fm, fontSize: 12, color: teal, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>Click for analysis</span>
+            <span style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>WickCoach AI</span>
+            <span style={{ fontFamily: fm, fontSize: 14, color: teal, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>Click for analysis</span>
           </div>
         </div>
       </div>
 
-      {/* ═══ 1 · PINWHEEL ═══ */}
+      {/* ═══ 1 · OUTCOME CANDLES ═══ */}
       <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 16, padding: '32px 28px', display: 'flex', alignItems: 'center', gap: 40, position: 'relative', flexWrap: 'wrap', justifyContent: 'center' }}>
         <SectionNum n={1} />
 
-        {/* Pie chart */}
-        <div style={{ position: 'relative', width: 220, height: 220, flexShrink: 0 }}>
-          <svg width="220" height="220" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-            {/* background track */}
-            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#2A3143" strokeWidth="16" />
-            {/* wins (green) */}
-            <circle
-              cx="50" cy="50" r="40" fill="transparent"
-              stroke={teal} strokeWidth={hoveredSlice === 'wins' ? 20 : 16}
-              strokeDasharray={`${(winPct * circ).toFixed(2)} ${circ.toFixed(2)}`}
-              strokeDashoffset="0"
-              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s', pointerEvents: 'stroke' }}
-              onMouseEnter={() => setHoveredSlice('wins')}
-              onMouseLeave={() => setHoveredSlice(null)}
-            />
-            {/* losses (red) */}
-            <circle
-              cx="50" cy="50" r="40" fill="transparent"
-              stroke={red} strokeWidth={hoveredSlice === 'losses' ? 20 : 16}
-              strokeDasharray={`${(lossPct * circ).toFixed(2)} ${circ.toFixed(2)}`}
-              strokeDashoffset={`${(-winPct * circ).toFixed(2)}`}
-              style={{ cursor: 'pointer', transition: 'stroke-width 0.2s', pointerEvents: 'stroke' }}
-              onMouseEnter={() => setHoveredSlice('losses')}
-              onMouseLeave={() => setHoveredSlice(null)}
-            />
-            {/* break-even (grey) */}
-            <circle
-              cx="50" cy="50" r="40" fill="transparent"
-              stroke="#6b7280" strokeWidth="16"
-              strokeDasharray={`${(bePct * circ).toFixed(2)} ${circ.toFixed(2)}`}
-              strokeDashoffset={`${(-(winPct + lossPct) * circ).toFixed(2)}`}
-            />
-          </svg>
-          {/* Center label */}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ fontFamily: fd, fontSize: 36, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{totalTrades}</div>
-            <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4 }}>Total Trades</div>
-          </div>
+        {/* Candlestick trio — proportional to losses / breakeven / wins */}
+        <div style={{ position: 'relative', width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{totalTrades}</div>
+          <div style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4, marginBottom: 18 }}>Total Trades</div>
+          {(() => {
+            // Body height scales each candle to its share of the total, so
+            // the tallest candle dominates visually and the two smaller ones
+            // stay proportional. Minimum body height keeps zero/low counts
+            // readable without dwarfing the rest.
+            const maxCount = Math.max(wins, losses, be, 1);
+            const maxBody = 150;
+            const minBody = 6;
+            const bodyFor = (n: number) => n === 0 ? 0 : Math.max(minBody, (n / maxCount) * maxBody);
+            const wickH = 14;
+            const baselineY = 180;
+            const candle = (x: number, n: number, kind: 'wins' | 'losses' | 'breakeven') => {
+              const h = bodyFor(n);
+              const topY = baselineY - h;
+              const active = hoveredSlice === kind;
+              const color = kind === 'losses' ? red : teal;
+              const filled = kind !== 'breakeven';
+              return (
+                <g
+                  key={kind}
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={() => setHoveredSlice(kind)}
+                  onMouseLeave={() => setHoveredSlice(null)}
+                >
+                  {/* invisible hit target so the whole column is hoverable */}
+                  <rect x={x - 18} y={baselineY - maxBody - wickH - 20} width={36} height={maxBody + wickH * 2 + 40} fill="transparent" />
+                  {/* upper wick */}
+                  {n > 0 && <line x1={x} y1={topY - wickH} x2={x} y2={topY} stroke={color} strokeWidth={2} strokeLinecap="round" />}
+                  {/* body */}
+                  {n > 0 && (
+                    <rect
+                      x={x - 14}
+                      y={topY}
+                      width={28}
+                      height={h}
+                      rx={2}
+                      fill={filled ? color : 'rgba(0,212,160,0.12)'}
+                      stroke={color}
+                      strokeWidth={active ? 3 : filled ? 0 : 2}
+                      style={{ transition: 'stroke-width 0.15s ease' }}
+                    />
+                  )}
+                  {/* lower wick */}
+                  {n > 0 && <line x1={x} y1={baselineY} x2={x} y2={baselineY + wickH} stroke={color} strokeWidth={2} strokeLinecap="round" />}
+                  {/* count label above */}
+                  <text x={x} y={topY - wickH - 6} textAnchor="middle" fontFamily="Chakra Petch, sans-serif" fontSize="15" fontWeight="700" fill={filled ? color : teal}>
+                    {n}
+                  </text>
+                  {/* axis label below */}
+                  <text x={x} y={baselineY + wickH + 16} textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="11" fill={active ? color : '#aab0bd'} letterSpacing="1">
+                    {kind === 'wins' ? 'WINS' : kind === 'losses' ? 'LOSSES' : 'BE'}
+                  </text>
+                </g>
+              );
+            };
+            return (
+              <svg width="260" height="220" viewBox="0 0 260 220" style={{ display: 'block' }}>
+                {/* baseline */}
+                <line x1={20} y1={baselineY} x2={240} y2={baselineY} stroke="#2A3143" strokeWidth={1} strokeDasharray="2,3" />
+                {candle(55, losses, 'losses')}
+                {candle(130, be, 'breakeven')}
+                {candle(205, wins, 'wins')}
+              </svg>
+            );
+          })()}
         </div>
 
         {/* Legend + hover detail */}
@@ -536,9 +584,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(lossPct * 100)})</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 10, height: 10, background: '#6b7280', borderRadius: 2, display: 'inline-block' }} />
+              <span style={{ width: 10, height: 10, background: 'rgba(0,212,160,0.12)', border: `1.5px solid ${teal}`, borderRadius: 2, display: 'inline-block', boxSizing: 'border-box' }} />
               <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Break Even</span>
-              <span style={{ color: '#bbb', fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{be}</span>
+              <span style={{ color: teal, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{be}</span>
               <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(bePct * 100)})</span>
             </div>
           </div>
@@ -546,8 +594,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           {/* Hover tooltip — only visible while hovering a slice */}
           <div
             style={{
-              background: hoveredSlice === 'wins' ? 'rgba(0,212,160,0.08)' : hoveredSlice === 'losses' ? 'rgba(255,68,68,0.08)' : 'transparent',
-              border: hoveredSlice === 'wins' ? '1px solid rgba(0,212,160,0.4)' : hoveredSlice === 'losses' ? '1px solid rgba(255,68,68,0.4)' : '1px dashed #2A3143',
+              background: hoveredSlice === 'wins' ? 'rgba(0,212,160,0.08)' : hoveredSlice === 'losses' ? 'rgba(255,68,68,0.08)' : hoveredSlice === 'breakeven' ? 'rgba(0,212,160,0.04)' : 'transparent',
+              border: hoveredSlice === 'wins' ? '1px solid rgba(0,212,160,0.4)' : hoveredSlice === 'losses' ? '1px solid rgba(255,68,68,0.4)' : hoveredSlice === 'breakeven' ? '1px dashed rgba(0,212,160,0.4)' : '1px dashed #2A3143',
               borderRadius: 10,
               padding: '14px 16px',
               minHeight: 160,
@@ -608,9 +656,31 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 </ul>
               </>
             )}
+            {hoveredSlice === 'breakeven' && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
+                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
+                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
+                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
+                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
+                  </svg>
+                  <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: teal, letterSpacing: 1.5 }}>BREAKEVEN TRADES</div>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <li style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{be} trade{be === 1 ? '' : 's'} closed flat — setup neither validated nor invalidated</li>
+                  <li style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>Review whether you exited too early on moving setups, or held too long on stalled ones</li>
+                  <li style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>Breakeven counts as risk-controlled even without profit — that is still discipline</li>
+                </ul>
+              </>
+            )}
             {!hoveredSlice && (
               <div style={{ color: '#666', fontSize: 12, fontFamily: fm, textAlign: 'center', paddingTop: 60, letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                Hover a segment for WickCoach analysis
+                Hover a candle for WickCoach analysis
               </div>
             )}
           </div>
@@ -1445,10 +1515,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     Trades grouped by risk amount. Each group shows avg risk (faded), avg win (green), avg loss (red).
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 6 }}>
-                  <button onClick={() => setSizeZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                  <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', minWidth: 36, textAlign: 'center' }}>{Math.round(sizeZoom * 100)}%</span>
-                  <button onClick={() => setSizeZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', flexShrink: 0, marginTop: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  Drag corner to resize · {Math.round(sizeZoom * 100)}%
                 </div>
               </div>
 
@@ -1468,50 +1536,80 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 </div>
               </div>
 
-              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-                {/* Y grid + labels */}
-                {[0, 0.25, 0.5, 0.75, 1.0].map(frac => {
-                  const val = frac * yMax;
-                  const y = baselineY - frac * plotH;
-                  return (
-                    <g key={frac}>
-                      <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
-                      <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#888" fontSize="10" fontFamily="DM Mono, monospace">
-                        ${Math.round(val).toLocaleString()}
-                      </text>
-                    </g>
-                  );
-                })}
+              <div style={{ position: 'relative', userSelect: sizeResizeDrag ? 'none' : 'auto' }}>
+                <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+                  {/* Y grid + labels */}
+                  {[0, 0.25, 0.5, 0.75, 1.0].map(frac => {
+                    const val = frac * yMax;
+                    const y = baselineY - frac * plotH;
+                    return (
+                      <g key={frac}>
+                        <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.3)" strokeWidth="1" />
+                        <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#888" fontSize="9" fontFamily="DM Mono, monospace">
+                          ${Math.round(val).toLocaleString()}
+                        </text>
+                      </g>
+                    );
+                  })}
 
-                {/* Bucket groups */}
-                {buckets.map((b, gi) => {
-                  const groupX = pad.left + gi * groupW + groupW * 0.1;
-                  return (
-                    <g key={b.label}>
-                      {/* Risk reference bar (faded) */}
-                      <rect x={groupX} y={toY(b.avgRisk)} width={barW} height={barH(b.avgRisk)} rx={4} fill={teal} opacity={0.15} stroke={teal} strokeWidth={1} strokeOpacity={0.35} />
-                      {/* Avg win bar */}
-                      <rect x={groupX + barW + barGap} y={toY(b.avgWin)} width={barW} height={barH(b.avgWin)} rx={4} fill={teal} />
-                      {/* Avg loss bar */}
-                      <rect x={groupX + 2 * (barW + barGap)} y={toY(Math.abs(b.avgLoss))} width={barW} height={barH(b.avgLoss)} rx={4} fill={red} />
+                  {/* Bucket groups */}
+                  {buckets.map((b, gi) => {
+                    const groupX = pad.left + gi * groupW + groupW * 0.1;
+                    return (
+                      <g key={b.label}>
+                        {/* Risk reference bar (faded) */}
+                        <rect x={groupX} y={toY(b.avgRisk)} width={barW} height={barH(b.avgRisk)} rx={4} fill={teal} opacity={0.15} stroke={teal} strokeWidth={1} strokeOpacity={0.35} />
+                        {/* Avg win bar */}
+                        <rect x={groupX + barW + barGap} y={toY(b.avgWin)} width={barW} height={barH(b.avgWin)} rx={4} fill={teal} />
+                        {/* Avg loss bar */}
+                        <rect x={groupX + 2 * (barW + barGap)} y={toY(Math.abs(b.avgLoss))} width={barW} height={barH(b.avgLoss)} rx={4} fill={red} />
 
-                      {/* Value labels above bars */}
-                      {b.avgRisk > 0 && (
-                        <text x={groupX + barW / 2} y={toY(b.avgRisk) - 5} textAnchor="middle" fill="#aab0bd" fontSize="9" fontWeight="500" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
-                      )}
-                      {b.avgWin > 0 && (
-                        <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 5} textAnchor="middle" fill={teal} fontSize="9" fontWeight="600" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
-                      )}
-                      {b.avgLoss < 0 && (
-                        <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 5} textAnchor="middle" fill={red} fontSize="9" fontWeight="600" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
-                      )}
+                        {/* Value labels above bars */}
+                        {b.avgRisk > 0 && (
+                          <text x={groupX + barW / 2} y={toY(b.avgRisk) - 5} textAnchor="middle" fill="#aab0bd" fontSize="9" fontWeight="500" fontFamily="DM Mono, monospace">${Math.round(b.avgRisk)}</text>
+                        )}
+                        {b.avgWin > 0 && (
+                          <text x={groupX + barW + barGap + barW / 2} y={toY(b.avgWin) - 5} textAnchor="middle" fill={teal} fontSize="9" fontWeight="600" fontFamily="DM Mono, monospace">+${Math.round(b.avgWin)}</text>
+                        )}
+                        {b.avgLoss < 0 && (
+                          <text x={groupX + 2 * (barW + barGap) + barW / 2} y={toY(Math.abs(b.avgLoss)) - 5} textAnchor="middle" fill={red} fontSize="9" fontWeight="600" fontFamily="DM Mono, monospace">-${Math.round(Math.abs(b.avgLoss))}</text>
+                        )}
 
-                      {/* X-axis bucket label */}
-                      <text x={pad.left + gi * groupW + groupW / 2} y={baselineY + 18} textAnchor="middle" fill="#aab0bd" fontSize="11" fontFamily="DM Mono, monospace">{b.label}</text>
-                    </g>
-                  );
-                })}
-              </svg>
+                        {/* X-axis bucket label */}
+                        <text x={pad.left + gi * groupW + groupW / 2} y={baselineY + 18} textAnchor="middle" fill="#aab0bd" fontSize="10" fontFamily="DM Mono, monospace">{b.label}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+                {/* Drag-to-resize handle: bottom-right corner of the chart */}
+                <div
+                  onMouseDown={e => { e.preventDefault(); setSizeResizeDrag({ startY: e.clientY, startZoom: sizeZoom }); }}
+                  title="Drag to resize chart"
+                  style={{
+                    position: 'absolute',
+                    right: 2,
+                    bottom: 2,
+                    width: 18,
+                    height: 18,
+                    cursor: 'ns-resize',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-end',
+                    padding: 2,
+                    borderRadius: 3,
+                    background: sizeResizeDrag ? 'rgba(0,212,160,0.2)' : 'transparent',
+                    transition: 'background 0.15s ease',
+                  }}
+                  onMouseEnter={e => { if (!sizeResizeDrag) e.currentTarget.style.background = 'rgba(0,212,160,0.1)'; }}
+                  onMouseLeave={e => { if (!sizeResizeDrag) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14">
+                    <line x1="3" y1="13" x2="13" y2="3" stroke={teal} strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1="7" y1="13" x2="13" y2="7" stroke={teal} strokeWidth="1.5" strokeLinecap="round" />
+                    <line x1="11" y1="13" x2="13" y2="11" stroke={teal} strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </div>
+              </div>
 
               {/* Stat cards per bucket */}
               <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
@@ -1519,26 +1617,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   const winPerDollar = b.avgRisk > 0 && b.avgWin > 0 ? b.avgWin / b.avgRisk : 0;
                   const lossPerDollar = b.avgRisk > 0 && b.avgLoss < 0 ? Math.abs(b.avgLoss) / b.avgRisk : 0;
                   return (
-                    <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '16px 18px' }}>
-                      <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 8 }}>{b.label}</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-                        <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Trades</span>
-                        <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: teal }}>{b.count}</span>
+                    <div key={b.label} style={{ flex: 1, background: '#0f1318', border: '1px solid #2A3143', borderRadius: 10, padding: '18px 20px' }}>
+                      <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>{b.label}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>Trades</span>
+                        <span style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: teal }}>{b.count}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-                        <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Win rate</span>
-                        <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>Win rate</span>
+                        <span style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>{b.winRate.toFixed(0)}%</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-                        <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Record</span>
-                        <span style={{ fontFamily: fm, fontSize: 13, fontWeight: 600, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                        <span style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>Record</span>
+                        <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 600, color: '#d0d0d8' }}><span style={{ color: teal }}>{b.winCount}W</span> / <span style={{ color: red }}>{b.lossCount}L</span></span>
                       </div>
                       {b.count > 0 && (
-                        <div style={{ borderTop: '1px solid #2A3143', marginTop: 8, paddingTop: 8 }}>
-                          <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', letterSpacing: 0.5, marginBottom: 4 }}>Per $1 risked</div>
+                        <div style={{ borderTop: '1px solid #2A3143', marginTop: 10, paddingTop: 10 }}>
+                          <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd', letterSpacing: 0.5, marginBottom: 5 }}>Per $1 risked</div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                            <span style={{ fontFamily: fm, fontSize: 13, color: teal, fontWeight: 600 }}>Win ${winPerDollar.toFixed(2)}</span>
-                            <span style={{ fontFamily: fm, fontSize: 13, color: red, fontWeight: 600 }}>Lose ${lossPerDollar.toFixed(2)}</span>
+                            <span style={{ fontFamily: fm, fontSize: 14, color: teal, fontWeight: 600 }}>Win ${winPerDollar.toFixed(2)}</span>
+                            <span style={{ fontFamily: fm, fontSize: 14, color: red, fontWeight: 600 }}>Lose ${lossPerDollar.toFixed(2)}</span>
                           </div>
                         </div>
                       )}
@@ -1548,7 +1646,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
 
               {/* Interpretation */}
-              <div style={{ marginTop: 16, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '14px 18px', fontFamily: fm, fontSize: 13, color: '#ccc', lineHeight: 1.7 }}>
+              <div style={{ marginTop: 16, background: '#12151d', borderLeft: `3px solid ${teal}`, borderRadius: '0 8px 8px 0', padding: '16px 20px', fontFamily: fm, fontSize: 14, color: '#ccc', lineHeight: 1.7 }}>
                 <strong style={{ color: '#fff' }}>How to read this:</strong> If the green bar grows proportionally with the faded bar as you move right, sizing up is working. If green flattens while red grows, you are cutting winners short at higher size.
               </div>
             </>

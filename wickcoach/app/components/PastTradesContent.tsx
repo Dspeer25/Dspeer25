@@ -364,34 +364,34 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export CSV
             </span>
-            <span
-              onClick={() => setAiOpen(!aiOpen)}
+            <div
+              style={{ position: 'relative' }}
               onMouseEnter={() => setAiBtnHover(true)}
               onMouseLeave={() => setAiBtnHover(false)}
-              style={{ position: 'relative', fontFamily: fm, fontSize: 15, color: '#000', padding: '12px 26px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #00d4a0, #00e6b0)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 0 24px rgba(0,212,160,0.3), inset 0 1px 0 rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>
-              <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-                <circle cx="8" cy="4" r="2.8" stroke="#000" strokeWidth="1.4" fill="none" />
-                <line x1="8" y1="6.8" x2="8" y2="15" stroke="#000" strokeWidth="1.4" />
-                <line x1="8" y1="9.5" x2="3" y2="13" stroke="#000" strokeWidth="1.4" />
-                <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#000" strokeWidth="1.4" />
-                <line x1="8" y1="15" x2="4.5" y2="21" stroke="#000" strokeWidth="1.4" />
-                <line x1="8" y1="15" x2="11.5" y2="21" stroke="#000" strokeWidth="1.4" />
-                <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#000" />
-                <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#000" strokeWidth="1" />
-              </svg>
-              Ask AI Coach
+            >
+              <span
+                onClick={() => setAiOpen(!aiOpen)}
+                style={{ fontFamily: fm, fontSize: 15, color: '#000', padding: '12px 26px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, #00d4a0, #00e6b0)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 0 24px rgba(0,212,160,0.3), inset 0 1px 0 rgba(255,255,255,0.25)', letterSpacing: 0.5 }}>
+                <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+                  <circle cx="8" cy="4" r="2.8" stroke="#000" strokeWidth="1.4" fill="none" />
+                  <line x1="8" y1="6.8" x2="8" y2="15" stroke="#000" strokeWidth="1.4" />
+                  <line x1="8" y1="9.5" x2="3" y2="13" stroke="#000" strokeWidth="1.4" />
+                  <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#000" strokeWidth="1.4" />
+                  <line x1="8" y1="15" x2="4.5" y2="21" stroke="#000" strokeWidth="1.4" />
+                  <line x1="8" y1="15" x2="11.5" y2="21" stroke="#000" strokeWidth="1.4" />
+                  <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill="#000" />
+                  <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#000" strokeWidth="1" />
+                </svg>
+                Ask AI Coach
+              </span>
               {aiBtnHover && !aiOpen && (
-                <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: 320, background: '#0f1318', border: '1px solid rgba(0,212,160,0.35)', borderRadius: 10, padding: '14px 16px', boxShadow: '0 10px 32px rgba(0,0,0,0.55), 0 0 20px rgba(0,212,160,0.12)', zIndex: 50, pointerEvents: 'none', textAlign: 'left' }}>
-                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 }}>Past Trades Coach</div>
-                  <div style={{ fontFamily: fm, fontSize: 12, color: '#d0d0d8', fontWeight: 400, lineHeight: 1.6, letterSpacing: 0 }}>
-                    Reads your executed trade log end-to-end. Surfaces win/loss patterns by strategy, R:R trends, time-of-day edges, and repeating journal themes — then coaches what to change next.
-                  </div>
-                  <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', marginTop: 8, fontWeight: 400, letterSpacing: 0 }}>
-                    Different from the Goals, Analysis, and Profile coaches.
+                <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: 240, maxWidth: 'calc(100vw - 40px)', background: '#0f1318', border: '1px solid rgba(0,212,160,0.4)', borderRadius: 10, padding: '12px 14px', boxShadow: '0 10px 32px rgba(0,0,0,0.55), 0 0 20px rgba(0,212,160,0.12)', zIndex: 50, pointerEvents: 'none', textAlign: 'center' }}>
+                  <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, color: teal, lineHeight: 1.4 }}>
+                    High Level Analysis on your Past Trades
                   </div>
                 </div>
               )}
-            </span>
+            </div>
           </div>
         </div>
         {/* ── STAT CARDS — 5 connected cards ── */}
@@ -473,11 +473,11 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                 <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#00d4a0" strokeWidth="0.8" />
               </svg>
             </div>
-            <div style={{ color: '#00d4a0', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1, fontWeight: 600 }}>High-Level Analysis</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Expected Value</div>
             <div style={{ color: expectedValue >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 10, lineHeight: 1.1 }}>
               {(expectedValue >= 0 ? '+' : '-') + '$' + Math.abs(expectedValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 10 }}>Expected Value / Trade</div>
+            <div style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 10, fontStyle: 'italic' }}>Per Trade</div>
           </div>
         </div>
 
@@ -713,8 +713,8 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                   <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
                   {/* R:R */}
                   <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
-                  {/* Notes */}
-                  <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.5, whiteSpace: 'normal', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal && t.journal.length > 180) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  {/* Notes — clamped to 2 lines; column drag exposes more horizontal text; hover reveals the full note */}
+                  <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                 </div>
               );
             })}
