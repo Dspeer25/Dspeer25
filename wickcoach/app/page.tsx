@@ -220,10 +220,10 @@ export default function WickCoachFull() {
 
             {/* LEFT — Direct API connection */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 24px' }}>
-              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Direct API Connection</div>
-              <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', marginBottom: 20, textAlign: 'center' }}>Connect your brokerage account to automatically sync trades</div>
+              <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Direct API Connection</div>
+              <div style={{ fontFamily: fm, fontSize: 15, color: '#aab0bd', marginBottom: 24, textAlign: 'center' }}>Connect your brokerage account to automatically sync trades</div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, width: '100%', maxWidth: 320, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, width: '100%', maxWidth: 360, marginBottom: 24 }}>
                 {[
                   { name: 'THINKORSWIM', domain: 'thinkorswim.com' },
                   { name: 'INTERACTIVE BROKERS', domain: 'interactivebrokers.com' },
@@ -233,8 +233,8 @@ export default function WickCoachFull() {
                   { name: 'TRADIER', domain: 'tradier.com' },
                 ].map(b => (
                   <div key={b.name} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    padding: '10px 12px', background: '#1f2430', border: '1px solid #2A3143',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    padding: '14px 14px', background: '#1f2430', border: '1px solid #2A3143',
                     borderRadius: 8, transition: 'border-color 0.2s',
                   }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,160,0.5)'; }}
@@ -242,11 +242,11 @@ export default function WickCoachFull() {
                   >
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${b.domain}&sz=64`}
-                      alt="" width={18} height={18}
-                      style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 3, background: '#fff', padding: 1, flexShrink: 0 }}
+                      alt="" width={28} height={28}
+                      style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 4, background: '#fff', padding: 2, flexShrink: 0 }}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
-                    <span style={{ fontFamily: fm, fontSize: 10, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.05em', fontWeight: 600, textAlign: 'center' }}>{b.name}</span>
+                    <span style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.05em', fontWeight: 600, textAlign: 'center' }}>{b.name}</span>
                   </div>
                 ))}
               </div>
@@ -257,14 +257,14 @@ export default function WickCoachFull() {
             {/* CENTER — OR divider */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 20px', flexShrink: 0 }}>
               <div style={{ width: 1, flex: 1, background: 'linear-gradient(to bottom, transparent, #2A3143 30%, #2A3143 70%, transparent)' }} />
-              <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#555', padding: '16px 0', letterSpacing: 2 }}>OR</div>
+              <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: teal, padding: '18px 0', letterSpacing: 3, textShadow: '0 0 18px rgba(0,212,160,0.6), 0 0 36px rgba(0,212,160,0.35)' }}>OR</div>
               <div style={{ width: 1, flex: 1, background: 'linear-gradient(to bottom, transparent, #2A3143 30%, #2A3143 70%, transparent)' }} />
             </div>
 
             {/* RIGHT — Upload trade history */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 24px' }}>
-              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Upload Trade History</div>
-              <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', marginBottom: 20, textAlign: 'center' }}>Export from any broker or platform and drop it here</div>
+              <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Upload Trade History</div>
+              <div style={{ fontFamily: fm, fontSize: 15, color: '#aab0bd', marginBottom: 24, textAlign: 'center' }}>Export from any broker or platform and drop it here</div>
 
               {/* Upload zone */}
               <div style={{
