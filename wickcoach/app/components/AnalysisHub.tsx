@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek, parseLocalDate } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -57,7 +57,7 @@ function buildWeekBuckets(trades: Trade[]): WeekBucket[] {
     const start = startOfWeek(new Date(today.getTime() - i * 7 * 86400000));
     const end = new Date(start.getTime() + 6 * 86400000);
     const inWeek = trades.filter(t => {
-      const d = new Date(t.date);
+      const d = parseLocalDate(t.date);
       return d >= start && d <= new Date(end.getTime() + 86400000 - 1);
     });
     buckets.push({ weekLabel: fmtWeekRange(start, end), start, end, trades: inWeek });
@@ -323,7 +323,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     weekStart.setDate(weekStart.getDate() + diff);
 
     const unscored = trades.filter(t => {
-      const d = new Date(t.date);
+      const d = parseLocalDate(t.date);
       return d >= weekStart && !cache[t.id];
     });
     if (unscored.length === 0) return;

@@ -1,10 +1,10 @@
 'use client'
 import React, { useState, useRef } from "react"
-import { Trade } from "./shared"
+import { Trade, toLocalYMD } from "./shared"
 
 export default function LogATradeContent({ setActiveTab: setTab, trades, setTrades }: { setActiveTab: (tab: string) => void; trades: Trade[]; setTrades: React.Dispatch<React.SetStateAction<Trade[]>> }) {
     const [ticker, setTicker] = useState('');
-    const [tradeDate, setTradeDate] = useState(new Date().toISOString().split('T')[0]);
+    const [tradeDate, setTradeDate] = useState(toLocalYMD());
     const [positionType, setPositionType] = useState<'SHARES' | 'DERIVATIVES'>('DERIVATIVES');
     const [strategyType, setStrategyType] = useState('0DTE Call');
     const [strategyInputMode, setStrategyInputMode] = useState<'select' | 'text'>('select');
@@ -68,7 +68,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     }, [pl, risk]);
 
     const resetForm = () => {
-      setTicker(''); setTradeDate(new Date().toISOString().split('T')[0]);
+      setTicker(''); setTradeDate(toLocalYMD());
       setPositionType('DERIVATIVES'); setStrategyType('0DTE Call');
       setStrategyInputMode('select'); setCustomStrategy('');
       setDirection('LONG'); setContracts(''); setEntryPrice('');

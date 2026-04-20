@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, buildGoalsContext, buildProfileContext, readQuantTargets } from "./shared";
+import { fm, fd, Trade, formatDollar, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate } from "./shared";
 import AIChatWidget from "./AIChatWidget";
 
 // Local green — all greens in this file resolve to this single swatch.
@@ -157,16 +157,16 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     if (resultFilter === 'Losses' && t.result !== 'LOSS') return false;
     if (resultFilter === 'Break Even' && t.pl !== 0) return false;
     if (dateRange === 'This Week') {
-      const d = new Date(t.date); const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
+      const d = parseLocalDate(t.date); const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
       if (d < weekAgo) return false;
     } else if (dateRange === '10 Days') {
-      const d = new Date(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 10 * 86400000);
+      const d = parseLocalDate(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 10 * 86400000);
       if (d < cutoff) return false;
     } else if (dateRange === '15 Days') {
-      const d = new Date(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 15 * 86400000);
+      const d = parseLocalDate(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 15 * 86400000);
       if (d < cutoff) return false;
     } else if (dateRange === 'This Month') {
-      const d = new Date(t.date); const now = new Date();
+      const d = parseLocalDate(t.date); const now = new Date();
       if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
     }
     return true;
@@ -195,7 +195,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     else if (eqRange === '1M') cutoff = new Date(now.getTime() - 30 * 86400000);
     else if (eqRange === '3M') cutoff = new Date(now.getTime() - 90 * 86400000);
     else cutoff = new Date('2000-01-01');
-    return filtered.filter(t => new Date(t.date) >= cutoff);
+    return filtered.filter(t => parseLocalDate(t.date) >= cutoff);
   })();
   const wins = statTrades.filter(t => t.result === 'WIN' && t.pl > 0);
   const losses = statTrades.filter(t => t.result === 'LOSS' || (t.result !== 'WIN' && t.pl < 0));
@@ -212,14 +212,14 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
   const now = new Date();
   const monthStart = new Date(now.getTime() - 30 * 86400000);
   const prevMonthStart = new Date(now.getTime() - 60 * 86400000);
-  const currMonth = filtered.filter(t => new Date(t.date) >= monthStart);
-  const prevMonth = filtered.filter(t => new Date(t.date) >= prevMonthStart && new Date(t.date) < monthStart);
+  const currMonth = filtered.filter(t => parseLocalDate(t.date) >= monthStart);
+  const prevMonth = filtered.filter(t => parseLocalDate(t.date) >= prevMonthStart && parseLocalDate(t.date) < monthStart);
   const currWR = currMonth.length ? (currMonth.filter(t => t.pl > 0).length / currMonth.length) * 100 : 0;
   const prevWR = prevMonth.length ? (prevMonth.filter(t => t.pl > 0).length / prevMonth.length) * 100 : 0;
   const wrDelta = prevMonth.length > 0 ? Math.round(currWR - prevWR) : null;
   // Average trades per active day in the stat window.
   const statDays = statTrades.length > 0
-    ? Math.max(1, Math.ceil((now.getTime() - Math.min(...statTrades.map(t => new Date(t.date).getTime()))) / 86400000))
+    ? Math.max(1, Math.ceil((now.getTime() - Math.min(...statTrades.map(t => parseLocalDate(t.date).getTime()))) / 86400000))
     : 1;
   const tradesPerDay = statTrades.length / statDays;
   // Avg R numeric value for target comparison.
@@ -248,7 +248,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
 
 
   const formatDate = (d: string) => {
-    const dt = new Date(d);
+    const dt = parseLocalDate(d);
     return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
@@ -289,7 +289,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
     else if (eqRange === '1M') { cutoff = new Date(now.getTime() - 30 * 86400000); }
     else if (eqRange === '3M') { cutoff = new Date(now.getTime() - 90 * 86400000); }
     else { cutoff = new Date('2000-01-01'); }
-    return equityCurveAll.filter(e => new Date(e.date) >= cutoff);
+    return equityCurveAll.filter(e => parseLocalDate(e.date) >= cutoff);
   })();
   const eqMin = equityCurve.length > 0 ? Math.min(...equityCurve.map(e => e.value)) : 0;
   const eqMaxVal = equityCurve.length > 0 ? Math.max(...equityCurve.map(e => e.value)) : 1;
@@ -587,7 +587,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
               {/* Hover tooltip */}
               {eqHover && (
                 <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#141822', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
-                  <div style={{ color: '#9ca3af' }}>{new Date(eqHover.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div style={{ color: '#9ca3af' }}>{parseLocalDate(eqHover.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                   <div style={{ color: eqHover.value >= 0 ? teal : '#ff4444', fontWeight: 700 }}>{formatDollar(Math.round(eqHover.value))}</div>
                 </div>
               )}
@@ -597,7 +597,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, paddingLeft: 65 }}>
               {[0, Math.floor(equityCurve.length * 0.25), Math.floor(equityCurve.length * 0.5), Math.floor(equityCurve.length * 0.75), equityCurve.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(idx => (
                 <span key={idx} style={{ fontFamily: fm, fontSize: 11, color: '#6b7280' }}>
-                  {new Date(equityCurve[idx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {parseLocalDate(equityCurve[idx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               ))}
             </div>
@@ -696,7 +696,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 15 }}>{t.ticker}</span>
                   </span>
                   {/* Date */}
-                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = parseLocalDate(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
                   {/* Time */}
                   <span style={{ color: '#b8c0ce', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
                   {/* Strategy */}

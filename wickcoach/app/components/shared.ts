@@ -332,10 +332,50 @@ function tCritical(df: number): number {
   return 4.303;
 }
 
+// ─── Trade date helpers ──────────────────────────────────────
+// Trade.date is stored as a local-calendar "YYYY-MM-DD" string.
+// The two helpers below are the ONLY approved way to parse and
+// produce that field. Direct `new Date(t.date)` parses as UTC
+// midnight, which renders as the previous calendar day in
+// timezones west of UTC; `new Date().toISOString().split('T')[0]`
+// produces the UTC date, which is off by one after local evening.
+// Using these helpers keeps all display + bucketing on a single
+// local-calendar interpretation.
+
+/**
+ * Parse a "YYYY-MM-DD" calendar date string into a Date object
+ * at LOCAL midnight. Use this for every read of Trade.date.
+ *
+ * Do NOT use `new Date(str)` directly — it parses as UTC midnight,
+ * which renders as the previous day in timezones west of UTC.
+ */
+export function parseLocalDate(ymd: string): Date {
+  if (!ymd || typeof ymd !== 'string') return new Date(NaN);
+  return new Date(ymd + 'T00:00:00');
+}
+
+/**
+ * Format a Date (defaults to now) as a "YYYY-MM-DD" string using
+ * LOCAL calendar fields. Use this for every write to Trade.date.
+ *
+ * Do NOT use `.toISOString().split('T')[0]` — it returns the UTC
+ * calendar date, which is off by one after local evening in
+ * timezones west of UTC.
+ */
+export function toLocalYMD(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export interface Trade {
   id: string;
   ticker: string;
   companyName: string;
+  /** Local calendar date of the trade in "YYYY-MM-DD" format.
+   *  Always produced by toLocalYMD() and consumed by parseLocalDate().
+   *  Never use `new Date(t.date)` or `new Date().toISOString()` on this field. */
   date: string;
   time: string;
   strategy: string;
