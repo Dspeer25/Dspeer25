@@ -913,7 +913,14 @@ export function buildProfileContext(): string {
 // `wickcoach_trade_classifications`.
 export interface TradeClassification {
   tradeId: string;
-  goalScores: Array<{ goalIndex: number; compliance: 0 | 1; reason: string }>;
+  /**
+   * Per-goal compliance.
+   *  - `1`    = journal explicitly shows the goal was followed
+   *  - `0`    = journal explicitly shows the goal was violated
+   *  - `null` = journal says nothing about this goal's subject
+   *             (classifier must pick null rather than fabricate a 0 or 1)
+   */
+  goalScores: Array<{ goalIndex: number; compliance: 0 | 1 | null; reason: string }>;
   psychScore: number;      // 0-100
   tradeType: 'process' | 'impulse' | 'neutral';
   psychReason: string;

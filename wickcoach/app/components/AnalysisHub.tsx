@@ -419,16 +419,22 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
     // Primary: AI-scored per-goal compliance.
     if (aiScoredTrades.length >= 3) {
-      const complied = aiScoredTrades.filter(t => {
-        const gs = classifications[t.id].goalScores.find(s => s.goalIndex === goalIdx);
-        return gs?.compliance === 1;
-      }).length;
+      // Compliance nulls (journal says nothing about this goal's
+      // subject) are EXCLUDED from both numerator and denominator.
+      // Otherwise one goal can artificially inflate or tank because
+      // the journal never addressed it.
+      const scored = aiScoredTrades
+        .map(t => classifications[t.id].goalScores.find(s => s.goalIndex === goalIdx))
+        .filter((gs): gs is NonNullable<typeof gs> => Boolean(gs));
+      const evaluable = scored.filter(gs => gs.compliance === 0 || gs.compliance === 1);
+      const complied  = evaluable.filter(gs => gs.compliance === 1).length;
+      const nullCount = scored.length - evaluable.length;
       const processCount = aiScoredTrades.filter(t => classifications[t.id].tradeType === 'process').length;
       return {
         title: g.title || '(untitled)',
         type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-        trades: { actual: complied, target: aiScoredTrades.length },
-        psych:  { actual: processCount, target: aiScoredTrades.length },
+        trades: { actual: complied, target: evaluable.length, nullCount },
+        psych:  { actual: processCount, target: aiScoredTrades.length, nullCount: 0 },
       };
     }
 
@@ -444,8 +450,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     return {
       title: g.title || '(untitled)',
       type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-      trades: { actual: tradesActual, target: tradesTarget },
-      psych:  { actual: psychActual,  target: psychTarget },
+      trades: { actual: tradesActual, target: tradesTarget, nullCount: 0 },
+      psych:  { actual: psychActual,  target: psychTarget,  nullCount: 0 },
     };
   });
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
@@ -496,7 +502,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               let reason = '';
               if (section === 'trades') {
                 const gs = c?.goalScores.find(s => s.goalIndex === goalIdx);
-                if (!c || !gs) icon = { glyph: '—', color: '#555' };
+                // null compliance → "no evidence in journal", render
+                // the same grey dash as a missing classification so the
+                // trader can tell at a glance which trades carried
+                // signal for this specific goal.
+                if (!c || !gs || gs.compliance === null) icon = { glyph: '—', color: '#555' };
                 else if (gs.compliance === 1) icon = { glyph: '✓', color: teal };
                 else icon = { glyph: '✗', color: red };
                 reason = gs?.reason || '';
@@ -1099,7 +1109,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {selectedWeek.goals.map((g, i) => {
-                const pct = Math.round((g.trades.actual / g.trades.target) * 100);
+                const evaluable = g.trades.target;
+                const nullCount = g.trades.nullCount || 0;
+                const allNull = evaluable === 0;
+                const pct = allNull ? 0 : Math.round((g.trades.actual / evaluable) * 100);
                 const clamped = Math.min(100, pct);
                 const isExpanded = expandedRow?.section === 'trades' && expandedRow.goalIdx === i;
                 const isHovered = hoveredRow?.section === 'trades' && hoveredRow.goalIdx === i;
@@ -1121,20 +1134,34 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
                         <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
                         <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
-                          <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
+                          {allNull ? (
+                            <span style={{ fontSize: 13, color: '#7a7d85', fontFamily: fm, fontStyle: 'italic' }}>No evidence this week</span>
+                          ) : (
+                            <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700 }}>
+                              {g.trades.actual}<span style={{ color: '#666' }}> / {evaluable}</span>
+                              <span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span>
+                              {nullCount > 0 && (
+                                <span style={{ color: '#7a7d85', fontWeight: 400, fontSize: 12, marginLeft: 8 }}>· {nullCount} not evaluated</span>
+                              )}
+                            </span>
+                          )}
                           <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', width: 12, textAlign: 'center' }}>{isExpanded ? '▴' : '▾'}</span>
                         </span>
                       </div>
-                      <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{
-                          width: `${clamped}%`,
-                          height: '100%',
-                          background: `linear-gradient(to right, rgba(74,158,255,0.4), ${blue})`,
-                          boxShadow: `0 0 8px rgba(74,158,255,0.4)`,
-                          transition: 'width 0.5s ease',
-                        }} />
-                      </div>
-                      <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
+                      {!allNull && (
+                        <>
+                          <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{
+                              width: `${clamped}%`,
+                              height: '100%',
+                              background: `linear-gradient(to right, rgba(74,158,255,0.4), ${blue})`,
+                              boxShadow: `0 0 8px rgba(74,158,255,0.4)`,
+                              transition: 'width 0.5s ease',
+                            }} />
+                          </div>
+                          <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
+                        </>
+                      )}
                     </div>
                     {isExpanded && renderDrilldown('trades', i)}
                   </div>
