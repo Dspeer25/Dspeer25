@@ -173,7 +173,7 @@ export default function WickCoachFull() {
               <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} />
             </div>
           )}
-          {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
+          {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setTrades={setTrades} setActiveTab={setActiveTab} />}
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
           {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
           {activeTab === 'Trader Profile' && <TraderProfileContent trades={trades} />}

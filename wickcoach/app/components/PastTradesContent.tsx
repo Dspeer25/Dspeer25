@@ -54,7 +54,7 @@ const TickerTile = ({ ticker }: { ticker: string }) => {
   );
 };
 
-export default function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiveTab: (tab: string) => void }) {
+export default function PastTradesContent({ trades, setTrades, setActiveTab }: { trades: Trade[]; setTrades: React.Dispatch<React.SetStateAction<Trade[]>>; setActiveTab: (tab: string) => void }) {
   const [search, setSearch] = useState('');
   const [stratFilter, setStratFilter] = useState('All');
   const [resultFilter, setResultFilter] = useState('All');
@@ -70,6 +70,41 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
   const [notesTooltip, setNotesTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [aiBtnHover, setAiBtnHover] = useState(false);
   const [chartHeight, setChartHeight] = useState(180);
+  // ── Inline row editing ───────────────────────────────────
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Trade | null>(null);
+  const startEdit = (t: Trade) => { setEditingId(t.id); setEditDraft({ ...t }); };
+  const cancelEdit = () => { setEditingId(null); setEditDraft(null); };
+  const saveEdit = () => {
+    if (!editDraft || !editingId) return;
+    // Keep `result` in sync with the edited P/L so the row color and
+    // stat cards don't drift from the number the user just typed.
+    const next: Trade = {
+      ...editDraft,
+      result: editDraft.pl > 0 ? 'WIN' : editDraft.pl < 0 ? 'LOSS' : 'BREAKEVEN',
+    };
+    setTrades(prev => {
+      const updated = prev.map(x => x.id === editingId ? next : x);
+      try { localStorage.setItem('wickcoach_trades', JSON.stringify(updated)); } catch { /* ignore quota */ }
+      return updated;
+    });
+    cancelEdit();
+  };
+  const patch = (fields: Partial<Trade>) => setEditDraft(prev => prev ? { ...prev, ...fields } : prev);
+  const editInputStyle: React.CSSProperties = {
+    width: '100%',
+    background: '#0f1318',
+    border: '1px solid rgba(0,212,160,0.4)',
+    borderRadius: 4,
+    padding: '4px 6px',
+    color: '#fff',
+    fontFamily: fm,
+    fontSize: 13,
+    outline: 'none',
+    caretColor: teal,
+    boxSizing: 'border-box',
+  };
   React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy]);
   const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [aiInput, setAiInput] = useState('');
@@ -688,33 +723,106 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
           ) : (<>
             {pagedTrades.map((t, idx) => {
               const rowBg = idx % 2 === 0 ? '#111218' : '#161822';
+              const isEditing = editingId === t.id;
+              const d: Trade = isEditing && editDraft ? editDraft : t;
+              const cellPad = '14px 8px';
+              const cellBorder = '1px solid rgba(42,49,67,0.5)';
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2A3143', borderLeft: '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2A3143', borderLeft: isEditing ? `2px solid ${teal}` : '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer', position: 'relative' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; setHoveredRowId(t.id); }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; setHoveredRowId(h => h === t.id ? null : h); }}>
                   {/* Asset */}
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', whiteSpace: 'nowrap' }}>
-                    <TickerTile ticker={t.ticker} />
-                    <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 15 }}>{t.ticker}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: cellPad, borderRight: cellBorder, whiteSpace: 'nowrap' }}>
+                    {isEditing ? (
+                      <input value={d.ticker} onChange={e => patch({ ticker: e.target.value.toUpperCase() })} style={{ ...editInputStyle, textAlign: 'center', fontWeight: 700 }} />
+                    ) : (<>
+                      <TickerTile ticker={t.ticker} />
+                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 15 }}>{t.ticker}</span>
+                    </>)}
                   </span>
                   {/* Date */}
-                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = new Date(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <input type="date" value={d.date} onChange={e => patch({ date: e.target.value })} style={{ ...editInputStyle }} />
+                    ) : (() => { const dt = new Date(t.date); return `${dt.getMonth()+1}/${dt.getDate()}/${String(dt.getFullYear()).slice(2)}`; })()}
+                  </span>
                   {/* Time */}
-                  <span style={{ color: '#b8c0ce', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
+                  <span style={{ color: '#b8c0ce', fontSize: 15, whiteSpace: 'nowrap', padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <input type="time" value={d.time} onChange={e => patch({ time: e.target.value })} style={{ ...editInputStyle }} />
+                    ) : formatTime(t.time)}
+                  </span>
                   {/* Strategy */}
-                  <span style={{ color: '#d5dae2', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
+                  <span style={{ color: '#d5dae2', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <input value={d.strategy} onChange={e => patch({ strategy: e.target.value })} style={{ ...editInputStyle, textAlign: 'center' }} />
+                    ) : t.strategy}
+                  </span>
                   {/* Direction */}
-                  <span style={{ padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontFamily: fm, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(255,68,68,0.1)', border: t.direction === 'LONG' ? '1px solid rgba(0,212,160,0.15)' : '1px solid rgba(255,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ff4444' }}>{t.direction}</span>
+                  <span style={{ padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <span onClick={() => patch({ direction: d.direction === 'LONG' ? 'SHORT' : 'LONG' })} style={{ padding: '4px 10px', borderRadius: 3, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, fontFamily: fm, cursor: 'pointer', background: d.direction === 'LONG' ? 'rgba(0,212,160,0.15)' : 'rgba(255,68,68,0.15)', border: d.direction === 'LONG' ? `1px solid ${teal}` : '1px solid #ff4444', color: d.direction === 'LONG' ? teal : '#ff4444', userSelect: 'none' }}>{d.direction}</span>
+                    ) : (
+                      <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontFamily: fm, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(255,68,68,0.1)', border: t.direction === 'LONG' ? '1px solid rgba(0,212,160,0.15)' : '1px solid rgba(255,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ff4444' }}>{t.direction}</span>
+                    )}
                   </span>
                   {/* Qty */}
-                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
+                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <input type="number" step="1" value={d.contracts} onChange={e => patch({ contracts: Number(e.target.value) })} style={{ ...editInputStyle, textAlign: 'center' }} />
+                    ) : t.contracts}
+                  </span>
                   {/* Entry / Exit */}
-                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {isEditing ? (<>
+                      <input type="number" step="0.01" value={d.entryPrice} onChange={e => patch({ entryPrice: Number(e.target.value) })} style={{ ...editInputStyle, textAlign: 'right' }} />
+                      <span style={{ color: '#7a7d85' }}>→</span>
+                      <input type="number" step="0.01" value={d.exitPrice} onChange={e => patch({ exitPrice: Number(e.target.value) })} style={{ ...editInputStyle, textAlign: 'right' }} />
+                    </>) : `$${t.entryPrice.toFixed(2)} → $${t.exitPrice.toFixed(2)}`}
+                  </span>
                   {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
+                  <span style={{ color: d.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <input type="number" step="0.01" value={d.pl} onChange={e => patch({ pl: Number(e.target.value) })} style={{ ...editInputStyle, textAlign: 'right', color: d.pl >= 0 ? teal : '#ff4444', fontWeight: 700 }} />
+                    ) : formatDollar(t.pl)}
+                  </span>
                   {/* R:R */}
-                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
+                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: cellPad, borderRight: cellBorder, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isEditing ? (
+                      <input value={d.riskReward} onChange={e => patch({ riskReward: e.target.value })} placeholder="1:2.5" style={{ ...editInputStyle, textAlign: 'center' }} />
+                    ) : (t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2'))}
+                  </span>
                   {/* Notes — clamped to 2 lines; column drag exposes more horizontal text; hover reveals the full note */}
-                  <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  {isEditing ? (
+                    <div style={{ padding: '8px 10px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                      <textarea
+                        value={d.journal}
+                        onChange={e => patch({ journal: e.target.value })}
+                        rows={2}
+                        style={{ ...editInputStyle, resize: 'vertical', lineHeight: 1.4, minHeight: 48 }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', paddingRight: 42, width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  )}
+                  {/* Hover pencil (view mode) or Save/Cancel (edit mode) — absolute overlay on the right edge */}
+                  {isEditing ? (
+                    <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: 6, alignItems: 'center', zIndex: 5 }} onClick={e => e.stopPropagation()}>
+                      <span onClick={saveEdit} title="Save" style={{ fontFamily: fm, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#000', background: teal, padding: '6px 10px', borderRadius: 5, cursor: 'pointer', boxShadow: '0 0 10px rgba(0,212,160,0.35)' }}>Save</span>
+                      <span onClick={cancelEdit} title="Cancel" style={{ fontFamily: fm, fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: '#aab0bd', background: '#1a1b22', border: '1px solid #2A3143', padding: '5px 10px', borderRadius: 5, cursor: 'pointer' }}>Cancel</span>
+                    </div>
+                  ) : hoveredRowId === t.id && (
+                    <span
+                      onClick={e => { e.stopPropagation(); startEdit(t); }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.18)'; e.currentTarget.style.borderColor = teal; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(13,17,23,0.85)'; e.currentTarget.style.borderColor = '#2A3143'; }}
+                      title="Edit trade"
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 28, height: 28, borderRadius: 6, background: 'rgba(13,17,23,0.85)', border: '1px solid #2A3143', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 5, transition: 'background 0.15s, border-color 0.15s' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={teal} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                      </svg>
+                    </span>
+                  )}
                 </div>
               );
             })}
