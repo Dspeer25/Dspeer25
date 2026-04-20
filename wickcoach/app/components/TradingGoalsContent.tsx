@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
@@ -92,20 +92,45 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     // current week's bucket instead of vanishing.
     const stamp = getCurrentWeekStart();
     const stored = readAllGoals();
+    let working: Goal[];
     if (stored.length > 0) {
       let changed = false;
-      const migrated = stored.map((g: Goal) => {
+      working = stored.map((g: Goal) => {
         const next: Goal = { ...g, actionItems: g.actionItems || [], goalType: g.goalType || 'General', weekStart: g.weekStart || stamp };
         if (!g.weekStart) changed = true;
         return next;
       });
-      if (changed) writeAllGoals(migrated);
-      setGoals(migrated);
+      if (changed) writeAllGoals(working);
     } else {
-      const seed = getDefaultGoals();
-      setGoals(seed);
-      writeAllGoals(seed);
+      working = getDefaultGoals();
+      writeAllGoals(working);
     }
+
+    // One-time seed of LAST week's history so the HISTORY sidebar has
+    // something to click right after upgrading. Gated on a dedicated
+    // localStorage flag so deleting the seed goals doesn't re-create
+    // them. The flag is specific to this feature — no collision with
+    // any other migration.
+    try {
+      const SEED_FLAG = 'wickcoach_seeded_last_week_v1';
+      if (!localStorage.getItem(SEED_FLAG)) {
+        const lastWeekStart = toISODate(new Date(startOfWeek(new Date()).getTime() - 7 * 86400000));
+        const alreadyHasLastWeek = working.some(g => g.weekStart === lastWeekStart);
+        if (!alreadyHasLastWeek) {
+          const nowIso = new Date().toISOString();
+          const seedLast: Goal[] = [
+            { id: `seed_${lastWeekStart}_1`, title: 'SAMPLE — LAST WEEK RISK CAP AT 1R', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Risk Management',  weekStart: lastWeekStart },
+            { id: `seed_${lastWeekStart}_2`, title: 'SAMPLE — CONFIRM 5M BEFORE ENTRY',  context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Entry Criteria',   weekStart: lastWeekStart },
+            { id: `seed_${lastWeekStart}_3`, title: 'SAMPLE — WAIT FOR PULLBACK TO 20MA', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Patience / Setup', weekStart: lastWeekStart },
+          ];
+          working = [...working, ...seedLast];
+          writeAllGoals(working);
+        }
+        localStorage.setItem(SEED_FLAG, '1');
+      }
+    } catch { /* ignore storage errors */ }
+
+    setGoals(working);
   }, []);
 
   useEffect(() => {
@@ -278,12 +303,16 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
 
   const getProgressPercent = (g: Goal) => Math.max(0, Math.min(100, g.completeness ?? 0));
 
+  // HISTORY section collapse state. Starts expanded so the user sees
+  // the list on first load.
+  const [historyOpen, setHistoryOpen] = useState(true);
+
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 140px)', fontFamily: fm, background: 'transparent' }}>
       {/* ═══ LEFT SIDEBAR ═══ */}
       <div style={{ width: 220, background: '#141822', borderRight: '1px solid #2A3143', padding: '28px 20px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ fontFamily: fm, fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>Navigation</div>
-        <div style={{ fontFamily: fm, fontSize: 13, color: teal, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700, marginBottom: 16 }}>Goals Hierarchy</div>
+        <div style={{ fontFamily: fm, fontSize: 13, color: '#7a7d85', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Navigation</div>
+        <div style={{ fontFamily: fm, fontSize: 15, color: teal, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700, marginBottom: 18 }}>Goals Hierarchy</div>
         <div style={{ height: 1, background: '#2a2b32', marginBottom: 20 }} />
 
         {(['weekly', 'monthly', 'behavioral'] as const).map(v => {
@@ -305,8 +334,8 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                 cursor: 'pointer',
                 background: isActive ? '#1a1f2a' : 'transparent',
                 borderLeft: isActive ? `3px solid ${teal}` : '3px solid transparent',
-                color: isActive ? '#ffffff' : '#6b7280',
-                fontSize: 14,
+                color: isActive ? '#ffffff' : '#9ca0ab',
+                fontSize: 15,
                 fontFamily: fm,
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -315,17 +344,37 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
               }}
             >
               <span>{label}</span>
-              {isActive && <span style={{ color: teal, fontSize: 12 }}>›</span>}
+              {isActive && <span style={{ color: teal, fontSize: 13 }}>›</span>}
             </div>
           );
         })}
 
-        {/* ═══ HISTORY ═══ */}
+        {/* ═══ HISTORY — collapsible, header acts as toggle ═══ */}
         {activeView === 'weekly' && (
           <>
-            <div style={{ height: 1, background: '#2a2b32', margin: '24px 0 16px' }} />
-            <div style={{ fontFamily: fm, fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>History</div>
-            {historyWeekStarts.map(ws => {
+            <div style={{ height: 1, background: '#2a2b32', margin: '24px 0 12px' }} />
+            <div
+              onClick={() => setHistoryOpen(o => !o)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                fontFamily: fm,
+                fontSize: 15,
+                color: teal,
+                textTransform: 'uppercase',
+                letterSpacing: 2,
+                fontWeight: 700,
+                padding: '6px 0',
+                marginBottom: historyOpen ? 10 : 0,
+                userSelect: 'none',
+              }}
+            >
+              <span>History</span>
+              <span style={{ fontSize: 13, color: teal, transition: 'transform 0.15s ease', display: 'inline-block', transform: historyOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▾</span>
+            </div>
+            {historyOpen && historyWeekStarts.map(ws => {
               const isCurrent = ws === currentWeekStart;
               const isActive = (viewedWeekStart === null && isCurrent) || viewedWeekStart === ws;
               const label = formatWeekRange(ws) + (isCurrent ? ' (current)' : '');
@@ -340,8 +389,8 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                     cursor: 'pointer',
                     background: isActive ? '#1a1f2a' : 'transparent',
                     borderLeft: isActive ? `3px solid ${teal}` : '3px solid transparent',
-                    color: isActive ? (isCurrent ? teal : '#ffffff') : (isCurrent ? teal : '#7a7d85'),
-                    fontSize: 12,
+                    color: isActive ? (isCurrent ? teal : '#ffffff') : (isCurrent ? teal : '#9ca0ab'),
+                    fontSize: 13,
                     fontFamily: fm,
                     display: 'flex',
                     alignItems: 'center',
