@@ -36,6 +36,10 @@ export default function WickCoachFull() {
   const [showLogin, setShowLogin] = useState(false);
   const [loginName, setLoginName] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
+  // Increments every time the user clicks the Weekly Goals tab in the
+  // main nav. TradingGoalsContent watches this to snap back to the
+  // current week when the user re-enters from elsewhere.
+  const [weeklyTabResetTick, setWeeklyTabResetTick] = useState(0);
 
   const triggerFloatingPlusOne = (inputRect: DOMRect) => {
     const tabEl = traderProfileTabRef.current;
@@ -165,7 +169,7 @@ export default function WickCoachFull() {
       {/* ═══ APP VIEW ═══ */}
       {view === 'app' && (<>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={setActiveTab} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} onLoginClick={() => setShowLogin(true)} />
+          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); if (t === 'Weekly Goals') setWeeklyTabResetTick(n => n + 1); }} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} onLoginClick={() => setShowLogin(true)} />
         </div>
         <div style={{ backgroundImage: 'linear-gradient(to bottom, #181c26 0px, #151923 120px, #12151d 260px, #0A0D14 420px, #0A0D14 100%)', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
           {activeTab === 'Log a Trade' && (
@@ -174,7 +178,7 @@ export default function WickCoachFull() {
             </div>
           )}
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
-          {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} />}
+          {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} weeklyTabResetTick={weeklyTabResetTick} />}
           {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
           {activeTab === 'Trader Profile' && <TraderProfileContent trades={trades} />}
           {activeTab === 'Tools' && (
@@ -202,7 +206,7 @@ export default function WickCoachFull() {
       {view === 'home' && (<>
         <StockChartBackground />
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} onLoginClick={() => setShowLogin(true)} />
+          <NavBar view="home" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); setView('app'); if (t === 'Weekly Goals') setWeeklyTabResetTick(n => n + 1); }} onLogoClick={() => {}} showClickHint={showClickHint} tabGlow={tabGlow} onLoginClick={() => setShowLogin(true)} />
         </div>
 
         {/* Hero */}

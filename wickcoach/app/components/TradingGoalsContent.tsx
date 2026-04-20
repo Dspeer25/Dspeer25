@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, DEFAULT_GOALS, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
-export default function TradingGoalsContent({ trades, onMessageSent }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void }) {
+export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
   // trades is used in AI context payloads below
   const [goals, setGoals] = useState<Goal[]>([]);
   const [activeView, setActiveView] = useState<'weekly' | 'monthly' | 'behavioral'>('weekly');
@@ -14,6 +14,40 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   const [hoveredContextBtn, setHoveredContextBtn] = useState<string | null>(null);
   const [loggingGoalId, setLoggingGoalId] = useState<string | null>(null);
   const [hoveredAddBtn, setHoveredAddBtn] = useState(false);
+
+  // ── Weekly goal history ─────────────────────────────────────
+  // viewedWeekStart === null → the current Monday. Anything else
+  // means the user is looking at a past week in read-only mode.
+  const [viewedWeekStart, setViewedWeekStart] = useState<string | null>(null);
+  const [copyModal, setCopyModal] = useState<{ sourceWeekStart: string; sourceGoals: Goal[] } | null>(null);
+  const [copyMode, setCopyMode] = useState<'append' | 'replace' | 'cancel'>('append');
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = (msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(msg);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2000);
+  };
+  // Whenever the parent increments this tick (user clicks the "Weekly
+  // Goals" tab in the main nav) snap back to the current week.
+  useEffect(() => {
+    setViewedWeekStart(null);
+    setExpandedGoalId(null);
+  }, [weeklyTabResetTick]);
+
+  const currentWeekStart = getCurrentWeekStart();
+  const activeWeekStart = viewedWeekStart || currentWeekStart;
+  const isReadOnly = viewedWeekStart !== null && viewedWeekStart !== currentWeekStart;
+  const visibleGoals = goals.filter(g => g.weekStart === activeWeekStart);
+
+  // Sidebar HISTORY list: unique week starts seen in stored goals plus
+  // the current week (so it's always present even when empty), sorted
+  // descending and capped to 12.
+  const historyWeekStarts = (() => {
+    const set = new Set<string>(goals.map(g => g.weekStart).filter(Boolean));
+    set.add(currentWeekStart);
+    return Array.from(set).sort((a, b) => b.localeCompare(a)).slice(0, 12);
+  })();
 
   // Psychology vs Numerical toggle + quantitative-target state
   const [goalMode, setGoalMode] = useState<'psychology' | 'numerical'>('psychology');
@@ -52,28 +86,30 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   // trades is now threaded into AI context payloads below
 
   useEffect(() => {
-    const saved = localStorage.getItem('wickcoach_goals');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 0 && 'context' in parsed[0]) {
-          setGoals(parsed.map((g: Goal) => ({ ...g, actionItems: g.actionItems || [], goalType: g.goalType || 'General' })));
-        } else {
-          setGoals(DEFAULT_GOALS);
-          localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
-        }
-      } catch {
-        setGoals(DEFAULT_GOALS);
-        localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
-      }
+    // Self-healing migration: any stored goal missing weekStart gets
+    // stamped with the current week's Monday, then persisted. This is
+    // a one-time upgrade so pre-history-feature data lands in the
+    // current week's bucket instead of vanishing.
+    const stamp = getCurrentWeekStart();
+    const stored = readAllGoals();
+    if (stored.length > 0) {
+      let changed = false;
+      const migrated = stored.map((g: Goal) => {
+        const next: Goal = { ...g, actionItems: g.actionItems || [], goalType: g.goalType || 'General', weekStart: g.weekStart || stamp };
+        if (!g.weekStart) changed = true;
+        return next;
+      });
+      if (changed) writeAllGoals(migrated);
+      setGoals(migrated);
     } else {
-      setGoals(DEFAULT_GOALS);
-      localStorage.setItem('wickcoach_goals', JSON.stringify(DEFAULT_GOALS));
+      const seed = getDefaultGoals();
+      setGoals(seed);
+      writeAllGoals(seed);
     }
   }, []);
 
   useEffect(() => {
-    if (goals.length > 0) localStorage.setItem('wickcoach_goals', JSON.stringify(goals));
+    if (goals.length > 0) writeAllGoals(goals);
   }, [goals]);
 
   useEffect(() => {
@@ -83,6 +119,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
   }, [goals, expandedGoalId, loadingGoalId]);
 
   const addNewGoal = () => {
+    if (isReadOnly) return;
     const newGoal: Goal = {
       id: `g${Date.now()}`,
       title: '',
@@ -92,6 +129,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
       actionItems: [],
       createdAt: new Date().toISOString(),
       goalType: 'General',
+      weekStart: currentWeekStart,
     };
     setGoals(prev => [...prev, newGoal]);
   };
@@ -254,7 +292,12 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
           return (
             <div
               key={v}
-              onClick={() => setActiveView(v)}
+              onClick={() => {
+                setActiveView(v);
+                // Clicking the Weekly Goals hierarchy item also snaps
+                // the view back to the current week.
+                if (v === 'weekly') setViewedWeekStart(null);
+              }}
               style={{
                 padding: '12px 14px',
                 marginBottom: 4,
@@ -276,10 +319,75 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
             </div>
           );
         })}
+
+        {/* ═══ HISTORY ═══ */}
+        {activeView === 'weekly' && (
+          <>
+            <div style={{ height: 1, background: '#2a2b32', margin: '24px 0 16px' }} />
+            <div style={{ fontFamily: fm, fontSize: 12, color: '#666', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>History</div>
+            {historyWeekStarts.map(ws => {
+              const isCurrent = ws === currentWeekStart;
+              const isActive = (viewedWeekStart === null && isCurrent) || viewedWeekStart === ws;
+              const label = formatWeekRange(ws) + (isCurrent ? ' (current)' : '');
+              return (
+                <div
+                  key={ws}
+                  onClick={() => setViewedWeekStart(isCurrent ? null : ws)}
+                  style={{
+                    padding: '10px 14px',
+                    marginBottom: 4,
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    background: isActive ? '#1a1f2a' : 'transparent',
+                    borderLeft: isActive ? `3px solid ${teal}` : '3px solid transparent',
+                    color: isActive ? (isCurrent ? teal : '#ffffff') : (isCurrent ? teal : '#7a7d85'),
+                    fontSize: 12,
+                    fontFamily: fm,
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'all 0.15s ease',
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  <span>{label}</span>
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       {/* ═══ MAIN CONTENT ═══ */}
       <div style={{ flex: 1, padding: '40px 36px 32px', overflowY: 'auto' }}>
+        {/* Past-week banner + Copy button — only when viewing a locked past week */}
+        {isReadOnly && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0 14px', marginBottom: 24, borderBottom: '1px solid #1a1b22', gap: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: fm, fontSize: 12, color: '#7a7d85', letterSpacing: 0.3 }}>
+              Viewing goals from {formatWeekRange(activeWeekStart)} — locked history
+            </span>
+            {visibleGoals.length > 0 && (
+              <span
+                onClick={() => { setCopyMode('append'); setCopyModal({ sourceWeekStart: activeWeekStart, sourceGoals: visibleGoals }); }}
+                style={{
+                  fontFamily: fm,
+                  fontSize: 11,
+                  color: teal,
+                  border: `1px solid ${teal}`,
+                  borderRadius: 999,
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  background: 'transparent',
+                  transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >Copy to Current Week</span>
+            )}
+          </div>
+        )}
         {/* Header row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, gap: 16, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
@@ -319,14 +427,19 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: teal }} />
             <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>
               {goalMode === 'psychology'
-                ? `${goals.length} Active Rule${goals.length !== 1 ? 's' : ''}`
+                ? `${visibleGoals.length} Active Rule${visibleGoals.length !== 1 ? 's' : ''}`
                 : `${[...quantTargets, ...customTargets].filter(t => t.value !== null).length} / ${quantTargets.length + customTargets.length} targets set`}
             </span>
           </div>
         </div>
 
         {/* ═══ GOAL CARDS (Psychology view) ═══ */}
-        {goalMode === 'psychology' && goals.map((g, idx) => {
+        {goalMode === 'psychology' && isReadOnly && visibleGoals.length === 0 && (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#7a7d85', fontFamily: fm, fontSize: 12, border: '1px dashed #1a1b22', borderRadius: 8, backgroundColor: '#13141a' }}>
+            No goals were set for this week.
+          </div>
+        )}
+        {goalMode === 'psychology' && visibleGoals.map((g, idx) => {
           const isExpanded = expandedGoalId === g.id;
           return (
             <div key={g.id} style={{
@@ -358,32 +471,38 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
 
                 {/* Title + TYPE tag */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <input
-                    value={g.title}
-                    onChange={e => updateGoalTitle(g.id, e.target.value.toUpperCase())}
-                    placeholder="TYPE YOUR GOAL HERE..."
-                    onMouseEnter={() => setHoveredGoalId(g.id)}
-                    onMouseLeave={() => setHoveredGoalId(null)}
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: 'none',
-                      borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent',
-                      outline: 'none',
-                      color: '#ffffff',
-                      fontFamily: fd,
-                      fontSize: 16,
-                      fontWeight: 700,
-                      letterSpacing: 1,
-                      cursor: 'text',
-                      padding: '2px 0',
-                      textTransform: 'uppercase',
-                      transition: 'border-color 0.15s ease',
-                    }}
-                  />
+                  {isReadOnly ? (
+                    <div style={{ width: '100%', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, letterSpacing: 1, padding: '2px 0', textTransform: 'uppercase' }}>
+                      {g.title || '—'}
+                    </div>
+                  ) : (
+                    <input
+                      value={g.title}
+                      onChange={e => updateGoalTitle(g.id, e.target.value.toUpperCase())}
+                      placeholder="TYPE YOUR GOAL HERE..."
+                      onMouseEnter={() => setHoveredGoalId(g.id)}
+                      onMouseLeave={() => setHoveredGoalId(null)}
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: hoveredGoalId === g.id ? '1px dashed #2a2b32' : '1px solid transparent',
+                        outline: 'none',
+                        color: '#ffffff',
+                        fontFamily: fd,
+                        fontSize: 16,
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        cursor: 'text',
+                        padding: '2px 0',
+                        textTransform: 'uppercase',
+                        transition: 'border-color 0.15s ease',
+                      }}
+                    />
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                     <span
-                      onClick={() => cycleGoalType(g.id)}
+                      onClick={isReadOnly ? undefined : () => cycleGoalType(g.id)}
                       style={{
                         fontFamily: fm,
                         fontSize: 11,
@@ -393,7 +512,7 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                         padding: '2px 8px',
                         borderRadius: 4,
                         letterSpacing: 1,
-                        cursor: 'pointer',
+                        cursor: isReadOnly ? 'default' : 'pointer',
                         userSelect: 'none',
                       }}
                     >TYPE</span>
@@ -412,7 +531,8 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                   )}
                 </div>
 
-                {/* Context button area */}
+                {/* Context button area — hidden in read-only past-week view */}
+                {!isReadOnly && (
                 <div
                   onClick={() => setExpandedGoalId(isExpanded ? null : g.id)}
                   onMouseEnter={() => setHoveredContextBtn(g.id)}
@@ -476,13 +596,16 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
                     )}
                   </div>
                 </div>
+                )}
 
-                {/* Delete button */}
-                <span
-                  onClick={() => deleteGoal(g.id)}
-                  style={{ fontSize: 16, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4, padding: '4px' }}
-                  title="Delete goal"
-                >✕</span>
+                {/* Delete button — hidden in read-only past-week view */}
+                {!isReadOnly && (
+                  <span
+                    onClick={() => deleteGoal(g.id)}
+                    style={{ fontSize: 16, color: '#3a3d48', cursor: 'pointer', lineHeight: 1, flexShrink: 0, marginLeft: 4, padding: '4px' }}
+                    title="Delete goal"
+                  >✕</span>
+                )}
               </div>
 
               {/* ═══ Expanded Chat Area ═══ */}
@@ -577,8 +700,8 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
           );
         })}
 
-        {/* ═══ Add New Goal Button (Psychology view only) ═══ */}
-        {goalMode === 'psychology' && (
+        {/* ═══ Add New Goal Button (Psychology view only, current week only) ═══ */}
+        {goalMode === 'psychology' && !isReadOnly && (
           <div
             onClick={addNewGoal}
             onMouseEnter={() => setHoveredAddBtn(true)}
@@ -752,6 +875,96 @@ export default function TradingGoalsContent({ trades, onMessageSent }: { trades:
           </>
         )}
       </div>
+
+      {/* ═══ COPY-TO-CURRENT-WEEK MODAL ═══ */}
+      {copyModal && (() => {
+        const sourceCount = copyModal.sourceGoals.length;
+        const currentCount = goals.filter(g => g.weekStart === currentWeekStart).length;
+        const closeModal = () => { setCopyModal(null); setCopyMode('append'); };
+        const confirm = () => {
+          if (copyMode === 'cancel') { closeModal(); return; }
+          const nowIso = new Date().toISOString();
+          const cloned: Goal[] = copyModal.sourceGoals.map(g => ({
+            ...g,
+            id: `g${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            createdAt: nowIso,
+            weekStart: currentWeekStart,
+            // A copy starts fresh — the coach will re-clarify context
+            // for the new week rather than inheriting stale scoring.
+            context: [],
+            aiResponses: [],
+            contextComplete: false,
+            actionItems: [],
+            completeness: undefined,
+            scoringCriteria: undefined,
+          }));
+          if (copyMode === 'append') {
+            setGoals(prev => [...prev, ...cloned]);
+            showToast(`Copied ${cloned.length} goal${cloned.length === 1 ? '' : 's'}`);
+          } else {
+            // replace
+            setGoals(prev => [...prev.filter(g => g.weekStart !== currentWeekStart), ...cloned]);
+            showToast(`Replaced current week with ${cloned.length} goal${cloned.length === 1 ? '' : 's'}`);
+          }
+          setViewedWeekStart(null);
+          closeModal();
+        };
+        const radio = (value: 'append' | 'replace' | 'cancel', label: string) => (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 0', fontFamily: fm, fontSize: 12, color: '#ccc' }}>
+            <input
+              type="radio"
+              name="copyMode"
+              checked={copyMode === value}
+              onChange={() => setCopyMode(value)}
+              style={{ accentColor: teal, cursor: 'pointer' }}
+            />
+            <span>{label}</span>
+          </label>
+        );
+        return (
+          <>
+            <div onClick={closeModal} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000 }} />
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1001, width: 440, maxWidth: 'calc(100vw - 32px)', background: '#13141a', border: '1px solid #1a1b22', borderRadius: 8, padding: 24 }}>
+              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 500, color: '#e0e0e0', marginBottom: 12 }}>Copy goals to current week?</div>
+              <div style={{ fontFamily: fm, fontSize: 12, color: '#ccc', lineHeight: 1.5, marginBottom: 14, whiteSpace: 'pre-line' }}>
+                {`This will add ${sourceCount} goal${sourceCount === 1 ? '' : 's'} from ${formatWeekRange(copyModal.sourceWeekStart)} to your current week.\nCurrent week already has ${currentCount} goal${currentCount === 1 ? '' : 's'}.\n\nChoose how to apply:`}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 18 }}>
+                {radio('append',  `Append — add past goals to current (current week becomes ${sourceCount + currentCount} goals)`)}
+                {radio('replace', `Replace — wipe current goals and use past goals only`)}
+                {radio('cancel',  `Cancel — do nothing`)}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <span onClick={closeModal} style={{ fontFamily: fm, fontSize: 12, color: '#7a7d85', padding: '8px 16px', cursor: 'pointer', background: 'transparent' }}>Cancel</span>
+                <span onClick={confirm} style={{ fontFamily: fm, fontSize: 12, fontWeight: 500, color: '#000', background: teal, padding: '8px 20px', borderRadius: 6, cursor: 'pointer' }}>Confirm</span>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* ═══ TOAST ═══ */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 32,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#13141a',
+          border: `1px solid ${teal}`,
+          color: teal,
+          fontFamily: fm,
+          fontSize: 12,
+          padding: '10px 20px',
+          borderRadius: 8,
+          zIndex: 2000,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,160,0.18)',
+          letterSpacing: 0.5,
+        }}>
+          {toast}
+        </div>
+      )}
+
       <style>{`@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
     </div>
   );

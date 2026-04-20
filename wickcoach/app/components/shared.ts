@@ -914,6 +914,8 @@ export interface Goal {
   actionItems: string[];
   createdAt: string;
   goalType: string;
+  /** ISO date (YYYY-MM-DD) of the Monday that starts the week this goal was active for. */
+  weekStart: string;
   /** Latest completeness score (0-100) emitted by the goal-clarification coach. */
   completeness?: number;
   /** Structured scoring criteria emitted by the coach once the goal is understood. */
@@ -922,9 +924,80 @@ export interface Goal {
 
 export const GOAL_TYPES = ['Trade Management', 'Entry Criteria', 'Patience / Setup', 'Risk Management', 'Psychology', 'General'];
 
-export const DEFAULT_GOALS: Goal[] = [
-  { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Trade Management' },
-  { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Entry Criteria' },
-  { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Patience / Setup' },
-];
+// Week helpers — shared by the Weekly Goals page and the Analysis
+// week selector so both see the same Monday-aligned boundaries.
+export function startOfWeek(d: Date): Date {
+  const day = d.getDay();              // Sun = 0
+  const diff = (day === 0 ? -6 : 1) - day; // snap back to Monday
+  const s = new Date(d);
+  s.setHours(0, 0, 0, 0);
+  s.setDate(s.getDate() + diff);
+  return s;
+}
+
+/** Format a Date as "YYYY-MM-DD" using *local* calendar fields — never UTC — so day/DST shifts don't silently move the week. */
+export function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function getCurrentWeekStart(): string {
+  return toISODate(startOfWeek(new Date()));
+}
+
+/** Human label for a week starting on the given ISO date, e.g. "Apr 20 - 26" or "Apr 28 - May 4". */
+export function formatWeekRange(weekStart: string): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const start = new Date(weekStart + 'T00:00:00');
+  const end = new Date(start.getTime() + 6 * 86400000);
+  const sameMonth = start.getMonth() === end.getMonth();
+  const left = `${months[start.getMonth()]} ${start.getDate()}`;
+  const right = sameMonth ? `${end.getDate()}` : `${months[end.getMonth()]} ${end.getDate()}`;
+  return `${left} - ${right}`;
+}
+
+export const GOALS_STORE_KEY = 'wickcoach_goals';
+
+export function readAllGoals(): Goal[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(GOALS_STORE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeAllGoals(goals: Goal[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(GOALS_STORE_KEY, JSON.stringify(goals));
+  } catch { /* ignore quota errors */ }
+}
+
+export function getGoalsForWeek(weekStart: string): Goal[] {
+  return readAllGoals().filter(g => g.weekStart === weekStart);
+}
+
+/** Unique weekStart values from stored goals, sorted descending (most recent first). */
+export function getAllWeekStarts(): string[] {
+  const goals = readAllGoals();
+  const set = new Set<string>();
+  for (const g of goals) {
+    if (g.weekStart) set.add(g.weekStart);
+  }
+  return Array.from(set).sort((a, b) => b.localeCompare(a));
+}
+
+/** Returns the default seeded goals for a fresh install, stamped with the current week. */
+export function getDefaultGoals(): Goal[] {
+  const ws = getCurrentWeekStart();
+  return [
+    { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Trade Management', weekStart: ws },
+    { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Entry Criteria', weekStart: ws },
+    { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Patience / Setup', weekStart: ws },
+  ];
+}
 

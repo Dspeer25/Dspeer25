@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -39,15 +39,6 @@ interface WeekBucket {
   trades: Trade[];
 }
 
-function startOfWeek(d: Date): Date {
-  const day = d.getDay();              // Sun = 0
-  const diff = (day === 0 ? -6 : 1) - day; // snap back to Monday
-  const s = new Date(d);
-  s.setHours(0, 0, 0, 0);
-  s.setDate(s.getDate() + diff);
-  return s;
-}
-
 function fmtWeekRange(start: Date, end: Date): string {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const sameMonth = start.getMonth() === end.getMonth();
@@ -56,12 +47,13 @@ function fmtWeekRange(start: Date, end: Date): string {
   return `${left} – ${right}`;
 }
 
-// Build the 3 most recent week buckets that contain any trades. Falls
-// back to the current week + previous two so the UI always has something.
+// Build the 12 most recent week buckets. Each bucket is Monday-aligned
+// (via shared startOfWeek) so the history lines up 1:1 with the
+// weekStart stamps recorded on each Goal.
 function buildWeekBuckets(trades: Trade[]): WeekBucket[] {
   const today = new Date();
   const buckets: WeekBucket[] = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 12; i++) {
     const start = startOfWeek(new Date(today.getTime() - i * 7 * 86400000));
     const end = new Date(start.getTime() + 6 * 86400000);
     const inWeek = trades.filter(t => {
@@ -293,10 +285,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   // whatever the trader has actually set, not mock text.
   const [realGoals, setRealGoals] = useState<Goal[]>([]);
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('wickcoach_goals');
-      if (saved) setRealGoals(JSON.parse(saved));
-    } catch { /* ignore */ }
+    // Loads every stored goal (across all weeks). Per-week filtering
+    // happens at render-time against the selected bucket's weekStart.
+    setRealGoals(readAllGoals());
   }, []);
 
   // ── AI-backed trade classifications (Haiku, cached per trade.id) ──
@@ -408,7 +399,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     'Psychology':       ['calm', 'focused', 'discipline', 'mindset'],
     'General':          ['plan', 'rule', 'process'],
   };
-  const selectedWeekGoals = realGoals.slice(0, 3).map((g, goalIdx) => {
+  // Pull goals specific to the SELECTED week, not the globally-active
+  // set. Each goal carries a weekStart stamp; we match it against the
+  // selected bucket's Monday (local ISO date). The ID string matches
+  // `getCurrentWeekStart()` exactly when viewing the current week.
+  const selectedWeekStartISO = selectedWeekBucket ? toISODate(selectedWeekBucket.start) : null;
+  const weekGoals = selectedWeekStartISO ? realGoals.filter(g => g.weekStart === selectedWeekStartISO) : [];
+  const selectedWeekGoals = weekGoals.slice(0, 3).map((g, goalIdx) => {
     const weekTrades = selectedWeekBucket?.trades || [];
     const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
 
@@ -444,6 +441,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     };
   });
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
+  const hasGoalsForSelectedWeek = weekGoals.length > 0;
 
   return (
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
@@ -917,7 +915,24 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           </div>
         </div>
 
-        {/* Compact goal cards (3) */}
+        {/* Empty state — shown when the selected past week had no goals set. */}
+        {!hasGoalsForSelectedWeek && (
+          <div style={{
+            padding: '40px 20px',
+            textAlign: 'center',
+            color: '#7a7d85',
+            fontFamily: fm,
+            fontSize: '12px',
+            border: '1px dashed #1a1b22',
+            borderRadius: '8px',
+            backgroundColor: '#13141a'
+          }}>
+            No goals were set for this week.
+          </div>
+        )}
+
+        {/* Compact goal cards (3) — only when goals exist for this week. */}
+        {hasGoalsForSelectedWeek && (
         <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
           {selectedWeek.goals.map((g, idx) => (
             <div key={idx} style={{
@@ -950,8 +965,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             </div>
           ))}
         </div>
+        )}
 
-        {/* Split panel: Trades vs. Goals (blue) | Psych vs. Goals (green) */}
+        {/* Split panel: Trades vs. Goals (blue) | Psych vs. Goals (green) — hidden when the week has no goals. */}
+        {hasGoalsForSelectedWeek && (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
 
           {/* LEFT — Trades vs. Goals (BLUE) */}
@@ -1043,6 +1060,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             </div>
           </div>
         </div>
+        )}
 
         {/* ═══ QUANTITATIVE TARGETS — glass candlestick indicators ═══ */}
         {(quantTargetsSnapshot.quantitativeTargets.length > 0 || quantTargetsSnapshot.customQuantTargets.length > 0) && (() => {
