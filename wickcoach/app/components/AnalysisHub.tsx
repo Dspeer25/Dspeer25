@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -73,9 +73,17 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | 'breakeven' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [hoveredPanel, setHoveredPanel] = useState<'trades' | 'psych' | null>(null);
+  // Only one row at a time expands. null = everything collapsed.
+  const [expandedRow, setExpandedRow] = useState<{ section: 'trades' | 'psych'; goalIdx: number } | null>(null);
+  const [hoveredRow, setHoveredRow] = useState<{ section: 'trades' | 'psych'; goalIdx: number } | null>(null);
   const [chartZoom, setChartZoom] = useState(1);
   const [sizeZoom, setSizeZoom] = useState(1);
   const [sizeResizeDrag, setSizeResizeDrag] = useState<{ startY: number; startZoom: number } | null>(null);
+
+  // Reset drilldown state when the user picks a different week — the
+  // goal indices belong to that bucket, so keeping an old expansion
+  // would point at the wrong goal.
+  useEffect(() => { setExpandedRow(null); }, [selectedWeekIdx]);
 
   // Size Efficiency chart resize: dragging the corner handle scales the
   // chart height. 1px of vertical drag = ~0.005 zoom units, clamped to
@@ -442,6 +450,105 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   });
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
   const hasGoalsForSelectedWeek = weekGoals.length > 0;
+
+  // ── Drilldown renderer ─────────────────────────────────────
+  // Renders the inline detail panel shown beneath an expanded
+  // slider row. `section` decides whether we read per-goal
+  // compliance (trades side) or trade-level process/impulse
+  // classification (psych side). The trade list is the selected
+  // week's trades in the same order the Past Trades table uses.
+  const renderDrilldown = (section: 'trades' | 'psych', goalIdx: number) => {
+    const weekTrades = selectedWeekBucket?.trades || [];
+    const classifiedCount = weekTrades.filter(t => classifications[t.id]).length;
+    const anyClassified = classifiedCount > 0;
+
+    const fmtDate = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    };
+    const truncJournal = (j: string | undefined) => {
+      const s = (j || '').trim();
+      return s.length > 80 ? s.slice(0, 80).trimEnd() + '…' : s;
+    };
+
+    return (
+      <div style={{
+        background: '#0e0f14',
+        borderLeft: `2px solid ${teal}`,
+        padding: '12px 16px',
+        marginTop: 4,
+        marginBottom: 12,
+        borderRadius: '0 6px 6px 0',
+      }}>
+        {!anyClassified ? (
+          <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', padding: 12, textAlign: 'center' }}>
+            Keyword fallback active — detailed reasons not available. Expand each journal manually in Past Trades to review.
+          </div>
+        ) : weekTrades.length === 0 ? (
+          <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', padding: 12, textAlign: 'center' }}>
+            No trades in this week.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {weekTrades.map(t => {
+              const c = classifications[t.id];
+              let icon: { glyph: string; color: string };
+              let reason = '';
+              if (section === 'trades') {
+                const gs = c?.goalScores.find(s => s.goalIndex === goalIdx);
+                if (!c || !gs) icon = { glyph: '—', color: '#555' };
+                else if (gs.compliance === 1) icon = { glyph: '✓', color: teal };
+                else icon = { glyph: '✗', color: red };
+                reason = gs?.reason || '';
+              } else {
+                if (!c) icon = { glyph: '—', color: '#555' };
+                else if (c.tradeType === 'process') icon = { glyph: '✓', color: teal };
+                else if (c.tradeType === 'impulse') icon = { glyph: '✗', color: red };
+                else icon = { glyph: '—', color: '#555' };
+                reason = c?.psychReason || '';
+              }
+              const plColor = t.pl >= 0 ? teal : red;
+              const plSign = t.pl >= 0 ? '+' : '-';
+              return (
+                <div key={t.id}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '16px 50px 60px 80px 1fr',
+                    gap: 10,
+                    alignItems: 'baseline',
+                  }}>
+                    <span style={{ fontFamily: fm, fontSize: 14, color: icon.color, width: 16 }}>{icon.glyph}</span>
+                    <span style={{ fontFamily: fm, fontSize: 11, color: '#fff', fontWeight: 700 }}>{t.ticker}</span>
+                    <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>{fmtDate(t.date)}</span>
+                    <span style={{ fontFamily: fm, fontSize: 11, color: plColor, fontWeight: 600, textAlign: 'right' }}>
+                      {plSign}${Math.abs(t.pl).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                    <span style={{ fontFamily: fm, fontSize: 12, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      “{truncJournal(t.journal)}”
+                    </span>
+                  </div>
+                  {reason && (
+                    <div style={{
+                      fontFamily: fm,
+                      fontSize: 11,
+                      color: '#7a7d85',
+                      fontStyle: 'italic',
+                      marginLeft: 16,
+                      lineHeight: 1.4,
+                      maxWidth: 600,
+                      marginTop: 2,
+                    }}>
+                      Reason: {reason}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
@@ -994,22 +1101,42 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               {selectedWeek.goals.map((g, i) => {
                 const pct = Math.round((g.trades.actual / g.trades.target) * 100);
                 const clamped = Math.min(100, pct);
+                const isExpanded = expandedRow?.section === 'trades' && expandedRow.goalIdx === i;
+                const isHovered = hoveredRow?.section === 'trades' && hoveredRow.goalIdx === i;
                 return (
                   <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
-                      <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
+                    <div
+                      onClick={() => setExpandedRow(prev => prev && prev.section === 'trades' && prev.goalIdx === i ? null : { section: 'trades', goalIdx: i })}
+                      onMouseEnter={() => setHoveredRow({ section: 'trades', goalIdx: i })}
+                      onMouseLeave={() => setHoveredRow(null)}
+                      style={{
+                        cursor: 'pointer',
+                        background: isHovered ? '#141620' : 'transparent',
+                        padding: '6px 8px',
+                        margin: '-6px -8px',
+                        borderRadius: 6,
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+                        <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
+                          <span style={{ fontSize: 14, color: blue, fontFamily: fd, fontWeight: 700 }}>{g.trades.actual}<span style={{ color: '#666' }}> / {g.trades.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
+                          <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', width: 12, textAlign: 'center' }}>{isExpanded ? '▴' : '▾'}</span>
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${clamped}%`,
+                          height: '100%',
+                          background: `linear-gradient(to right, rgba(74,158,255,0.4), ${blue})`,
+                          boxShadow: `0 0 8px rgba(74,158,255,0.4)`,
+                          transition: 'width 0.5s ease',
+                        }} />
+                      </div>
+                      <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
                     </div>
-                    <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{
-                        width: `${clamped}%`,
-                        height: '100%',
-                        background: `linear-gradient(to right, rgba(74,158,255,0.4), ${blue})`,
-                        boxShadow: `0 0 8px rgba(74,158,255,0.4)`,
-                        transition: 'width 0.5s ease',
-                      }} />
-                    </div>
-                    <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% compliance</div>
+                    {isExpanded && renderDrilldown('trades', i)}
                   </div>
                 );
               })}
@@ -1038,22 +1165,42 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               {selectedWeek.goals.map((g, i) => {
                 const pct = Math.round((g.psych.actual / g.psych.target) * 100);
                 const clamped = Math.min(100, pct);
+                const isExpanded = expandedRow?.section === 'psych' && expandedRow.goalIdx === i;
+                const isHovered = hoveredRow?.section === 'psych' && hoveredRow.goalIdx === i;
                 return (
                   <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
-                      <span style={{ fontSize: 14, color: teal, fontFamily: fd, fontWeight: 700, flexShrink: 0 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
+                    <div
+                      onClick={() => setExpandedRow(prev => prev && prev.section === 'psych' && prev.goalIdx === i ? null : { section: 'psych', goalIdx: i })}
+                      onMouseEnter={() => setHoveredRow({ section: 'psych', goalIdx: i })}
+                      onMouseLeave={() => setHoveredRow(null)}
+                      style={{
+                        cursor: 'pointer',
+                        background: isHovered ? '#141620' : 'transparent',
+                        padding: '6px 8px',
+                        margin: '-6px -8px',
+                        borderRadius: 6,
+                        transition: 'background 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
+                        <span style={{ fontSize: 14, color: '#e8e8f0', fontFamily: fm, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: '1 1 auto', minWidth: 0 }}>{i + 1} · {g.title}</span>
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
+                          <span style={{ fontSize: 14, color: teal, fontFamily: fd, fontWeight: 700 }}>{g.psych.actual}<span style={{ color: '#666' }}> / {g.psych.target}</span><span style={{ color: '#aab0bd', fontWeight: 400, fontSize: 13, marginLeft: 4 }}>trades</span></span>
+                          <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', width: 12, textAlign: 'center' }}>{isExpanded ? '▴' : '▾'}</span>
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${clamped}%`,
+                          height: '100%',
+                          background: `linear-gradient(to right, rgba(0,212,160,0.4), ${teal})`,
+                          boxShadow: `0 0 8px rgba(0,212,160,0.4)`,
+                          transition: 'width 0.5s ease',
+                        }} />
+                      </div>
+                      <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
                     </div>
-                    <div style={{ position: 'relative', height: 8, background: '#2A3143', borderRadius: 4, overflow: 'hidden' }}>
-                      <div style={{
-                        width: `${clamped}%`,
-                        height: '100%',
-                        background: `linear-gradient(to right, rgba(0,212,160,0.4), ${teal})`,
-                        boxShadow: `0 0 8px rgba(0,212,160,0.4)`,
-                        transition: 'width 0.5s ease',
-                      }} />
-                    </div>
-                    <div style={{ fontSize: 14, color: '#aab0bd', marginTop: 4, letterSpacing: 0.3 }}>{pct}% alignment</div>
+                    {isExpanded && renderDrilldown('psych', i)}
                   </div>
                 );
               })}
@@ -1063,26 +1210,40 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         )}
 
         {/* ═══ QUANTITATIVE TARGETS — glass candlestick indicators ═══ */}
-        {(quantTargetsSnapshot.quantitativeTargets.length > 0 || quantTargetsSnapshot.customQuantTargets.length > 0) && (() => {
-          const allTargets = [...quantTargetsSnapshot.quantitativeTargets, ...quantTargetsSnapshot.customQuantTargets];
+        {(() => {
+          // Per-week targets. If the selected week has never been viewed
+          // before, getQuantTargetsForWeek lazy-stamps the current live
+          // profile targets into that slot. Past-week slots stay frozen.
+          const weekTargets = selectedWeekBucket
+            ? getQuantTargetsForWeek(toISODate(selectedWeekBucket.start))
+            : { quantitativeTargets: quantTargetsSnapshot.quantitativeTargets, customQuantTargets: quantTargetsSnapshot.customQuantTargets };
+          const allTargets = [...weekTargets.quantitativeTargets, ...weekTargets.customQuantTargets];
+          if (allTargets.length === 0) return null;
+
           const CANDLE_H = 130;
           const CANDLE_W = 36;
           const WICK_W = 2;
           const WICK_EXT = 14;
 
-          // Week-scoped stats for weekly targets — use the first (current) week bucket.
-          const weekTrades = weekBuckets[0]?.trades || [];
+          // Actuals now come from the SELECTED week's bucket, not the
+          // current week's. Switching the Rules vs Execution dropdown
+          // moves this entire block along with it.
+          const weekTrades = selectedWeekBucket?.trades || [];
           const weekWins = weekTrades.filter(t => t.pl > 0);
           const weekWR = weekTrades.length > 0 ? (weekWins.length / weekTrades.length) * 100 : 0;
           const weekRRValues = weekWins.map(t => parseFloat((t.riskReward || '').split(':')[1]) || 0);
           const weekAvgR = weekRRValues.length > 0 ? weekRRValues.reduce((a, b) => a + b, 0) / weekRRValues.length : 0;
           const weekTradeCount = weekTrades.length;
 
+          const subtitleLabel = selectedWeekIdx === 0
+            ? 'This week'
+            : (selectedWeekBucket?.weekLabel || 'This week');
+
           return (
             <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #2A3143' }}>
               <h4 style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Quantitative Targets</h4>
               <p style={{ fontSize: 14, margin: '6px 0 22px', letterSpacing: 0.3, fontFamily: fm }}>
-                <strong style={{ color: teal }}>This week</strong>
+                <strong style={{ color: teal }}>{subtitleLabel}</strong>
                 <span style={{ color: '#aab0bd' }}> vs your </span>
                 <span style={{ color: teal }}>weekly targets</span>
               </p>

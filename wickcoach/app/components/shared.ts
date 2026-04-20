@@ -751,11 +751,77 @@ function writeProfileFields(fields: Record<string, unknown>): void {
   } catch { /* ignore quota errors */ }
 }
 
+// ─── Per-week quantitative target history ────────────────────
+// A separate key from the profile so past-week target values stay
+// frozen at whatever the user had set *during* that week. Editing
+// current-week targets in the UI mirrors into this map under the
+// current weekStart. Viewing a past week lazy-snapshots the live
+// profile targets into that week's slot on first access.
+//
+// Shape: Record<weekStart (YYYY-MM-DD), TargetsSnapshot>
+export const QUANT_TARGETS_HISTORY_KEY = 'wickcoach_quant_targets_history';
+
+export interface TargetsSnapshot {
+  quantitativeTargets: QuantitativeTarget[];
+  customQuantTargets: QuantitativeTarget[];
+}
+
+function readQuantTargetsHistory(): Record<string, TargetsSnapshot> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(QUANT_TARGETS_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeQuantTargetsHistory(history: Record<string, TargetsSnapshot>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(QUANT_TARGETS_HISTORY_KEY, JSON.stringify(history));
+  } catch { /* ignore quota errors */ }
+}
+
+/**
+ * Returns the quantitative target snapshot for a given week.
+ *
+ * First call for a week that isn't in the history lazy-stamps the
+ * current live profile targets into that slot and returns them. After
+ * that the slot is frozen: later edits to the profile never
+ * retroactively change past weeks.
+ */
+export function getQuantTargetsForWeek(weekStart: string): TargetsSnapshot {
+  const history = readQuantTargetsHistory();
+  if (history[weekStart]) return history[weekStart];
+  const live = readQuantTargets();
+  const snap: TargetsSnapshot = {
+    quantitativeTargets: live.quantitativeTargets.map(t => ({ ...t })),
+    customQuantTargets: live.customQuantTargets.map(t => ({ ...t })),
+  };
+  history[weekStart] = snap;
+  writeQuantTargetsHistory(history);
+  return snap;
+}
+
+/** Mirror the current live targets into this week's history slot — called after every edit of current-week targets. */
+function syncCurrentWeekHistory(): void {
+  const ws = getCurrentWeekStart();
+  const live = readQuantTargets();
+  const history = readQuantTargetsHistory();
+  history[ws] = {
+    quantitativeTargets: live.quantitativeTargets.map(t => ({ ...t })),
+    customQuantTargets: live.customQuantTargets.map(t => ({ ...t })),
+  };
+  writeQuantTargetsHistory(history);
+}
+
 export function updateQuantTarget(id: string, value: number | null): void {
   const { quantitativeTargets, customQuantTargets } = readQuantTargets();
   const nextQuant  = quantitativeTargets.map(t => t.id === id ? { ...t, value } : t);
   const nextCustom = customQuantTargets.map(t => t.id === id ? { ...t, value } : t);
   writeProfileFields({ quantitativeTargets: nextQuant, customQuantTargets: nextCustom });
+  syncCurrentWeekHistory();
 }
 
 export function addCustomQuantTarget(label: string, type: QuantTargetType = 'number'): QuantitativeTarget {
@@ -763,12 +829,14 @@ export function addCustomQuantTarget(label: string, type: QuantTargetType = 'num
   const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const target: QuantitativeTarget = { id, label, value: null, type };
   writeProfileFields({ quantitativeTargets, customQuantTargets: [...customQuantTargets, target] });
+  syncCurrentWeekHistory();
   return target;
 }
 
 export function removeCustomQuantTarget(id: string): void {
   const { quantitativeTargets, customQuantTargets } = readQuantTargets();
   writeProfileFields({ quantitativeTargets, customQuantTargets: customQuantTargets.filter(t => t.id !== id) });
+  syncCurrentWeekHistory();
 }
 
 // ─── Shared AI context — read from localStorage at call time ─────
