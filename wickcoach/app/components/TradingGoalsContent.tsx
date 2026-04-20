@@ -107,25 +107,25 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     }
 
     // One-time seed of LAST week's history so the HISTORY sidebar has
-    // something to click right after upgrading. Gated on a dedicated
-    // localStorage flag so deleting the seed goals doesn't re-create
-    // them. The flag is specific to this feature — no collision with
-    // any other migration.
+    // something to click right after upgrading. Gated on a versioned
+    // localStorage flag — bumping the version (v2, v3…) re-runs the
+    // seed and drops any leftover `seed_*` goals from prior versions
+    // so stale sample titles don't stick around.
     try {
-      const SEED_FLAG = 'wickcoach_seeded_last_week_v1';
+      const SEED_FLAG = 'wickcoach_seeded_last_week_v2';
       if (!localStorage.getItem(SEED_FLAG)) {
         const lastWeekStart = toISODate(new Date(startOfWeek(new Date()).getTime() - 7 * 86400000));
-        const alreadyHasLastWeek = working.some(g => g.weekStart === lastWeekStart);
-        if (!alreadyHasLastWeek) {
-          const nowIso = new Date().toISOString();
-          const seedLast: Goal[] = [
-            { id: `seed_${lastWeekStart}_1`, title: 'SAMPLE — LAST WEEK RISK CAP AT 1R', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Risk Management',  weekStart: lastWeekStart },
-            { id: `seed_${lastWeekStart}_2`, title: 'SAMPLE — CONFIRM 5M BEFORE ENTRY',  context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Entry Criteria',   weekStart: lastWeekStart },
-            { id: `seed_${lastWeekStart}_3`, title: 'SAMPLE — WAIT FOR PULLBACK TO 20MA', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Patience / Setup', weekStart: lastWeekStart },
-          ];
-          working = [...working, ...seedLast];
-          writeAllGoals(working);
-        }
+        // Drop any previously-seeded entries (v1 samples etc.) so they
+        // don't pile up alongside the fresh set.
+        working = working.filter(g => !g.id.startsWith('seed_'));
+        const nowIso = new Date().toISOString();
+        const seedLast: Goal[] = [
+          { id: `seed_${lastWeekStart}_1`, title: 'ONLY TAKE TRADES AT THE MOVING AVERAGE NARROW STATE', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Entry Criteria',    weekStart: lastWeekStart },
+          { id: `seed_${lastWeekStart}_2`, title: 'STAY OFF PHONE DURING MARKET HOURS',                    context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Psychology',        weekStart: lastWeekStart },
+          { id: `seed_${lastWeekStart}_3`, title: 'LET THE FINAL PUSHES BREATHE IF AT BE',                 context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Trade Management',  weekStart: lastWeekStart },
+        ];
+        working = [...working, ...seedLast];
+        writeAllGoals(working);
         localStorage.setItem(SEED_FLAG, '1');
       }
     } catch { /* ignore storage errors */ }
