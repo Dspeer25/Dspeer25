@@ -348,7 +348,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const crit = g.scoringCriteria
             ? ` — compliance: ${g.scoringCriteria.compliance}; violation: ${g.scoringCriteria.violation}; scope: ${g.scoringCriteria.scope}`
             : '';
-          return `${i}. "${g.title || '(untitled)'}" [${g.goalType}]${ctx}${crit}`;
+          // measurability is required by the v3 classify prompt to decide
+          // which of tradeScores / psychScores (or both) to emit.
+          const meas = g.measurability ?? 'journal';
+          return `${i}. "${g.title || '(untitled)'}" [${g.goalType}] measurability=${meas}${ctx}${crit}`;
         }).join('\n');
 
         // Quantitative targets — sent so Haiku can score each trade against
@@ -411,96 +414,99 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const weekBuckets = buildWeekBuckets(trades);
   const selectedWeekBucket = weekBuckets[selectedWeekIdx] || weekBuckets[0];
 
-  // Derive per-goal slider values. Preferred source: AI classifications
-  // from /api/coach (Haiku). Fallback: journal keyword matching so the
-  // UI still renders defensible numbers when the API is unavailable or
-  // when trades haven't been scored yet.
-  const goalTypeKeywords: Record<string, string[]> = {
-    'Trade Management': ['managed', 'held', 'breathe', 'exit'],
-    'Entry Criteria':   ['entry', 'confirmation', 'confirmed', 'setup'],
-    'Patience / Setup': ['patient', 'waited', 'setup'],
-    'Risk Management':  ['risk', 'sized', 'size', 'stop', 'cap'],
-    'Psychology':       ['calm', 'focused', 'discipline', 'mindset'],
-    'General':          ['plan', 'rule', 'process'],
-  };
+  // Per-goal slider values come entirely from Haiku's tradeScores and
+  // psychScores. The old journal keyword fallback was removed in the
+  // quantitative/qualitative split — a keyword proxy on the trade side
+  // was meaningless, and keeping it only on the psych side would have
+  // introduced asymmetric "defensible" numbers.
   // Pull goals specific to the SELECTED week, not the globally-active
   // set. Each goal carries a weekStart stamp; we match it against the
   // selected bucket's Monday (local ISO date). The ID string matches
   // `getCurrentWeekStart()` exactly when viewing the current week.
   const selectedWeekStartISO = selectedWeekBucket ? toISODate(selectedWeekBucket.start) : null;
   const weekGoals = selectedWeekStartISO ? realGoals.filter(g => g.weekStart === selectedWeekStartISO) : [];
-  const selectedWeekGoals = weekGoals.slice(0, 3).map((g, goalIdx) => {
-    const weekTrades = selectedWeekBucket?.trades || [];
 
-    // Short-circuit empty weeks. Otherwise the keyword fallback below
-    // runs Math.max(1, 0) = 1 as a denominator and renders a phantom
-    // "0 / 1 trades · 0% compliance" row.
-    if (weekTrades.length === 0) {
-      return {
-        title: g.title || '(untitled)',
-        type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-        trades: { actual: 0, target: 0, nullCount: 0 },
-        psych:  { actual: 0, target: 0, nullCount: 0 },
-        empty: true,
-      };
-    }
+  // Per-goal compliance rows for a single column of Rules vs. Execution.
+  //   - `section = 'trades'` reads TradeClassification.tradeScores (quantitative)
+  //   - `section = 'psych'`  reads TradeClassification.psychScores (qualitative)
+  // Goals are filtered by their measurability flag — only goals whose
+  // flag overlaps the requested section show up in that column. The
+  // `goalIdx` stored on each row is the position within the full
+  // weekGoals array, which is what Haiku's goalIndex field refers to.
+  type GoalComplianceRow = {
+    title: string;
+    type: string;
+    actual: number;
+    target: number;
+    nullCount: number;
+    goalIdx: number;
+    empty: boolean;
+  };
+  const buildGoalRows = (section: 'trades' | 'psych'): GoalComplianceRow[] => {
+    return weekGoals
+      .map((g, goalIdx) => ({ g, goalIdx }))
+      .filter(({ g }) => {
+        const m = g.measurability ?? 'journal';
+        return section === 'trades'
+          ? (m === 'trade' || m === 'both')
+          : (m === 'journal' || m === 'both');
+      })
+      .slice(0, 3)
+      .map(({ g, goalIdx }) => {
+        const base = {
+          title: g.title || '(untitled)',
+          type: (g.goalType || 'General').toUpperCase().split(' ')[0],
+          goalIdx,
+        };
+        const weekTrades = selectedWeekBucket?.trades || [];
 
-    const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
+        // Empty-week short-circuit — surfaces the "No trades this week"
+        // placeholder instead of a phantom 0/N compliance bar.
+        if (weekTrades.length === 0) {
+          return { ...base, actual: 0, target: 0, nullCount: 0, empty: true };
+        }
 
-    // Primary: AI-scored per-goal compliance. Runs whenever AT LEAST
-    // ONE trade in the week has a classification — the old ≥3 floor
-    // caused the keyword fallback to paper over real AI data on
-    // low-volume weeks and invent a bogus "/5" denominator.
-    if (aiScoredTrades.length >= 1) {
-      // Compliance nulls (journal says nothing about this goal's
-      // subject) are EXCLUDED from both numerator and denominator.
-      // Otherwise one goal can artificially inflate or tank because
-      // the journal never addressed it.
-      const scored = aiScoredTrades
-        .map(t => classifications[t.id].goalScores.find(s => s.goalIndex === goalIdx))
-        .filter((gs): gs is NonNullable<typeof gs> => Boolean(gs));
-      const evaluable = scored.filter(gs => gs.compliance === 0 || gs.compliance === 1);
-      const complied  = evaluable.filter(gs => gs.compliance === 1).length;
-      const nullCount = scored.length - evaluable.length;
-      const processCount = aiScoredTrades.filter(t => classifications[t.id].tradeType === 'process').length;
-      return {
-        title: g.title || '(untitled)',
-        type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-        trades: { actual: complied, target: evaluable.length, nullCount },
-        psych:  { actual: processCount, target: aiScoredTrades.length, nullCount: 0 },
-        empty: false,
-      };
-    }
+        const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
 
-    // Fallback: keyword proxy.
-    const kws = goalTypeKeywords[g.goalType] || goalTypeKeywords['General'];
-    const psychActual = weekTrades.filter(t => {
-      const j = (t.journal || '').toLowerCase();
-      return kws.some(k => j.includes(k));
-    }).length;
-    // Denominators now reflect the actual trade count for the week,
-    // not a phantom 5. Fallback only runs when zero trades have AI
-    // classifications — i.e. truly pre-score state.
-    const tradesTarget = Math.max(1, weekTrades.length);
-    const tradesActual = weekTrades.length;
-    const psychTarget = Math.max(1, Math.floor(weekTrades.length * 0.6) || weekTrades.length);
-    return {
-      title: g.title || '(untitled)',
-      type: (g.goalType || 'General').toUpperCase().split(' ')[0],
-      trades: { actual: tradesActual, target: tradesTarget, nullCount: 0 },
-      psych:  { actual: psychActual,  target: psychTarget,  nullCount: 0 },
-      empty: false,
-    };
-  });
-  const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
+        // Primary: AI-scored compliance. Reads tradeScores for the
+        // trade column, psychScores for the psych column. Nulls (no
+        // evidence in that data source) are excluded from the
+        // denominator so an unaddressed goal doesn't distort the bar.
+        if (aiScoredTrades.length >= 1) {
+          const scoresKey = section === 'trades' ? 'tradeScores' : 'psychScores';
+          const scored = aiScoredTrades
+            .map(t => {
+              const arr = classifications[t.id][scoresKey];
+              return Array.isArray(arr) ? arr.find(s => s.goalIndex === goalIdx) : undefined;
+            })
+            .filter((gs): gs is NonNullable<typeof gs> => Boolean(gs));
+          const evaluable = scored.filter(gs => gs.compliance === 0 || gs.compliance === 1);
+          const complied  = evaluable.filter(gs => gs.compliance === 1).length;
+          const nullCount = scored.length - evaluable.length;
+          return { ...base, actual: complied, target: evaluable.length, nullCount, empty: false };
+        }
+
+        // Pre-score state: no classifications yet. Render a hollow
+        // grey candle via target=0. We no longer apply the journal
+        // keyword fallback — it was a journal-side proxy and has no
+        // meaning on the trade-data side; applying it symmetrically
+        // across columns risks surfacing numbers that look real.
+        return { ...base, actual: 0, target: 0, nullCount: 0, empty: false };
+      });
+  };
+
+  const selectedWeekTradeGoals = buildGoalRows('trades');
+  const selectedWeekPsychGoals = buildGoalRows('psych');
+  const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—' };
   const hasGoalsForSelectedWeek = weekGoals.length > 0;
 
   // ── Drilldown renderer ─────────────────────────────────────
   // Renders the inline detail panel shown beneath an expanded
-  // slider row. `section` decides whether we read per-goal
-  // compliance (trades side) or trade-level process/impulse
-  // classification (psych side). The trade list is the selected
-  // week's trades in the same order the Past Trades table uses.
+  // slider row. `section` picks which score set to read:
+  //   'trades' → TradeClassification.tradeScores (quantitative)
+  //   'psych'  → TradeClassification.psychScores (qualitative)
+  // Both read the same per-goal compliance field so a single rendering
+  // path handles icons + reasons; only the source array differs.
   const renderDrilldown = (section: 'trades' | 'psych', goalIdx: number) => {
     const weekTrades = selectedWeekBucket?.trades || [];
     const classifiedCount = weekTrades.filter(t => classifications[t.id]).length;
@@ -529,7 +535,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       }}>
         {!anyClassified ? (
           <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', padding: 12, textAlign: 'center' }}>
-            Keyword fallback active — detailed reasons not available. Expand each journal manually in Past Trades to review.
+            Trades in this week haven&apos;t been scored yet. Re-open Analysis after the batch completes.
           </div>
         ) : weekTrades.length === 0 ? (
           <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', padding: 12, textAlign: 'center' }}>
@@ -539,25 +545,16 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {weekTrades.map(t => {
               const c = classifications[t.id];
+              const scoresArr = section === 'trades' ? c?.tradeScores : c?.psychScores;
+              const gs = Array.isArray(scoresArr) ? scoresArr.find(s => s.goalIndex === goalIdx) : undefined;
+              // Grey dash for: no classification, no entry for this goal
+              // (e.g. journal-only goal in the trades column), or null
+              // compliance (no evidence in the respective data source).
               let icon: { glyph: string; color: string };
-              let reason = '';
-              if (section === 'trades') {
-                const gs = c?.goalScores.find(s => s.goalIndex === goalIdx);
-                // null compliance → "no evidence in journal", render
-                // the same grey dash as a missing classification so the
-                // trader can tell at a glance which trades carried
-                // signal for this specific goal.
-                if (!c || !gs || gs.compliance === null) icon = { glyph: '—', color: '#555' };
-                else if (gs.compliance === 1) icon = { glyph: '✓', color: teal };
-                else icon = { glyph: '✗', color: red };
-                reason = gs?.reason || '';
-              } else {
-                if (!c) icon = { glyph: '—', color: '#555' };
-                else if (c.tradeType === 'process') icon = { glyph: '✓', color: teal };
-                else if (c.tradeType === 'impulse') icon = { glyph: '✗', color: red };
-                else icon = { glyph: '—', color: '#555' };
-                reason = c?.psychReason || '';
-              }
+              if (!c || !gs || gs.compliance === null) icon = { glyph: '—', color: '#555' };
+              else if (gs.compliance === 1) icon = { glyph: '✓', color: teal };
+              else icon = { glyph: '✗', color: red };
+              const reason = gs?.reason || '';
               const plColor = t.pl >= 0 ? teal : red;
               return (
                 <div key={t.id}>
@@ -1089,12 +1086,14 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           </div>
         )}
 
-        {/* Goal cards (3) — lifted up so the top half sits above the
-            container's top border for visual emphasis. */}
+        {/* Goal cards (up to 3) — lifted up so the top half sits above
+            the container's top border for visual emphasis. Shows ALL of
+            this week's goals regardless of measurability; the per-column
+            panels below filter to trade-/journal-measurable subsets. */}
         {hasGoalsForSelectedWeek && (
         <div style={{ display: 'flex', gap: 14, marginTop: -40, marginBottom: 32, flexWrap: 'wrap' }}>
-          {selectedWeek.goals.map((g, idx) => (
-            <div key={idx} style={{
+          {weekGoals.slice(0, 3).map((g, idx) => (
+            <div key={g.id} style={{
               flex: '1 1 260px',
               background: '#1f2430',
               border: `1px solid ${teal}`,
@@ -1115,13 +1114,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 flexShrink: 0,
               }}>{idx + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, color: '#ffffff', fontFamily: fm, fontWeight: 600, lineHeight: 1.35 }}>{g.title}</div>
+                <div style={{ fontSize: 15, color: '#ffffff', fontFamily: fm, fontWeight: 600, lineHeight: 1.35 }}>{g.title || '(untitled)'}</div>
               </div>
               <span style={{
                 background: 'rgba(0,212,160,0.15)', color: teal,
                 fontSize: 10.5, letterSpacing: 1.5, fontWeight: 700,
                 padding: '4px 10px', borderRadius: 999, fontFamily: fm, flexShrink: 0,
-              }}>{g.type}</span>
+              }}>{(g.goalType || 'General').toUpperCase().split(' ')[0]}</span>
             </div>
           ))}
         </div>
@@ -1144,15 +1143,18 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const renderGoalCandle = (
             section: 'trades' | 'psych',
             i: number,
-            g: typeof selectedWeek.goals[number],
+            row: GoalComplianceRow,
           ) => {
-            const side = section === 'trades' ? g.trades : g.psych;
-            const evaluable = side.target;
-            const nullCount = side.nullCount || 0;
+            const evaluable = row.target;
+            const nullCount = row.nullCount;
             const allNull = evaluable === 0;
-            const pct = allNull ? 0 : Math.min(100, Math.round((side.actual / evaluable) * 100));
-            const isExpanded = expandedRow?.section === section && expandedRow.goalIdx === i;
-            const isHovered = hoveredRow?.section === section && hoveredRow.goalIdx === i;
+            const pct = allNull ? 0 : Math.min(100, Math.round((row.actual / evaluable) * 100));
+            // expanded/hovered state keys off the goal's original
+            // index in weekGoals — so clicking a candle in the trade
+            // column and the same goal in the psych column stay
+            // independently expandable.
+            const isExpanded = expandedRow?.section === section && expandedRow.goalIdx === row.goalIdx;
+            const isHovered = hoveredRow?.section === section && hoveredRow.goalIdx === row.goalIdx;
 
             const accent = section === 'trades' ? blue : teal;
             const borderColor = allNull ? '#7a7d85' : accent;
@@ -1165,9 +1167,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
             return (
               <div
-                key={i}
-                onClick={() => setExpandedRow(prev => prev && prev.section === section && prev.goalIdx === i ? null : { section, goalIdx: i })}
-                onMouseEnter={() => setHoveredRow({ section, goalIdx: i })}
+                key={`${section}-${row.goalIdx}`}
+                onClick={() => setExpandedRow(prev => prev && prev.section === section && prev.goalIdx === row.goalIdx ? null : { section, goalIdx: row.goalIdx })}
+                onMouseEnter={() => setHoveredRow({ section, goalIdx: row.goalIdx })}
                 onMouseLeave={() => setHoveredRow(null)}
                 style={{
                   flex: '1 1 0',
@@ -1228,7 +1230,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   />
                 </svg>
                 <div style={{ fontFamily: fm, fontSize: 13, fontWeight: 600, color: allNull ? '#7a7d85' : '#e8e8f0', textAlign: 'center' }}>
-                  {allNull ? 'Not yet mentioned' : `${side.actual} / ${evaluable} trades`}
+                  {allNull ? 'Not yet scored' : `${row.actual} / ${evaluable} trades`}
                 </div>
                 {nullCount > 0 && !allNull && (
                   <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', textAlign: 'center' }}>
@@ -1248,7 +1250,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   WebkitBoxOrient: 'vertical' as const,
                   overflow: 'hidden',
                 }}>
-                  <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{g.title}
+                  <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{row.title}
                 </div>
                 <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', marginTop: 2 }}>{isExpanded ? '▴ hide' : '▾ details'}</span>
               </div>
@@ -1271,9 +1273,20 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   <h4 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
                 </div>
                 <p style={{ color: '#aab0bd', fontSize: 14, margin: '0 0 20px', letterSpacing: 0.3, lineHeight: 1.5 }}>
-                  Did each trade's execution match the rule? Measured from the trade data itself — setup, entry, sizing, post-entry management.
+                  Did each trade&apos;s execution match the rule? Measured from the trade data itself — entry/exit prices, R:R, sizing.
                 </p>
-                {selectedWeek.goals.some(g => g.empty) ? (
+                {selectedWeekTradeGoals.length === 0 ? (
+                  <div style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    color: '#7a7d85',
+                    fontFamily: fm,
+                    fontSize: 12,
+                    fontStyle: 'italic',
+                  }}>
+                    No trade-measurable goals this week.
+                  </div>
+                ) : selectedWeekTradeGoals.some(g => g.empty) ? (
                   <div style={{
                     padding: '40px 20px',
                     textAlign: 'center',
@@ -1287,7 +1300,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 ) : (
                   <>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                      {selectedWeek.goals.map((g, i) => renderGoalCandle('trades', i, g))}
+                      {selectedWeekTradeGoals.map((row, i) => renderGoalCandle('trades', i, row))}
                     </div>
                     {expandedRow?.section === 'trades' && (
                       <div style={{ marginTop: 14 }}>{renderDrilldown('trades', expandedRow.goalIdx)}</div>
@@ -1312,7 +1325,18 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 <p style={{ color: '#aab0bd', fontSize: 14, margin: '0 0 20px', letterSpacing: 0.3, lineHeight: 1.5 }}>
                   Did the mindset and process behind each trade match the rule? Measured from your journal language — patience, discipline, impulse tells.
                 </p>
-                {selectedWeek.goals.some(g => g.empty) ? (
+                {selectedWeekPsychGoals.length === 0 ? (
+                  <div style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    color: '#7a7d85',
+                    fontFamily: fm,
+                    fontSize: 12,
+                    fontStyle: 'italic',
+                  }}>
+                    No journal-measurable goals this week.
+                  </div>
+                ) : selectedWeekPsychGoals.some(g => g.empty) ? (
                   <div style={{
                     padding: '40px 20px',
                     textAlign: 'center',
@@ -1326,7 +1350,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 ) : (
                   <>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                      {selectedWeek.goals.map((g, i) => renderGoalCandle('psych', i, g))}
+                      {selectedWeekPsychGoals.map((row, i) => renderGoalCandle('psych', i, row))}
                     </div>
                     {expandedRow?.section === 'psych' && (
                       <div style={{ marginTop: 14 }}>{renderDrilldown('psych', expandedRow.goalIdx)}</div>

@@ -1040,20 +1040,28 @@ export function buildProfileContext(): string {
 /** Bump when the classify system prompt in app/api/coach/route.ts
  *  changes its schema or scoring rules. Cached entries stamped with
  *  a different version are re-scored on next Analysis mount. */
-export const CLASSIFY_PROMPT_VERSION = 'v2-2026-04';
+export const CLASSIFY_PROMPT_VERSION = 'v3-2026-04';
 
 export interface TradeClassification {
   tradeId: string;
   /** Which prompt version produced this entry — see CLASSIFY_PROMPT_VERSION. */
   promptVersion: string;
   /**
-   * Per-goal compliance.
-   *  - `1`    = journal explicitly shows the goal was followed
-   *  - `0`    = journal explicitly shows the goal was violated
-   *  - `null` = journal says nothing about this goal's subject
-   *             (classifier must pick null rather than fabricate a 0 or 1)
+   * Quantitative compliance — scored from the numeric trade record
+   * only (entry/exit price, R:R, contracts, etc.). Populated only for
+   * goals whose measurability is 'trade' or 'both'.
+   *  - `1`    = trade data shows the rule was followed
+   *  - `0`    = trade data shows the rule was violated
+   *  - `null` = trade data doesn't address this rule's subject
    */
-  goalScores: Array<{ goalIndex: number; compliance: 0 | 1 | null; reason: string }>;
+  tradeScores: Array<{ goalIndex: number; compliance: 0 | 1 | null; reason: string }>;
+  /**
+   * Qualitative compliance — scored from journal language only.
+   * Populated for goals whose measurability is 'journal' or 'both'.
+   * Values mean the same thing as tradeScores but reasoning cites
+   * the journal text, not the numbers.
+   */
+  psychScores: Array<{ goalIndex: number; compliance: 0 | 1 | null; reason: string }>;
   psychScore: number;      // 0-100
   tradeType: 'process' | 'impulse' | 'neutral';
   psychReason: string;
@@ -1124,6 +1132,16 @@ export interface Goal {
   goalType: string;
   /** ISO date (YYYY-MM-DD) of the Monday that starts the week this goal was active for. */
   weekStart: string;
+  /**
+   * Which side of Rules vs. Execution this goal shows up in.
+   *  - 'trade'   → scored from quantitative trade data only (prices, R:R, sizing)
+   *  - 'journal' → scored from journal language only
+   *  - 'both'    → scored independently on both sides; rows may agree or disagree
+   *
+   * Missing on legacy records — the load-time migration stamps a
+   * default via `defaultMeasurabilityForType` before render.
+   */
+  measurability: 'trade' | 'journal' | 'both';
   /** Latest completeness score (0-100) emitted by the goal-clarification coach. */
   completeness?: number;
   /** Structured scoring criteria emitted by the coach once the goal is understood. */
@@ -1131,6 +1149,23 @@ export interface Goal {
 }
 
 export const GOAL_TYPES = ['Trade Management', 'Entry Criteria', 'Patience / Setup', 'Risk Management', 'Psychology', 'General'];
+
+/**
+ * Conservative default for a goal's measurability based on its goalType.
+ * Used by the migration and by the "new goal" path. The user can override
+ * this at any time via the TRADE/PSYCH/BOTH toggle on the goal card.
+ */
+export function defaultMeasurabilityForType(goalType: string): 'trade' | 'journal' | 'both' {
+  switch (goalType) {
+    case 'Trade Management': return 'both';     // exit behavior is partly verifiable from R:R
+    case 'Risk Management':  return 'both';     // sizing is partly verifiable from contracts × price
+    case 'Entry Criteria':   return 'journal';  // trade data can't see what timeframes were checked
+    case 'Patience / Setup': return 'journal';  // trade data can't see whether the trader waited
+    case 'Psychology':       return 'journal';  // purely emotional/behavioral
+    case 'General':          return 'journal';  // safest default
+    default:                 return 'journal';
+  }
+}
 
 // Week helpers — shared by the Weekly Goals page and the Analysis
 // week selector so both see the same Monday-aligned boundaries.
@@ -1203,9 +1238,9 @@ export function getAllWeekStarts(): string[] {
 export function getDefaultGoals(): Goal[] {
   const ws = getCurrentWeekStart();
   return [
-    { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Trade Management', weekStart: ws },
-    { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Entry Criteria', weekStart: ws },
-    { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Patience / Setup', weekStart: ws },
+    { id: 'g1', title: 'LET TRADES BREATHE 3+ WHEN AT BREAK-EVEN', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Trade Management', weekStart: ws, measurability: defaultMeasurabilityForType('Trade Management') },
+    { id: 'g2', title: '5M AND 13/15M CONFIRMATION BEHIND ALL TRADES', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Entry Criteria', weekStart: ws, measurability: defaultMeasurabilityForType('Entry Criteria') },
+    { id: 'g3', title: 'AT OR NEAR 20MA, WILL WAIT FOR PULLBACK IF FAR', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: new Date().toISOString(), goalType: 'Patience / Setup', weekStart: ws, measurability: defaultMeasurabilityForType('Patience / Setup') },
   ];
 }
 

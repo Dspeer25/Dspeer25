@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
@@ -96,8 +96,20 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     if (stored.length > 0) {
       let changed = false;
       working = stored.map((g: Goal) => {
-        const next: Goal = { ...g, actionItems: g.actionItems || [], goalType: g.goalType || 'General', weekStart: g.weekStart || stamp };
-        if (!g.weekStart) changed = true;
+        // Any field-shape gaps introduced by newer schema versions get
+        // patched here once, then persisted. We only stamp a default
+        // measurability when the field is genuinely missing — a user
+        // who picked 'trade' last week must not be silently rewritten.
+        const goalType = g.goalType || 'General';
+        const measurability = g.measurability ?? defaultMeasurabilityForType(goalType);
+        const next: Goal = {
+          ...g,
+          actionItems: g.actionItems || [],
+          goalType,
+          weekStart: g.weekStart || stamp,
+          measurability,
+        };
+        if (!g.weekStart || g.measurability === undefined) changed = true;
         return next;
       });
       if (changed) writeAllGoals(working);
@@ -120,9 +132,9 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
         working = working.filter(g => !g.id.startsWith('seed_'));
         const nowIso = new Date().toISOString();
         const seedLast: Goal[] = [
-          { id: `seed_${lastWeekStart}_1`, title: 'ONLY TAKE TRADES AT THE MOVING AVERAGE NARROW STATE', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Entry Criteria',    weekStart: lastWeekStart },
-          { id: `seed_${lastWeekStart}_2`, title: 'STAY OFF PHONE DURING MARKET HOURS',                    context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Psychology',        weekStart: lastWeekStart },
-          { id: `seed_${lastWeekStart}_3`, title: 'LET THE FINAL PUSHES BREATHE IF AT BE',                 context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Trade Management',  weekStart: lastWeekStart },
+          { id: `seed_${lastWeekStart}_1`, title: 'ONLY TAKE TRADES AT THE MOVING AVERAGE NARROW STATE', context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Entry Criteria',    weekStart: lastWeekStart, measurability: defaultMeasurabilityForType('Entry Criteria') },
+          { id: `seed_${lastWeekStart}_2`, title: 'STAY OFF PHONE DURING MARKET HOURS',                    context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Psychology',        weekStart: lastWeekStart, measurability: defaultMeasurabilityForType('Psychology') },
+          { id: `seed_${lastWeekStart}_3`, title: 'LET THE FINAL PUSHES BREATHE IF AT BE',                 context: [], aiResponses: [], contextComplete: false, actionItems: [], createdAt: nowIso, goalType: 'Trade Management',  weekStart: lastWeekStart, measurability: defaultMeasurabilityForType('Trade Management') },
         ];
         working = [...working, ...seedLast];
         writeAllGoals(working);
@@ -155,6 +167,7 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       createdAt: new Date().toISOString(),
       goalType: 'General',
       weekStart: currentWeekStart,
+      measurability: defaultMeasurabilityForType('General'),
     };
     setGoals(prev => [...prev, newGoal]);
   };
@@ -168,8 +181,15 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       if (g.id !== id) return g;
       const currentIdx = GOAL_TYPES.indexOf(g.goalType);
       const nextIdx = (currentIdx + 1) % GOAL_TYPES.length;
+      // Cycling the category does NOT reset measurability — if the
+      // trader has explicitly picked TRADE/PSYCH/BOTH we respect it.
       return { ...g, goalType: GOAL_TYPES[nextIdx] };
     }));
+  };
+
+  const setMeasurability = (id: string, value: 'trade' | 'journal' | 'both') => {
+    if (isReadOnly) return;
+    setGoals(prev => prev.map(g => g.id === id ? { ...g, measurability: value } : g));
   };
 
   const deleteGoal = (id: string) => {
@@ -549,7 +569,7 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                       }}
                     />
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
                     <span
                       onClick={isReadOnly ? undefined : () => cycleGoalType(g.id)}
                       style={{
@@ -566,6 +586,38 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                       }}
                     >TYPE</span>
                     <span style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>{g.goalType}</span>
+
+                    {/* Measurability pills — which column(s) of Rules vs. Execution
+                        this goal shows up in. TRADE = trade-data scoring only,
+                        PSYCH = journal scoring only, BOTH = both, scored
+                        independently. */}
+                    <div style={{ display: 'flex', gap: 6, marginLeft: 12 }}>
+                      {(['trade', 'journal', 'both'] as const).map(val => {
+                        const isActive = (g.measurability ?? 'journal') === val;
+                        const label = val === 'trade' ? 'TRADE' : val === 'journal' ? 'PSYCH' : 'BOTH';
+                        return (
+                          <span
+                            key={val}
+                            onClick={isReadOnly ? undefined : () => setMeasurability(g.id, val)}
+                            style={{
+                              fontFamily: fm,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              letterSpacing: 1,
+                              padding: '2px 10px',
+                              borderRadius: 4,
+                              cursor: isReadOnly ? 'default' : 'pointer',
+                              userSelect: 'none',
+                              transition: 'all 0.15s ease',
+                              background: isActive ? '#00d4a0' : 'transparent',
+                              color: isActive ? '#0e0f14' : '#00d4a0',
+                              border: '1px solid #00d4a0',
+                              opacity: isActive ? 1 : 0.5,
+                            }}
+                          >{label}</span>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Action items below type tag */}

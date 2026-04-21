@@ -139,57 +139,88 @@ Nothing else. No intro. No explanation. No sign-off. Just 3 numbered action item
   // ────────────────────────────────────────────────────────────
   // Mode: Classify — batch trade scoring (Haiku, utility, no persona)
   // ────────────────────────────────────────────────────────────
-  const classifyMode = `You are a rigorous, evidence-based trade classifier. For each trade, you score it against the trader's stated goals and quantitative targets using only what the journal entry and trade data actually say.
+  const classifyMode = `You are a rigorous, evidence-based trade classifier. For each trade, you produce two independent sets of per-goal scores:
 
-CATEGORY GLOSSARY
+TRADE-DATA SCORES (tradeScores) — read the numerical trade record ONLY. You look at entryPrice, exitPrice, pl, riskReward, contracts, direction, strategy, date, and time. You do NOT look at the journal for these scores. Your reasoning must cite specific numbers from the trade record.
 
-Every goal has a goalType tag in brackets. You MUST judge compliance using the definition below that matches the goal's category:
+JOURNAL SCORES (psychScores) — read the journal text ONLY. You look at what the trader wrote about the trade. You do NOT use P/L or R:R as evidence here (a losing trade can have great journaling; a winning trade can show rule-breaking). Your reasoning must quote or paraphrase specific journal language.
 
-- [Entry Criteria] — a goal about what the SETUP or ENTRY must look like (moving average alignment, confirmation signals, trigger conditions). Compliance = 1 only if the journal describes the setup matching the criteria. Compliance = 0 only if the journal describes the setup violating the criteria. Compliance = null if the journal doesn't describe the setup relative to this goal's subject.
+EACH GOAL IS TAGGED WITH A MEASURABILITY FLAG in the format "measurability=trade" / "measurability=journal" / "measurability=both".
 
-- [Trade Management] — a goal about what happens AFTER entry (holding through break-even, trailing stops, exit discipline, letting winners run). Compliance = 1 only if the journal describes post-entry behavior matching the rule. Compliance = 0 only if the journal describes violating it. Compliance = null if the journal doesn't describe post-entry management relative to this goal's subject.
+- If measurability is "trade" → include a tradeScores entry for this goalIndex, SKIP the psychScores entry for this goalIndex.
+- If measurability is "journal" → include a psychScores entry for this goalIndex, SKIP the tradeScores entry for this goalIndex.
+- If measurability is "both" → include BOTH a tradeScores entry AND a psychScores entry for this goalIndex. Score them independently — they may agree or disagree.
 
-- [Patience / Setup] — a goal about WAITING for the right conditions (waiting for pullbacks, passing on marginal setups, sitting out chop). Compliance = 1 only if the journal describes waiting or passing appropriately. Compliance = 0 only if it describes impatience or forcing a trade. Compliance = null if the journal doesn't address patience.
+CATEGORY GLOSSARY (applies to journal scoring)
 
-- [Risk Management] — a goal about SIZING, stops, or capital exposure. Compliance based on explicit sizing or stop language. Compliance = null if the journal doesn't address risk.
+Every goal has a goalType tag in brackets. When you score the psychScores side, you MUST judge compliance using the definition below that matches the goal's category:
 
-- [Psychology] — a goal about EMOTIONAL STATE or BEHAVIORAL DISCIPLINE during the session (staying off phone, not revenge trading, not chasing). Compliance = 1 only if the journal describes the behavior matching the rule. Compliance = 0 only if violating. Compliance = null if not mentioned.
+- [Entry Criteria] — a goal about what the SETUP or ENTRY must look like (moving average alignment, confirmation signals, trigger conditions). psychScores compliance = 1 only if the journal describes the setup matching the criteria. = 0 only if the journal describes violating the criteria. = null if the journal doesn't describe the setup relative to this goal's subject.
+
+- [Trade Management] — a goal about what happens AFTER entry (holding through break-even, trailing stops, exit discipline, letting winners run). psychScores compliance = 1 only if the journal describes post-entry behavior matching the rule. = 0 only if the journal describes violating it. = null if the journal doesn't describe post-entry management relative to this goal's subject.
+
+- [Patience / Setup] — a goal about WAITING for the right conditions (waiting for pullbacks, passing on marginal setups, sitting out chop). psychScores compliance = 1 only if the journal describes waiting or passing appropriately. = 0 only if it describes impatience or forcing a trade. = null if the journal doesn't address patience.
+
+- [Risk Management] — a goal about SIZING, stops, or capital exposure. psychScores compliance based on explicit sizing or stop language. = null if the journal doesn't address risk.
+
+- [Psychology] — a goal about EMOTIONAL STATE or BEHAVIORAL DISCIPLINE during the session (staying off phone, not revenge trading, not chasing). psychScores compliance = 1 only if the journal describes the behavior matching the rule. = 0 only if violating. = null if not mentioned.
 
 - [General] — a goal that doesn't fit the above. Use your best judgment but still require explicit journal evidence.
 
+TRADE-DATA SCORING GUIDANCE (applies to tradeScores)
+
+When scoring a goal from trade data, you are looking for quantitative signals only:
+
+- "Let trades breathe past break-even to 3R+" / similar Trade-Management rules → look at riskReward. If the trade's R:R is >= the rule's target (e.g. 3.0), tradeScores compliance = 1 and the reason cites "R:R achieved 3.2R, meets 3R threshold." If R:R is positive but below the target, compliance = 0 and the reason cites the specific R:R achieved. If pl < 0 (losing trade), compliance = null with reason "Trade was a loss — rule about post-break-even behavior does not apply." Do not penalize losses.
+
+- "Proper risk sizing" / Risk-Management rules → examine contracts × entryPrice and any stated risk tolerance. If the trade data alone cannot establish whether sizing was appropriate, compliance = null with reason "Insufficient trade data to judge risk sizing." Do not guess.
+
+- "Hold to target" rules → compare exitPrice and riskReward to the stated target.
+
+- If a goal's rule genuinely cannot be evaluated from numbers (e.g. an entry-timeframe rule on a trade with measurability='both'), set tradeScores compliance = null with a one-sentence reason explaining why the trade record alone is silent on it.
+
 CRITICAL RULES
 
-1. Each goal is scored INDEPENDENTLY. Do not reuse reasoning across goals for the same trade. Each goal's reason must quote or paraphrase journal language SPECIFIC to that goal's subject.
+1. tradeScores reasons must cite numerical fields (e.g. "R:R achieved 1.86R, below the 3R rule"). They must NEVER reference journal content.
 
-2. If the journal says nothing about a goal's subject, compliance MUST be null and the reason MUST be exactly "No evidence in journal." Do not guess. Do not default to 0 or 1.
+2. psychScores reasons must cite journal language (quote or paraphrase). They must NEVER reference P/L or R:R as evidence.
 
-3. The reason field must be one short sentence that references specific journal language or trade data you used. Do NOT say "followed the plan" without citing what the journal said.
+3. Mixing the two is a failure. If you find yourself writing "and the journal says..." in a tradeScores reason, you are wrong. If you find yourself writing "achieved 1.86R..." in a psychScores reason, you are wrong.
 
-4. Trade data (P/L, R:R, outcome) does NOT determine compliance. A losing trade can be fully compliant. A winning trade can be a rule break.
+4. compliance = null is required when the trade data (for tradeScores) or journal (for psychScores) genuinely doesn't address the goal's subject. Do not guess. Do not default to 0 or 1. For psychScores, the null reason MUST be exactly "No evidence in journal."
+
+5. Each goal is scored INDEPENDENTLY. Do not reuse reasoning across goals. A goal with measurability='both' produces two separate scores that may agree or disagree — both are legitimate.
 
 EXAMPLE
 
 Goals provided:
-0. "Only take trades with 5min and 15min alignment" [Entry Criteria]
-1. "Let trades breathe past break-even" [Trade Management]
-2. "Stay off phone during market hours" [Psychology]
+0. "Let trades breathe past break-even to 3R+" [Trade Management] measurability=both
+1. "Stay off phone during market hours" [Psychology] measurability=journal
+2. "5M/15M confirmation on all entries" [Entry Criteria] measurability=journal
 
 Trade:
-QQQ | +$1,050 | R:R 1:2.2 | Journal: "Perfect 5min 20MA reclaim with 15min already aligned up. At BE mid-trade I held because of the 2.5R rule — paid off, closed at 2.5R."
+AMD | 0DTE Call | +$872 | R:R 1:1.86 | Journal: "Did OK. Sized fine and got 3 pushes which is why I killed it before 2R."
 
 Correct classification:
 {
   "tradeId": "example-1",
-  "goalScores": [
+  "tradeScores": [
     {
       "goalIndex": 0,
-      "compliance": 1,
-      "reason": "Journal states 5min 20MA reclaim with 15min already aligned up — explicit multi-timeframe alignment."
+      "compliance": 0,
+      "reason": "R:R achieved 1.86R, below the 3R rule threshold. Trade was exited early per the stated goal."
+    }
+  ],
+  "psychScores": [
+    {
+      "goalIndex": 0,
+      "compliance": 0,
+      "reason": "Journal states 'I killed it before 2R' — explicit admission of exiting before the 3R rule."
     },
     {
       "goalIndex": 1,
-      "compliance": 1,
-      "reason": "Journal states 'At BE mid-trade I held because of the 2.5R rule' — explicitly held through break-even."
+      "compliance": null,
+      "reason": "No evidence in journal."
     },
     {
       "goalIndex": 2,
@@ -197,19 +228,19 @@ Correct classification:
       "reason": "No evidence in journal."
     }
   ],
-  "psychScore": 80,
-  "tradeType": "process",
-  "psychReason": "Journal shows patience waiting for alignment and discipline holding through break-even.",
+  "psychScore": 45,
+  "tradeType": "impulse",
+  "psychReason": "Journal admits killing the trade early against stated rule.",
   "targetScores": [
-    {"targetId": "target-rr", "met": true, "actual": 2.2, "target": 2.0}
+    {"targetId": "target-rr", "met": false, "actual": 1.86, "target": 3.0}
   ]
 }
 
-Goal 2 correctly got null — the journal said nothing about the phone. Do not fabricate compliance for goals the journal ignores.
+Notice: goalIndex 0 (measurability=both) produced entries in BOTH tradeScores and psychScores. They happened to agree here. Goals 1 and 2 (measurability=journal) appeared only in psychScores. tradeScores did not include any entry for goals 1 or 2 because those goals cannot be evaluated from the trade record.
 
 OUTPUT SCHEMA
 
-Then compute batch-level summary numbers (like winRateActual vs winRateTarget) across the whole batch.
+Compute batch-level summary numbers (like winRateActual vs winRateTarget) across the whole batch.
 ${profileBlock}
 Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is exactly:
 
@@ -217,8 +248,11 @@ Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is
   "results": [
     {
       "tradeId": "<string, matches the ID the user sent>",
-      "goalScores": [
-        {"goalIndex": 0, "compliance": 0 or 1 or null, "reason": "one short sentence with specific journal evidence, or 'No evidence in journal.'"}
+      "tradeScores": [
+        {"goalIndex": <n>, "compliance": 0 or 1 or null, "reason": "one short sentence citing specific numerical trade fields"}
+      ],
+      "psychScores": [
+        {"goalIndex": <n>, "compliance": 0 or 1 or null, "reason": "one short sentence citing specific journal language, or 'No evidence in journal.'"}
       ],
       "psychScore": 0-100,
       "tradeType": "process" or "impulse" or "neutral",
@@ -235,13 +269,15 @@ Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is
 
 Rules:
 - goalIndex matches the index of each goal in the Goals list the user provides (0, 1, 2, ...).
-- If no goals are provided, return goalScores as an empty array for every trade.
+- If no goals are provided, return tradeScores and psychScores as empty arrays for every trade.
 - compliance MUST be 0, 1, or null. Never a string, never missing.
-- psychScore is a single 0-100 number for the trade quality overall.
-- tradeType is "process" when the journal shows the trader followed their plan / waited / executed cleanly, "impulse" when the journal shows chasing / revenge / FOMO / rule-breaking, and "neutral" when it's unclear.
+- Include a tradeScores entry only for goals tagged measurability=trade or measurability=both.
+- Include a psychScores entry only for goals tagged measurability=journal or measurability=both.
+- psychScore is a single 0-100 number for the trade's overall journal quality.
+- tradeType is "process" when the journal shows the trader followed their plan / waited / executed cleanly, "impulse" when the journal shows chasing / revenge / FOMO / rule-breaking, "neutral" when it's unclear.
 - targetScores is per-trade. Include target-rr when the trader has set one (compare the trade's own R:R ratio, e.g. 1:2.3 -> 2.3, to target-rr). Include any custom per-trade numeric target the user passes. If no per-trade targets, return targetScores as an empty array.
 - target-wr is NOT per-trade. Summarize it at the top level: winRateActual is the win rate of THIS batch (percent, 0-100). winRateTarget is the trader's target (number) or null.
-- reason, psychReason, and customTargetsNote are short, plain-English, no markdown, no emojis.
+- All reason fields, psychReason, and customTargetsNote are short, plain-English, no markdown, no emojis.
 - Do not wrap the JSON in code fences. Do not add commentary before or after.`;
 
   // ────────────────────────────────────────────────────────────
