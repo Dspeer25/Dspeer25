@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek, parseLocalDate, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -311,7 +311,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [classificationSummary, setClassificationSummary] = useState<ClassificationBatchSummary>({});
   const [quantTargetsSnapshot, setQuantTargetsSnapshot] = useState<{ quantitativeTargets: QuantitativeTarget[]; customQuantTargets: QuantitativeTarget[] }>({ quantitativeTargets: [], customQuantTargets: [] });
   useEffect(() => {
-    setClassifications(readClassifications());
+    // One-shot purge of stale classifications before the classify run
+    // sees them. Any entry whose promptVersion is missing or doesn't
+    // match the current prompt is dropped outright — it would otherwise
+    // hang around with undefined tradeScores/psychScores arrays and
+    // render useless grey candles until its week is re-classified.
+    // This complements the in-effect version check (which only covers
+    // current-week trades); purging wipes past-week residue too.
+    const cache = readClassifications();
+    let changed = false;
+    for (const id of Object.keys(cache)) {
+      const entry = cache[id];
+      if (!entry?.promptVersion || entry.promptVersion !== CLASSIFY_PROMPT_VERSION) {
+        delete cache[id];
+        changed = true;
+      }
+    }
+    if (changed) {
+      try { localStorage.setItem(CLASSIFICATION_STORE_KEY, JSON.stringify(cache)); } catch { /* ignore */ }
+    }
+    setClassifications(cache);
     setClassificationSummary(readClassificationSummary());
     setQuantTargetsSnapshot(readQuantTargets());
   }, []);
@@ -343,13 +362,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     let cancelled = false;
     (async () => {
       try {
-        const goalsList = realGoals.slice(0, 10).map((g, i) => {
+        // Scope to the current week's goals only. The classify effect
+        // runs exclusively against current-week trades (see weekStart
+        // filter above), so Haiku must see the same goal list the UI
+        // filters to. Sending all-weeks goals produced goalIndex
+        // 3/4/5 entries that didn't map to any rendered candle.
+        const currentWeekGoals = getGoalsForWeek(getCurrentWeekStart());
+        const goalsList = currentWeekGoals.slice(0, 10).map((g, i) => {
           const ctx = g.context && g.context.length > 0 ? ` — context: ${g.context.join(' | ')}` : '';
           const crit = g.scoringCriteria
             ? ` — compliance: ${g.scoringCriteria.compliance}; violation: ${g.scoringCriteria.violation}; scope: ${g.scoringCriteria.scope}`
             : '';
-          // measurability is required by the v3 classify prompt to decide
-          // which of tradeScores / psychScores (or both) to emit.
+          // measurability tells Haiku which score families to emit
+          // for this goalIndex (tradeScores and/or psychScores).
           const meas = g.measurability ?? 'journal';
           return `${i}. "${g.title || '(untitled)'}" [${g.goalType}] measurability=${meas}${ctx}${crit}`;
         }).join('\n');

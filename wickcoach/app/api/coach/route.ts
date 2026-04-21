@@ -191,15 +191,17 @@ CRITICAL RULES
 
 5. Each goal is scored INDEPENDENTLY. Do not reuse reasoning across goals. A goal with measurability='both' produces two separate scores that may agree or disagree — both are legitimate.
 
+6. EMISSION IS MANDATORY. For every goal with measurability="trade" OR measurability="both", you MUST emit a tradeScores entry for that goalIndex. For every goal with measurability="journal" OR measurability="both", you MUST emit a psychScores entry for that goalIndex. If you lack information to judge, emit compliance=null with a reason starting "Insufficient trade data" (for tradeScores) or "No evidence in journal." (for psychScores). Returning empty arrays or silently omitting entries is a VIOLATION. Count your emissions before returning — if the goal list has N trade-side goals (measurability "trade" or "both"), tradeScores MUST contain exactly N entries, one per matching goalIndex. If the goal list has M journal-side goals (measurability "journal" or "both"), psychScores MUST contain exactly M entries.
+
 EXAMPLE
 
 Goals provided:
 0. "Let trades breathe past break-even to 3R+" [Trade Management] measurability=both
 1. "Stay off phone during market hours" [Psychology] measurability=journal
-2. "5M/15M confirmation on all entries" [Entry Criteria] measurability=journal
+2. "Check 5min and 15min alignment before entry" [Entry Criteria] measurability=both
 
 Trade:
-AMD | 0DTE Call | +$872 | R:R 1:1.86 | Journal: "Did OK. Sized fine and got 3 pushes which is why I killed it before 2R."
+AMD | 0DTE Call | +$872 | R:R 1:1.86 | Entry 1.00 | Exit 1.86 | Journal: "Did OK. Sized fine and got 3 pushes which is why I killed it before 2R."
 
 Correct classification:
 {
@@ -208,7 +210,12 @@ Correct classification:
     {
       "goalIndex": 0,
       "compliance": 0,
-      "reason": "R:R achieved 1.86R, below the 3R rule threshold. Trade was exited early per the stated goal."
+      "reason": "R:R achieved 1.86R, below the 3R threshold. Trade exited before the breathe rule."
+    },
+    {
+      "goalIndex": 2,
+      "compliance": null,
+      "reason": "Insufficient trade data to judge multi-timeframe alignment (no timeframe fields in trade record)."
     }
   ],
   "psychScores": [
@@ -236,7 +243,11 @@ Correct classification:
   ]
 }
 
-Notice: goalIndex 0 (measurability=both) produced entries in BOTH tradeScores and psychScores. They happened to agree here. Goals 1 and 2 (measurability=journal) appeared only in psychScores. tradeScores did not include any entry for goals 1 or 2 because those goals cannot be evaluated from the trade record.
+Notice:
+- Goal 0 (measurability=both) appears in BOTH tradeScores AND psychScores.
+- Goal 1 (measurability=journal) appears ONLY in psychScores — it is correctly omitted from tradeScores because no trade-side goal with goalIndex 1 exists in this list.
+- Goal 2 (measurability=both) appears in BOTH arrays even though the tradeScores verdict is null — the entry is still emitted with a specific "Insufficient trade data" reason. Silence is not an option.
+- tradeScores contains 2 entries (matching the 2 goals tagged trade or both: goalIndex 0 and 2). psychScores contains 3 entries (matching the 3 goals tagged journal or both: 0, 1, 2). No goal is silently omitted from the arrays it belongs to.
 
 OUTPUT SCHEMA
 

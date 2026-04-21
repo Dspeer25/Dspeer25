@@ -1040,7 +1040,7 @@ export function buildProfileContext(): string {
 /** Bump when the classify system prompt in app/api/coach/route.ts
  *  changes its schema or scoring rules. Cached entries stamped with
  *  a different version are re-scored on next Analysis mount. */
-export const CLASSIFY_PROMPT_VERSION = 'v3-2026-04';
+export const CLASSIFY_PROMPT_VERSION = 'v3.1-2026-04';
 
 export interface TradeClassification {
   tradeId: string;
