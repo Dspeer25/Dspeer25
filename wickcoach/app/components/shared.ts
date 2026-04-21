@@ -66,7 +66,7 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
 
   // ── R:R / risk reward ───────────────────────────────────────
   if (/r:r|risk.?reward|^rr$|risk.?to.?reward|avg.?r|^r$/.test(n))
-    return t => { const p = (t.riskReward || '').split(':'); return parseFloat(p[1]) || null; };
+    return t => { const v = parseRr(t.riskReward); return v > 0 ? v : null; };
 
   // ── Expected value / EV / expectancy ────────────────────────
   // Per-trade EV = P/L (the realized expectancy for that trade).
@@ -400,6 +400,78 @@ export function formatDollar(n: number): string {
   return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// ─── Site-wide number formatter ──────────────────────────────
+// Single source of truth for how numbers render in the UI. Callers
+// opt in to commas, currency, explicit sign, trailing zeros, and
+// decimal precision. Nulls / NaN / undefined all collapse to '—'.
+export interface FormatNumberOptions {
+  /** Include thousands separator commas. Default: true. */
+  commas?: boolean;
+  /** Keep trailing zeros after decimal. Default: false — so 2.50 → "2.5" and 2.00 → "2". */
+  trailingZeros?: boolean;
+  /** Max decimal places. Default: 2. */
+  decimals?: number;
+  /** Prepend "$" for currency. Default: false. */
+  currency?: boolean;
+  /** Include explicit "+"/"-" sign (native "-" for negatives, "+" prepended for positives). Default: false. */
+  explicitSign?: boolean;
+}
+
+export function formatNumber(
+  n: number | null | undefined,
+  opts: FormatNumberOptions = {}
+): string {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+
+  const {
+    commas = true,
+    trailingZeros = false,
+    decimals = 2,
+    currency = false,
+    explicitSign = false,
+  } = opts;
+
+  const abs = Math.abs(n);
+  let str = abs.toFixed(decimals);
+  if (!trailingZeros) {
+    // Strip "2.50" → "2.5", "2.00" → "2"
+    str = str.replace(/\.?0+$/, '');
+  }
+
+  if (commas) {
+    const [intPart, decPart] = str.split('.');
+    const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    str = decPart ? `${withCommas}.${decPart}` : withCommas;
+  }
+
+  let sign = '';
+  if (n < 0) sign = '-';
+  else if (explicitSign && n > 0) sign = '+';
+
+  const prefix = currency ? '$' : '';
+  return `${sign}${prefix}${str}`;
+}
+
+/** Canonical R:R display: drops legacy "1:" prefix, stores as
+ *  "N.NR" with trailing zeros stripped. Returns '—' for unset,
+ *  empty, or non-numeric inputs. */
+export function formatRR(rr: string | number | null | undefined): string {
+  if (rr === null || rr === undefined) return '—';
+  if (typeof rr === 'number') {
+    if (isNaN(rr)) return '—';
+    return formatNumber(rr, { trailingZeros: false, commas: false }) + 'R';
+  }
+  const s = String(rr).trim();
+  if (s === '' || s === '—' || s === '\u2014') return '—';
+  // Legacy "1:2.30" format — strip the redundant "1:" and parse
+  const raw = s.startsWith('1:') ? s.slice(2) : s;
+  // Already formatted like "2.7R" — just re-run through formatter
+  // so styling stays consistent
+  const n = parseFloat(raw);
+  if (isNaN(n)) return '—';
+  return formatNumber(n, { trailingZeros: false, commas: false }) + 'R';
+}
+
 // ─── Shared AI-context builder ──────────────────────────────────
 // Produces a dense summary of the trader's history suitable for the
 // coach system prompts. Every number is computed from the real trades
@@ -423,9 +495,22 @@ function parseHourBucket(time: string): string {
   return `${fmt(h)}-${fmt((h + 1) % 24)}`;
 }
 
-function parseRr(rr: string): number {
-  const parts = (rr || '').split(':');
-  return parseFloat(parts[1]) || 0;
+/** Numeric R:R extractor. Handles all formats the app has shipped:
+ *  legacy "1:2.30", current raw "2.30", new display "2.3R", and
+ *  em-dash / empty / null. Returns 0 for any non-parseable value so
+ *  downstream math reductions stay safe. */
+export function parseRr(rr: string | null | undefined): number {
+  if (rr === null || rr === undefined) return 0;
+  const s = String(rr).trim();
+  if (s === '' || s === '—' || s === '\u2014') return 0;
+  // Strip trailing "R" or " R"
+  let core = s.replace(/\s*R\s*$/i, '');
+  // Strip legacy "1:" prefix
+  if (core.startsWith('1:')) core = core.slice(2);
+  // Some older data used "1 : 2.3" with spaces around the colon
+  if (core.startsWith('1 :')) core = core.slice(3);
+  const n = parseFloat(core);
+  return isNaN(n) ? 0 : n;
 }
 
 // ─── Derived analytics shared by every stats surface ──────────────

@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek, parseLocalDate, CLASSIFY_PROMPT_VERSION } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek, parseLocalDate, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -19,14 +19,19 @@ const tickerDomains: Record<string, string> = {
 const blue = '#4a9eff';
 
 // ─── Helpers ──────────────────────────────────────────────────
-const fmtDollar = (n: number, withCents = false) => {
-  const sign = n >= 0 ? '+' : '-';
-  const abs = Math.abs(n);
-  if (withCents) return sign + '$' + abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return sign + '$' + abs.toLocaleString();
+// Thin wrappers around the site-wide formatter so every caller in
+// this file prints the same shape: no trailing zeros, thousands
+// commas, explicit sign for positives.
+const fmtDollar = (n: number, withCents = false) =>
+  formatNumber(n, { currency: true, explicitSign: true, decimals: withCents ? 2 : 0, trailingZeros: false });
+const fmtR = (n: number) => {
+  const body = formatNumber(n, { trailingZeros: false, commas: false, decimals: 1, explicitSign: true });
+  return body === '—' ? '—' : body + 'R';
 };
-const fmtR = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(1) + 'R';
-const fmtPct = (n: number) => n.toFixed(1) + '%';
+const fmtPct = (n: number) => {
+  const body = formatNumber(n, { trailingZeros: false, decimals: 1 });
+  return body === '—' ? '—' : body + '%';
+};
 
 // ─── Weekly goals snapshot ─────────────────────────────────────
 // Real trades get bucketed into ISO weeks; real goals (from localStorage)
@@ -486,7 +491,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     const anyClassified = classifiedCount > 0;
 
     const fmtDate = (iso: string) => {
-      const d = new Date(iso);
+      // Trade.date is a local-calendar "YYYY-MM-DD" — parsing with
+      // new Date() would treat it as UTC midnight and render the
+      // previous day in timezones west of UTC.
+      const d = parseLocalDate(iso);
       return `${d.getMonth() + 1}/${d.getDate()}`;
     };
     const truncJournal = (j: string | undefined) => {
@@ -535,7 +543,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 reason = c?.psychReason || '';
               }
               const plColor = t.pl >= 0 ? teal : red;
-              const plSign = t.pl >= 0 ? '+' : '-';
               return (
                 <div key={t.id}>
                   <div style={{
@@ -548,7 +555,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     <span style={{ fontFamily: fm, fontSize: 11, color: '#fff', fontWeight: 700 }}>{t.ticker}</span>
                     <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>{fmtDate(t.date)}</span>
                     <span style={{ fontFamily: fm, fontSize: 11, color: plColor, fontWeight: 600, textAlign: 'right' }}>
-                      {plSign}${Math.abs(t.pl).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      {formatNumber(t.pl, { currency: true, explicitSign: true, decimals: 0 })}
                     </span>
                     <span style={{ fontFamily: fm, fontSize: 12, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       “{truncJournal(t.journal)}”
@@ -861,7 +868,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           </div>
           <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 700, color: teal }}>{fmtDollar(whatIfPL, true)}</div>
           {indisciplineCost !== 0 && (
-            <div style={{ fontSize: 12, color: red, marginTop: 4 }}>Indiscipline cost you ${Math.abs(indisciplineCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div style={{ fontSize: 12, color: red, marginTop: 4 }}>Indiscipline cost you {formatNumber(Math.abs(indisciplineCost), { currency: true })}</div>
           )}
         </div>
       </div>
@@ -1275,7 +1282,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const weekTrades = selectedWeekBucket?.trades || [];
           const weekWins = weekTrades.filter(t => t.pl > 0);
           const weekWR = weekTrades.length > 0 ? (weekWins.length / weekTrades.length) * 100 : 0;
-          const weekRRValues = weekWins.map(t => parseFloat((t.riskReward || '').split(':')[1]) || 0);
+          const weekRRValues = weekWins.map(t => parseRr(t.riskReward));
           const weekAvgR = weekRRValues.length > 0 ? weekRRValues.reduce((a, b) => a + b, 0) / weekRRValues.length : 0;
           const weekTradeCount = weekTrades.length;
 

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate } from "./shared";
+import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate } from "./shared";
 import AIChatWidget from "./AIChatWidget";
 
 // Local green — all greens in this file resolve to this single swatch.
@@ -179,8 +179,8 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     if (field === 'qty') return asc * (a.contracts - b.contracts);
     if (field === 'pl') return asc * (a.pl - b.pl);
     if (field === 'rr') {
-      const aRR = parseFloat(a.riskReward.split(':')[1]) || 0;
-      const bRR = parseFloat(b.riskReward.split(':')[1]) || 0;
+      const aRR = parseRr(a.riskReward);
+      const bRR = parseRr(b.riskReward);
       return asc * (aRR - bRR);
     }
     if (field === 'ticker') return asc * a.ticker.localeCompare(b.ticker);
@@ -202,7 +202,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   const losses = statTrades.filter(t => t.result === 'LOSS' || (t.result !== 'WIN' && t.pl < 0));
   const totalPL = statTrades.reduce((s, t) => s + t.pl, 0);
   const winRate = statTrades.length > 0 ? Math.round((wins.length / statTrades.length) * 100) : 0;
-  const winRRValues = wins.map(t => parseFloat(t.riskReward.split(':')[1]) || 0);
+  const winRRValues = wins.map(t => parseRr(t.riskReward));
   const avgRR = winRRValues.length > 0 ? (winRRValues.reduce((a, b) => a + b, 0) / winRRValues.length).toFixed(1) : '—';
   const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pl, 0) / wins.length : 0;
   const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pl, 0) / losses.length) : 0;
@@ -401,7 +401,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
           <div style={{ flex: 1, padding: '24px 24px', borderRight: '1px solid #2A3143', textAlign: 'center' }}>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Total Net P/L</div>
             <div style={{ color: totalPL >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 38, fontWeight: 700, marginTop: 10, lineHeight: 1.1 }}>
-              {(totalPL >= 0 ? '+' : '-') + '$' + Math.abs(totalPL).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatNumber(totalPL, { currency: true, explicitSign: true })}
             </div>
             <div style={{ width: '60%', height: 3, background: '#00d4a0', borderRadius: 2, marginTop: 14, marginLeft: 'auto', marginRight: 'auto' }} />
           </div>
@@ -476,7 +476,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
             </div>
             <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Expected Value</div>
             <div style={{ color: expectedValue >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 10, lineHeight: 1.1 }}>
-              {(expectedValue >= 0 ? '+' : '-') + '$' + Math.abs(expectedValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatNumber(expectedValue, { currency: true, explicitSign: true })}
             </div>
             <div style={{ fontFamily: fm, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 10, fontStyle: 'italic' }}>Per Trade</div>
           </div>
@@ -581,7 +581,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
                 const pxY = (svgY / 120) * chartHeight - 10;
                 return (
                   <div style={{ position: 'absolute', left: `calc(${endXPct}% + 10px)`, top: pxY, fontFamily: fm, fontSize: 11, color: '#00d4a0', fontWeight: 700, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                    {formatDollar(Math.round(lastPt.value))}
+                    {formatNumber(Math.round(lastPt.value), { currency: true, explicitSign: true })}
                   </div>
                 );
               })()}
@@ -589,7 +589,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
               {eqHover && (
                 <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#141822', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
                   <div style={{ color: '#9ca3af' }}>{parseLocalDate(eqHover.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                  <div style={{ color: eqHover.value >= 0 ? teal : '#ff4444', fontWeight: 700 }}>{formatDollar(Math.round(eqHover.value))}</div>
+                  <div style={{ color: eqHover.value >= 0 ? teal : '#ff4444', fontWeight: 700 }}>{formatNumber(Math.round(eqHover.value), { currency: true, explicitSign: true })}</div>
                 </div>
               )}
             </div>
@@ -711,9 +711,9 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
                   {/* Entry / Exit */}
                   <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
                   {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatDollar(t.pl)}</span>
+                  <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatNumber(t.pl, { currency: true, explicitSign: true })}</span>
                   {/* R:R */}
-                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
+                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '—' : formatRR(t.riskReward)}</span>
                   {/* Notes — clamped to 2 lines; column drag exposes more horizontal text; hover reveals the full note */}
                   <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', paddingRight: 56, width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                   {/* Hover EDIT pill — navigates to Log a Trade with this row pre-filled */}

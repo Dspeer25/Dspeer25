@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useRef } from "react"
-import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications } from "./shared"
+import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR } from "./shared"
 
 interface LogATradeContentProps {
   setActiveTab: (tab: string) => void;
@@ -101,10 +101,12 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       const riskNum = parseFloat(risk);
       if (plNum > 0 && riskNum > 0) {
         const ratio = plNum / riskNum;
-        setRiskReward(`1 : ${ratio.toFixed(1)}`);
+        // Stored as the raw numeric string (e.g. "2.70"); display
+        // layer wraps it through formatRR() so the user sees "2.7R".
+        setRiskReward(ratio.toFixed(2));
       } else {
-        // Risk 0 (or unset / loss) → use em-dash. Downstream R:R
-        // parsing already handles the em-dash case gracefully.
+        // Risk 0 (or unset / loss) → em-dash sentinel. parseRr and
+        // formatRR both handle it gracefully.
         setRiskReward('\u2014');
       }
     }, [pl, risk]);
@@ -307,7 +309,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Risk : Reward</label>
-            <input readOnly style={{ ...inputStyle, fontWeight: 700, color: riskReward === '\u2014' ? '#6b7280' : '#00d4a0', background: '#1A1F2B', cursor: 'default' }} value={riskReward} />
+            <input readOnly style={{ ...inputStyle, fontWeight: 700, color: riskReward === '\u2014' ? '#6b7280' : '#00d4a0', background: '#1A1F2B', cursor: 'default' }} value={formatRR(riskReward)} />
           </div>
         </div>
 
