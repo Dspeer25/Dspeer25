@@ -61,7 +61,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   const [resultFilter, setResultFilter] = useState('All');
   const [dateRange, setDateRange] = useState('All Time');
   const [sortBy, setSortBy] = useState('date-desc');
-  const [colWidths, setColWidths] = useState<number[]>([90, 105, 80, 135, 90, 60, 155, 115, 85, 220]);
+  const [colWidths, setColWidths] = useState<number[]>([90, 105, 80, 135, 90, 60, 115, 110, 350]);
   const [aiOpen, setAiOpen] = useState(false);
   const [resizing, setResizing] = useState<{ col: number; startX: number; startW: number } | null>(null);
   const didResizeRef = React.useRef(false);
@@ -326,7 +326,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     return `You have ${trades.length} trade${trades.length !== 1 ? 's' : ''} logged with a ${wr}% win rate. Your best performer was ${best?.ticker} (+$${best?.pl.toFixed(2)}). Want me to analyze your patterns?`;
   })() : null;
 
-  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Entry/Exit', 'Net P/L', 'R:R', 'Notes'];
+  const colHeaders = ['Asset', 'Date', 'Time', 'Strategy', 'Direction', 'Qty', 'Net P/L', 'R:R', 'Notes'];
   const sortableMap: Record<string, string> = { 'Date': 'date', 'Direction': 'direction', 'Qty': 'qty', 'Net P/L': 'pl', 'R:R': 'rr', 'Asset': 'ticker' };
   function toggleSort(field: string) {
     if (sortBy === field + '-desc') setSortBy(field + '-asc');
@@ -697,25 +697,41 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
                     <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 15 }}>{t.ticker}</span>
                   </span>
                   {/* Date */}
-                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = parseLocalDate(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
+                  <span style={{ color: '#c9cdd4', fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{(() => { const d = parseLocalDate(t.date); return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`; })()}</span>
                   {/* Time */}
-                  <span style={{ color: '#b8c0ce', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
+                  <span style={{ color: '#b8c0ce', fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatTime(t.time)}</span>
                   {/* Strategy */}
-                  <span style={{ color: '#d5dae2', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
+                  <span style={{ color: '#d5dae2', fontSize: 15, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.strategy}</span>
                   {/* Direction */}
                   <span style={{ padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ padding: '2px 8px', borderRadius: 3, fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, fontFamily: fm, background: t.direction === 'LONG' ? 'rgba(0,212,160,0.1)' : 'rgba(255,68,68,0.1)', border: t.direction === 'LONG' ? '1px solid rgba(0,212,160,0.15)' : '1px solid rgba(255,68,68,0.15)', color: t.direction === 'LONG' ? teal : '#ff4444' }}>{t.direction}</span>
                   </span>
                   {/* Qty */}
-                  <span style={{ color: '#e8e8f0', fontSize: 14, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
-                  {/* Entry / Exit */}
-                  <span style={{ color: '#c9cdd4', fontSize: 15, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>${t.entryPrice.toFixed(2)} → ${t.exitPrice.toFixed(2)}</span>
+                  <span style={{ color: '#e8e8f0', fontSize: 15, fontWeight: 500, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
                   {/* Net P/L */}
                   <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatNumber(t.pl, { currency: true, explicitSign: true })}</span>
                   {/* R:R */}
-                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '—' : formatRR(t.riskReward)}</span>
-                  {/* Notes — clamped to 2 lines; column drag exposes more horizontal text; hover reveals the full note */}
-                  <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', paddingRight: 56, width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '—' : formatRR(t.riskReward)}</span>
+                  {/* Notes — strict 2-line clamp; text fills the cell; hover reveals the full note */}
+                  <div style={{
+                    color: '#c9cdd4',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical' as const,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    overflowWrap: 'break-word',
+                    padding: '14px 56px 14px 12px',
+                    height: 'calc(1.4em * 2 + 28px)',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    minWidth: 0,
+                    position: 'relative',
+                    cursor: 'default',
+                  }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
                   {/* Hover EDIT pill — navigates to Log a Trade with this row pre-filled */}
                   {hoveredRowId === t.id && onEditTrade && (
                     <span
