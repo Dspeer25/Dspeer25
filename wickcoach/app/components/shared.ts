@@ -951,8 +951,16 @@ export function buildProfileContext(): string {
 // ─── AI trade classification (Haiku-powered) ─────────────────
 // Cached result per-trade, keyed by trade.id in localStorage under
 // `wickcoach_trade_classifications`.
+
+/** Bump when the classify system prompt in app/api/coach/route.ts
+ *  changes its schema or scoring rules. Cached entries stamped with
+ *  a different version are re-scored on next Analysis mount. */
+export const CLASSIFY_PROMPT_VERSION = 'v2-2026-04';
+
 export interface TradeClassification {
   tradeId: string;
+  /** Which prompt version produced this entry — see CLASSIFY_PROMPT_VERSION. */
+  promptVersion: string;
   /**
    * Per-goal compliance.
    *  - `1`    = journal explicitly shows the goal was followed

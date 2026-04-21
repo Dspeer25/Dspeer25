@@ -54,7 +54,8 @@ const TickerTile = ({ ticker }: { ticker: string }) => {
   );
 };
 
-export default function PastTradesContent({ trades, setActiveTab }: { trades: Trade[]; setActiveTab: (tab: string) => void }) {
+export default function PastTradesContent({ trades, setActiveTab, onEditTrade }: { trades: Trade[]; setActiveTab: (tab: string) => void; onEditTrade?: (t: Trade) => void }) {
+  const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [stratFilter, setStratFilter] = useState('All');
   const [resultFilter, setResultFilter] = useState('All');
@@ -689,7 +690,7 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
             {pagedTrades.map((t, idx) => {
               const rowBg = idx % 2 === 0 ? '#111218' : '#161822';
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2A3143', borderLeft: '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}>
+                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2A3143', borderLeft: '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer', position: 'relative' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; setHoveredRowId(t.id); }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; setHoveredRowId(h => h === t.id ? null : h); }}>
                   {/* Asset */}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', whiteSpace: 'nowrap' }}>
                     <TickerTile ticker={t.ticker} />
@@ -714,7 +715,34 @@ export default function PastTradesContent({ trades, setActiveTab }: { trades: Tr
                   {/* R:R */}
                   <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 13, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '0.0' : t.riskReward.replace(/(\d+):(\d)/, '$1 : $2')}</span>
                   {/* Notes — clamped to 2 lines; column drag exposes more horizontal text; hover reveals the full note */}
-                  <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  <div style={{ color: '#b8c0ce', fontSize: 14, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden', textOverflow: 'ellipsis', wordBreak: 'break-word', overflowWrap: 'anywhere', padding: '12px 10px', paddingRight: 56, width: '100%', boxSizing: 'border-box', minWidth: 0, position: 'relative', cursor: 'default' }} onMouseEnter={e => { if (t.journal) { const rect = e.currentTarget.getBoundingClientRect(); setNotesTooltip({ text: t.journal, x: rect.left, y: rect.top }); } }} onMouseLeave={() => setNotesTooltip(null)}>{t.journal || '—'}</div>
+                  {/* Hover EDIT pill — navigates to Log a Trade with this row pre-filled */}
+                  {hoveredRowId === t.id && onEditTrade && (
+                    <span
+                      onClick={e => { e.stopPropagation(); onEditTrade(t); }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,160,0.12)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                      title="Edit trade"
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        fontFamily: fm,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        color: teal,
+                        border: `1px solid ${teal}`,
+                        background: 'transparent',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        zIndex: 5,
+                        transition: 'background 0.15s',
+                      }}
+                    >EDIT</span>
+                  )}
                 </div>
               );
             })}

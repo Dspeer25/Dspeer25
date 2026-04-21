@@ -40,6 +40,10 @@ export default function WickCoachFull() {
   // main nav. TradingGoalsContent watches this to snap back to the
   // current week when the user re-enters from elsewhere.
   const [weeklyTabResetTick, setWeeklyTabResetTick] = useState(0);
+  // When the trader clicks EDIT on a Past Trades row, we stash the
+  // trade here and flip to the Log a Trade tab. LogATradeContent
+  // watches this prop and prefills its fields on mount.
+  const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
 
   const triggerFloatingPlusOne = (inputRect: DOMRect) => {
     const tabEl = traderProfileTabRef.current;
@@ -174,10 +178,10 @@ export default function WickCoachFull() {
         <div style={{ backgroundImage: 'linear-gradient(to bottom, #181c26 0px, #151923 120px, #12151d 260px, #0A0D14 420px, #0A0D14 100%)', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
           {activeTab === 'Log a Trade' && (
             <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
-              <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} />
+              <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} editingTrade={editingTrade} onFinishEdit={() => { setEditingTrade(null); setActiveTab('Past Trades'); }} />
             </div>
           )}
-          {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} />}
+          {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} onEditTrade={(t) => { setEditingTrade(t); setActiveTab('Log a Trade'); }} />}
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} weeklyTabResetTick={weeklyTabResetTick} />}
           {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
           {activeTab === 'Trader Profile' && <TraderProfileContent trades={trades} />}

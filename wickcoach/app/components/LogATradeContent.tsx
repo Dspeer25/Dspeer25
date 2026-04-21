@@ -1,8 +1,16 @@
 'use client'
 import React, { useState, useRef } from "react"
-import { Trade, toLocalYMD } from "./shared"
+import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications } from "./shared"
 
-export default function LogATradeContent({ setActiveTab: setTab, trades, setTrades }: { setActiveTab: (tab: string) => void; trades: Trade[]; setTrades: React.Dispatch<React.SetStateAction<Trade[]>> }) {
+interface LogATradeContentProps {
+  setActiveTab: (tab: string) => void;
+  trades: Trade[];
+  setTrades: React.Dispatch<React.SetStateAction<Trade[]>>;
+  editingTrade?: Trade | null;
+  onFinishEdit?: () => void;
+}
+
+export default function LogATradeContent({ setActiveTab: setTab, trades, setTrades, editingTrade = null, onFinishEdit }: LogATradeContentProps) {
     const [ticker, setTicker] = useState('');
     const [tradeDate, setTradeDate] = useState(toLocalYMD());
     const [positionType, setPositionType] = useState<'SHARES' | 'DERIVATIVES'>('DERIVATIVES');
@@ -22,11 +30,43 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     const [submitHover, setSubmitHover] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [uploadHover, setUploadHover] = useState(false);
+    const [validationErrors, setValidationErrors] = useState<{ risk?: string }>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [startTime] = useState(Date.now());
     const [elapsedTime, setElapsedTime] = useState(0);
     const [finalTime, setFinalTime] = useState(0);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Prefill the form whenever the parent hands us a trade to edit.
+    // Also clears any prior validation error state.
+    React.useEffect(() => {
+      if (!editingTrade) return;
+      setTicker(editingTrade.ticker || '');
+      setTradeDate(editingTrade.date || toLocalYMD());
+      // Strategy inference — anything stored as "Shares" routes to the
+      // SHARES position type, otherwise treat as derivatives.
+      const isShares = editingTrade.strategy === 'Shares';
+      setPositionType(isShares ? 'SHARES' : 'DERIVATIVES');
+      setStrategyInputMode('text');
+      setStrategyType('0DTE Call');
+      setCustomStrategy(isShares ? '' : (editingTrade.strategy || ''));
+      setDirection(editingTrade.direction || 'LONG');
+      setContracts(String(editingTrade.contracts ?? ''));
+      setEntryPrice(String(editingTrade.entryPrice ?? ''));
+      setExitPrice(String(editingTrade.exitPrice ?? ''));
+      setPl(String(editingTrade.pl ?? ''));
+      setPlManualOverride(true);
+      setJournal(editingTrade.journal || '');
+      setScreenshot(editingTrade.screenshot || null);
+      setRisk(editingTrade.riskAmount !== undefined ? String(editingTrade.riskAmount) : '');
+      setRiskReward(editingTrade.riskReward || '\u2014');
+      setValidationErrors({});
+    }, [editingTrade]);
+
+    // Current weekly goals — passive reminder shown beneath the journal
+    // textarea. Recomputed each render so edits to the goals list are
+    // reflected without needing a separate subscription.
+    const currentGoals = getGoalsForWeek(getCurrentWeekStart());
 
     React.useEffect(() => {
       intervalRef.current = setInterval(() => {
@@ -63,9 +103,18 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         const ratio = plNum / riskNum;
         setRiskReward(`1 : ${ratio.toFixed(1)}`);
       } else {
+        // Risk 0 (or unset / loss) → use em-dash. Downstream R:R
+        // parsing already handles the em-dash case gracefully.
         setRiskReward('\u2014');
       }
     }, [pl, risk]);
+
+    // Clear a "required" error as soon as the user types something.
+    React.useEffect(() => {
+      if (validationErrors.risk && risk !== '') {
+        setValidationErrors(prev => ({ ...prev, risk: undefined }));
+      }
+    }, [risk, validationErrors.risk]);
 
     const resetForm = () => {
       setTicker(''); setTradeDate(toLocalYMD());
@@ -149,6 +198,31 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
 
     return (
       <>
+        {editingTrade && (
+          <div style={{
+            padding: '10px 14px',
+            marginBottom: 14,
+            background: 'rgba(0,212,160,0.08)',
+            border: '1px solid #00d4a0',
+            borderRadius: 6,
+            fontFamily: "'DM Mono', monospace",
+            fontSize: 12,
+            color: '#00d4a0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <span>
+              Editing trade from {parseLocalDate(editingTrade.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} &middot; {editingTrade.ticker}
+            </span>
+            <span
+              onClick={() => { if (onFinishEdit) onFinishEdit(); }}
+              style={{ cursor: 'pointer', color: '#7a7d85', fontSize: 11 }}
+            >
+              Cancel edit
+            </span>
+          </div>
+        )}
         <div style={sectionLabelStyle}>TRADE DETAILS</div>
 
         <label style={labelStyle}>Ticker</label>
@@ -216,8 +290,20 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Risk ($)</label>
-            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={risk} onChange={(e) => setRisk(e.target.value)} />
+            <label style={labelStyle}>Risk ($) <span style={{ color: '#ff4444' }}>*</span></label>
+            <input
+              type="number"
+              step={0.01}
+              style={{ ...inputStyle, borderColor: validationErrors.risk ? '#ff4444' : '#2A3143' }}
+              placeholder="$0.00"
+              value={risk}
+              onChange={(e) => setRisk(e.target.value)}
+            />
+            {validationErrors.risk && (
+              <div style={{ color: '#ff4444', fontSize: 11, fontFamily: "'DM Mono', monospace", marginTop: 4 }}>
+                {validationErrors.risk}
+              </div>
+            )}
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Risk : Reward</label>
@@ -229,6 +315,24 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           <div style={{ flex: 1 }}>
             <div style={sectionLabelStyle}>JOURNAL ENTRY</div>
             <textarea style={{ ...inputStyle, minHeight: 200, resize: 'vertical', lineHeight: '1.7' }} placeholder="Share your brief approach on this trade for the WickCoach AI to analyze..." value={journal} onChange={(e) => setJournal(e.target.value)} />
+            {currentGoals.length > 0 && (
+              <div style={{
+                marginTop: 6,
+                padding: '6px 10px',
+                background: '#13141a',
+                borderLeft: '2px solid #00d4a0',
+                borderRadius: '0 4px 4px 0',
+                fontFamily: "'DM Mono', monospace",
+                fontSize: 11,
+                color: '#7a7d85',
+                lineHeight: 1.4,
+              }}>
+                <span style={{ color: '#00d4a0', marginRight: 6 }}>Current weekly goals:</span>
+                {currentGoals.map((g, i) => (
+                  <span key={g.id}>{g.title}{i < currentGoals.length - 1 ? ' \u00b7 ' : ''}</span>
+                ))}
+              </div>
+            )}
           </div>
           <div style={{ flex: 1 }}>
             <div style={sectionLabelStyle}>SCREENSHOT</div>
@@ -249,6 +353,12 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         </div>
 
         <button onClick={() => {
+          // Risk is required. Empty string blocks save; "0" is valid
+          // (produces em-dash R:R downstream).
+          if (risk.trim() === '') {
+            setValidationErrors({ risk: 'Risk amount is required.' });
+            return;
+          }
           setFinalTime(elapsedTime);
           if (intervalRef.current) clearInterval(intervalRef.current);
           // Build and save trade
@@ -256,8 +366,10 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           const exit = parseFloat(exitPrice) || 0;
           const qty = parseInt(contracts) || 0;
           const computedPl = plManualOverride ? parseFloat(pl) || 0 : (exit - entry) * qty * (positionType === 'DERIVATIVES' ? 100 : 1);
-          const newTrade: Trade = {
-            id: Date.now().toString(),
+          const riskNum = parseFloat(risk) || 0;
+          // When risk is 0 we skip R:R calculation entirely (em-dash).
+          const savedRiskReward = riskNum > 0 ? riskReward : '\u2014';
+          const baseTrade: Omit<Trade, 'id'> = {
             ticker: ticker || 'UNKNOWN',
             companyName: ticker || 'Unknown',
             date: tradeDate,
@@ -269,17 +381,31 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
             exitPrice: exit,
             pl: computedPl,
             plPercent: entry > 0 ? ((exit - entry) / entry) * 100 : 0,
-            riskAmount: parseFloat(risk) || 0,
-            riskReward: riskReward,
+            riskAmount: riskNum,
+            riskReward: savedRiskReward,
             journal: journal,
             screenshot: screenshot || undefined,
-            result: computedPl > 0 ? 'WIN' : computedPl < 0 ? 'LOSS' : 'WIN',
+            result: computedPl > 0 ? 'WIN' : computedPl < 0 ? 'LOSS' : 'BREAKEVEN',
           };
-          const updated = [...trades, newTrade];
+          let updated: Trade[];
+          if (editingTrade) {
+            // In-place replace — preserve the original id.
+            updated = trades.map(t => t.id === editingTrade.id ? { ...baseTrade, id: editingTrade.id } : t);
+            // Stale classification must be dropped so the next Analysis
+            // mount re-scores this trade against the new journal text.
+            const cache = readClassifications();
+            if (cache[editingTrade.id]) {
+              delete cache[editingTrade.id];
+              writeClassifications(cache);
+            }
+          } else {
+            updated = [...trades, { ...baseTrade, id: Date.now().toString() }];
+          }
           setTrades(updated);
           try { localStorage.setItem('wickcoach_trades', JSON.stringify(updated)); } catch {}
+          if (editingTrade && onFinishEdit) onFinishEdit();
           setSubmitted(true);
-        }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0A0D14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '16px 0', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>Log Trade</button>
+        }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0A0D14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '16px 0', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>{editingTrade ? 'Save Changes' : 'Log Trade'}</button>
 
         <p style={{ color: '#4b5563', fontFamily: "'DM Mono', monospace", fontSize: 12, textAlign: 'center', marginTop: 12 }}>Your data stays on your device. Always.</p>
       </>

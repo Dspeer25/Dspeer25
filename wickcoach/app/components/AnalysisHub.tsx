@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek, parseLocalDate } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getQuantTargetsForWeek, parseLocalDate, CLASSIFY_PROMPT_VERSION } from './shared';
 import AIChatWidget from './AIChatWidget';
 
 const teal = '#00d4a0';
@@ -324,7 +324,14 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
     const unscored = trades.filter(t => {
       const d = parseLocalDate(t.date);
-      return d >= weekStart && !cache[t.id];
+      if (d < weekStart) return false;
+      const cached = cache[t.id];
+      if (!cached) return true;
+      // Entries produced by an older classify prompt are invalidated —
+      // they get re-scored under the current rules (e.g. null
+      // compliance for goals the journal doesn't address).
+      if (cached.promptVersion !== CLASSIFY_PROMPT_VERSION) return true;
+      return false;
     });
     if (unscored.length === 0) return;
 
@@ -375,7 +382,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         if (cancelled || !meta?.results) return;
 
         const next = { ...cache };
-        meta.results.forEach(r => { if (r && r.tradeId) next[r.tradeId] = r; });
+        // Stamp each fresh result with the current prompt version so
+        // we can tell if the prompt changes under us later.
+        meta.results.forEach(r => {
+          if (r && r.tradeId) next[r.tradeId] = { ...r, promptVersion: CLASSIFY_PROMPT_VERSION };
+        });
         writeClassifications(next);
         setClassifications(next);
 
@@ -417,8 +428,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     const weekTrades = selectedWeekBucket?.trades || [];
     const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
 
-    // Primary: AI-scored per-goal compliance.
-    if (aiScoredTrades.length >= 3) {
+    // Primary: AI-scored per-goal compliance. Runs whenever AT LEAST
+    // ONE trade in the week has a classification — the old ≥3 floor
+    // caused the keyword fallback to paper over real AI data on
+    // low-volume weeks and invent a bogus "/5" denominator.
+    if (aiScoredTrades.length >= 1) {
       // Compliance nulls (journal says nothing about this goal's
       // subject) are EXCLUDED from both numerator and denominator.
       // Otherwise one goal can artificially inflate or tank because
@@ -444,9 +458,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       const j = (t.journal || '').toLowerCase();
       return kws.some(k => j.includes(k));
     }).length;
-    const tradesTarget = Math.max(5, weekTrades.length || 5);
+    // Denominators now reflect the actual trade count for the week,
+    // not a phantom 5. Fallback only runs when zero trades have AI
+    // classifications — i.e. truly pre-score state.
+    const tradesTarget = Math.max(1, weekTrades.length);
     const tradesActual = weekTrades.length;
-    const psychTarget = Math.max(5, Math.floor(weekTrades.length * 0.6));
+    const psychTarget = Math.max(1, Math.floor(weekTrades.length * 0.6) || weekTrades.length);
     return {
       title: g.title || '(untitled)',
       type: (g.goalType || 'General').toUpperCase().split(' ')[0],
