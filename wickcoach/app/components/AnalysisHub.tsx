@@ -431,6 +431,20 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const weekGoals = selectedWeekStartISO ? realGoals.filter(g => g.weekStart === selectedWeekStartISO) : [];
   const selectedWeekGoals = weekGoals.slice(0, 3).map((g, goalIdx) => {
     const weekTrades = selectedWeekBucket?.trades || [];
+
+    // Short-circuit empty weeks. Otherwise the keyword fallback below
+    // runs Math.max(1, 0) = 1 as a denominator and renders a phantom
+    // "0 / 1 trades · 0% compliance" row.
+    if (weekTrades.length === 0) {
+      return {
+        title: g.title || '(untitled)',
+        type: (g.goalType || 'General').toUpperCase().split(' ')[0],
+        trades: { actual: 0, target: 0, nullCount: 0 },
+        psych:  { actual: 0, target: 0, nullCount: 0 },
+        empty: true,
+      };
+    }
+
     const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
 
     // Primary: AI-scored per-goal compliance. Runs whenever AT LEAST
@@ -454,6 +468,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         type: (g.goalType || 'General').toUpperCase().split(' ')[0],
         trades: { actual: complied, target: evaluable.length, nullCount },
         psych:  { actual: processCount, target: aiScoredTrades.length, nullCount: 0 },
+        empty: false,
       };
     }
 
@@ -474,6 +489,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       type: (g.goalType || 'General').toUpperCase().split(' ')[0],
       trades: { actual: tradesActual, target: tradesTarget, nullCount: 0 },
       psych:  { actual: psychActual,  target: psychTarget,  nullCount: 0 },
+      empty: false,
     };
   });
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—', goals: selectedWeekGoals };
@@ -1257,11 +1273,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 <p style={{ color: '#aab0bd', fontSize: 14, margin: '0 0 20px', letterSpacing: 0.3, lineHeight: 1.5 }}>
                   Did each trade's execution match the rule? Measured from the trade data itself — setup, entry, sizing, post-entry management.
                 </p>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  {selectedWeek.goals.map((g, i) => renderGoalCandle('trades', i, g))}
-                </div>
-                {expandedRow?.section === 'trades' && (
-                  <div style={{ marginTop: 14 }}>{renderDrilldown('trades', expandedRow.goalIdx)}</div>
+                {selectedWeek.goals.some(g => g.empty) ? (
+                  <div style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    color: '#7a7d85',
+                    fontFamily: fm,
+                    fontSize: 12,
+                    fontStyle: 'italic',
+                  }}>
+                    No trades logged this week yet.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      {selectedWeek.goals.map((g, i) => renderGoalCandle('trades', i, g))}
+                    </div>
+                    {expandedRow?.section === 'trades' && (
+                      <div style={{ marginTop: 14 }}>{renderDrilldown('trades', expandedRow.goalIdx)}</div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1281,11 +1312,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 <p style={{ color: '#aab0bd', fontSize: 14, margin: '0 0 20px', letterSpacing: 0.3, lineHeight: 1.5 }}>
                   Did the mindset and process behind each trade match the rule? Measured from your journal language — patience, discipline, impulse tells.
                 </p>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  {selectedWeek.goals.map((g, i) => renderGoalCandle('psych', i, g))}
-                </div>
-                {expandedRow?.section === 'psych' && (
-                  <div style={{ marginTop: 14 }}>{renderDrilldown('psych', expandedRow.goalIdx)}</div>
+                {selectedWeek.goals.some(g => g.empty) ? (
+                  <div style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    color: '#7a7d85',
+                    fontFamily: fm,
+                    fontSize: 12,
+                    fontStyle: 'italic',
+                  }}>
+                    No trades logged this week yet.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                      {selectedWeek.goals.map((g, i) => renderGoalCandle('psych', i, g))}
+                    </div>
+                    {expandedRow?.section === 'psych' && (
+                      <div style={{ marginTop: 14 }}>{renderDrilldown('psych', expandedRow.goalIdx)}</div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1348,6 +1394,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     }
                     // If none of those match, actual stays null (grey candle).
                   }
+
+                  // Empty week → no actual to show. Otherwise Win Rate
+                  // would render 0.0% and Avg R would render R 0.00,
+                  // which look like real-but-terrible results instead of
+                  // "no data yet".
+                  if (weekTradeCount === 0) actual = null;
 
                   const target = t.value;
                   const hasTarget = target !== null && target !== undefined;
