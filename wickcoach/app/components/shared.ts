@@ -111,10 +111,30 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
   return null; // unknown — caller shows alias list
 }
 
+/**
+ * Result of parsing a user-typed filter condition. Separating the
+ * three outcomes is what prevents the Regression Lab from silently
+ * running unfiltered when the user typed a condition the parser
+ * didn't recognise — that was the old failure mode.
+ *
+ *  - 'empty' → user typed nothing. Run against all trades.
+ *  - 'ok'    → condition parsed; apply `predicate` to trades.
+ *  - 'error' → condition was typed but unparseable; surface `message`
+ *              and refuse to run, never fall back to unfiltered.
+ */
+export type FilterParseResult =
+  | { kind: 'empty' }
+  | { kind: 'ok'; predicate: (t: Trade) => boolean }
+  | { kind: 'error'; message: string };
+
 /** Resolve a plain-English filter condition to a predicate on Trade. */
-export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) | null {
-  if (!condition || !condition.trim()) return null;
-  const c = condition.toLowerCase().trim();
+export function resolveTradeFilter(condition: string): FilterParseResult {
+  if (!condition || !condition.trim()) return { kind: 'empty' };
+  // The Regression Lab renders an "if" label outside the input, but
+  // users often type "if …" into the box anyway. Strip a single
+  // leading "if" so the numeric parser (which anchors to ^ and $)
+  // and the tail-anchored positive matchers agree on field bounds.
+  const c = condition.toLowerCase().trim().replace(/^if\s+/, '');
 
   const DAY_NAMES: Record<string, number> = {
     sunday: 0, sun: 0,
@@ -126,12 +146,57 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
     saturday: 6, sat: 6,
   };
 
+  // ── Numeric comparison against a trade field ───────────────
+  // Runs first because its operator tokens (>, <, >=, <=, =, !=)
+  // are distinctive enough that no other branch should ever
+  // legitimately fire. The field name is resolved through a
+  // small alias table that mirrors the Regression Lab's variable
+  // aliases — so "profit > 500" and "pl > 500" both work.
+  const NUMERIC_FIELDS: Array<{ re: RegExp; get: (t: Trade) => number | null; label: string }> = [
+    { label: 'pl',           re: /^(?:p\/?l|profit|pnl|gains|net|returns?)$/,                     get: t => t.pl },
+    { label: 'return%',      re: /^(?:return\s*%|%\s*return|return\s*percent|pl\s*percent|%)$/,   get: t => t.plPercent },
+    { label: 'riskAmount',   re: /^(?:risk(?:\s*amount)?)$/,                                       get: t => (typeof t.riskAmount === 'number' ? t.riskAmount : null) },
+    { label: 'contracts',    re: /^(?:contracts?|position\s*size|size|quantity|qty)$/,             get: t => t.contracts },
+    { label: 'riskReward',   re: /^(?:r\s*:\s*r|rr|risk\s*reward|r)$/,                             get: t => { const v = parseRr(t.riskReward); return v > 0 ? v : null; } },
+    { label: 'entryPrice',   re: /^(?:entry(?:\s*price)?|open)$/,                                  get: t => t.entryPrice },
+    { label: 'exitPrice',    re: /^(?:exit(?:\s*price)?|close)$/,                                  get: t => t.exitPrice },
+  ];
+  // Operators are tried in length-descending order so >= and <=
+  // aren't partially consumed as > and <.
+  const numericMatch = c.match(/^([a-z%:\/\s]+?)\s*(>=|<=|!=|>|<|=)\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (numericMatch) {
+    const rawField = numericMatch[1].trim();
+    const op = numericMatch[2];
+    const threshold = parseFloat(numericMatch[3]);
+    const field = NUMERIC_FIELDS.find(f => f.re.test(rawField));
+    if (!field) {
+      return { kind: 'error', message: `Unknown field "${rawField}" in numeric comparison. Supported fields: pl / profit, return %, risk, contracts / size, R:R, entry, exit.` };
+    }
+    const get = field.get;
+    return {
+      kind: 'ok',
+      predicate: t => {
+        const v = get(t);
+        if (v === null || !isFinite(v)) return false;
+        switch (op) {
+          case '>':  return v > threshold;
+          case '<':  return v < threshold;
+          case '>=': return v >= threshold;
+          case '<=': return v <= threshold;
+          case '=':  return v === threshold;
+          case '!=': return v !== threshold;
+          default:   return false;
+        }
+      },
+    };
+  }
+
   // "day other than Wednesday" / "not Wednesday" / "exclude Wednesday" / "except Wednesday"
   const dayExcludeMatch = c.match(/(?:day\s+)?(?:other\s+than|not|except|exclude|excluding|!=)\s+(\w+)/);
   if (dayExcludeMatch) {
     const dayNum = DAY_NAMES[dayExcludeMatch[1].toLowerCase()];
     if (dayNum !== undefined) {
-      return t => new Date(t.date).getUTCDay() !== dayNum;
+      return { kind: 'ok', predicate: t => new Date(t.date).getUTCDay() !== dayNum };
     }
   }
 
@@ -141,31 +206,59 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
     const dayWord = (dayIncludeMatch[1] || dayIncludeMatch[2] || '').toLowerCase();
     const dayNum = DAY_NAMES[dayWord];
     if (dayNum !== undefined) {
-      return t => new Date(t.date).getUTCDay() === dayNum;
+      return { kind: 'ok', predicate: t => new Date(t.date).getUTCDay() === dayNum };
     }
   }
 
+  // ── Field negation branches (must run BEFORE the positive
+  // equivalents so "strategy is not 0DTE Call" isn't swallowed by
+  // stratMatch's greedy `(.+)` capture).
+  // Shared negation token: "is not", "isn't", "!=", or a bare
+  // "not" immediately after the field name.
+  const NEG_TOK = `(?:is\\s+not|isn'?t|!=|not)`;
+
+  // "strategy is not X" / "strategy != X"
+  const stratNegMatch = c.match(new RegExp(`strategy\\s*${NEG_TOK}\\s*(.+)`));
+  if (stratNegMatch) {
+    const strat = stratNegMatch[1].trim().toLowerCase();
+    return { kind: 'ok', predicate: t => !t.strategy.toLowerCase().includes(strat) };
+  }
   // "strategy is X" / "strategy = X"
   const stratMatch = c.match(/strategy\s*(?:is|=|==|:)\s*(.+)/);
   if (stratMatch) {
     const strat = stratMatch[1].trim().toLowerCase();
-    return t => t.strategy.toLowerCase().includes(strat);
+    return { kind: 'ok', predicate: t => t.strategy.toLowerCase().includes(strat) };
+  }
+
+  // "ticker is not SPY" / "ticker != SPY" / "ticker isn't SPY"
+  const tickerNegMatch = c.match(new RegExp(`ticker\\s*${NEG_TOK}\\s*(.+)`));
+  if (tickerNegMatch) {
+    const tick = tickerNegMatch[1].trim().toUpperCase();
+    return { kind: 'ok', predicate: t => t.ticker !== tick };
   }
   // "ticker is X" / "ticker = X"
   const tickerMatch = c.match(/ticker\s*(?:is|=|==|:)\s*(.+)/);
   if (tickerMatch) {
     const tick = tickerMatch[1].trim().toUpperCase();
-    return t => t.ticker === tick;
+    return { kind: 'ok', predicate: t => t.ticker === tick };
+  }
+
+  // "direction is not long" / "direction != short"
+  const dirNegMatch = c.match(new RegExp(`direction\\s*${NEG_TOK}\\s*(long|short)`, 'i'));
+  if (dirNegMatch) {
+    const dir = dirNegMatch[1].toUpperCase();
+    return { kind: 'ok', predicate: t => t.direction !== dir };
   }
   // "direction is long/short"
   const dirMatch = c.match(/direction\s*(?:is|=|==|:)\s*(long|short)/i);
   if (dirMatch) {
     const dir = dirMatch[1].toUpperCase();
-    return t => t.direction === dir;
+    return { kind: 'ok', predicate: t => t.direction === dir };
   }
+
   // "wins only" / "losses only"
-  if (/win/.test(c)) return t => t.pl > 0;
-  if (/loss|losing/.test(c)) return t => t.pl < 0;
+  if (/win/.test(c)) return { kind: 'ok', predicate: t => t.pl > 0 };
+  if (/loss|losing/.test(c)) return { kind: 'ok', predicate: t => t.pl < 0 };
   // "before 11" / "after 1pm"
   const timeMatch = c.match(/(before|after)\s*(\d{1,2})\s*(am|pm)?/i);
   if (timeMatch) {
@@ -174,14 +267,17 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
     const ap = (timeMatch[3] || '').toUpperCase();
     if (ap === 'PM' && h !== 12) h += 12;
     if (ap === 'AM' && h === 12) h = 0;
-    return t => {
-      const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-      if (!m) return false;
-      let th = parseInt(m[1]);
-      const tap = (m[3] || '').toUpperCase();
-      if (tap === 'PM' && th !== 12) th += 12;
-      if (tap === 'AM' && th === 12) th = 0;
-      return dir === 'before' ? th < h : th >= h;
+    return {
+      kind: 'ok',
+      predicate: t => {
+        const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (!m) return false;
+        let th = parseInt(m[1]);
+        const tap = (m[3] || '').toUpperCase();
+        if (tap === 'PM' && th !== 12) th += 12;
+        if (tap === 'AM' && th === 12) th = 0;
+        return dir === 'before' ? th < h : th >= h;
+      },
     };
   }
 
@@ -190,13 +286,19 @@ export function resolveTradeFilter(condition: string): ((t: Trade) => boolean) |
   for (const [name, num] of Object.entries(DAY_NAMES)) {
     if (c.includes(name)) {
       const isExclude = /not|other|except|exclud|!=/.test(c);
-      return isExclude
-        ? t => new Date(t.date).getUTCDay() !== num
-        : t => new Date(t.date).getUTCDay() === num;
+      return {
+        kind: 'ok',
+        predicate: isExclude
+          ? t => new Date(t.date).getUTCDay() !== num
+          : t => new Date(t.date).getUTCDay() === num,
+      };
     }
   }
 
-  return null;
+  return {
+    kind: 'error',
+    message: `Could not parse filter: "${condition.trim()}". Supported patterns: field operators ("pl > 500", "risk < 400", "contracts >= 10", "R:R > 2"), ticker/strategy/direction equality and negation ("ticker is not SPY"), day-of-week ("on Monday", "not on Friday"), wins/losses, time-of-day ("before 11", "after 1pm").`,
+  };
 }
 
 /**

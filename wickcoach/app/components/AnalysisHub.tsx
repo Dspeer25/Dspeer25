@@ -136,8 +136,20 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       return;
     }
 
-    const filter = resolveTradeFilter(regCondition.trim());
-    const filtered = filter ? trades.filter(filter) : trades;
+    // Filter parser now returns a discriminated union so unparseable
+    // conditions surface as an error instead of silently running the
+    // regression unfiltered (the old `return null` fall-through).
+    const parsedFilter = resolveTradeFilter(regCondition.trim());
+    if (parsedFilter.kind === 'error') {
+      setRegResult({
+        stats: null,
+        plainEnglish: parsedFilter.message,
+        warning: 'Filter condition not recognized — no regression was run. Fix the condition and try again.',
+      });
+      setRegLoading(false);
+      return;
+    }
+    const filtered = parsedFilter.kind === 'ok' ? trades.filter(parsedFilter.predicate) : trades;
 
     const pairs: { x: number; y: number }[] = [];
     for (const t of filtered) {
