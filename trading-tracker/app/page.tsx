@@ -454,6 +454,13 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editEntry, setEditEntry] = useState<Entry | null>(null);
   const [lockedDismissed, setLockedDismissed] = useState(false);
+  const [weeklyWithdraw, setWeeklyWithdraw] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    try { const v = localStorage.getItem("weekly-withdraw"); return v ? parseFloat(v) : 0; } catch { return 0; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("weekly-withdraw", String(weeklyWithdraw)); } catch {}
+  }, [weeklyWithdraw]);
 
   // Daily risk lock
   const todayStr = localDateStr();
@@ -490,6 +497,15 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
   const losses = displayed.filter((e) => e.result === "L");
   const decided = wins.length + losses.length;
   const winRate = decided > 0 ? Math.round((wins.length / decided) * 100) : 0;
+
+  const [wkStart, wkEnd] = getDateRange("week");
+  const weekPl = entries.reduce((sum, e) => {
+    const d = new Date(e.date + "T00:00:00");
+    if (d < wkStart || d >= wkEnd) return sum;
+    const amt = Math.abs(parseFloat(e.amount) || 0);
+    return sum + (e.result === "L" ? -amt : e.result === "BE" ? 0 : amt);
+  }, 0);
+  const plAfterWithdraw = weekPl - weeklyWithdraw;
 
   const avgRR = (() => {
     const valid = displayed.filter((e) => parseFloat(e.rrRatio) > 0);
@@ -532,6 +548,20 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
         <span className="text-slate-500 text-xs ml-1">
           {displayed.length} trade{displayed.length !== 1 ? "s" : ""}
         </span>
+        <div className="ml-auto flex items-center gap-4">
+          <div className="flex flex-col items-end gap-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 text-[10px] uppercase tracking-wider">Wkly Withdraw</span>
+              <input type="number" value={weeklyWithdraw || ""} onChange={e => setWeeklyWithdraw(parseFloat(e.target.value) || 0)}
+                placeholder="0" className="w-20 bg-[#2d2f45] border border-[#3d3f5e] rounded px-2 py-0.5 text-xs text-slate-200 text-right focus:outline-none focus:border-indigo-500" />
+            </div>
+            <span className="text-[10px] text-slate-500 uppercase tracking-wider">P&L After Withdraw{" "}
+              <span className={`font-bold ${plAfterWithdraw >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {plAfterWithdraw >= 0 ? "+" : ""}${plAfterWithdraw.toFixed(0)}
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* ── Filter dropdowns ── */}
