@@ -419,6 +419,15 @@ function getDateRange(filter: "day" | "week" | "month" | "ytd"): [Date, Date] {
   return [new Date(today.getFullYear(), 0, 1), end];
 }
 
+// ─── R:R color helper ────────────────────────────────────────────────────────
+function rrColor(rr: number | string): string {
+  const n = typeof rr === "number" ? rr : parseFloat(rr);
+  if (!isFinite(n) || n <= 0) return "text-slate-400";
+  if (n >= 1.93) return "text-emerald-400";
+  if (n >= 1.5) return "text-orange-400";
+  return "text-orange-600";
+}
+
 // ─── Select style helper ──────────────────────────────────────────────────────
 const selectCls =
   "bg-[#2d2f45] border border-[#3d3f5e] rounded-lg px-2 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer";
@@ -521,6 +530,12 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
     ? (losses.reduce((s, e) => s + Math.abs(parseFloat(e.amount) || 0), 0) / losses.length).toFixed(0)
     : "—";
 
+  const avgRisk = (() => {
+    const valid = displayed.filter((e) => parseFloat(e.initialRisk) > 0);
+    if (valid.length === 0) return "—";
+    return (valid.reduce((s, e) => s + (parseFloat(e.initialRisk) || 0), 0) / valid.length).toFixed(0);
+  })();
+
   return (
     <div className="space-y-4">
       {/* ── Daily risk lock overlay ── */}
@@ -605,9 +620,10 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
           Total P&L: {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)}
         </span>
         <span className="text-slate-400">Win rate: {winRate}%</span>
-        <span className="text-slate-400">Avg R:R: {avgRR}</span>
+        <span className="text-slate-400">Avg R:R: <span className={rrColor(avgRR)}>{avgRR}</span></span>
         <span className="text-emerald-400">Avg Win: {avgWin !== "—" ? `+$${avgWin}` : "—"}</span>
         <span className="text-red-400">Avg Loss: {avgLoss !== "—" ? `-$${avgLoss}` : "—"}</span>
+        <span className="text-slate-400">Avg Risk: {avgRisk !== "—" ? `$${avgRisk}` : "—"}</span>
       </div>
 
       {/* ── Table ── */}
@@ -649,6 +665,8 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
                         : "text-red-400"
                       : c.key === "notes"
                       ? "text-slate-400 max-w-xs truncate"
+                      : c.key === "rrRatio"
+                      ? `${rrColor(row.rrRatio)} font-semibold`
                       : "text-slate-300";
 
                   return (
@@ -2037,7 +2055,7 @@ function LeaderboardTab({ entries, pendingId, onPendingClear }: { entries: Entry
                     <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{e.event}</td>
                     <td className={`px-3 py-2 font-bold whitespace-nowrap ${e.result==="W"?"text-emerald-400":e.result==="L"?"text-red-400":"text-amber-400"}`}>{e.result}</td>
                     <td className={`px-3 py-2 whitespace-nowrap ${e.result==="W"?"text-emerald-400":e.result==="L"?"text-red-400":"text-amber-400"}`}>{pnl}</td>
-                    <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{e.rrRatio||"—"}</td>
+                    <td className={`px-3 py-2 whitespace-nowrap font-semibold ${e.rrRatio ? rrColor(e.rrRatio) : "text-slate-300"}`}>{e.rrRatio||"—"}</td>
                     <td className="px-3 py-2">
                       {b.screenshot
                         ? <img src={b.screenshot} alt="screenshot" className="h-8 rounded border border-[#3d3f5e] cursor-pointer" onClick={() => window.open(b.screenshot,"_blank")} />
@@ -2235,7 +2253,7 @@ function VisualAnalysisTab({ entries }: { entries: Entry[] }) {
           { label: "Total Trades", value: entries.length.toString(), color: "text-white" },
           { label: "Win Rate", value: `${winRate.toFixed(1)}%`, color: winRate >= 50 ? "text-emerald-400" : "text-red-400" },
           { label: "Total P&L", value: `${totalPnl >= 0 ? "+$" : "-$"}${Math.abs(totalPnl).toFixed(2)}`, color: totalPnl >= 0 ? "text-emerald-400" : "text-red-400" },
-          { label: "Avg R:R", value: avgRR, color: "text-sky-400" },
+          { label: "Avg R:R", value: avgRR, color: rrColor(avgRR) },
         ].map((s) => (
           <div key={s.label} className="bg-[#1e2035] rounded-xl border border-[#3d3f5e] p-4">
             <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">{s.label}</p>
