@@ -41,7 +41,7 @@ type Journal = {
   grade?: string;
   review?: string;
   body?: string;
-  monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string }[];
+  monthlyGoals?: { text: string; status: "none" | "progress" | "completed" | "missed"; note: string; days?: [boolean,boolean,boolean,boolean,boolean] }[];
   longTickers?: [string, string, string];
   shortTickers?: [string, string, string];
   greenLabel?: string;
@@ -742,12 +742,14 @@ function EntriesTable({ entries, onDelete, onUpdate, onAddToLeaderboard }: {
 }
 
 // ─── Journal Sheet ────────────────────────────────────────────────────────────
-function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTexts = [] }: {
+function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTexts = [], weeklyGoalsEntry, onUpdateWeeklyGoals }: {
   journal: Journal;
   onChange: (j: Journal) => void;
   onBack: () => void;
   onMarketChange?: (on: boolean) => void;
   weeklyGoalTexts?: string[];
+  weeklyGoalsEntry?: Journal;
+  onUpdateWeeklyGoals?: (j: Journal) => void;
 }) {
   const set = <K extends keyof Journal>(k: K, v: Journal[K]) => {
     onChange({ ...journal, [k]: v });
@@ -762,13 +764,16 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
   };
 
   const toggleGoalDay = (goalIdx: number, dayIdx: number) => {
-    const goals = journal.goals.map((g, i) => {
-      if (i !== goalIdx) return g;
-      const days: [boolean,boolean,boolean,boolean,boolean] = g.days ? [...g.days] as [boolean,boolean,boolean,boolean,boolean] : [false,false,false,false,false];
-      days[dayIdx] = !days[dayIdx];
-      return { ...g, days };
-    }) as [Goal, Goal, Goal];
-    set("goals", goals);
+    if (weeklyGoalsEntry && onUpdateWeeklyGoals) {
+      const mGoals = weeklyGoalsEntry.monthlyGoals ?? [];
+      const updated = mGoals.map((g, i) => {
+        if (i !== goalIdx) return g;
+        const days: [boolean,boolean,boolean,boolean,boolean] = g.days ? [...g.days] as [boolean,boolean,boolean,boolean,boolean] : [false,false,false,false,false];
+        days[dayIdx] = !days[dayIdx];
+        return { ...g, days };
+      });
+      onUpdateWeeklyGoals({ ...weeklyGoalsEntry, monthlyGoals: updated });
+    }
   };
 
   const setGoalText = (i: number, text: string) => {
@@ -1157,7 +1162,7 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
       <div className="space-y-3">
         <h3 className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Weekly Goals</h3>
         {journal.goals.map((goal, i) => {
-          const days = goal.days ?? [false,false,false,false,false];
+          const days = weeklyGoalsEntry?.monthlyGoals?.[i]?.days ?? goal.days ?? [false,false,false,false,false];
           const anyChecked = days.some(Boolean);
           return (
             <div key={i} className="space-y-1">
@@ -1662,6 +1667,8 @@ function DailyJournalTab({ onMarketChange }: { onMarketChange?: (on: boolean) =>
         onBack={() => setOpenId(null)}
         onMarketChange={onMarketChange}
         weeklyGoalTexts={weeklyGoalTexts}
+        weeklyGoalsEntry={weeklyGoalsEntry}
+        onUpdateWeeklyGoals={weeklyGoalsEntry ? updateJournal : undefined}
       />
     );
   }
