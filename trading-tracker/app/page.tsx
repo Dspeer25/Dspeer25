@@ -28,7 +28,7 @@ type Entry = {
 
 type CsvRow = Record<string, string>;
 
-type Goal = { text: string; checked: boolean };
+type Goal = { text: string; checked: boolean; days?: [boolean,boolean,boolean,boolean,boolean] };
 type Folder = { id: string; name: string; collapsed: boolean; parentId?: string };
 type Journal = {
   id: string;
@@ -761,6 +761,16 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
     set("goals", goals);
   };
 
+  const toggleGoalDay = (goalIdx: number, dayIdx: number) => {
+    const goals = journal.goals.map((g, i) => {
+      if (i !== goalIdx) return g;
+      const days: [boolean,boolean,boolean,boolean,boolean] = g.days ? [...g.days] as [boolean,boolean,boolean,boolean,boolean] : [false,false,false,false,false];
+      days[dayIdx] = !days[dayIdx];
+      return { ...g, days };
+    }) as [Goal, Goal, Goal];
+    set("goals", goals);
+  };
+
   const setGoalText = (i: number, text: string) => {
     const goals = journal.goals.map((g, idx) =>
       idx === i ? { ...g, text } : g
@@ -1144,27 +1154,37 @@ function JournalSheet({ journal, onChange, onBack, onMarketChange, weeklyGoalTex
       </div>
 
       {/* Weekly Goals */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <h3 className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Weekly Goals</h3>
-        {journal.goals.map((goal, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <button type="button" onClick={() => toggleGoal(i)}
-              className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                goal.checked ? "bg-emerald-500 border-emerald-500" : "bg-transparent border-[#3d3f5e] hover:border-indigo-400"
-              }`}>
-              {goal.checked && <span className="text-white text-xs leading-none">✓</span>}
-            </button>
-            <input
-              type="text"
-              value={goal.text}
-              onChange={(e) => setGoalText(i, e.target.value)}
-              placeholder={weeklyGoalTexts[i] || `Goal ${i + 1}...`}
-              className={`flex-1 bg-transparent border-b border-[#3d3f5e] text-sm focus:outline-none focus:border-indigo-500 pb-1 placeholder-slate-600 transition-all ${
-                goal.checked ? "line-through text-slate-500" : "text-slate-200"
-              }`}
-            />
-          </div>
-        ))}
+        {journal.goals.map((goal, i) => {
+          const days = goal.days ?? [false,false,false,false,false];
+          const anyChecked = days.some(Boolean);
+          return (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center gap-2">
+                {(["M","T","W","T","F"] as const).map((label, d) => (
+                  <button key={d} type="button" onClick={() => toggleGoalDay(i, d)}
+                    className={`w-7 h-6 rounded text-[10px] font-bold border transition-all ${
+                      days[d]
+                        ? "bg-emerald-500 border-emerald-500 text-white"
+                        : "bg-transparent border-[#3d3f5e] text-slate-500 hover:border-indigo-400 hover:text-slate-300"
+                    }`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={goal.text}
+                onChange={(e) => setGoalText(i, e.target.value)}
+                placeholder={weeklyGoalTexts[i] || `Goal ${i + 1}...`}
+                className={`w-full bg-transparent border-b border-[#3d3f5e] text-sm focus:outline-none focus:border-indigo-500 pb-1 placeholder-slate-600 transition-all ${
+                  anyChecked ? "text-slate-200" : "text-slate-200"
+                }`}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Observations + Ticker Watchlist — split screen */}
