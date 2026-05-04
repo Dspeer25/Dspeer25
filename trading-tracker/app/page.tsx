@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { getData, setData } from "../lib/supabase";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend } from "recharts";
+import ChatTab from "./components/ChatTab";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const EVENTS = ["Color Change/Halt", "Bear 180", "Bull 180", "Clearing bar", "No event"] as const;
@@ -2800,7 +2801,7 @@ function ObservationsTab() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator" | "coach">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
@@ -2854,6 +2855,7 @@ export default function Home() {
           ["focus",       "Focus Tracks"    ],
           ["visual",      "Visual Analysis"  ],
           ["simulator",   "Growth Simulator" ],
+          ["coach",       "Ask Coach"        ],
         ] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -2884,6 +2886,7 @@ export default function Home() {
         )}
         {tab === "visual"     && <VisualAnalysisTab entries={entries} />}
         {tab === "simulator"  && <GrowthSimulatorTab />}
+        {tab === "coach"      && <ChatTab entries={entries} />}
       </main>
     </div>
   );
