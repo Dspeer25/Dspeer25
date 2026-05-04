@@ -18,6 +18,7 @@ import PastTradesContent from "./components/PastTradesContent";
 import TradingGoalsContent from "./components/TradingGoalsContent";
 import LogATradeContent from "./components/LogATradeContent";
 import TraderProfileContent from "./components/TraderProfileContent";
+import ToolsContent from "./components/ToolsContent";
 import SplashScreen from "./components/SplashScreen";
 
 export default function WickCoachFull() {
@@ -185,15 +186,7 @@ export default function WickCoachFull() {
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} weeklyTabResetTick={weeklyTabResetTick} />}
           {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
           {activeTab === 'Trader Profile' && <TraderProfileContent trades={trades} />}
-          {activeTab === 'Tools' && (
-            <div style={{ textAlign: 'center', paddingTop: 120, paddingBottom: 120 }}>
-              <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', letterSpacing: '0.5px', marginBottom: 12 }}>Tools</div>
-              <p style={{ color: '#aab0bd', fontFamily: fm, fontSize: 15, maxWidth: 520, margin: '0 auto 28px', lineHeight: 1.7 }}>
-                Position sizer, scenario analysis, growth simulator, trade timeline and more — landing here soon.
-              </p>
-              <span style={{ display: 'inline-block', fontFamily: fm, fontSize: 12, color: teal, letterSpacing: 2, textTransform: 'uppercase', padding: '6px 14px', border: '1px solid rgba(0,212,160,0.4)', borderRadius: 999, background: 'rgba(0,212,160,0.06)' }}>Coming Soon</span>
-            </div>
-          )}
+          {activeTab === 'Tools' && <ToolsContent />}
           {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Trader Profile' && activeTab !== 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>
           )}
