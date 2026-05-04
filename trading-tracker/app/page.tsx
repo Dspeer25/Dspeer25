@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { getData, setData } from "../lib/supabase";
+import StatQueryButton from "./components/StatQueryButton";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend } from "recharts";
-import ChatTab from "./components/ChatTab";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const EVENTS = ["Color Change/Halt", "Bear 180", "Bull 180", "Clearing bar", "No event"] as const;
@@ -2801,7 +2801,7 @@ function ObservationsTab() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
-  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator" | "coach">("log");
+  const [tab, setTab] = useState<"log" | "entries" | "csv" | "journal" | "leaderboard" | "focus" | "visual" | "simulator">("log");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [entriesLoaded, setEntriesLoaded] = useState(false);
   const [journalMarketOn, setJournalMarketOn] = useState(false);
@@ -2855,7 +2855,6 @@ export default function Home() {
           ["focus",       "Focus Tracks"    ],
           ["visual",      "Visual Analysis"  ],
           ["simulator",   "Growth Simulator" ],
-          ["coach",       "Ask Coach"        ],
         ] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -2869,12 +2868,15 @@ export default function Home() {
       <main className={`bg-[#252740] rounded-xl border p-6 flex-1 transition-all duration-300 ${journalMarketOn ? "border-[#00ff88] shadow-[0_0_24px_rgba(0,255,136,0.35)]" : "border-[#3d3f5e]"}`}>
         {tab === "log"     && <LogTab onSave={(e) => setEntries((prev) => [e, ...prev])} />}
         {tab === "entries" && (
-          <EntriesTable
-            entries={entries}
-            onDelete={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
-            onUpdate={(updated) => setEntries((prev) => prev.map((e) => e.id === updated.id ? updated : e))}
-            onAddToLeaderboard={(id) => { setLeaderboardPending(id); setTab("leaderboard"); }}
-          />
+          <>
+            <EntriesTable
+              entries={entries}
+              onDelete={(id) => setEntries((prev) => prev.filter((e) => e.id !== id))}
+              onUpdate={(updated) => setEntries((prev) => prev.map((e) => e.id === updated.id ? updated : e))}
+              onAddToLeaderboard={(id) => { setLeaderboardPending(id); setTab("leaderboard"); }}
+            />
+            <StatQueryButton trades={entries} />
+          </>
         )}
         {tab === "csv"     && <CsvTab />}
         {tab === "journal" && <DailyJournalTab onMarketChange={setJournalMarketOn} />}
@@ -2886,7 +2888,6 @@ export default function Home() {
         )}
         {tab === "visual"     && <VisualAnalysisTab entries={entries} />}
         {tab === "simulator"  && <GrowthSimulatorTab />}
-        {tab === "coach"      && <ChatTab entries={entries} />}
       </main>
     </div>
   );
