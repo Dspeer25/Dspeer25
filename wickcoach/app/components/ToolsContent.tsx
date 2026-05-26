@@ -11,7 +11,6 @@ interface ToolDef {
   slug: ToolSlug;
   title: string;
   description: string;
-  gradient: string;
   Icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
 }
 
@@ -20,35 +19,30 @@ const TOOLS: ToolDef[] = [
     slug: 'position-size',
     title: 'POSITION SIZE CALCULATOR',
     description: 'Calculate share or contract size based on account risk, stop distance, and target R-multiple.',
-    gradient: 'linear-gradient(135deg, #0e1a24 0%, #131822 100%)',
     Icon: Calculator,
   },
   {
     slug: 'coach-brainstorm',
     title: 'TRADING COACH 1:1',
     description: 'Open-ended brainstorming session with WickCoach AI. Ask anything about your trading, no rules attached.',
-    gradient: 'linear-gradient(135deg, #0e2418 0%, #131c18 100%)',
     Icon: MessageSquare,
   },
   {
     slug: 'overall-journal',
     title: 'OVERALL JOURNAL',
     description: 'Free-form journal entries unattached to specific trades. Pre-market notes, market read, mindset check-ins.',
-    gradient: 'linear-gradient(135deg, #1a1429 0%, #181522 100%)',
     Icon: BookOpen,
   },
   {
     slug: 'growth-simulator',
     title: 'GROWTH SIMULATOR',
     description: 'Project account growth across years using your win rate, R:R, risk profile, and withdrawals. Monte Carlo realistic.',
-    gradient: 'linear-gradient(135deg, #1a1a14 0%, #181812 100%)',
     Icon: TrendingUp,
   },
   {
     slug: 'leaderboard',
     title: 'LEADERBOARD',
     description: 'Generate a shareable trader card highlighting your weekly improvements. Build a movement around process, not P/L.',
-    gradient: 'linear-gradient(135deg, #1a1518 0%, #181318 100%)',
     Icon: Trophy,
   },
 ];
@@ -62,53 +56,88 @@ function ToolCard({ tool, onOpen }: { tool: ToolDef; onOpen: () => void }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: tool.gradient,
-        border: `1px solid ${hover ? teal : '#1a1b22'}`,
-        borderRadius: 12,
-        padding: 24,
-        minHeight: 200,
+        position: 'relative',
+        aspectRatio: '1 / 1',
+        background: 'linear-gradient(155deg, rgba(36,40,52,0.6) 0%, rgba(18,20,28,0.85) 55%, rgba(8,10,16,0.92) 100%)',
+        backdropFilter: 'blur(24px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: 22,
+        padding: 28,
         cursor: 'pointer',
-        transition: 'transform 0.2s ease, border-color 0.2s ease',
-        transform: hover ? 'translateY(-2px)' : 'translateY(0)',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        alignItems: 'center',
         justifyContent: 'space-between',
+        textAlign: 'center',
+        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+        boxShadow: hover
+          ? 'inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,160,0.5), 0 0 28px rgba(0,212,160,0.45), 0 0 70px rgba(0,212,160,0.25), 0 12px 32px rgba(0,0,0,0.55)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.45), 0 12px 32px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3)',
       }}
     >
-      <div>
-        <Icon size={32} strokeWidth={1.5} color={teal} />
+      {/* Soft specular highlight — radial hot spot in upper-left, mimics light hitting curved glass */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'radial-gradient(ellipse 70% 50% at 28% -10%, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 60%)',
+        pointerEvents: 'none',
+        borderRadius: 'inherit',
+      }} />
+      {/* Top sheen — bright glass-edge highlight that fades down */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0,
+        height: '55%',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.015) 50%, rgba(255,255,255,0) 100%)',
+        pointerEvents: 'none',
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
+      }} />
+      <div style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 18,
+        marginTop: 8,
+      }}>
+        <Icon size={36} strokeWidth={1.5} color="#e0e0e0" />
         <div style={{
-          marginTop: 16,
           fontFamily: fd,
-          fontSize: 18,
+          fontSize: 15,
           fontWeight: 500,
           color: '#e0e0e0',
           textTransform: 'uppercase',
-          letterSpacing: 0.5,
+          letterSpacing: 1,
         }}>
           {tool.title}
         </div>
         <div style={{
-          marginTop: 8,
           fontFamily: fm,
           fontSize: 12,
-          color: '#7a7d85',
+          color: '#9da0a8',
           lineHeight: 1.5,
+          maxWidth: 240,
           display: '-webkit-box',
           WebkitBoxOrient: 'vertical',
-          WebkitLineClamp: 2,
+          WebkitLineClamp: 3,
           overflow: 'hidden',
+          opacity: hover ? 1 : 0,
+          transition: 'opacity 0.3s ease',
         }}>
           {tool.description}
         </div>
       </div>
       <div style={{
+        position: 'relative',
         fontFamily: fm,
         fontSize: 11,
         fontWeight: 500,
-        color: teal,
+        color: '#555',
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 1.5,
       }}>
         Open →
       </div>
@@ -118,7 +147,11 @@ function ToolCard({ tool, onOpen }: { tool: ToolDef; onOpen: () => void }) {
 
 function ToolGrid({ onOpen }: { onOpen: (slug: ToolSlug) => void }) {
   return (
-    <div>
+    <div style={{
+      maxWidth: 920,
+      margin: '0 auto',
+      padding: '0 32px',
+    }}>
       <div style={{ marginBottom: 24 }}>
         <div style={{
           fontFamily: fd,
@@ -152,7 +185,11 @@ function ToolGrid({ onOpen }: { onOpen: (slug: ToolSlug) => void }) {
 
 export function ToolPageShell({ title, onBack, children }: { title: string; onBack: () => void; children?: React.ReactNode }) {
   return (
-    <div>
+    <div style={{
+      maxWidth: 1280,
+      margin: '0 auto',
+      padding: '0 40px',
+    }}>
       <div
         onClick={onBack}
         style={{
