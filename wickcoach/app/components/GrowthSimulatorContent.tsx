@@ -62,8 +62,14 @@ function simulate(
   return balances;
 }
 
-// TODO bug #4: Monte Carlo run count is hardcoded — expose as input?
-const RUNS = 40;
+// Monte Carlo run count. 500 is enough to smooth out the average curve
+// without making slider drags or chart pans feel sluggish.
+const RUNS = 500;
+
+// S&P 500 long-run nominal CAGR used for the comparison line. Applied as
+// startBal * pow(SP500_ANNUAL_GROWTH, i / 12) so 1.08 means 8% per year,
+// not per month.
+const SP500_ANNUAL_GROWTH = 1.08;
 
 function avgSims(
   start: number, tpw: number, win: number, rratio: number,
@@ -357,8 +363,7 @@ export function GrowthSimulatorContent({ onBack }: { onBack: () => void }) {
       month: i,
       capped:   cappedSim.balances[i],
       uncapped: uncappedSim.balances[i],
-      // Bug #5 left as-is: 1.08 ≈ S&P long-run nominal CAGR.
-      sp: showSP ? startBal * Math.pow(1.08, i / 12) : undefined,
+      sp: showSP ? startBal * Math.pow(SP500_ANNUAL_GROWTH, i / 12) : undefined,
     }));
   }, [cappedSim, uncappedSim, chartMonths, startBal]);
 
