@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Calculator, MessageSquare, BookOpen, TrendingUp, Trophy } from 'lucide-react';
 import { fd, fm, teal } from './shared';
+import { GrowthSimulatorContent } from './GrowthSimulatorContent';
+import { PositionSizeContent } from './PositionSizeContent';
 
 type ToolSlug = 'position-size' | 'coach-brainstorm' | 'overall-journal' | 'growth-simulator' | 'leaderboard';
 
@@ -148,7 +150,7 @@ function ToolGrid({ onOpen }: { onOpen: (slug: ToolSlug) => void }) {
   );
 }
 
-function ToolPageShell({ title, onBack }: { title: string; onBack: () => void }) {
+export function ToolPageShell({ title, onBack, children }: { title: string; onBack: () => void; children?: React.ReactNode }) {
   return (
     <div>
       <div
@@ -172,21 +174,21 @@ function ToolPageShell({ title, onBack }: { title: string; onBack: () => void })
       }}>
         {title}
       </div>
-      <div style={{
-        fontFamily: fm,
-        fontSize: 14,
-        color: '#7a7d85',
-        textAlign: 'center',
-        padding: '80px 0',
-      }}>
-        Coming soon.
-      </div>
+      {children ? (
+        <div style={{ marginTop: 24 }}>{children}</div>
+      ) : (
+        <div style={{
+          fontFamily: fm,
+          fontSize: 14,
+          color: '#7a7d85',
+          textAlign: 'center',
+          padding: '80px 0',
+        }}>
+          Coming soon.
+        </div>
+      )}
     </div>
   );
-}
-
-function PositionSizeContent({ onBack }: { onBack: () => void }) {
-  return <ToolPageShell title="Position Size Calculator" onBack={onBack} />;
 }
 
 function CoachBrainstormContent({ onBack }: { onBack: () => void }) {
@@ -195,10 +197,6 @@ function CoachBrainstormContent({ onBack }: { onBack: () => void }) {
 
 function OverallJournalContent({ onBack }: { onBack: () => void }) {
   return <ToolPageShell title="Overall Journal" onBack={onBack} />;
-}
-
-function GrowthSimulatorContent({ onBack }: { onBack: () => void }) {
-  return <ToolPageShell title="Growth Simulator" onBack={onBack} />;
 }
 
 function LeaderboardContent({ onBack }: { onBack: () => void }) {
