@@ -1,81 +1,54 @@
 'use client';
 import React, { useState } from 'react';
-import { fm, teal } from './shared';
+import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle } from 'lucide-react';
+import { fd, fm, teal } from './shared';
 import { ToolPageShell } from './ToolsContent';
 
-// ─── Hover tooltip ───────────────────────────────────────────────────
+const RED         = '#ff4444';
+const TEXT_BASE   = '#e0e0e0';
+const TEXT_MUTED  = '#7a7d85';
+const BORDER      = 'rgba(255,255,255,0.06)';
+const SURFACE_TOP = '#171A21';
+const SURFACE_BOT = '#11141A';
 
-function WithTooltip({ children, text }: { children: React.ReactNode; text: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <span
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-      style={{
-        position: 'relative',
-        display: 'inline-block',
-        cursor: 'help',
-        borderBottom: '1px dotted rgba(122,125,133,0.45)',
-        paddingBottom: 1,
-      }}
-    >
-      {children}
-      {show && (
-        <span style={{
-          position: 'absolute',
-          bottom: 'calc(100% + 8px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#0e0f14',
-          border: '1px solid #2a2c34',
-          borderRadius: 6,
-          padding: '8px 12px',
-          fontFamily: fm,
-          fontSize: 12,
-          fontWeight: 400,
-          color: '#e0e0e0',
-          width: 'max-content',
-          maxWidth: 280,
-          lineHeight: 1.5,
-          whiteSpace: 'normal',
-          textAlign: 'left',
-          textTransform: 'none',
-          letterSpacing: 0,
-          zIndex: 100,
-          pointerEvents: 'none',
-          boxShadow: '0 6px 20px rgba(0,0,0,0.6)',
-        }}>
-          {text}
-        </span>
-      )}
-    </span>
-  );
+type Instrument = 'shares' | 'options';
+
+const RTARGETS = [0.5, 1, 1.5, 2, 2.5, 3] as const;
+
+function fmtD2(v: number): string {
+  return '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?=\.))/g, ',');
+}
+function fmtPct(v: number): string {
+  return v.toFixed(2) + '%';
 }
 
-// Wrap each cell to add a thin separator border between columns.
-function GridCell({ index, cols, children }: { index: number; cols: number; children: React.ReactNode }) {
-  const isRightEdge = (index + 1) % cols === 0;
-  const isLeftEdge  = index % cols === 0;
-  return (
-    <div style={{
-      borderRight: isRightEdge ? 'none' : '1px solid rgba(40,42,50,0.7)',
-      paddingLeft:  isLeftEdge  ? 0 : 16,
-      paddingRight: isRightEdge ? 0 : 16,
-    }}>
-      {children}
-    </div>
-  );
-}
+const cardSurface: React.CSSProperties = {
+  background: `linear-gradient(180deg, ${SURFACE_TOP} 0%, ${SURFACE_BOT} 100%)`,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 16,
+  boxShadow: '0 16px 40px -8px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.05)',
+  position: 'relative',
+  overflow: 'hidden',
+};
 
-// ─── Number input — typed text with formatted blur display ───────────
+const labelStyle: React.CSSProperties = {
+  fontFamily: fd,
+  fontSize: 11,
+  textTransform: 'uppercase',
+  letterSpacing: 0.88,
+  color: TEXT_MUTED,
+  fontWeight: 600,
+};
 
-function NumberInput({
-  label, value, onChange, tooltip,
-  prefix = '', suffix = '', decimals = 0, min = 0,
-}: {
-  label: string; value: number; onChange: (v: number) => void;
-  tooltip: string; prefix?: string; suffix?: string;
-  decimals?: number; min?: number;
+// ─── Inputs ──────────────────────────────────────────────────────────
+
+function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0 }: {
+  value: number;
+  onChange: (v: number) => void;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+  min?: number;
 }) {
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState('');
@@ -83,17 +56,22 @@ function NumberInput({
   const formatted = decimals > 0
     ? value.toFixed(decimals).replace(/\B(?=(\d{3})+(?=\.))/g, ',')
     : value.toLocaleString();
-  const display = focused ? draft : prefix + formatted + suffix;
+  const display = focused ? draft : formatted;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{
-        fontFamily: fm, fontSize: 13, color: '#9da0a8',
-        textTransform: 'uppercase', letterSpacing: 0.5,
-        textAlign: 'center',
-      }}>
-        <WithTooltip text={tooltip}>{label}</WithTooltip>
-      </div>
+    <div style={{ position: 'relative' }}>
+      {prefix && (
+        <span style={{
+          position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+          color: TEXT_MUTED, fontFamily: fm, fontSize: 14, pointerEvents: 'none',
+        }}>{prefix}</span>
+      )}
+      {suffix && (
+        <span style={{
+          position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+          color: TEXT_MUTED, fontFamily: fm, fontSize: 14, pointerEvents: 'none',
+        }}>{suffix}</span>
+      )}
       <input
         type="text"
         inputMode={decimals > 0 ? 'decimal' : 'numeric'}
@@ -108,40 +86,45 @@ function NumberInput({
         onChange={e => setDraft(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
         style={{
-          background: 'transparent',
-          border: 'none',
-          borderBottom: '1px solid #2a2c34',
-          color: '#e0e0e0',
+          background: 'rgba(6,8,12,0.6)',
+          border: `1px solid ${focused ? teal : 'rgba(255,255,255,0.04)'}`,
+          borderRadius: 8,
+          color: TEXT_BASE,
           fontFamily: fm,
-          fontSize: 18,
-          fontWeight: 500,
-          outline: 'none',
-          padding: '0 0 4px 0',
+          fontSize: 14,
+          padding: '12px 16px',
+          paddingLeft: prefix ? 32 : 16,
+          paddingRight: suffix ? 32 : 16,
           width: '100%',
-          textAlign: 'center',
+          boxShadow: focused
+            ? 'inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,212,160,0.2)'
+            : 'inset 0 2px 4px rgba(0,0,0,0.2)',
+          outline: 'none',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         }}
       />
     </div>
   );
 }
 
-// ─── Read-only display ───────────────────────────────────────────────
-
-function Readout({ label, value, color = '#e0e0e0', tooltip }: {
-  label: string; value: string; color?: string; tooltip: string;
+function ReadOnlyField({ value, prefix, color = teal }: {
+  value: string; prefix?: string; color?: string;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ position: 'relative' }}>
+      {prefix && (
+        <span style={{
+          position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+          color: TEXT_MUTED, fontFamily: fm, fontSize: 14, pointerEvents: 'none',
+        }}>{prefix}</span>
+      )}
       <div style={{
-        fontFamily: fm, fontSize: 13, color: '#9da0a8',
-        textTransform: 'uppercase', letterSpacing: 0.5,
-        textAlign: 'center',
-      }}>
-        <WithTooltip text={tooltip}>{label}</WithTooltip>
-      </div>
-      <div style={{
-        fontFamily: fm, fontSize: 18, fontWeight: 500, color,
-        textAlign: 'center',
+        padding: '13px 16px',
+        paddingLeft: prefix ? 32 : 16,
+        color,
+        fontFamily: fm,
+        fontSize: 14,
+        fontWeight: 500,
       }}>
         {value}
       </div>
@@ -149,155 +132,87 @@ function Readout({ label, value, color = '#e0e0e0', tooltip }: {
   );
 }
 
-// ─── Tooltip strings ─────────────────────────────────────────────────
+// ─── Card / field primitives ─────────────────────────────────────────
 
-const TT = {
-  accountSize:   'Total cash available in your trading account.',
-  riskPct:       'Maximum percent of your account you are willing to lose on any single trade.',
-  maxRisk:       'Account size times your risk percentage. Your total dollar loss budget for any one trade.',
-  numShares:     'How many shares of the stock you are buying.',
-  sharesEntry:   'The price per share you are paying to enter the trade.',
-  sharesStop:    'The price per share where you would exit a losing trade. For longs this should be below your entry.',
-  sharesRisk:    'Total dollars at risk = shares × (entry − stop). Green when within your account risk limit, red when over.',
-  sharesPct:     'What percent of your account this trade puts at risk. Compare to the percent you set above.',
-  sharesCost:    'Cash deployed to enter the position = shares × entry price. Different from risk.',
-  numContracts:  'How many derivative contracts you are buying.',
-  contractEntry: 'Price per contract you pay to enter.',
-  contractStop:  'Price per contract where you would exit a losing trade.',
-  multiplier:    'Contract multiplier. 100 for standard equity options. Futures vary (e.g. 50 for ES, 20 for NQ).',
-  contractRisk:  'Total dollars at risk = contracts × (entry − stop) × multiplier. Green when within your account risk limit, red when over.',
-  contractPct:   'What percent of your account this trade puts at risk.',
-  contractCost:  'Cash deployed = contracts × entry × multiplier.',
-  exitTargets:   'Sell prices that would make you 1.5R, 2R, 2.5R, etc. of your initial risk. 1R = the dollar distance from entry to stop.',
-};
-
-const RTARGETS = [1.5, 2, 2.5, 3, 3.5, 4] as const;
-
-function fmtD2(v: number): string {
-  return '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?=\.))/g, ',');
-}
-
-// ─── Section title for each calc panel ───────────────────────────────
-
-function CalcPanelTitle({ children }: { children: React.ReactNode }) {
+function CardHeader({ icon: Icon, title }: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
+  title: string;
+}) {
   return (
     <div style={{
-      fontFamily: fm,
-      fontSize: 14,
-      fontWeight: 600,
-      color: '#e0e0e0',
-      textTransform: 'uppercase',
-      letterSpacing: 1.5,
-      textAlign: 'center',
-      paddingBottom: 14,
-      borderBottom: '1px solid rgba(40,42,50,0.7)',
+      ...labelStyle,
+      marginBottom: 20,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottom: `1px solid ${BORDER}`,
+      paddingBottom: 12,
     }}>
+      <span>{title}</span>
+      <Icon size={14} strokeWidth={1.5} color="rgba(122,125,133,0.5)" />
+    </div>
+  );
+}
+
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <label style={labelStyle}>{label}</label>
       {children}
     </div>
   );
 }
 
-// ─── Risk display block ──────────────────────────────────────────────
+// ─── Shares | Options toggle ─────────────────────────────────────────
 
-function RiskDisplay({ totalRisk, pctOfAccount, positionCost, overBudget, riskTooltip, pctTooltip, costTooltip }: {
-  totalRisk: number;
-  pctOfAccount: number;
-  positionCost: number;
-  overBudget: boolean;
-  riskTooltip: string;
-  pctTooltip: string;
-  costTooltip: string;
+function InstrumentToggle({ value, onChange }: {
+  value: Instrument; onChange: (v: Instrument) => void;
 }) {
-  const accent = overBudget ? '#ff4444' : teal;
-  const rowStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  };
-  const labelStyle: React.CSSProperties = {
-    fontFamily: fm, fontSize: 13, color: '#9da0a8',
-    textTransform: 'uppercase', letterSpacing: 0.5,
-  };
-
   return (
     <div style={{
-      marginTop: 28,
-      background: '#13141a',
-      border: `1px solid ${overBudget ? 'rgba(255,68,68,0.35)' : '#1a1b22'}`,
-      borderRadius: 10,
-      padding: '18px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 14,
+      position: 'relative',
+      display: 'inline-flex',
+      background: 'rgba(6,8,12,0.6)',
+      border: '1px solid rgba(255,255,255,0.05)',
+      borderRadius: 8,
+      padding: 4,
     }}>
-      <div style={rowStyle}>
-        <span style={labelStyle}>
-          <WithTooltip text={riskTooltip}>Risk per trade</WithTooltip>
-        </span>
-        <span style={{ fontFamily: fm, fontSize: 22, fontWeight: 500, color: accent }}>
-          {fmtD2(totalRisk)}
-        </span>
-      </div>
-      <div style={rowStyle}>
-        <span style={labelStyle}>
-          <WithTooltip text={pctTooltip}>% of account</WithTooltip>
-        </span>
-        <span style={{ fontFamily: fm, fontSize: 18, fontWeight: 500, color: accent }}>
-          {pctOfAccount.toFixed(2)}%
-        </span>
-      </div>
-      <div style={rowStyle}>
-        <span style={labelStyle}>
-          <WithTooltip text={costTooltip}>Position cost</WithTooltip>
-        </span>
-        <span style={{ fontFamily: fm, fontSize: 18, fontWeight: 500, color: '#e0e0e0' }}>
-          {fmtD2(positionCost)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Exit targets (R-multiple sell prices) ───────────────────────────
-
-function ExitTargets({ entry, priceRisk, label }: { entry: number; priceRisk: number; label: string }) {
-  return (
-    <div style={{ marginTop: 28 }}>
       <div style={{
-        fontFamily: fm, fontSize: 13, color: '#9da0a8',
-        textTransform: 'uppercase', letterSpacing: 0.5,
-        marginBottom: 12,
-      }}>
-        <WithTooltip text={TT.exitTargets}>{label}</WithTooltip>
-      </div>
-      <div style={{ display: 'grid', gap: 6 }}>
-        {RTARGETS.map(r => {
-          const exit = entry + r * priceRisk;
-          return (
-            <div key={r} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: '#13141a',
-              border: '1px solid #1a1b22',
-              borderRadius: 8,
-              padding: '10px 16px',
-            }}>
-              <span style={{
-                fontFamily: fm, fontSize: 13, fontWeight: 500, color: teal,
-                letterSpacing: 0.5,
-              }}>
-                {r}R
-              </span>
-              <span style={{
-                fontFamily: fm, fontSize: 16, fontWeight: 500, color: '#e0e0e0',
-              }}>
-                {fmtD2(exit)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+        position: 'absolute',
+        top: 4,
+        left: value === 'shares' ? 4 : 'calc(50% + 0px)',
+        width: 'calc(50% - 4px)',
+        bottom: 4,
+        background: SURFACE_TOP,
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 6,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+        transition: 'left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15)',
+      }} />
+      {(['shares', 'options'] as Instrument[]).map(opt => (
+        <button
+          key={opt}
+          onClick={() => onChange(opt)}
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            width: 96,
+            padding: '6px 0',
+            fontFamily: fd,
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            color: value === opt ? TEXT_BASE : TEXT_MUTED,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'color 0.2s ease',
+          }}
+        >
+          {opt === 'shares' ? 'Shares' : 'Options'}
+        </button>
+      ))}
     </div>
   );
 }
@@ -305,124 +220,324 @@ function ExitTargets({ entry, priceRisk, label }: { entry: number; priceRisk: nu
 // ─── Main component ──────────────────────────────────────────────────
 
 export function PositionSizeContent({ onBack }: { onBack: () => void }) {
-  // Top section
   const [accountSize, setAccountSize] = useState(50000);
   const [riskPct, setRiskPct]         = useState(1);
+  const [instrument, setInstrument]   = useState<Instrument>('shares');
+  const [entry, setEntry]             = useState(50);
+  const [stop, setStop]               = useState(48);
+  const [size, setSize]               = useState(250);
 
-  // Shares calculator
-  const [numShares, setNumShares]     = useState(100);
-  const [sharesEntry, setSharesEntry] = useState(50);
-  const [sharesStop, setSharesStop]   = useState(48);
+  const multiplier      = instrument === 'options' ? 100 : 1;
+  const unitsWordPlural = instrument === 'options' ? 'contracts' : 'shares';
 
-  // Derivatives calculator
-  const [numContracts, setNumContracts]   = useState(5);
-  const [contractEntry, setContractEntry] = useState(1.5);
-  const [contractStop, setContractStop]   = useState(1);
-  const [multiplier, setMultiplier]       = useState(100);
+  // Math — pure functions of inputs.
+  const maxRisk      = accountSize * (riskPct / 100);
+  const priceRisk    = entry - stop;
+  const perUnitLoss  = priceRisk * multiplier;
+  const riskPerTrade = size * perUnitLoss;
+  const pctOfAccount = accountSize > 0 ? (riskPerTrade / accountSize) * 100 : 0;
+  const positionCost = size * entry * multiplier;
 
-  // Top-row math
-  const maxRisk = accountSize * (riskPct / 100);
-
-  // Shares math
-  const sharesPriceRisk     = Math.max(0, sharesEntry - sharesStop);
-  const sharesTotalRisk     = numShares * sharesPriceRisk;
-  const sharesPositionCost  = numShares * sharesEntry;
-  const sharesPctOfAccount  = accountSize > 0 ? (sharesTotalRisk / accountSize) * 100 : 0;
-  const sharesOverBudget    = sharesTotalRisk > maxRisk;
-
-  // Derivatives math
-  const contractPriceRisk      = Math.max(0, contractEntry - contractStop);
-  const contractTotalRisk      = numContracts * contractPriceRisk * multiplier;
-  const contractPositionCost   = numContracts * contractEntry * multiplier;
-  const contractPctOfAccount   = accountSize > 0 ? (contractTotalRisk / accountSize) * 100 : 0;
-  const contractOverBudget     = contractTotalRisk > maxRisk;
+  // Two distinct alarm states.
+  //   badStop:    stop ≥ entry — R math is undefined, block the readout.
+  //   overBudget: size puts more $ at risk than the account allows — warn
+  //               but keep everything visible so the trader can see how
+  //               much they'd need to drop size to fit.
+  const badStop    = priceRisk <= 0;
+  const overBudget = !badStop && riskPerTrade > maxRisk;
 
   return (
     <ToolPageShell title="Position Size Calculator" onBack={onBack}>
-      {/* Top row: account inputs + derived max risk */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '28px 0',
+        maxWidth: 920,
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 24,
       }}>
-        {[
-          <NumberInput key="acct" label="Account size" value={accountSize}
-            onChange={setAccountSize} prefix="$" tooltip={TT.accountSize} />,
-          <NumberInput key="risk" label="Risk per trade (%)" value={riskPct}
-            onChange={setRiskPct} suffix="%" decimals={2} tooltip={TT.riskPct} />,
-          <Readout key="max" label="Max risk per trade"
-            value={fmtD2(maxRisk)} tooltip={TT.maxRisk} />,
-        ].map((cell, i) => <GridCell key={i} index={i} cols={3}>{cell}</GridCell>)}
-      </div>
 
-      {/* Shares (left) + Derivatives (right) */}
-      <div style={{
-        marginTop: 36,
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 0,
-      }}>
-        {/* SHARES */}
-        <div style={{ paddingRight: 28, borderRight: '1px solid rgba(40,42,50,0.7)' }}>
-          <CalcPanelTitle>Shares</CalcPanelTitle>
+        {/* ─── Card 1: Account Setup ──────────────────────────────── */}
+        <section style={{ ...cardSurface, padding: 32 }}>
+          <CardHeader icon={Wallet} title="Account Setup" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+            <FieldGroup label="Account size">
+              <NumInput value={accountSize} onChange={setAccountSize} prefix="$" />
+            </FieldGroup>
+            <FieldGroup label="Risk %">
+              <NumInput value={riskPct} onChange={setRiskPct} suffix="%" />
+            </FieldGroup>
+            <FieldGroup label="Max risk">
+              <ReadOnlyField value={fmtD2(maxRisk).slice(1)} prefix="$" />
+            </FieldGroup>
+          </div>
+        </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 22, marginTop: 24 }}>
-            <NumberInput label="Number of shares" value={numShares}
-              onChange={setNumShares} tooltip={TT.numShares} />
-            <NumberInput label="Entry price" value={sharesEntry}
-              onChange={setSharesEntry} prefix="$" decimals={2} tooltip={TT.sharesEntry} />
-            <NumberInput label="Stop price" value={sharesStop}
-              onChange={setSharesStop} prefix="$" decimals={2} tooltip={TT.sharesStop} />
+        {/* ─── Card 2: Trade Setup ────────────────────────────────── */}
+        <section style={{ ...cardSurface, padding: 32 }}>
+          <CardHeader icon={Crosshair} title="Trade Setup" />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+            <InstrumentToggle value={instrument} onChange={setInstrument} />
+            {instrument === 'options' && (
+              <div style={{
+                fontFamily: fm,
+                fontSize: 12,
+                color: TEXT_MUTED,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'rgba(255,255,255,0.05)',
+                padding: '6px 10px',
+                borderRadius: 4,
+              }}>
+                <Info size={12} color="rgba(122,125,133,0.5)" />
+                1 contract = 100 shares
+              </div>
+            )}
           </div>
 
-          <RiskDisplay
-            totalRisk={sharesTotalRisk}
-            pctOfAccount={sharesPctOfAccount}
-            positionCost={sharesPositionCost}
-            overBudget={sharesOverBudget}
-            riskTooltip={TT.sharesRisk}
-            pctTooltip={TT.sharesPct}
-            costTooltip={TT.sharesCost}
-          />
-
-          <ExitTargets
-            entry={sharesEntry}
-            priceRisk={sharesPriceRisk}
-            label="Exit targets (sell price)"
-          />
-        </div>
-
-        {/* DERIVATIVES */}
-        <div style={{ paddingLeft: 28 }}>
-          <CalcPanelTitle>Derivatives</CalcPanelTitle>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 22, marginTop: 24 }}>
-            <NumberInput label="Number of contracts" value={numContracts}
-              onChange={setNumContracts} tooltip={TT.numContracts} />
-            <NumberInput label="Entry premium" value={contractEntry}
-              onChange={setContractEntry} prefix="$" decimals={2} tooltip={TT.contractEntry} />
-            <NumberInput label="Stop premium" value={contractStop}
-              onChange={setContractStop} prefix="$" decimals={2} tooltip={TT.contractStop} />
-            <NumberInput label="Multiplier" value={multiplier}
-              onChange={setMultiplier} tooltip={TT.multiplier} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+            <FieldGroup label={`Number of ${unitsWordPlural}`}>
+              <NumInput value={size} onChange={setSize} decimals={0} />
+            </FieldGroup>
+            <FieldGroup label="Entry price">
+              <NumInput value={entry} onChange={setEntry} prefix="$" />
+            </FieldGroup>
+            <FieldGroup label="Stop price">
+              <NumInput value={stop} onChange={setStop} prefix="$" />
+            </FieldGroup>
           </div>
 
-          <RiskDisplay
-            totalRisk={contractTotalRisk}
-            pctOfAccount={contractPctOfAccount}
-            positionCost={contractPositionCost}
-            overBudget={contractOverBudget}
-            riskTooltip={TT.contractRisk}
-            pctTooltip={TT.contractPct}
-            costTooltip={TT.contractCost}
-          />
+          {instrument === 'options' && (
+            <div style={{
+              marginTop: 24,
+              paddingTop: 20,
+              borderTop: `1px solid ${BORDER}`,
+            }}>
+              <p style={{
+                fontFamily: fm,
+                fontSize: 12,
+                color: TEXT_MUTED,
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 8,
+                lineHeight: 1.5,
+                margin: 0,
+              }}>
+                <Info size={14} color="rgba(122,125,133,0.5)" style={{ marginTop: 2, flexShrink: 0 }} />
+                Stop is usually defined on the underlying — premium math here is an estimate.
+              </p>
+            </div>
+          )}
+        </section>
 
-          <ExitTargets
-            entry={contractEntry}
-            priceRisk={contractPriceRisk}
-            label="Exit targets (sell premium)"
-          />
-        </div>
+        {/* ─── Card 3: Risk Readout ───────────────────────────────── */}
+        <section style={{
+          ...cardSurface,
+          padding: 32,
+          ...((badStop || overBudget) ? {
+            background: 'linear-gradient(180deg, #1d1418 0%, #181016 100%)',
+            border: '1px solid rgba(255,68,68,0.35)',
+          } : {}),
+        }}>
+          {(badStop || overBudget) && (
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 4,
+              background: RED,
+              boxShadow: '0 0 20px rgba(255,68,68,0.5)',
+            }} />
+          )}
+
+          {badStop ? (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+              <AlertCircle size={28} color={RED} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{
+                  fontFamily: fd,
+                  fontSize: 22,
+                  fontWeight: 600,
+                  color: RED,
+                  letterSpacing: 0.5,
+                }}>
+                  Stop price must be below entry
+                </div>
+                <div style={{
+                  fontFamily: fm,
+                  fontSize: 13,
+                  color: TEXT_MUTED,
+                  lineHeight: 1.5,
+                  maxWidth: 580,
+                }}>
+                  For a long position, the stop must be lower than the entry. Adjust your inputs.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1.5fr 2fr',
+              gap: 48,
+              alignItems: 'center',
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                borderRight: `1px solid ${BORDER}`,
+                paddingRight: 48,
+              }}>
+                <div style={{
+                  ...labelStyle,
+                  marginBottom: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <Activity size={12} color="rgba(122,125,133,0.5)" />
+                  Risk per trade
+                </div>
+                <div style={{
+                  fontFamily: fd,
+                  fontSize: 48,
+                  fontWeight: 700,
+                  letterSpacing: -1,
+                  color: overBudget ? RED : TEXT_BASE,
+                  lineHeight: 0.95,
+                }}>
+                  {fmtD2(riskPerTrade)}
+                </div>
+                {overBudget && (
+                  <div style={{
+                    marginTop: 10,
+                    fontFamily: fm,
+                    fontSize: 12,
+                    color: RED,
+                    lineHeight: 1.5,
+                  }}>
+                    Risks {fmtD2(riskPerTrade)} — above your {fmtD2(maxRisk)} budget by {fmtD2(riskPerTrade - maxRisk)}.
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 32px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={labelStyle}>% of account</span>
+                  <span style={{ fontFamily: fm, fontSize: 24, color: overBudget ? RED : TEXT_BASE, fontWeight: 500 }}>
+                    {fmtPct(pctOfAccount)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={labelStyle}>Position cost</span>
+                  <span style={{ fontFamily: fm, fontSize: 24, color: TEXT_MUTED }}>
+                    {fmtD2(positionCost)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={labelStyle}>Per-unit loss at stop</span>
+                  <span style={{ fontFamily: fm, fontSize: 20, color: TEXT_MUTED }}>
+                    {fmtD2(perUnitLoss)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ─── Card 4: Exit Target Ladder ─────────────────────────── */}
+        <section style={cardSurface}>
+          <div style={{
+            ...labelStyle,
+            margin: 32,
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span>Exit Target Parameters</span>
+            <Layers size={14} strokeWidth={1.5} color={TEXT_MUTED} />
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '100px 1fr 1fr',
+            gap: 16,
+            padding: '12px 32px',
+            background: 'rgba(255,255,255,0.02)',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            <div style={{ ...labelStyle, textAlign: 'left' }}>R level</div>
+            <div style={{ ...labelStyle, textAlign: 'right' }}>Sell price</div>
+            <div style={{ ...labelStyle, textAlign: 'right' }}>Gross profit</div>
+          </div>
+
+          <div>
+            {RTARGETS.map((r, i) => {
+              const sellPrice  = badStop ? null : entry + r * priceRisk;
+              const grossProfit = badStop ? null : r * riskPerTrade;
+              const isLast = i === RTARGETS.length - 1;
+              const isOneR = r === 1;
+              return (
+                <div key={r} style={{
+                  position: 'relative',
+                  display: 'grid',
+                  gridTemplateColumns: '100px 1fr 1fr',
+                  gap: 16,
+                  alignItems: 'center',
+                  padding: '16px 32px',
+                  borderBottom: isLast ? 'none' : `1px solid ${BORDER}`,
+                }}>
+                  {isOneR && !badStop && (
+                    <div style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 2,
+                      background: 'rgba(0,212,160,0.2)',
+                    }} />
+                  )}
+                  <div style={{
+                    fontFamily: fd,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: teal,
+                    background: 'rgba(0,212,160,0.1)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    letterSpacing: 1,
+                    width: 'fit-content',
+                  }}>
+                    {r}R
+                  </div>
+                  <div style={{
+                    fontFamily: fm,
+                    fontSize: 16,
+                    color: TEXT_BASE,
+                    textAlign: 'right',
+                  }}>
+                    {sellPrice !== null ? fmtD2(sellPrice) : '—'}
+                  </div>
+                  <div style={{
+                    fontFamily: fm,
+                    fontSize: 16,
+                    color: grossProfit !== null && grossProfit > 0 ? teal : TEXT_MUTED,
+                    fontWeight: 500,
+                    textAlign: 'right',
+                  }}>
+                    {grossProfit !== null ? '+' + fmtD2(grossProfit) : '—'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
       </div>
     </ToolPageShell>
   );
