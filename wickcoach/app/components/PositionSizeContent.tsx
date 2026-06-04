@@ -7,9 +7,15 @@ import { ToolPageShell } from './ToolsContent';
 const RED         = '#ff4444';
 const TEXT_BASE   = '#e0e0e0';
 const TEXT_MUTED  = '#7a7d85';
-const BORDER      = 'rgba(255,255,255,0.06)';
-const SURFACE_TOP = '#171A21';
-const SURFACE_BOT = '#11141A';
+// Per-page lighter label color — the project's #7a7d85 secondary was
+// too dim against the new card surface for uppercase labels at small
+// sizes. Used for card headers, field labels, the toggle inactive
+// state, and the options chip + caveat. Position-cost / decorative
+// prefixes stay on TEXT_MUTED so the hierarchy still reads.
+const LABEL       = '#a0a3ab';
+const BORDER      = 'rgba(255,255,255,0.10)';
+const SURFACE_TOP = '#1f232d';
+const SURFACE_BOT = '#181c26';
 
 type Instrument = 'shares' | 'options';
 
@@ -33,10 +39,10 @@ const cardSurface: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   fontFamily: fd,
-  fontSize: 11,
+  fontSize: 13,
   textTransform: 'uppercase',
-  letterSpacing: 0.88,
-  color: TEXT_MUTED,
+  letterSpacing: 1.2,
+  color: LABEL,
   fontWeight: 600,
 };
 
@@ -62,14 +68,14 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0 }: {
     <div style={{ position: 'relative' }}>
       {prefix && (
         <span style={{
-          position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-          color: TEXT_MUTED, fontFamily: fm, fontSize: 14, pointerEvents: 'none',
+          position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)',
+          color: LABEL, fontFamily: fm, fontSize: 16, pointerEvents: 'none',
         }}>{prefix}</span>
       )}
       {suffix && (
         <span style={{
-          position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-          color: TEXT_MUTED, fontFamily: fm, fontSize: 14, pointerEvents: 'none',
+          position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)',
+          color: LABEL, fontFamily: fm, fontSize: 16, pointerEvents: 'none',
         }}>{suffix}</span>
       )}
       <input
@@ -91,10 +97,11 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0 }: {
           borderRadius: 8,
           color: TEXT_BASE,
           fontFamily: fm,
-          fontSize: 14,
-          padding: '12px 16px',
-          paddingLeft: prefix ? 32 : 16,
-          paddingRight: suffix ? 32 : 16,
+          fontSize: 18,
+          fontWeight: 500,
+          padding: '14px 18px',
+          paddingLeft: prefix ? 36 : 18,
+          paddingRight: suffix ? 36 : 18,
           width: '100%',
           boxShadow: focused
             ? 'inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,212,160,0.2)'
@@ -114,17 +121,17 @@ function ReadOnlyField({ value, prefix, color = teal }: {
     <div style={{ position: 'relative' }}>
       {prefix && (
         <span style={{
-          position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
-          color: TEXT_MUTED, fontFamily: fm, fontSize: 14, pointerEvents: 'none',
+          position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)',
+          color: LABEL, fontFamily: fm, fontSize: 16, pointerEvents: 'none',
         }}>{prefix}</span>
       )}
       <div style={{
-        padding: '13px 16px',
-        paddingLeft: prefix ? 32 : 16,
+        padding: '15px 18px',
+        paddingLeft: prefix ? 36 : 18,
         color,
         fontFamily: fm,
-        fontSize: 14,
-        fontWeight: 500,
+        fontSize: 18,
+        fontWeight: 600,
       }}>
         {value}
       </div>
@@ -196,14 +203,14 @@ function InstrumentToggle({ value, onChange }: {
           style={{
             position: 'relative',
             zIndex: 1,
-            width: 96,
-            padding: '6px 0',
+            width: 110,
+            padding: '8px 0',
             fontFamily: fd,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: 1,
-            color: value === opt ? TEXT_BASE : TEXT_MUTED,
+            letterSpacing: 1.2,
+            color: value === opt ? TEXT_BASE : LABEL,
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
@@ -281,17 +288,18 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             {instrument === 'options' && (
               <div style={{
                 fontFamily: fm,
-                fontSize: 12,
-                color: TEXT_MUTED,
+                fontSize: 13,
+                color: LABEL,
+                fontWeight: 500,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
-                border: '1px solid rgba(255,255,255,0.05)',
-                background: 'rgba(255,255,255,0.05)',
-                padding: '6px 10px',
-                borderRadius: 4,
+                gap: 8,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.04)',
+                padding: '8px 12px',
+                borderRadius: 6,
               }}>
-                <Info size={12} color="rgba(122,125,133,0.5)" />
+                <Info size={14} color={LABEL} />
                 1 contract = 100 shares
               </div>
             )}
@@ -317,15 +325,15 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             }}>
               <p style={{
                 fontFamily: fm,
-                fontSize: 12,
-                color: TEXT_MUTED,
+                fontSize: 13,
+                color: LABEL,
                 display: 'flex',
                 alignItems: 'flex-start',
-                gap: 8,
-                lineHeight: 1.5,
+                gap: 10,
+                lineHeight: 1.55,
                 margin: 0,
               }}>
-                <Info size={14} color="rgba(122,125,133,0.5)" style={{ marginTop: 2, flexShrink: 0 }} />
+                <Info size={15} color={LABEL} style={{ marginTop: 2, flexShrink: 0 }} />
                 Stop is usually defined on the underlying — premium math here is an estimate.
               </p>
             </div>
@@ -406,41 +414,44 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                   fontSize: 48,
                   fontWeight: 700,
                   letterSpacing: -1,
-                  color: overBudget ? RED : TEXT_BASE,
+                  color: overBudget ? RED : teal,
                   lineHeight: 0.95,
                 }}>
                   {fmtD2(riskPerTrade)}
                 </div>
-                {overBudget && (
-                  <div style={{
-                    marginTop: 10,
-                    fontFamily: fm,
-                    fontSize: 12,
-                    color: RED,
-                    lineHeight: 1.5,
-                  }}>
-                    Risks {fmtD2(riskPerTrade)} — above your {fmtD2(maxRisk)} budget by {fmtD2(riskPerTrade - maxRisk)}.
-                  </div>
-                )}
+                <div style={{
+                  marginTop: 10,
+                  fontFamily: fm,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: overBudget ? RED : teal,
+                  lineHeight: 1.5,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                }}>
+                  {overBudget
+                    ? `Above your ${fmtD2(maxRisk)} budget by ${fmtD2(riskPerTrade - maxRisk)}`
+                    : 'Compliant'}
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 32px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span style={labelStyle}>% of account</span>
-                  <span style={{ fontFamily: fm, fontSize: 24, color: overBudget ? RED : TEXT_BASE, fontWeight: 500 }}>
+                  <span style={{ fontFamily: fm, fontSize: 26, color: overBudget ? RED : teal, fontWeight: 600 }}>
                     {fmtPct(pctOfAccount)}
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span style={labelStyle}>Position cost</span>
-                  <span style={{ fontFamily: fm, fontSize: 24, color: TEXT_MUTED }}>
+                  <span style={{ fontFamily: fm, fontSize: 24, color: TEXT_BASE, fontWeight: 500 }}>
                     {fmtD2(positionCost)}
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={labelStyle}>Per-unit loss at stop</span>
-                  <span style={{ fontFamily: fm, fontSize: 20, color: TEXT_MUTED }}>
-                    {fmtD2(perUnitLoss)}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={labelStyle}>Stop distance</span>
+                  <span style={{ fontFamily: fm, fontSize: 22, color: TEXT_BASE, fontWeight: 500 }}>
+                    {fmtD2(priceRisk)}
                   </span>
                 </div>
               </div>
