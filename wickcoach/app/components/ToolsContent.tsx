@@ -4,6 +4,7 @@ import { Calculator, MessageSquare, BookOpen, TrendingUp, Trophy } from 'lucide-
 import { fd, fm, teal } from './shared';
 import { GrowthSimulatorContent } from './GrowthSimulatorContent';
 import { PositionSizeContent } from './PositionSizeContent';
+import { OverallJournalContent } from './OverallJournalContent';
 
 type ToolSlug = 'position-size' | 'coach-brainstorm' | 'overall-journal' | 'growth-simulator' | 'leaderboard';
 
@@ -150,22 +151,24 @@ function ToolGrid({ onOpen }: { onOpen: (slug: ToolSlug) => void }) {
     <div style={{
       maxWidth: 920,
       margin: '0 auto',
-      padding: '0 32px',
+      padding: '40px 32px 0',
     }}>
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 40, textAlign: 'center' }}>
         <div style={{
           fontFamily: fd,
-          fontSize: 24,
+          fontSize: 32,
           fontWeight: 600,
           color: '#e0e0e0',
+          letterSpacing: 0.5,
         }}>
           Tools
         </div>
         <div style={{
-          marginTop: 4,
+          marginTop: 10,
           fontFamily: fm,
-          fontSize: 13,
-          color: '#7a7d85',
+          fontSize: 16,
+          color: '#a0a3ab',
+          lineHeight: 1.5,
         }}>
           Calculators, brainstorming, and journals to support your trading process.
         </div>
@@ -188,26 +191,29 @@ export function ToolPageShell({ title, onBack, children }: { title: string; onBa
     <div style={{
       maxWidth: 1280,
       margin: '0 auto',
-      padding: '0 40px',
+      padding: '40px 40px 0 40px',
     }}>
       <div
         onClick={onBack}
         style={{
           fontFamily: fm,
-          fontSize: 13,
+          fontSize: 20,
+          fontWeight: 500,
           color: teal,
           cursor: 'pointer',
           display: 'inline-block',
+          letterSpacing: 0.3,
         }}
       >
         ← Back to Tools
       </div>
       <div style={{
-        marginTop: 24,
+        marginTop: 28,
         fontFamily: fd,
-        fontSize: 24,
+        fontSize: 32,
         fontWeight: 600,
         color: '#e0e0e0',
+        letterSpacing: 0.5,
       }}>
         {title}
       </div>
@@ -230,10 +236,6 @@ export function ToolPageShell({ title, onBack, children }: { title: string; onBa
 
 function CoachBrainstormContent({ onBack }: { onBack: () => void }) {
   return <ToolPageShell title="Trading Coach 1:1" onBack={onBack} />;
-}
-
-function OverallJournalContent({ onBack }: { onBack: () => void }) {
-  return <ToolPageShell title="Overall Journal" onBack={onBack} />;
 }
 
 function LeaderboardContent({ onBack }: { onBack: () => void }) {
