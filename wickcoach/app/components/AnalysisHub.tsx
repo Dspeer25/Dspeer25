@@ -642,9 +642,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       .map((g, goalIdx) => ({ g, goalIdx }))
       .filter(({ g }) => {
         const m = g.measurability ?? 'journal';
+        // BOTH was retired — any legacy 'both' goal is treated as
+        // 'journal' (psych side only) until the trader explicitly
+        // flips it to NUMBER on the goal card.
+        const normalized = m === 'both' ? 'journal' : m;
         return section === 'trades'
-          ? (m === 'trade' || m === 'both')
-          : (m === 'journal' || m === 'both');
+          ? normalized === 'trade'
+          : normalized === 'journal';
       })
       .slice(0, 3)
       .map(({ g, goalIdx }) => {
@@ -684,13 +688,20 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               return gs ? { trade: t, compliance: gs.compliance } : null;
             })
             .filter((p): p is PairedScore => p !== null);
-          // Apply the journal-text fallback for psych nulls. Trade
-          // column passes through unchanged.
+          // Apply fallbacks:
+          //  - psych nulls + journal text → ✗ (default violation).
+          //  - trade nulls on a losing trade → ✗ (a loss didn't hit
+          //    the R target, regardless of whether R:R was logged).
+          //    Wins / BE without R:R stay null because we genuinely
+          //    can't tell if they met the rule.
           const resolved = paired.map(p => {
-            if (section === 'psych' && p.compliance === null) {
+            if (p.compliance !== null) return p;
+            if (section === 'psych') {
               const hasJournal = (p.trade.journal || '').trim().length > 0;
               return hasJournal ? { ...p, compliance: 0 as const } : p;
             }
+            // section === 'trades'
+            if (p.trade.result === 'LOSS') return { ...p, compliance: 0 as const };
             return p;
           });
           const evaluable = resolved.filter(p => p.compliance === 0 || p.compliance === 1);
@@ -765,16 +776,23 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               // for this goal (e.g. journal-only goal in the trades
               // column), and null compliance (no evidence in the
               // respective data source).
-              // Null fallback (psych side only): if Haiku bailed but
-              // the trade has any journal text, treat it as a
-              // violation. Keeps the row-level status in sync with
-              // the aggregate-candle math in buildGoalRows.
+              // Null fallbacks (match buildGoalRows so candle aggregate
+              // and per-trade status stay in sync):
+              //   psych null + journal text → ✗
+              //   trade null + LOSS         → ✗
               const hasJournalText = (t.journal || '').trim().length > 0;
+              const isTradeSideLossNull =
+                section === 'trades' &&
+                gs?.compliance === null &&
+                t.result === 'LOSS';
+              const isPsychSideJournalNull =
+                section === 'psych' &&
+                gs?.compliance === null &&
+                hasJournalText;
               const effectiveCompliance: 0 | 1 | null =
                 !c || !gs ? null
-                : gs.compliance === null && section === 'psych' && hasJournalText
-                  ? 0
-                  : gs.compliance;
+                : (isTradeSideLossNull || isPsychSideJournalNull) ? 0
+                : gs.compliance;
               const status: 'passed' | 'violated' | 'none' =
                 effectiveCompliance === null ? 'none'
                 : effectiveCompliance === 1 ? 'passed'
@@ -795,19 +813,14 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 status === 'passed'   ? 'rgba(0, 212, 160, 0.04)'
                 : status === 'violated' ? 'rgba(255, 68, 68, 0.06)'
                 : 'transparent';
-              // For psych-side fallback violations (Haiku said null but
-              // the journal has text), Haiku's reason will be "No
-              // evidence in journal." which now contradicts the verdict.
-              // Replace it with an explanation of the default-violation
-              // rule so the trader knows why their row is red.
-              const isFallbackViolation =
-                section === 'psych' &&
-                status === 'violated' &&
-                gs?.compliance === null &&
-                hasJournalText;
-              const reason = isFallbackViolation
-                ? "Journal present but doesn't establish compliance with this rule — counted as a violation by default. Edit the journal to be explicit if it should pass."
-                : (gs?.reason || '');
+              // Replace Haiku's now-contradictory null reasons when
+              // either fallback fires.
+              const reason =
+                isPsychSideJournalNull
+                  ? "Journal present but doesn't establish compliance with this rule — counted as a violation by default. Edit the journal to be explicit if it should pass."
+                  : isTradeSideLossNull
+                    ? "Trade was a loss — didn't reach the R target. Counted as a violation."
+                    : (gs?.reason || '');
               // Drop the "no evidence in journal" filler on not-evaluated
               // rows — those are informational, the reason line just adds
               // noise. Keep reasons on passed/violated rows.
@@ -819,6 +832,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 t.result === 'BREAKEVEN' ? '#f59e0b'
                 : t.result === 'WIN' ? teal
                 : red;
+              const logoDomain = tickerDomains[t.ticker];
               return (
                 <div key={t.id} style={{
                   display: 'flex',
@@ -827,53 +841,83 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   overflow: 'hidden',
                 }}>
                   <div style={{ width: 5, background: barColor, flexShrink: 0 }} />
-                  <div style={{ flex: 1, padding: '6px 12px', minWidth: 0 }}>
+                  <div style={{ flex: 1, padding: '8px 14px', minWidth: 0 }}>
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: '16px 50px 60px 80px 1fr',
-                      gap: 10,
-                      alignItems: 'baseline',
+                      gridTemplateColumns: '32px 22px 70px 60px 90px 1fr',
+                      gap: 12,
+                      alignItems: 'center',
                     }}>
-                      <span style={{ fontFamily: fm, fontSize: 14, color: icon.color, width: 16 }}>{icon.glyph}</span>
-                      <span style={{ fontFamily: fm, fontSize: 11, color: '#fff', fontWeight: 700 }}>{t.ticker}</span>
-                      <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>{fmtDate(t.date)}</span>
-                      <span style={{ fontFamily: fm, fontSize: 11, color: plColor, fontWeight: 600, textAlign: 'right' }}>
+                      {/* Ticker logo — same source/styling as Ticker
+                          Performance so the visual language is consistent
+                          across the page. */}
+                      <div style={{
+                        width: 28, height: 28, borderRadius: 6,
+                        background: '#ffffff', padding: 3,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                      }}>
+                        {logoDomain ? (
+                          <img
+                            src={`https://www.google.com/s2/favicons?domain=${logoDomain}&sz=64`}
+                            alt={t.ticker}
+                            width={22}
+                            height={22}
+                            style={{ width: 22, height: 22, objectFit: 'contain', borderRadius: 3 }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, color: '#0e0f14' }}>{t.ticker.charAt(0)}</span>
+                        )}
+                      </div>
+                      <span style={{ fontFamily: fm, fontSize: 18, fontWeight: 700, color: icon.color, textAlign: 'center' }}>{icon.glyph}</span>
+                      <span style={{ fontFamily: fm, fontSize: 14, color: '#fff', fontWeight: 700 }}>{t.ticker}</span>
+                      <span style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>{fmtDate(t.date)}</span>
+                      <span style={{ fontFamily: fm, fontSize: 14, color: plColor, fontWeight: 700, textAlign: 'right' }}>
                         {formatNumber(t.pl, { currency: true, explicitSign: true, decimals: 0 })}
                       </span>
-                      <span title={t.journal || ''} style={{ fontFamily: fm, fontSize: 12, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: t.journal ? 'help' : 'default' }}>
+                      <span title={t.journal || ''} style={{
+                        fontFamily: fm,
+                        fontSize: 14,
+                        color: '#a0a3ab',
+                        fontStyle: 'italic',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        cursor: t.journal ? 'help' : 'default',
+                      }}>
                         “{truncJournal(t.journal)}”
                       </span>
                     </div>
                     {showReason && (
                       status === 'violated' ? (
                         // Violations get high-contrast treatment: red
-                        // label, white reason text, no italic. Straight
-                        // text reads as serious; italic reads as commentary.
+                        // label, white reason text at 15px, no italic.
+                        // Indented to clear the ticker logo + status
+                        // icon columns above.
                         <div style={{
                           fontFamily: fm,
-                          fontSize: 14,
-                          marginLeft: 26,
+                          fontSize: 15,
+                          marginLeft: 66,
                           lineHeight: 1.5,
-                          maxWidth: 600,
-                          marginTop: 4,
+                          maxWidth: 720,
+                          marginTop: 6,
                         }}>
                           <span style={{ color: red, fontWeight: 700 }}>Reason:</span>{' '}
                           <span style={{ color: '#fff' }}>{reason}</span>
                         </div>
                       ) : (
-                        // Passed (and any surviving not-evaluated reason)
-                        // stays italic for the "commentary" feel, but
-                        // bumped to 14px / #d0d4dc so it's actually
-                        // readable instead of disappearing into the bg.
+                        // Passed / surviving-null rows stay italic muted
+                        // — supportive context — but at 15px so they read.
                         <div style={{
                           fontFamily: fm,
-                          fontSize: 14,
+                          fontSize: 15,
                           color: '#d0d4dc',
                           fontStyle: 'italic',
-                          marginLeft: 26,
+                          marginLeft: 66,
                           lineHeight: 1.5,
-                          maxWidth: 600,
-                          marginTop: 4,
+                          maxWidth: 720,
+                          marginTop: 6,
                         }}>
                           Reason: {reason}
                         </div>
@@ -1660,15 +1704,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           </div>
         )}
 
-        {/* Goal cards (up to 3) — lifted up so the top half sits above
-            the container's top border for visual emphasis. Shows ALL of
-            this week's goals regardless of measurability; the per-column
+        {/* Goal cards (up to 3) — sit cleanly beneath the week dropdown
+            row (the old `marginTop: -40` lift was causing the dropdown
+            to overlap card #2). All 3 cards share a minHeight so they
+            stay flush even when one title wraps to 2 lines. Titles
+            line-clamp at 2 lines with ellipsis. Shows ALL of this
+            week's goals regardless of measurability; the per-column
             panels below filter to trade-/journal-measurable subsets. */}
         {hasGoalsForSelectedWeek && (
-        <div style={{ display: 'flex', gap: 14, marginTop: -40, marginBottom: 32, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 14, marginBottom: 32, flexWrap: 'wrap', alignItems: 'stretch' }}>
           {weekGoals.slice(0, 3).map((g, idx) => (
             <div key={g.id} style={{
               flex: '1 1 260px',
+              minHeight: 96,
               background: '#1f2430',
               border: `1px solid ${teal}`,
               borderRadius: 12,
@@ -1688,7 +1736,18 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 flexShrink: 0,
               }}>{idx + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, color: '#ffffff', fontFamily: fm, fontWeight: 600, lineHeight: 1.35 }}>{g.title || '(untitled)'}</div>
+                <div title={g.title || '(untitled)'} style={{
+                  fontSize: 15,
+                  color: '#ffffff',
+                  fontFamily: fm,
+                  fontWeight: 600,
+                  lineHeight: 1.35,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical' as const,
+                  overflow: 'hidden',
+                  wordBreak: 'break-word',
+                }}>{g.title || '(untitled)'}</div>
               </div>
               <span style={{
                 background: 'rgba(0,212,160,0.15)', color: teal,

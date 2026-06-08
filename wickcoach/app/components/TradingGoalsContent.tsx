@@ -124,10 +124,24 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       writeAllGoals(working);
     }
 
-    // Title-based auto-measurability has been retired — the trader
-    // picks JOURNAL / DATA / BOTH manually via the goal-card pills.
-    // The migration helper stays defined for tests/recovery but is
-    // no longer called on mount.
+    // One-shot migration: BOTH measurability was retired — any legacy
+    // 'both' goal becomes 'journal' by default. Trader can flip the
+    // pill to NUMBER manually if they want trade-side scoring.
+    try {
+      const BOTH_MIGRATION_FLAG = 'wickcoach_goal_both_to_journal_v1';
+      if (!localStorage.getItem(BOTH_MIGRATION_FLAG)) {
+        let migrated = false;
+        working = working.map(g => {
+          if (g.measurability === 'both') {
+            migrated = true;
+            return { ...g, measurability: 'journal' as const };
+          }
+          return g;
+        });
+        if (migrated) writeAllGoals(working);
+        localStorage.setItem(BOTH_MIGRATION_FLAG, '1');
+      }
+    } catch { /* ignore storage errors */ }
 
     // One-time seed of LAST week's history so the HISTORY sidebar has
     // something to click right after upgrading. Gated on a versioned
@@ -631,12 +645,12 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                     >TYPE</span>
                     <span style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>{g.goalType}</span>
 
-                    {/* Measurability pills — manually picked by the trader.
-                        JOURNAL = scored from journal text only,
-                        DATA    = scored from trade fields only,
-                        BOTH    = scored independently on both sides.
-                        Default is JOURNAL because most rules are
-                        psychology/setup-quality. */}
+                    {/* Measurability pills — two-way pick. PSYCH = scored
+                        from journal text only. NUMBER = scored from trade
+                        fields only (R:R floors, sizing, etc.). The old
+                        "BOTH" option was removed because it double-counted
+                        the same goal across both panels; trader picks the
+                        side they want and we score there. */}
                     <span style={{
                       fontFamily: fm,
                       fontSize: 11,
@@ -646,9 +660,13 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                       marginLeft: 12,
                     }}>MEASURED BY</span>
                     <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>
-                      {(['journal', 'trade', 'both'] as const).map(val => {
-                        const isActive = (g.measurability ?? 'journal') === val;
-                        const label = val === 'journal' ? 'JOURNAL' : val === 'trade' ? 'DATA' : 'BOTH';
+                      {(['journal', 'trade'] as const).map(val => {
+                        // Normalize legacy 'both' to 'journal' for the
+                        // active-state read so existing BOTH goals show
+                        // PSYCH as selected until the trader flips them.
+                        const current = (g.measurability === 'both' || !g.measurability) ? 'journal' : g.measurability;
+                        const isActive = current === val;
+                        const label = val === 'journal' ? 'PSYCH' : 'NUMBER';
                         return (
                           <span
                             key={val}
