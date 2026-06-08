@@ -162,7 +162,7 @@ function buildWeekBuckets(trades: Trade[], goalWeekStarts: string[]): WeekBucket
 export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
-  const [tickerView, setTickerView] = useState<'wins' | 'losses'>('wins');
+  const [tickerView, setTickerView] = useState<'wins' | 'losses' | 'net'>('net');
   const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | 'breakeven' | null>(null);
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
@@ -406,8 +406,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   // whatever the trader has actually set, not mock text.
   const [realGoals, setRealGoals] = useState<Goal[]>([]);
   useEffect(() => {
-    // Loads every stored goal (across all weeks). Per-week filtering
-    // happens at render-time against the selected bucket's weekStart.
+    // Auto-measurability has been retired — the trader picks
+    // JOURNAL / DATA / BOTH per goal via the goal-card pills. We
+    // just read stored goals as-is.
     setRealGoals(readAllGoals());
   }, []);
 
@@ -464,6 +465,17 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       // compliance for goals the journal doesn't address).
       if (cached.promptVersion !== CLASSIFY_PROMPT_VERSION) return true;
       return false;
+    });
+    // Diagnostic — promoted to console.warn so it can't be filtered
+    // out of a default-level browser console. Tells you whether the
+    // effect even fired, and how many trades it's about to send.
+    const currentWeekGoalsForLog = getGoalsForWeek(getCurrentWeekStart());
+    console.warn('[AnalysisHub.classify] effect fired:', {
+      totalTrades: trades.length,
+      currentWeekGoals: currentWeekGoalsForLog.length,
+      unscoredCount: unscored.length,
+      promptVersion: CLASSIFY_PROMPT_VERSION,
+      goals: currentWeekGoalsForLog.map((g, i) => `${i}: "${g.title?.slice(0, 50)}" measurability=${g.measurability}`),
     });
     if (unscored.length === 0) return;
 
@@ -530,6 +542,52 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         });
         writeClassifications(next);
         setClassifications(next);
+
+        // Per-goal evaluation summary — printed once per classify pass.
+        // Use this to see whether the "bias toward evaluation" prompt
+        // change is actually reducing null rates. Any goal with >20%
+        // nulls indicates the prompt is still bailing for that
+        // category and needs further tightening.
+        try {
+          const currentWeekGoals = getGoalsForWeek(getCurrentWeekStart());
+          type Counts = { pass: number; fail: number; nul: number };
+          const tradeStats = new Map<number, Counts>();
+          const psychStats = new Map<number, Counts>();
+          Object.values(next).forEach(c => {
+            (c?.tradeScores || []).forEach(s => {
+              const cur = tradeStats.get(s.goalIndex) || { pass: 0, fail: 0, nul: 0 };
+              if (s.compliance === 1) cur.pass++;
+              else if (s.compliance === 0) cur.fail++;
+              else cur.nul++;
+              tradeStats.set(s.goalIndex, cur);
+            });
+            (c?.psychScores || []).forEach(s => {
+              const cur = psychStats.get(s.goalIndex) || { pass: 0, fail: 0, nul: 0 };
+              if (s.compliance === 1) cur.pass++;
+              else if (s.compliance === 0) cur.fail++;
+              else cur.nul++;
+              psychStats.set(s.goalIndex, cur);
+            });
+          });
+          const rows = currentWeekGoals.map((g, i) => {
+            const t = tradeStats.get(i);
+            const p = psychStats.get(i);
+            const fmt = (c?: Counts) => {
+              if (!c) return '—';
+              const total = c.pass + c.fail + c.nul;
+              const nullPct = total ? Math.round((c.nul / total) * 100) : 0;
+              return `${c.pass}✓ ${c.fail}✗ ${c.nul}∅ (${nullPct}% null)`;
+            };
+            return {
+              goal: g.title?.slice(0, 50) || '(untitled)',
+              measurability: g.measurability,
+              trade: fmt(t),
+              psych: fmt(p),
+            };
+          });
+          console.warn('[Classify pass complete] per-goal evaluation summary:');
+          console.table(rows);
+        } catch { /* ignore — debug summary only */ }
 
         const summary: ClassificationBatchSummary = {
           winRateActual: meta.winRateActual,
@@ -606,20 +664,38 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
 
         // Primary: AI-scored compliance. Reads tradeScores for the
-        // trade column, psychScores for the psych column. Nulls (no
-        // evidence in that data source) are excluded from the
-        // denominator so an unaddressed goal doesn't distort the bar.
+        // trade column, psychScores for the psych column.
+        //
+        // Null fallback (psych side only): when Haiku returns
+        // compliance=null on a trade with ANY journal text, we
+        // treat it as a violation (0). The "not evaluated" state
+        // is reserved for trades with a literally empty journal —
+        // a deterministic, render-time replacement for Haiku's
+        // bail-out path. Trade side keeps the strict null
+        // semantics because no analogous "any field" heuristic
+        // makes sense there.
         if (aiScoredTrades.length >= 1) {
           const scoresKey = section === 'trades' ? 'tradeScores' : 'psychScores';
-          const scored = aiScoredTrades
+          type PairedScore = { trade: Trade; compliance: 0 | 1 | null };
+          const paired: PairedScore[] = aiScoredTrades
             .map(t => {
               const arr = classifications[t.id][scoresKey];
-              return Array.isArray(arr) ? arr.find(s => s.goalIndex === goalIdx) : undefined;
+              const gs = Array.isArray(arr) ? arr.find(s => s.goalIndex === goalIdx) : undefined;
+              return gs ? { trade: t, compliance: gs.compliance } : null;
             })
-            .filter((gs): gs is NonNullable<typeof gs> => Boolean(gs));
-          const evaluable = scored.filter(gs => gs.compliance === 0 || gs.compliance === 1);
-          const complied  = evaluable.filter(gs => gs.compliance === 1).length;
-          const nullCount = scored.length - evaluable.length;
+            .filter((p): p is PairedScore => p !== null);
+          // Apply the journal-text fallback for psych nulls. Trade
+          // column passes through unchanged.
+          const resolved = paired.map(p => {
+            if (section === 'psych' && p.compliance === null) {
+              const hasJournal = (p.trade.journal || '').trim().length > 0;
+              return hasJournal ? { ...p, compliance: 0 as const } : p;
+            }
+            return p;
+          });
+          const evaluable = resolved.filter(p => p.compliance === 0 || p.compliance === 1);
+          const complied  = evaluable.filter(p => p.compliance === 1).length;
+          const nullCount = resolved.length - evaluable.length;
           return { ...base, actual: complied, target: evaluable.length, nullCount, empty: false };
         }
 
@@ -684,14 +760,58 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               const c = classifications[t.id];
               const scoresArr = section === 'trades' ? c?.tradeScores : c?.psychScores;
               const gs = Array.isArray(scoresArr) ? scoresArr.find(s => s.goalIndex === goalIdx) : undefined;
-              // Grey dash for: no classification, no entry for this goal
-              // (e.g. journal-only goal in the trades column), or null
-              // compliance (no evidence in the respective data source).
-              let icon: { glyph: string; color: string };
-              if (!c || !gs || gs.compliance === null) icon = { glyph: '—', color: '#555' };
-              else if (gs.compliance === 1) icon = { glyph: '✓', color: teal };
-              else icon = { glyph: '✗', color: red };
-              const reason = gs?.reason || '';
+              // Three-way status: passed / violated / not-evaluated. The
+              // not-evaluated bucket covers no classification, no entry
+              // for this goal (e.g. journal-only goal in the trades
+              // column), and null compliance (no evidence in the
+              // respective data source).
+              // Null fallback (psych side only): if Haiku bailed but
+              // the trade has any journal text, treat it as a
+              // violation. Keeps the row-level status in sync with
+              // the aggregate-candle math in buildGoalRows.
+              const hasJournalText = (t.journal || '').trim().length > 0;
+              const effectiveCompliance: 0 | 1 | null =
+                !c || !gs ? null
+                : gs.compliance === null && section === 'psych' && hasJournalText
+                  ? 0
+                  : gs.compliance;
+              const status: 'passed' | 'violated' | 'none' =
+                effectiveCompliance === null ? 'none'
+                : effectiveCompliance === 1 ? 'passed'
+                : 'violated';
+              const icon: { glyph: string; color: string } =
+                status === 'passed'   ? { glyph: '✓', color: teal }
+                : status === 'violated' ? { glyph: '✗', color: red }
+                : { glyph: '—', color: '#555' };
+              // Left-edge status bar + subtle row tint give violations a
+              // visible signal at scan distance. Passed rows get a barely-
+              // there teal wash so the eye still parses them as positive
+              // context; not-evaluated rows stay transparent (minimal).
+              const barColor =
+                status === 'passed'   ? teal
+                : status === 'violated' ? red
+                : '#2A3143';
+              const bgTint =
+                status === 'passed'   ? 'rgba(0, 212, 160, 0.04)'
+                : status === 'violated' ? 'rgba(255, 68, 68, 0.06)'
+                : 'transparent';
+              // For psych-side fallback violations (Haiku said null but
+              // the journal has text), Haiku's reason will be "No
+              // evidence in journal." which now contradicts the verdict.
+              // Replace it with an explanation of the default-violation
+              // rule so the trader knows why their row is red.
+              const isFallbackViolation =
+                section === 'psych' &&
+                status === 'violated' &&
+                gs?.compliance === null &&
+                hasJournalText;
+              const reason = isFallbackViolation
+                ? "Journal present but doesn't establish compliance with this rule — counted as a violation by default. Edit the journal to be explicit if it should pass."
+                : (gs?.reason || '');
+              // Drop the "no evidence in journal" filler on not-evaluated
+              // rows — those are informational, the reason line just adds
+              // noise. Keep reasons on passed/violated rows.
+              const showReason = reason && !(status === 'none' && /no evidence/i.test(reason));
               // Color reflects RESULT classification, not pl sign — so a
               // BE-intent trade with non-zero slippage reads amber, not
               // teal/red. Stays consistent with the Past Trades P/L cell.
@@ -700,37 +820,66 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 : t.result === 'WIN' ? teal
                 : red;
               return (
-                <div key={t.id}>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '16px 50px 60px 80px 1fr',
-                    gap: 10,
-                    alignItems: 'baseline',
-                  }}>
-                    <span style={{ fontFamily: fm, fontSize: 14, color: icon.color, width: 16 }}>{icon.glyph}</span>
-                    <span style={{ fontFamily: fm, fontSize: 11, color: '#fff', fontWeight: 700 }}>{t.ticker}</span>
-                    <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>{fmtDate(t.date)}</span>
-                    <span style={{ fontFamily: fm, fontSize: 11, color: plColor, fontWeight: 600, textAlign: 'right' }}>
-                      {formatNumber(t.pl, { currency: true, explicitSign: true, decimals: 0 })}
-                    </span>
-                    <span style={{ fontFamily: fm, fontSize: 12, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      “{truncJournal(t.journal)}”
-                    </span>
-                  </div>
-                  {reason && (
+                <div key={t.id} style={{
+                  display: 'flex',
+                  background: bgTint,
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                }}>
+                  <div style={{ width: 5, background: barColor, flexShrink: 0 }} />
+                  <div style={{ flex: 1, padding: '6px 12px', minWidth: 0 }}>
                     <div style={{
-                      fontFamily: fm,
-                      fontSize: 11,
-                      color: '#7a7d85',
-                      fontStyle: 'italic',
-                      marginLeft: 16,
-                      lineHeight: 1.4,
-                      maxWidth: 600,
-                      marginTop: 2,
+                      display: 'grid',
+                      gridTemplateColumns: '16px 50px 60px 80px 1fr',
+                      gap: 10,
+                      alignItems: 'baseline',
                     }}>
-                      Reason: {reason}
+                      <span style={{ fontFamily: fm, fontSize: 14, color: icon.color, width: 16 }}>{icon.glyph}</span>
+                      <span style={{ fontFamily: fm, fontSize: 11, color: '#fff', fontWeight: 700 }}>{t.ticker}</span>
+                      <span style={{ fontFamily: fm, fontSize: 11, color: '#aab0bd' }}>{fmtDate(t.date)}</span>
+                      <span style={{ fontFamily: fm, fontSize: 11, color: plColor, fontWeight: 600, textAlign: 'right' }}>
+                        {formatNumber(t.pl, { currency: true, explicitSign: true, decimals: 0 })}
+                      </span>
+                      <span title={t.journal || ''} style={{ fontFamily: fm, fontSize: 12, color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: t.journal ? 'help' : 'default' }}>
+                        “{truncJournal(t.journal)}”
+                      </span>
                     </div>
-                  )}
+                    {showReason && (
+                      status === 'violated' ? (
+                        // Violations get high-contrast treatment: red
+                        // label, white reason text, no italic. Straight
+                        // text reads as serious; italic reads as commentary.
+                        <div style={{
+                          fontFamily: fm,
+                          fontSize: 14,
+                          marginLeft: 26,
+                          lineHeight: 1.5,
+                          maxWidth: 600,
+                          marginTop: 4,
+                        }}>
+                          <span style={{ color: red, fontWeight: 700 }}>Reason:</span>{' '}
+                          <span style={{ color: '#fff' }}>{reason}</span>
+                        </div>
+                      ) : (
+                        // Passed (and any surviving not-evaluated reason)
+                        // stays italic for the "commentary" feel, but
+                        // bumped to 14px / #d0d4dc so it's actually
+                        // readable instead of disappearing into the bg.
+                        <div style={{
+                          fontFamily: fm,
+                          fontSize: 14,
+                          color: '#d0d4dc',
+                          fontStyle: 'italic',
+                          marginLeft: 26,
+                          lineHeight: 1.5,
+                          maxWidth: 600,
+                          marginTop: 4,
+                        }}>
+                          Reason: {reason}
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -1304,16 +1453,35 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             .map(([t, v]) => ({ t, color: colorOf(t), n: v.n, total: v.total }))
             .sort((a, b) => a.total - b.total); // most lost (most negative) first
 
-          const source  = tickerView === 'wins' ? winsView : lossesView;
+          // Net view — every ticker with any trade. n = total trade
+          // count (wins + losses + BE), total = sum of all P/L. Sorted
+          // most positive first so the "best" ticker is on top and the
+          // bottom row is your biggest net bleed.
+          const netByTicker = new Map<string, { n: number; total: number }>();
+          trades.forEach(t => {
+            const cur = netByTicker.get(t.ticker) || { n: 0, total: 0 };
+            netByTicker.set(t.ticker, { n: cur.n + 1, total: cur.total + t.pl });
+          });
+          const netView: GrossRow[] = Array.from(netByTicker.entries())
+            .map(([t, v]) => ({ t, color: colorOf(t), n: v.n, total: v.total }))
+            .sort((a, b) => b.total - a.total);
+
+          const source  = tickerView === 'wins' ? winsView : tickerView === 'losses' ? lossesView : netView;
           // Bar scale is per-view — the top row always renders full
           // width regardless of which view is active.
           const maxAbs  = Math.max(...source.map(s => Math.abs(s.total)), 1);
           const visible = showAllTickers ? source : source.slice(0, 4);
 
           const isWins      = tickerView === 'wins';
+          const isNet       = tickerView === 'net';
+          // accentColor / gradStart are only used for wins/losses
+          // (single-color view). Net rows compute their own colors
+          // per-row based on the sign of `total`.
           const accentColor = isWins ? teal : red;
           const gradStart   = isWins ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)';
-          const subtitle    = isWins ? 'Where your wins came from' : 'Where your losses came from';
+          const subtitle    = isNet
+            ? 'Net P/L by ticker.'
+            : isWins ? 'Where your wins came from' : 'Where your losses came from';
           const noun        = isWins ? 'winning' : 'losing';
 
           // Empty state — no trades on that side at all.
@@ -1327,7 +1495,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   </div>
                 </div>
                 <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd', textAlign: 'center', padding: '24px 0' }}>
-                  No {noun} trades in the dataset.
+                  {isNet ? 'No trades in the dataset.' : `No ${noun} trades in the dataset.`}
                 </div>
               </div>
             );
@@ -1340,7 +1508,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                   <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
                   <div style={{ fontSize: 13, color: '#aab0bd', marginTop: 4 }}>{subtitle}</div>
                 </div>
-                {/* Wins/Losses toggle */}
+                {/* Wins / Losses / Net toggle */}
                 <div style={{ display: 'inline-flex', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 999, padding: 3, flexShrink: 0 }}>
                   <button
                     onClick={() => setTickerView('wins')}
@@ -1362,6 +1530,16 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                       transition: 'all 0.2s ease',
                     }}
                   >Losses</button>
+                  <button
+                    onClick={() => setTickerView('net')}
+                    style={{
+                      padding: '6px 14px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                      fontFamily: fm, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+                      background: tickerView === 'net' ? '#c9cdd4' : 'transparent',
+                      color: tickerView === 'net' ? '#0A0D14' : '#aab0bd',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >Net</button>
                 </div>
               </div>
 
@@ -1369,6 +1547,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 {visible.map(tk => {
                   const barWidth = (Math.abs(tk.total) / maxAbs) * 100;
                   const domain = tickerDomains[tk.t];
+                  // In Net view, each row picks its own color based on
+                  // the sign of its net total — teal positive, red
+                  // negative, muted grey exactly zero. Wins/Losses
+                  // views keep the single accent color computed above.
+                  const rowAccent = isNet
+                    ? (tk.total > 0 ? teal : tk.total < 0 ? red : '#6b7280')
+                    : accentColor;
+                  const rowGradStart = isNet
+                    ? (tk.total > 0 ? 'rgba(0,212,160,0.25)' : tk.total < 0 ? 'rgba(255,68,68,0.25)' : 'rgba(107,114,128,0.25)')
+                    : gradStart;
+                  const rowText = isNet
+                    ? `${tk.n} total trade${tk.n === 1 ? '' : 's'}`
+                    : `${tk.n} ${noun} trade${tk.n === 1 ? '' : 's'}`;
                   return (
                     <div key={tk.t} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 28, height: 28, borderRadius: 6, background: '#ffffff', padding: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -1391,15 +1582,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                           style={{
                             position: 'absolute', top: 0, left: 0, bottom: 0,
                             width: `${barWidth}%`,
-                            background: `linear-gradient(to right, ${gradStart}, ${accentColor})`,
+                            background: `linear-gradient(to right, ${rowGradStart}, ${rowAccent})`,
                             transition: 'width 0.5s ease',
                           }}
                         />
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: fm, letterSpacing: 0.5, fontWeight: 500, textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>
-                          {tk.n} {noun} trade{tk.n === 1 ? '' : 's'}
+                          {rowText}
                         </div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: accentColor, fontFamily: fd, width: 86, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.total)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: rowAccent, fontFamily: fd, width: 86, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.total)}</div>
                     </div>
                   );
                 })}

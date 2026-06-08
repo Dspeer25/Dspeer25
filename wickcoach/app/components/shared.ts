@@ -564,8 +564,14 @@ export function formatNumber(
   const abs = Math.abs(n);
   let str = abs.toFixed(decimals);
   if (!trailingZeros) {
-    // Strip "2.50" → "2.5", "2.00" → "2"
-    str = str.replace(/\.?0+$/, '');
+    // Strip "2.00" → "2" but preserve "2.50" as-is. The leading dot is
+    // MANDATORY in the pattern — without it the regex chews trailing
+    // zeros off integers too ("350" → "35", "13735" → "1373"), which
+    // was the long-standing META display bug ($350 rendering as $35).
+    // We also intentionally do NOT strip partial-zero tails like
+    // ".50" → ".5"; currency values keep their second decimal so
+    // "$1,200.50" never becomes "$1,200.5".
+    str = str.replace(/\.0+$/, '');
   }
 
   if (commas) {
@@ -1184,7 +1190,7 @@ export function buildProfileContext(): string {
 /** Bump when the classify system prompt in app/api/coach/route.ts
  *  changes its schema or scoring rules. Cached entries stamped with
  *  a different version are re-scored on next Analysis mount. */
-export const CLASSIFY_PROMPT_VERSION = 'v3.1-2026-04';
+export const CLASSIFY_PROMPT_VERSION = 'v3.5-2026-06-measurability-is-absolute';
 
 export interface TradeClassification {
   tradeId: string;
@@ -1295,20 +1301,67 @@ export interface Goal {
 export const GOAL_TYPES = ['Trade Management', 'Entry Criteria', 'Patience / Setup', 'Risk Management', 'Psychology', 'General'];
 
 /**
- * Conservative default for a goal's measurability based on its goalType.
- * Used by the migration and by the "new goal" path. The user can override
- * this at any time via the TRADE/PSYCH/BOTH toggle on the goal card.
+ * Conservative type-based fallback when a goal's title is empty or the
+ * heuristic classifier (see classifyGoalMeasurability) doesn't have
+ * enough language to decide. Defaults all categories to 'journal' — the
+ * structured trade record almost never contains the kind of evidence
+ * needed to score psychology/setup-quality rules, so "when in doubt,
+ * score from the journal" is the right bias. The trader can still flip
+ * a goal to TRADE or BOTH on the goal card.
  */
-export function defaultMeasurabilityForType(goalType: string): 'trade' | 'journal' | 'both' {
-  switch (goalType) {
-    case 'Trade Management': return 'both';     // exit behavior is partly verifiable from R:R
-    case 'Risk Management':  return 'both';     // sizing is partly verifiable from contracts × price
-    case 'Entry Criteria':   return 'journal';  // trade data can't see what timeframes were checked
-    case 'Patience / Setup': return 'journal';  // trade data can't see whether the trader waited
-    case 'Psychology':       return 'journal';  // purely emotional/behavioral
-    case 'General':          return 'journal';  // safest default
-    default:                 return 'journal';
-  }
+export function defaultMeasurabilityForType(_goalType: string): 'trade' | 'journal' | 'both' {
+  return 'journal';
+}
+
+/**
+ * Decide a goal's measurability from its title plus its type. The title
+ * is the primary signal — qualitative language ("5 event", "patience",
+ * "discipline", "off phone", FOMO/revenge/chase/impulse, A+ setup,
+ * conviction, mindset) forces 'journal' regardless of type because the
+ * trade record alone can't verify any of those. Explicit numeric
+ * criteria (R:R floors, max risk %, hold-time limits, position sizing,
+ * stop-loss rules) promote to 'both' so the trader gets both a number
+ * and a journal-language reading. If nothing matches, fall back to
+ * defaultMeasurabilityForType.
+ *
+ * This is the single source of truth for goal measurability and is
+ * called by the new-goal path and the one-time stored-goal migration.
+ */
+export function classifyGoalMeasurability(title: string, goalType: string): 'trade' | 'journal' | 'both' {
+  const t = (title || '').toLowerCase();
+
+  // Qualitative language — wins over numeric language if both appear.
+  // "Nx event" is trading-psychology shorthand for setup grade
+  // ("5 event" = top-quality setup), not a literal count. The bare
+  // \bevents?\b catches phrasings without a leading digit ("only A+
+  // events", "the event was clean") — event(s) isn't a trade-data
+  // field, it's always setup-grade jargon in this domain.
+  const qualitative = [
+    /\b\d+\s*-?\s*events?\b/,
+    /\bevents?\b/,
+    /\ba\+?\s*set ?up/, /\bgrade\b/, /quality/,
+    /patien(?:t|ce)/, /\bwait/, /\bpicky\b/, /\bpick\b/,
+    /disciplin/, /\bfomo\b/, /revenge/,
+    /impuls/, /chase/, /forc(?:e|ing|ed)/,
+    /convict/, /hesitat/,
+    /phone/, /emotion/, /\bcalm\b/, /\btilt\b/,
+    /\bfeel/, /panic/, /\bmindset\b/, /focus/,
+  ];
+  if (qualitative.some(re => re.test(t))) return 'journal';
+
+  // Numeric criteria the trade record alone can verify.
+  const numeric = [
+    /\d+\s*r\b/i,                  // "3R"
+    /\d+\s*:\s*\d/,                // "3:1"
+    /max(?:imum)?\s+risk/, /risk\s+max/, /risk\s+per/,
+    /position\s+siz/, /siz.+position/,
+    /hold(?:ing)?\s+time/, /max\s+hold/,
+    /\bcontracts?\b/, /\bshares?\b/,
+    /stop\s+loss/, /trail/,
+  ];
+  if (numeric.some(re => re.test(t))) return 'both';
+
+  return defaultMeasurabilityForType(goalType);
 }
 
 // Week helpers — shared by the Weekly Goals page and the Analysis
@@ -1392,6 +1445,36 @@ export function writeAllGoals(goals: Goal[]): void {
   try {
     localStorage.setItem(GOALS_STORE_KEY, JSON.stringify(goals));
   } catch { /* ignore quota errors */ }
+}
+
+/**
+ * One-time re-classification of stored goals against the current
+ * title-aware classifier. Bumping GOAL_MEASURABILITY_MIGRATION_KEY
+ * forces a re-run so qualitative goals like "Only take 5 events"
+ * get demoted from trade/both to journal without requiring the user
+ * to visit Weekly Goals first. Idempotent — safe to call from any
+ * mount effect. Returns the (possibly updated) goal list.
+ */
+export const GOAL_MEASURABILITY_MIGRATION_KEY = 'wickcoach_goal_measurability_reclassified_v2';
+export function migrateGoalMeasurabilityOnce(): Goal[] {
+  const goals = readAllGoals();
+  if (typeof window === 'undefined') return goals;
+  try {
+    if (localStorage.getItem(GOAL_MEASURABILITY_MIGRATION_KEY)) return goals;
+  } catch { return goals; }
+
+  let migrated = false;
+  const next = goals.map(g => {
+    const inferred = classifyGoalMeasurability(g.title || '', g.goalType || 'General');
+    if (inferred !== g.measurability) {
+      migrated = true;
+      return { ...g, measurability: inferred };
+    }
+    return g;
+  });
+  if (migrated) writeAllGoals(next);
+  try { localStorage.setItem(GOAL_MEASURABILITY_MIGRATION_KEY, '1'); } catch { /* ignore */ }
+  return next;
 }
 
 export function getGoalsForWeek(weekStart: string): Goal[] {

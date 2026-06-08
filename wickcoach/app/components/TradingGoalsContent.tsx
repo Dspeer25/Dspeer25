@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
@@ -124,6 +124,11 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       writeAllGoals(working);
     }
 
+    // Title-based auto-measurability has been retired — the trader
+    // picks JOURNAL / DATA / BOTH manually via the goal-card pills.
+    // The migration helper stays defined for tests/recovery but is
+    // no longer called on mount.
+
     // One-time seed of LAST week's history so the HISTORY sidebar has
     // something to click right after upgrading. Gated on a versioned
     // localStorage flag — bumping the version (v2, v3…) re-runs the
@@ -173,12 +178,16 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       createdAt: new Date().toISOString(),
       goalType: 'General',
       weekStart: currentWeekStart,
+      // Empty-title path uses the type fallback; once the trader
+      // names the goal, the title-edit handler re-classifies.
       measurability: defaultMeasurabilityForType('General'),
     };
     setGoals(prev => [...prev, newGoal]);
   };
 
   const updateGoalTitle = (id: string, title: string) => {
+    // The trader owns measurability — no auto-inference from the title.
+    // Whatever pill they picked on the goal card stays put.
     setGoals(prev => prev.map(g => g.id === id ? { ...g, title } : g));
   };
 
@@ -196,6 +205,35 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
   const setMeasurability = (id: string, value: 'trade' | 'journal' | 'both') => {
     if (isReadOnly) return;
     setGoals(prev => prev.map(g => g.id === id ? { ...g, measurability: value } : g));
+    // Flipping a measurability pill invalidates any cached Haiku scores
+    // for current-week trades — those scores were produced under the
+    // old flag and may emit the wrong score families. Wiping current-
+    // week entries forces the next Analysis mount to re-classify with
+    // the new flag. Past weeks are left alone (no point re-spending
+    // tokens on closed weeks).
+    try {
+      const cache = readClassifications();
+      const today = new Date();
+      const day = today.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      const weekStart = new Date(today);
+      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() + diff);
+      const currentWeekTradeIds = new Set(
+        trades.filter(t => {
+          const d = new Date(t.date + 'T00:00:00');
+          return d >= weekStart;
+        }).map(t => t.id)
+      );
+      let changed = false;
+      for (const tradeId of Object.keys(cache)) {
+        if (currentWeekTradeIds.has(tradeId)) {
+          delete cache[tradeId];
+          changed = true;
+        }
+      }
+      if (changed) writeClassifications(cache);
+    } catch { /* ignore — diagnostic safety net */ }
   };
 
   const deleteGoal = (id: string) => {
@@ -593,14 +631,24 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                     >TYPE</span>
                     <span style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>{g.goalType}</span>
 
-                    {/* Measurability pills — which column(s) of Rules vs. Execution
-                        this goal shows up in. TRADE = trade-data scoring only,
-                        PSYCH = journal scoring only, BOTH = both, scored
-                        independently. */}
-                    <div style={{ display: 'flex', gap: 6, marginLeft: 12 }}>
-                      {(['trade', 'journal', 'both'] as const).map(val => {
+                    {/* Measurability pills — manually picked by the trader.
+                        JOURNAL = scored from journal text only,
+                        DATA    = scored from trade fields only,
+                        BOTH    = scored independently on both sides.
+                        Default is JOURNAL because most rules are
+                        psychology/setup-quality. */}
+                    <span style={{
+                      fontFamily: fm,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: 1,
+                      color: '#a0a3ab',
+                      marginLeft: 12,
+                    }}>MEASURED BY</span>
+                    <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>
+                      {(['journal', 'trade', 'both'] as const).map(val => {
                         const isActive = (g.measurability ?? 'journal') === val;
-                        const label = val === 'trade' ? 'TRADE' : val === 'journal' ? 'PSYCH' : 'BOTH';
+                        const label = val === 'journal' ? 'JOURNAL' : val === 'trade' ? 'DATA' : 'BOTH';
                         return (
                           <span
                             key={val}
