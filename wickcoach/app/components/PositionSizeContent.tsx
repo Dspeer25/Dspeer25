@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle } from 'lucide-react';
 import { fd, fm, teal } from './shared';
 import { ToolPageShell } from './ToolsContent';
@@ -46,15 +46,32 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
 };
 
+// Tiny keyboard-key chip used in the "Tab / Enter" hint above the cards.
+const kbdStyle: React.CSSProperties = {
+  display: 'inline-block',
+  padding: '2px 7px',
+  marginInline: 2,
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 4,
+  fontFamily: fm,
+  fontSize: 12,
+  fontWeight: 600,
+  color: TEXT_BASE,
+  boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.3)',
+};
+
 // ─── Inputs ──────────────────────────────────────────────────────────
 
-function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0 }: {
+function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inputRef, onEnter }: {
   value: number;
   onChange: (v: number) => void;
   prefix?: string;
   suffix?: string;
   decimals?: number;
   min?: number;
+  inputRef?: React.Ref<HTMLInputElement>;
+  onEnter?: () => void;
 }) {
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState('');
@@ -79,6 +96,7 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0 }: {
         }}>{suffix}</span>
       )}
       <input
+        ref={inputRef}
         type="text"
         inputMode={decimals > 0 ? 'decimal' : 'numeric'}
         value={display}
@@ -90,7 +108,15 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0 }: {
           if (!isNaN(n) && n >= min) onChange(n);
         }}
         onChange={e => setDraft(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur(); }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            // Blur first so onBlur commits the current draft via onChange,
+            // then fire onEnter so the parent (scroll-to-exit-targets, etc.)
+            // sees the freshly-committed value.
+            (e.currentTarget as HTMLInputElement).blur();
+            onEnter?.();
+          }
+        }}
         style={{
           background: 'rgba(6,8,12,0.6)',
           border: `1px solid ${focused ? teal : 'rgba(255,255,255,0.04)'}`,
@@ -233,6 +259,64 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   const [entry, setEntry]             = useState(50);
   const [stop, setStop]               = useState(48);
   const [size, setSize]               = useState(250);
+  const [hydrated, setHydrated]       = useState(false);
+
+  // Refs for keyboard-first focus management.
+  //   accountInputRef → cursor lands here on first visit
+  //   sizeInputRef    → cursor lands here on return visits (Account + Risk
+  //                     are persisted, so skip past them straight to the
+  //                     per-trade input)
+  //   exitTargetsRef  → Enter from any input scrolls this card into view
+  const accountInputRef = useRef<HTMLInputElement>(null);
+  const sizeInputRef    = useRef<HTMLInputElement>(null);
+  const exitTargetsRef  = useRef<HTMLElement>(null);
+
+  // Hydrate Account + Risk from localStorage. The hydrated flag gates
+  // the save effects below so the initial render's default values
+  // never overwrite real saved data on mount (same race-avoidance
+  // pattern as Overall Journal).
+  useEffect(() => {
+    let hadSaved = false;
+    try {
+      const savedAccount = localStorage.getItem('wickcoach_position_size_account');
+      const savedRisk    = localStorage.getItem('wickcoach_position_size_risk_pct');
+      if (savedAccount) {
+        const n = parseFloat(savedAccount);
+        if (!isNaN(n)) { setAccountSize(n); hadSaved = true; }
+      }
+      if (savedRisk) {
+        const n = parseFloat(savedRisk);
+        if (!isNaN(n)) { setRiskPct(n); hadSaved = true; }
+      }
+    } catch { /* ignore */ }
+    setHydrated(true);
+
+    // Focus after hydration so the input has rendered with the saved
+    // value visible. Direct ref.focus() is more reliable than the
+    // autoFocus prop here because focus needs to happen after the
+    // async localStorage read finishes.
+    requestAnimationFrame(() => {
+      if (hadSaved) sizeInputRef.current?.focus();
+      else          accountInputRef.current?.focus();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem('wickcoach_position_size_account', String(accountSize)); } catch { /* ignore */ }
+  }, [accountSize, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem('wickcoach_position_size_risk_pct', String(riskPct)); } catch { /* ignore */ }
+  }, [riskPct, hydrated]);
+
+  // Enter in any input commits the value (via blur in NumInput) then
+  // calls this — smooth-scrolls the Exit Target Parameters card so
+  // the R-level sell prices land at the top of the viewport.
+  const scrollToExit = () => {
+    exitTargetsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const multiplier      = instrument === 'options' ? 100 : 1;
   const unitsWordPlural = instrument === 'options' ? 'contracts' : 'shares';
@@ -263,15 +347,40 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
         gap: 24,
       }}>
 
+        {/* Keyboard hint — kept at LABEL color (#a0a3ab) / 13px so it
+            satisfies the "no dim small gray" rule while still feeling
+            like an unobtrusive shortcut hint. */}
+        <div style={{
+          fontFamily: fm,
+          fontSize: 13,
+          color: LABEL,
+          textAlign: 'center',
+          letterSpacing: 0.5,
+          marginTop: -4,
+        }}>
+          <span style={{ ...kbdStyle }}>Tab</span> to move between fields  ·  <span style={{ ...kbdStyle }}>Enter</span> to jump to R levels
+        </div>
+
         {/* ─── Card 1: Account Setup ──────────────────────────────── */}
         <section style={{ ...cardSurface, padding: 32 }}>
           <CardHeader icon={Wallet} title="Account Setup" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             <FieldGroup label="Account size">
-              <NumInput value={accountSize} onChange={setAccountSize} prefix="$" />
+              <NumInput
+                value={accountSize}
+                onChange={setAccountSize}
+                prefix="$"
+                inputRef={accountInputRef}
+                onEnter={scrollToExit}
+              />
             </FieldGroup>
             <FieldGroup label="Risk %">
-              <NumInput value={riskPct} onChange={setRiskPct} suffix="%" />
+              <NumInput
+                value={riskPct}
+                onChange={setRiskPct}
+                suffix="%"
+                onEnter={scrollToExit}
+              />
             </FieldGroup>
             <FieldGroup label="Max risk">
               <ReadOnlyField value={fmtD2(maxRisk).slice(1)} prefix="$" />
@@ -307,13 +416,29 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             <FieldGroup label={`Number of ${unitsWordPlural}`}>
-              <NumInput value={size} onChange={setSize} decimals={0} />
+              <NumInput
+                value={size}
+                onChange={setSize}
+                decimals={0}
+                inputRef={sizeInputRef}
+                onEnter={scrollToExit}
+              />
             </FieldGroup>
             <FieldGroup label="Entry price">
-              <NumInput value={entry} onChange={setEntry} prefix="$" />
+              <NumInput
+                value={entry}
+                onChange={setEntry}
+                prefix="$"
+                onEnter={scrollToExit}
+              />
             </FieldGroup>
             <FieldGroup label="Stop price">
-              <NumInput value={stop} onChange={setStop} prefix="$" />
+              <NumInput
+                value={stop}
+                onChange={setStop}
+                prefix="$"
+                onEnter={scrollToExit}
+              />
             </FieldGroup>
           </div>
 
@@ -460,7 +585,7 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
         </section>
 
         {/* ─── Card 4: Exit Target Ladder ─────────────────────────── */}
-        <section style={cardSurface}>
+        <section ref={exitTargetsRef} style={cardSurface}>
           <div style={{
             ...labelStyle,
             margin: 32,

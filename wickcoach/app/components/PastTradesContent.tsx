@@ -54,6 +54,39 @@ const TickerTile = ({ ticker }: { ticker: string }) => {
   );
 };
 
+// Returns the local-midnight start of the calendar window selected by
+// the equity-curve range chip. The chips are calendar-anchored, not
+// rolling — so "1W" on a Thursday means this Monday onward, not "the
+// last 7 days." Keeps these views matching how a trader actually
+// thinks about their week / month / year. Used by both statTrades and
+// equityCurve so the stat-card numbers and the chart can never drift.
+//
+//   1D  → today, local midnight
+//   1W  → Monday of the current calendar week
+//   1M  → 1st of the current calendar month
+//   3M  → 1st of the month 2 months before current (current included)
+//   YTD → Jan 1 of the current year
+//   else (ALL or unknown) → distant past
+function calendarRangeStart(range: string, now: Date = new Date()): Date {
+  const local = (y: number, m: number, d: number) => {
+    const x = new Date(y, m, d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  };
+  switch (range) {
+    case '1D':  return local(now.getFullYear(), now.getMonth(), now.getDate());
+    case '1W': {
+      const day = now.getDay();              // Sun = 0
+      const diff = (day === 0 ? -6 : 1) - day; // snap to Monday
+      return local(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+    }
+    case '1M':  return local(now.getFullYear(), now.getMonth(),     1);
+    case '3M':  return local(now.getFullYear(), now.getMonth() - 2, 1);
+    case 'YTD': return local(now.getFullYear(), 0,                  1);
+    default:    return new Date('2000-01-01');
+  }
+}
+
 export default function PastTradesContent({ trades, setActiveTab, onEditTrade }: { trades: Trade[]; setActiveTab: (tab: string) => void; onEditTrade?: (t: Trade) => void }) {
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -71,7 +104,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   const [notesTooltip, setNotesTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [aiBtnHover, setAiBtnHover] = useState(false);
   const [chartHeight, setChartHeight] = useState(180);
-  React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy]);
+  React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy, eqRange]);
   const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -156,10 +189,13 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     if (stratFilter !== 'All' && t.strategy !== stratFilter) return false;
     if (resultFilter === 'Wins' && t.result !== 'WIN') return false;
     if (resultFilter === 'Losses' && t.result !== 'LOSS') return false;
-    if (resultFilter === 'Break Even' && t.pl !== 0) return false;
+    if (resultFilter === 'Break Even' && t.result !== 'BREAKEVEN') return false;
     if (dateRange === 'This Week') {
-      const d = parseLocalDate(t.date); const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
-      if (d < weekAgo) return false;
+      // Calendar week, Monday-anchored — matches the 1W chip behavior
+      // on the equity curve, so the table and the chart agree on what
+      // "this week" means.
+      const d = parseLocalDate(t.date);
+      if (d < calendarRangeStart('1W')) return false;
     } else if (dateRange === '10 Days') {
       const d = parseLocalDate(t.date); const now = new Date(); const cutoff = new Date(now.getTime() - 10 * 86400000);
       if (d < cutoff) return false;
@@ -189,24 +225,25 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
 
   // Stats — also respect equity curve time filter
   const statTrades = (() => {
-    const now = new Date();
-    let cutoff: Date;
-    if (eqRange === '1D') cutoff = new Date(now.getTime() - 86400000);
-    else if (eqRange === '1W') cutoff = new Date(now.getTime() - 7 * 86400000);
-    else if (eqRange === '1M') cutoff = new Date(now.getTime() - 30 * 86400000);
-    else if (eqRange === '3M') cutoff = new Date(now.getTime() - 90 * 86400000);
-    else cutoff = new Date('2000-01-01');
+    const cutoff = calendarRangeStart(eqRange);
     return filtered.filter(t => parseLocalDate(t.date) >= cutoff);
   })();
-  const wins = statTrades.filter(t => t.result === 'WIN' && t.pl > 0);
-  const losses = statTrades.filter(t => t.result === 'LOSS' || (t.result !== 'WIN' && t.pl < 0));
+  // Classification by t.result alone — a BE-intent trade with non-zero
+  // slippage P/L is not a win or a loss for win-rate purposes.
+  const wins = statTrades.filter(t => t.result === 'WIN');
+  const losses = statTrades.filter(t => t.result === 'LOSS');
   const totalPL = statTrades.reduce((s, t) => s + t.pl, 0);
-  const winRate = statTrades.length > 0 ? Math.round((wins.length / statTrades.length) * 100) : 0;
+  // Win rate excludes BREAKEVEN trades from the denominator — the
+  // standard trading convention is wins / (wins + losses), not
+  // wins / total. The old formula was depressing the displayed rate
+  // by counting BE trades against you.
+  const decisiveTrades = wins.length + losses.length;
+  const winRate = decisiveTrades > 0 ? Math.round((wins.length / decisiveTrades) * 100) : 0;
   const winRRValues = wins.map(t => parseRr(t.riskReward));
   const avgRR = winRRValues.length > 0 ? (winRRValues.reduce((a, b) => a + b, 0) / winRRValues.length).toFixed(1) : '—';
   const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + t.pl, 0) / wins.length : 0;
   const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pl, 0) / losses.length) : 0;
-  const expectedValue = statTrades.length > 0 ? (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss : 0;
+  const expectedValue = decisiveTrades > 0 ? (winRate / 100) * avgWin - ((100 - winRate) / 100) * avgLoss : 0;
 
   // Derived labels for the stat cards — no hardcoded flavor text.
   // Month-over-month win rate delta (this 30 days vs prior 30 days).
@@ -215,9 +252,13 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   const prevMonthStart = new Date(now.getTime() - 60 * 86400000);
   const currMonth = filtered.filter(t => parseLocalDate(t.date) >= monthStart);
   const prevMonth = filtered.filter(t => parseLocalDate(t.date) >= prevMonthStart && parseLocalDate(t.date) < monthStart);
-  const currWR = currMonth.length ? (currMonth.filter(t => t.pl > 0).length / currMonth.length) * 100 : 0;
-  const prevWR = prevMonth.length ? (prevMonth.filter(t => t.pl > 0).length / prevMonth.length) * 100 : 0;
-  const wrDelta = prevMonth.length > 0 ? Math.round(currWR - prevWR) : null;
+  // Month-over-month win rate — also drops BE from the denominator
+  // so it agrees with the headline winRate computed above.
+  const currDecisive = currMonth.filter(t => t.result === 'WIN' || t.result === 'LOSS').length;
+  const prevDecisive = prevMonth.filter(t => t.result === 'WIN' || t.result === 'LOSS').length;
+  const currWR = currDecisive ? (currMonth.filter(t => t.result === 'WIN').length / currDecisive) * 100 : 0;
+  const prevWR = prevDecisive ? (prevMonth.filter(t => t.result === 'WIN').length / prevDecisive) * 100 : 0;
+  const wrDelta = prevDecisive > 0 ? Math.round(currWR - prevWR) : null;
   // Average trades per active day in the stat window.
   const statDays = statTrades.length > 0
     ? Math.max(1, Math.ceil((now.getTime() - Math.min(...statTrades.map(t => parseLocalDate(t.date).getTime()))) / 86400000))
@@ -253,14 +294,32 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const formatTime = (t: string) => {
+  // Normalises stored time strings to "H:MM AM/PM" for display.
+  // Handles both raw 24-hour ("14:30", from <input type="time">) and
+  // already-formatted 12-hour ("9:42 AM", from imported records). The
+  // old version unconditionally appended AM/PM, producing "8:12 AM AM"
+  // for imported rows.
+  const formatTime = (t: string | undefined) => {
     if (!t) return '—';
-    const parts = t.split(':');
-    if (parts.length < 2) return t;
-    let h = parseInt(parts[0]); const m = parts[1];
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    if (h > 12) h -= 12; if (h === 0) h = 12;
-    return `${h}:${m} ${ampm}`;
+    const match = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!match) return t;
+    let h = parseInt(match[1], 10);
+    const m = match[2];
+    const explicit = (match[3] || '').toUpperCase(); // '' | 'AM' | 'PM'
+    let isPm: boolean;
+    if (explicit) {
+      isPm = explicit === 'PM';
+      if (isPm && h !== 12) h -= 0; // already 12-hour; keep as typed
+      // If the user typed something like "13:00 PM" (technically
+      // invalid), fall back to 24h interpretation.
+      if (h > 12) { h -= 12; isPm = true; }
+      if (h === 0) h = 12;
+    } else {
+      isPm = h >= 12;
+      if (h > 12) h -= 12;
+      if (h === 0) h = 12;
+    }
+    return `${h}:${m} ${isPm ? 'PM' : 'AM'}`;
   };
 
   const selectBase: React.CSSProperties = { background: '#0f1318', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 8, padding: '10px 14px', color: '#c9cdd4', fontFamily: fm, fontSize: 14, outline: 'none', cursor: 'pointer', appearance: 'none' as const, WebkitAppearance: 'none' as const };
@@ -283,13 +342,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   })();
   const equityCurve = (() => {
     if (equityCurveAll.length === 0) return [];
-    const now = new Date();
-    let cutoff: Date;
-    if (eqRange === '1D') { cutoff = new Date(now.getTime() - 86400000); }
-    else if (eqRange === '1W') { cutoff = new Date(now.getTime() - 7 * 86400000); }
-    else if (eqRange === '1M') { cutoff = new Date(now.getTime() - 30 * 86400000); }
-    else if (eqRange === '3M') { cutoff = new Date(now.getTime() - 90 * 86400000); }
-    else { cutoff = new Date('2000-01-01'); }
+    const cutoff = calendarRangeStart(eqRange);
     return equityCurveAll.filter(e => parseLocalDate(e.date) >= cutoff);
   })();
   const eqMin = equityCurve.length > 0 ? Math.min(...equityCurve.map(e => e.value)) : 0;
@@ -311,13 +364,16 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     }
     return labels;
   })();
-  const breakEven = statTrades.filter(t => t.pl === 0);
+  const breakEven = statTrades.filter(t => t.result === 'BREAKEVEN');
 
-  // Pagination
+  // Pagination — feeds off statTrades (= filtered + chip cutoff) so the
+  // table row set matches what the stat cards and equity curve are
+  // showing. Clicking the 1D/1W/1M/3M/YTD chip now narrows the table
+  // too, not just the stats above it.
   const perPage = 20;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const totalPages = Math.max(1, Math.ceil(statTrades.length / perPage));
   const safePage = Math.min(currentPage, totalPages);
-  const pagedTrades = filtered.slice((safePage - 1) * perPage, safePage * perPage);
+  const pagedTrades = statTrades.slice((safePage - 1) * perPage, safePage * perPage);
 
   // Welcome message for Fix 8
   const welcomeMsg = trades.length > 0 && aiMessages.length === 0 ? (() => {
@@ -424,8 +480,8 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
               )}
             </div>
             <div style={{ display: 'flex', height: 3, borderRadius: 2, overflow: 'hidden', marginTop: 12, background: '#2A3143', width: '60%', marginLeft: 'auto', marginRight: 'auto' }}>
-              {filtered.length > 0 && <div style={{ width: `${(wins.length / filtered.length) * 100}%`, background: '#00d4a0' }} />}
-              {filtered.length > 0 && <div style={{ width: `${(losses.length / filtered.length) * 100}%`, background: '#ff4444' }} />}
+              {statTrades.length > 0 && <div style={{ width: `${(wins.length / statTrades.length) * 100}%`, background: '#00d4a0' }} />}
+              {statTrades.length > 0 && <div style={{ width: `${(losses.length / statTrades.length) * 100}%`, background: '#ff4444' }} />}
             </div>
           </div>
 
@@ -681,7 +737,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
             })}
           </div>
 
-          {filtered.length === 0 ? (
+          {statTrades.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px' }}>
               <div style={{ color: '#8a8d98', fontFamily: fm, fontSize: 16 }}>No trades logged yet</div>
               <span onClick={() => setActiveTab('Log a Trade')} style={{ color: teal, fontFamily: fm, fontSize: 14, cursor: 'pointer', marginTop: 10, fontWeight: 600 }}>Log your first trade &rarr;</span>
@@ -708,10 +764,31 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
                   </span>
                   {/* Qty */}
                   <span style={{ color: '#e8e8f0', fontSize: 15, fontWeight: 500, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.contracts}</span>
-                  {/* Net P/L */}
-                  <span style={{ color: t.pl >= 0 ? teal : '#ff4444', fontWeight: 700, fontSize: 16, padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{formatNumber(t.pl, { currency: true, explicitSign: true })}</span>
+                  {/* Net P/L — color follows the result classification,
+                      not the dollar sign. A BE-intent trade with -$12
+                      slippage shows as -$12 in amber, not red. */}
+                  {(() => {
+                    const color =
+                      t.result === 'BREAKEVEN' ? '#f59e0b'
+                      : t.result === 'WIN' ? teal
+                      : '#ff4444';
+                    return (
+                      <span style={{
+                        color,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        padding: '14px 8px',
+                        borderRight: '1px solid rgba(42,49,67,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {formatNumber(t.pl, { currency: true, explicitSign: true })}
+                      </span>
+                    );
+                  })()}
                   {/* R:R */}
-                  <span style={{ color: t.result === 'BREAKEVEN' || t.pl === 0 ? '#f59e0b' : '#c9cdd4', fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' || t.pl === 0 ? '—' : formatRR(t.riskReward)}</span>
+                  <span style={{ color: t.result === 'BREAKEVEN' ? '#f59e0b' : '#c9cdd4', fontSize: 15, fontWeight: 500, whiteSpace: 'nowrap', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.result === 'BREAKEVEN' ? '—' : formatRR(t.riskReward)}</span>
                   {/* Notes — strict 2-line clamp; text fills the cell; hover reveals the full note */}
                   <div style={{
                     color: '#c9cdd4',
@@ -764,9 +841,9 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
             })}
           </>)}
         </div>
-        {filtered.length > 0 && (() => {
+        {statTrades.length > 0 && (() => {
           const startIdx = (safePage - 1) * perPage + 1;
-          const endIdx = Math.min(safePage * perPage, filtered.length);
+          const endIdx = Math.min(safePage * perPage, statTrades.length);
           // Build page number list with ellipsis
           const pages: (number | '…')[] = [];
           if (totalPages <= 5) {
@@ -787,7 +864,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
           return (
             <div style={{ borderTop: '1px solid #2A3143', padding: '16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: fm, fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
-                Showing {startIdx}-{endIdx} of {filtered.length} executions
+                Showing {startIdx}-{endIdx} of {statTrades.length} executions
               </span>
               <div style={{ display: 'flex', gap: 6 }}>
                 <span

@@ -29,7 +29,7 @@ export const REGRESSION_VARIABLE_ALIASES = [
   'win size, win amount, wins',
   'R:R, risk reward, RR, risk to reward',
   'time of day, hour, entry time, time',
-  'trade duration, time in trade, hold time (NOT AVAILABLE — data lacks exit timestamps)',
+  'trade duration, time in trade, hold time (in minutes; requires exit time on the trade)',
   'day of week, weekday, day',
   'entry price, entry, open',
   'exit price, exit, close',
@@ -52,17 +52,20 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
   if (/return.?%|return.?percent|%.?return|pl.?percent/.test(n))
     return t => t.plPercent;
 
-  // ── Loss size (absolute P/L for losers, null for winners) ───
+  // ── Loss size (absolute P/L for losing trades, null otherwise) ─
+  //    Classification by t.result, not pl sign: a BE-intent trade
+  //    that slipped to -$12 is not a "loss" for size purposes.
   if (/loss.?(size|amount)|^losses?$/.test(n))
-    return t => t.pl < 0 ? Math.abs(t.pl) : null;
+    return t => t.result === 'LOSS' ? Math.abs(t.pl) : null;
 
-  // ── Win size (P/L for winners, null for losers) ─────────────
+  // ── Win size (P/L for winning trades, null otherwise) ──────
   if (/win.?(size|amount)|^wins$/.test(n))
-    return t => t.pl > 0 ? t.pl : null;
+    return t => t.result === 'WIN' ? t.pl : null;
 
-  // ── Win rate (1 for win, 0 for loss — regress to see rates) ─
+  // ── Win rate (1 for win, 0 for loss, null for BE — BE drops
+  //    out of the regression instead of polluting the rate). ──
   if (/win.?rate/.test(n))
-    return t => t.pl > 0 ? 1 : 0;
+    return t => t.result === 'WIN' ? 1 : t.result === 'LOSS' ? 0 : null;
 
   // ── R:R / risk reward ───────────────────────────────────────
   if (/r:r|risk.?reward|^rr$|risk.?to.?reward|avg.?r|^r$/.test(n))
@@ -88,10 +91,29 @@ export function resolveTradeVariable(name: string): ((t: Trade) => number | null
     };
 
   // ── Trade duration / hold time ──────────────────────────────
-  // We only have entry time, not exit time. Return null so the
-  // regression shows a clear error instead of using bogus values.
+  // Computes exit minute-of-day minus entry minute-of-day. Returns
+  // null when either timestamp is missing (older trades + imported
+  // records from Trading Tracker don't have exitTime) so the
+  // regression skips those rows instead of using bogus zeros.
   if (/trade.?duration|time.?in.?trade|hold.?time|how.?long|^duration$/.test(n))
-    return null; // data lacks exit timestamps
+    return t => {
+      const toMinutes = (s: string | undefined): number | null => {
+        if (!s) return null;
+        const m = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (!m) return null;
+        let h = parseInt(m[1], 10);
+        const mins = parseInt(m[2], 10);
+        const ap = (m[3] || '').toUpperCase();
+        if (ap === 'PM' && h !== 12) h += 12;
+        if (ap === 'AM' && h === 12) h = 0;
+        return h * 60 + mins;
+      };
+      const e = toMinutes(t.time);
+      const x = toMinutes(t.exitTime);
+      if (e === null || x === null) return null;
+      const d = x - e;
+      return d >= 0 ? d : null; // guard against overnight / data errors
+    };
 
   // ── Day of week → 0-6 ──────────────────────────────────────
   if (/day.?of.?week|weekday|^day$|^dow$/.test(n))
@@ -257,8 +279,8 @@ export function resolveTradeFilter(condition: string): FilterParseResult {
   }
 
   // "wins only" / "losses only"
-  if (/win/.test(c)) return { kind: 'ok', predicate: t => t.pl > 0 };
-  if (/loss|losing/.test(c)) return { kind: 'ok', predicate: t => t.pl < 0 };
+  if (/win/.test(c)) return { kind: 'ok', predicate: t => t.result === 'WIN' };
+  if (/loss|losing/.test(c)) return { kind: 'ok', predicate: t => t.result === 'LOSS' };
   // "before 11" / "after 1pm"
   const timeMatch = c.match(/(before|after)\s*(\d{1,2})\s*(am|pm)?/i);
   if (timeMatch) {
@@ -479,7 +501,13 @@ export interface Trade {
    *  Always produced by toLocalYMD() and consumed by parseLocalDate().
    *  Never use `new Date(t.date)` or `new Date().toISOString()` on this field. */
   date: string;
+  /** Trade entry time. Free-form display string, typically "H:MM AM/PM"
+   *  or "HH:MM" 24-hour. parseHourNumber() handles both formats. */
   time: string;
+  /** Trade exit time, same format as `time`. Optional for backward
+   *  compatibility with trades logged before the field existed and
+   *  with imported records (Trading Tracker doesn't capture it). */
+  exitTime?: string;
   strategy: string;
   direction: 'LONG' | 'SHORT';
   contracts: number;
@@ -751,11 +779,17 @@ export function computeAnalytics(trades: Trade[]): TraderAnalytics {
   if (!trades || trades.length === 0) return EMPTY_ANALYTICS;
 
   const n = trades.length;
-  const wins = trades.filter(t => t.pl > 0);
-  const losses = trades.filter(t => t.pl < 0);
-  const breakeven = trades.filter(t => t.pl === 0);
+  // Win/loss/BE classification by t.result (not pl sign) so a BE-
+  // intent trade with non-zero slippage is correctly excluded from
+  // win-rate and from win/loss filters everywhere downstream.
+  const wins = trades.filter(t => t.result === 'WIN');
+  const losses = trades.filter(t => t.result === 'LOSS');
+  const breakeven = trades.filter(t => t.result === 'BREAKEVEN');
   const totalPL = trades.reduce((s, t) => s + t.pl, 0);
-  const winRate = (wins.length / n) * 100;
+  // Win rate excludes BE-intent trades from the denominator —
+  // standard trading convention is wins / (wins + losses).
+  const decisive = wins.length + losses.length;
+  const winRate = decisive > 0 ? (wins.length / decisive) * 100 : 0;
   const avgR = trades.reduce((s, t) => s + parseRr(t.riskReward), 0) / n;
 
   // Strategy breakdown — sorted by total $ P/L descending
@@ -763,7 +797,7 @@ export function computeAnalytics(trades: Trade[]): TraderAnalytics {
   trades.forEach(t => {
     const s = stratMap.get(t.strategy) || { trades: 0, wins: 0, pl: 0, rSum: 0 };
     s.trades++;
-    if (t.pl > 0) s.wins++;
+    if (t.result === 'WIN') s.wins++;
     s.pl += t.pl;
     s.rSum += parseRr(t.riskReward);
     stratMap.set(t.strategy, s);
@@ -784,7 +818,7 @@ export function computeAnalytics(trades: Trade[]): TraderAnalytics {
   trades.forEach(t => {
     const s = tickerMap.get(t.ticker) || { trades: 0, wins: 0, pl: 0 };
     s.trades++;
-    if (t.pl > 0) s.wins++;
+    if (t.result === 'WIN') s.wins++;
     s.pl += t.pl;
     tickerMap.set(t.ticker, s);
   });
@@ -811,16 +845,20 @@ export function computeAnalytics(trades: Trade[]): TraderAnalytics {
   // Process vs impulse via journal keyword classification
   const processTrades = trades.filter(t => classifyTrade(t) === 'process');
   const impulseTrades = trades.filter(t => classifyTrade(t) === 'impulse');
+  // Process/impulse win-rate denominators exclude BE-intent trades
+  // to match the headline winRate above.
+  const decisiveProcess = processTrades.filter(t => t.result === 'WIN' || t.result === 'LOSS').length;
+  const decisiveImpulse = impulseTrades.filter(t => t.result === 'WIN' || t.result === 'LOSS').length;
   const processSplit = {
     process: {
       n: processTrades.length,
-      wr: processTrades.length ? (processTrades.filter(t => t.pl > 0).length / processTrades.length) * 100 : 0,
+      wr: decisiveProcess ? (processTrades.filter(t => t.result === 'WIN').length / decisiveProcess) * 100 : 0,
       rTotal: processTrades.reduce((s, t) => s + parseRr(t.riskReward), 0),
       plSum: processTrades.reduce((s, t) => s + t.pl, 0),
     },
     impulse: {
       n: impulseTrades.length,
-      wr: impulseTrades.length ? (impulseTrades.filter(t => t.pl > 0).length / impulseTrades.length) * 100 : 0,
+      wr: decisiveImpulse ? (impulseTrades.filter(t => t.result === 'WIN').length / decisiveImpulse) * 100 : 0,
       rTotal: impulseTrades.reduce((s, t) => s + parseRr(t.riskReward), 0),
       plSum: impulseTrades.reduce((s, t) => s + t.pl, 0),
     },
@@ -863,11 +901,15 @@ export function buildTraderStats(trades: Trade[]): string {
   if (!trades || trades.length === 0) return 'No trades logged yet.';
 
   const n = trades.length;
-  const wins = trades.filter(t => t.pl > 0);
-  const losses = trades.filter(t => t.pl < 0);
-  const be = trades.filter(t => t.pl === 0);
+  // Classification by t.result, not pl sign — see computeAnalytics.
+  const wins = trades.filter(t => t.result === 'WIN');
+  const losses = trades.filter(t => t.result === 'LOSS');
+  const be = trades.filter(t => t.result === 'BREAKEVEN');
   const totalPL = trades.reduce((s, t) => s + t.pl, 0);
-  const winRate = (wins.length / n) * 100;
+  // Win rate excludes BE from the denominator — kept in sync with
+  // computeAnalytics so the AI context and the UI agree.
+  const decisive = wins.length + losses.length;
+  const winRate = decisive > 0 ? (wins.length / decisive) * 100 : 0;
   const avgR = trades.reduce((s, t) => s + parseRr(t.riskReward), 0) / n;
 
   const longs = trades.filter(t => t.direction === 'LONG');
@@ -879,7 +921,7 @@ export function buildTraderStats(trades: Trade[]): string {
       const k = key(t);
       const cur = m.get(k) || { count: 0, wins: 0, pl: 0, rSum: 0 };
       cur.count++;
-      if (t.pl > 0) cur.wins++;
+      if (t.result === 'WIN') cur.wins++;
       cur.pl += t.pl;
       cur.rSum += parseRr(t.riskReward);
       m.set(k, cur);
@@ -922,7 +964,7 @@ export function buildTraderStats(trades: Trade[]): string {
 
   return [
     `TOTALS: ${n} trades, ${wins.length}W ${losses.length}L ${be.length}BE, total P/L $${totalPL.toFixed(2)}, win rate ${winRate.toFixed(1)}%, avg R:R 1:${avgR.toFixed(2)}.`,
-    `DIRECTION: ${longs.length} LONG (${longs.filter(t => t.pl > 0).length} wins, $${longs.reduce((s, t) => s + t.pl, 0).toFixed(0)}); ${shorts.length} SHORT (${shorts.filter(t => t.pl > 0).length} wins, $${shorts.reduce((s, t) => s + t.pl, 0).toFixed(0)}).`,
+    `DIRECTION: ${longs.length} LONG (${longs.filter(t => t.result === 'WIN').length} wins, $${longs.reduce((s, t) => s + t.pl, 0).toFixed(0)}); ${shorts.length} SHORT (${shorts.filter(t => t.result === 'WIN').length} wins, $${shorts.reduce((s, t) => s + t.pl, 0).toFixed(0)}).`,
     fmtAgg('BY STRATEGY', [...byStrategy.entries()]),
     `TOP TICKERS: ${topTickers.map(([k, v]) => `${k} $${v.pl.toFixed(0)} (${v.count}t ${(v.wins / v.count * 100).toFixed(1)}%WR)`).join('; ')}.`,
     `BOTTOM TICKERS: ${bottomTickers.map(([k, v]) => `${k} $${v.pl.toFixed(0)} (${v.count}t ${(v.wins / v.count * 100).toFixed(1)}%WR)`).join('; ')}.`,
@@ -1290,6 +1332,36 @@ export function toISODate(d: Date): string {
 
 export function getCurrentWeekStart(): string {
   return toISODate(startOfWeek(new Date()));
+}
+
+// Stock-market-aware variant of "today" — returns today if today is
+// Mon-Fri, otherwise the upcoming Monday. Used by surfaces where the
+// trader is reasoning about the next trading session rather than the
+// calendar week they're sitting in (journal, weekly-goal planning).
+// Don't use this for analytics that look BACKWARD at trades — those
+// should keep using the plain calendar-week helpers so a trade dated
+// Friday still files under that Friday's week, not next Monday's.
+export function nextTradingDay(d: Date): Date {
+  const out = new Date(d);
+  const day = out.getDay(); // 0=Sun, 6=Sat
+  if (day === 6) out.setDate(out.getDate() + 2);     // Sat → Mon
+  else if (day === 0) out.setDate(out.getDate() + 1); // Sun → Mon
+  return out;
+}
+
+// Forward-looking "current trading week" — Monday of the trading week
+// we're in or about to enter. On weekends, snaps to the upcoming
+// Monday rather than the prior one. Use this in goal-setting flows
+// where the trader is planning the next session.
+export function getCurrentTradingWeekStart(): string {
+  const target = nextTradingDay(new Date());
+  // target is now guaranteed Mon-Fri. Snap back to Monday of its week.
+  const day = target.getDay();
+  const diff = 1 - day; // 1 for Sun was already handled; here day is 1-5
+  const monday = new Date(target);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() + diff);
+  return toISODate(monday);
 }
 
 /** Human label for a week starting on the given ISO date, e.g. "Apr 20 - 26" or "Apr 28 - May 4". */

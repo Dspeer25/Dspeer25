@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -34,6 +34,55 @@ const fmtPct = (n: number) => {
   return body === '—' ? '—' : body + '%';
 };
 
+// Small info-icon button with hover tooltip. Replaces the inline
+// description copy on each stat card — the definition is one hover
+// away, but the card itself stays visual and number-forward.
+function InfoTip({ text }: { text: string }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}
+    >
+      <div
+        aria-label="What is this?"
+        style={{
+          width: 18, height: 18, borderRadius: '50%',
+          border: '1px solid #2A3143',
+          background: hover ? 'rgba(255,255,255,0.06)' : 'transparent',
+          color: hover ? '#e0e0e0' : '#7e818a',
+          fontFamily: fm, fontSize: 11, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'help', userSelect: 'none' as const,
+          transition: 'color 0.15s ease, background 0.15s ease',
+        }}
+      >
+        i
+      </div>
+      {hover && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 8px)',
+          right: 0,
+          width: 240,
+          background: '#0e0f14',
+          border: '1px solid #2A3143',
+          borderRadius: 8,
+          padding: '10px 12px',
+          fontFamily: fm, fontSize: 13, lineHeight: 1.45,
+          color: '#e0e0e0',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          zIndex: 50,
+          pointerEvents: 'none' as const,
+        }}>
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Weekly goals snapshot ─────────────────────────────────────
 // Real trades get bucketed into ISO weeks; real goals (from localStorage)
 // are the cards shown per week. Compliance numbers are derived from the
@@ -53,22 +102,60 @@ function fmtWeekRange(start: Date, end: Date): string {
   return `${left} – ${right}`;
 }
 
-// Build the 12 most recent week buckets. Each bucket is Monday-aligned
-// (via shared startOfWeek) so the history lines up 1:1 with the
-// weekStart stamps recorded on each Goal.
-function buildWeekBuckets(trades: Trade[]): WeekBucket[] {
-  const today = new Date();
-  const buckets: WeekBucket[] = [];
-  for (let i = 0; i < 12; i++) {
-    const start = startOfWeek(new Date(today.getTime() - i * 7 * 86400000));
+// Full rewrite (was: sliding 12-week window anchored on today's
+// calendar week). The old version had two bugs:
+//   1. On weekends, it anchored on the PRIOR calendar Monday — so on
+//      Sun Jun 7, bucket 0 was Jun 1-7 and the upcoming Jun 8 week
+//      was unreachable from the dropdown even when goals existed.
+//   2. It only generated weeks within its sliding window — weeks that
+//      had goals set but no trades yet (the common case for a fresh
+//      planning week) were never offered as options.
+//
+// New behavior: the bucket set is the union of
+//   (a) the current trading week  — getCurrentTradingWeekStart(),
+//       weekend-aware so Sat/Sun rolls forward to upcoming Monday,
+//   (b) every week that contains at least one trade,
+//   (c) every week that has at least one goal stamped to it,
+// deduped, sorted descending (most recent first), capped at 12.
+// Index 0 is always the most recent, so the existing selectedWeekIdx
+// default of 0 lands on the current trading week as the user expects.
+function buildWeekBuckets(trades: Trade[], goalWeekStarts: string[]): WeekBucket[] {
+  const weekStartSet = new Set<string>();
+
+  // (a) Current trading week — always present, even with zero trades.
+  weekStartSet.add(getCurrentTradingWeekStart());
+
+  // (b) Weeks that contain logged trades. Each trade's date snaps to
+  //     its calendar week's Monday — a Friday Jun 5 trade belongs to
+  //     the Jun 1 week, not Jun 8. Backward-looking semantics here.
+  trades.forEach(t => {
+    const d = parseLocalDate(t.date);
+    if (isNaN(d.getTime())) return;
+    weekStartSet.add(toISODate(startOfWeek(d)));
+  });
+
+  // (c) Weeks that have goals. weekStart on Goal is already a
+  //     "YYYY-MM-DD" ISO string from getCurrentTradingWeekStart() /
+  //     getCurrentWeekStart() — no normalization needed.
+  goalWeekStarts.forEach(ws => {
+    if (ws) weekStartSet.add(ws);
+  });
+
+  // Sort descending and cap at 12. ISO date strings sort
+  // lexicographically the same as chronologically.
+  const sortedStarts = Array.from(weekStartSet)
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, 12);
+
+  return sortedStarts.map(weekStartISO => {
+    const start = parseLocalDate(weekStartISO); // Monday at local midnight
     const end = new Date(start.getTime() + 6 * 86400000);
     const inWeek = trades.filter(t => {
       const d = parseLocalDate(t.date);
       return d >= start && d <= new Date(end.getTime() + 86400000 - 1);
     });
-    buckets.push({ weekLabel: fmtWeekRange(start, end), start, end, trades: inWeek });
-  }
-  return buckets;
+    return { weekLabel: fmtWeekRange(start, end), start, end, trades: inWeek };
+  });
 }
 
 // ─── Component ────────────────────────────────────────────────
@@ -247,7 +334,16 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   // Live analytics derived from the trades prop. Every card, bar, pill,
   // and tooltip on this page reads from here — no hardcoded numbers.
   const a = computeAnalytics(trades);
-  const { totals, strategies, tickers, tickerLosses, hours, processSplit, whatIfPL, indisciplineCost, patterns } = a;
+  // whatIfPL / indisciplineCost intentionally NOT destructured — the
+  // What If? card was rewritten to compare R-per-trade between
+  // buckets instead of subtracting rule-breaker P/L from actual (the
+  // old math broke when rule-breakers were net positive).
+  // tickerLosses intentionally NOT destructured — the Ticker Performance
+  // Losses view was rewritten to aggregate GROSS losing trades per
+  // ticker instead of net-negative tickers. The old field filtered out
+  // tickers whose winners outweighed their losers (e.g. NVDA), which
+  // hid loss-worth-reviewing dollars.
+  const { totals, strategies, tickers, hours, processSplit, patterns } = a;
 
   // Top-4 tickers contribution for the welcome message
   const top4Tickers = tickers.slice(0, 4);
@@ -448,7 +544,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   }, [trades, realGoals]);
 
   // Per-week trade buckets for the Rules vs Execution section.
-  const weekBuckets = buildWeekBuckets(trades);
+  // Pass goal week starts so a planning week with no trades yet still
+  // shows up in the dropdown (otherwise the trader can't view the
+  // goals they just set for the upcoming week).
+  const goalWeekStarts = realGoals.map(g => g.weekStart).filter(Boolean);
+  const weekBuckets = buildWeekBuckets(trades, goalWeekStarts);
   const selectedWeekBucket = weekBuckets[selectedWeekIdx] || weekBuckets[0];
 
   // Per-goal slider values come entirely from Haiku's tradeScores and
@@ -592,7 +692,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               else if (gs.compliance === 1) icon = { glyph: '✓', color: teal };
               else icon = { glyph: '✗', color: red };
               const reason = gs?.reason || '';
-              const plColor = t.pl >= 0 ? teal : red;
+              // Color reflects RESULT classification, not pl sign — so a
+              // BE-intent trade with non-zero slippage reads amber, not
+              // teal/red. Stays consistent with the Past Trades P/L cell.
+              const plColor =
+                t.result === 'BREAKEVEN' ? '#f59e0b'
+                : t.result === 'WIN' ? teal
+                : red;
               return (
                 <div key={t.id}>
                   <div style={{
@@ -877,52 +983,231 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         </div>
       </div>
 
-      {/* ═══ FOUR STAT CARDS ═══ */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        {/* Total Trades */}
-        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px' }}>
-          <div style={{ fontSize: 13, color: '#aab0bd', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 8 }}>Total Trades</div>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{totals.n.toLocaleString()}</div>
-          <div style={{ fontSize: 13, color: '#bbb', marginTop: 6 }}>Win Rate: {fmtPct(totals.winRate)}</div>
-          <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginTop: 10 }}>
-            <div style={{ width: `${(winPct * 100).toFixed(2)}%`, background: teal }} />
-            <div style={{ width: `${(lossPct * 100).toFixed(2)}%`, background: red }} />
-            <div style={{ width: `${(bePct * 100).toFixed(2)}%`, background: '#4b5563' }} />
+      {/* ═══ FOUR STAT CARDS — full rewrite ═══
+          Hierarchy flipped: the metric is the hero (huge), labels and
+          support metrics are small. Descriptive copy moved to hover
+          tooltips on the info icon. Each card carries a single visual
+          element so the row reads at a glance. */}
+      {(() => {
+        // ── Local helpers, scoped to this card block ───────────────
+        const plan  = processSplit.process;
+        const broke = processSplit.impulse;
+        const MIN_SAMPLE = 5;
+
+        const planShare  = totals.n > 0 ? plan.n  / totals.n : 0;
+        const brokeShare = totals.n > 0 ? broke.n / totals.n : 0;
+
+        // Format a per-trade R value with explicit sign and 2 decimals.
+        const fmtRpt = (v: number) => {
+          const sign = v > 0 ? '+' : v < 0 ? '−' : '';
+          return `${sign}${Math.abs(v).toFixed(2)}R`;
+        };
+
+        // Reusable card chrome and hero-number style — keeps the four
+        // cards visually identical except for accent color.
+        const cardBase: React.CSSProperties = {
+          flex: 1,
+          minWidth: 210,
+          background: '#141822',
+          border: '1px solid #2A3143',
+          borderRadius: 12,
+          padding: '20px 22px 18px',
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 200,
+        };
+        const labelStyle: React.CSSProperties = {
+          fontFamily: fd,
+          fontSize: 12,
+          letterSpacing: '1.5px',
+          textTransform: 'uppercase' as const,
+        };
+        const heroStyle: React.CSSProperties = {
+          fontFamily: fd,
+          fontSize: 60,
+          fontWeight: 700,
+          lineHeight: 1,
+          letterSpacing: '-1px',
+        };
+        const supportStyle: React.CSSProperties = {
+          fontFamily: fm,
+          fontSize: 13,
+          color: '#9a9da5',
+        };
+        const trackBase: React.CSSProperties = {
+          width: '100%',
+          height: 8,
+          background: 'rgba(255,255,255,0.06)',
+          borderRadius: 4,
+          overflow: 'hidden',
+        };
+
+        return (
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+
+            {/* ── 1. Total Trades ─────────────────────────────────── */}
+            <div style={cardBase}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <div style={{ ...labelStyle, color: '#aab0bd' }}>Total Trades</div>
+                <InfoTip text="Every executed trade in the current dataset, regardless of outcome or rule compliance." />
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div style={{ ...heroStyle, color: '#fff' }}>{totals.n.toLocaleString()}</div>
+              </div>
+              <div style={{ ...supportStyle, marginTop: 10, marginBottom: 12 }}>
+                {fmtPct(totals.winRate)} win rate
+              </div>
+              {/* Full-width win/loss/BE bar — taller than before */}
+              <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden' }}>
+                <div style={{ width: `${(winPct  * 100).toFixed(2)}%`, background: teal,      transition: 'width 0.3s ease' }} />
+                <div style={{ width: `${(lossPct * 100).toFixed(2)}%`, background: red,       transition: 'width 0.3s ease' }} />
+                <div style={{ width: `${(bePct   * 100).toFixed(2)}%`, background: '#4b5563', transition: 'width 0.3s ease' }} />
+              </div>
+            </div>
+
+            {/* ── 2. In Plan ──────────────────────────────────────── */}
+            <div style={{ ...cardBase, borderLeft: `3px solid ${teal}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <div style={{ ...labelStyle, color: teal }}>In Plan</div>
+                <InfoTip text="Trades where your journal shows patience, a clean setup, or following your rules." />
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div style={{ ...heroStyle, color: '#fff' }}>{plan.n.toLocaleString()}</div>
+              </div>
+              <div style={{ ...supportStyle, marginTop: 10, marginBottom: 12 }}>
+                {fmtPct(plan.wr)} win rate · {fmtR(plan.rTotal)} total
+              </div>
+              {/* Share-of-total bar — teal fill = in-plan share */}
+              <div style={trackBase}>
+                <div style={{ width: `${(planShare * 100).toFixed(2)}%`, height: '100%', background: teal, transition: 'width 0.3s ease' }} />
+              </div>
+            </div>
+
+            {/* ── 3. Broke Rules ──────────────────────────────────── */}
+            <div style={{ ...cardBase, borderLeft: `3px solid ${red}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <div style={{ ...labelStyle, color: red }}>Broke Rules</div>
+                <InfoTip text="Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup." />
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div style={{ ...heroStyle, color: '#fff' }}>{broke.n.toLocaleString()}</div>
+              </div>
+              <div style={{ ...supportStyle, marginTop: 10, marginBottom: 12 }}>
+                {fmtPct(broke.wr)} win rate · {fmtR(broke.rTotal)} total
+              </div>
+              {/* Share-of-total bar — red fill = broke share */}
+              <div style={trackBase}>
+                <div style={{ width: `${(brokeShare * 100).toFixed(2)}%`, height: '100%', background: red, transition: 'width 0.3s ease' }} />
+              </div>
+            </div>
+
+            {/* ── 4. R Gap ────────────────────────────────────────── */}
+            {(() => {
+              // Sample size guard — small buckets give noisy R/trade.
+              if (plan.n < MIN_SAMPLE || broke.n < MIN_SAMPLE) {
+                return (
+                  <div style={cardBase}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div style={{ ...labelStyle, color: teal }}>R Gap</div>
+                      <InfoTip text="Difference in R per trade between in-plan trades and rule-breakers. Needs at least 5 in each bucket." />
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                      <div style={{ ...heroStyle, color: '#7e818a', fontSize: 30, lineHeight: 1.25 }}>
+                        Need more<br />trades
+                      </div>
+                    </div>
+                    <div style={{ ...supportStyle, marginTop: 10 }}>
+                      In Plan: {plan.n} · Broke: {broke.n} (5+ each)
+                    </div>
+                  </div>
+                );
+              }
+
+              const planRpt  = plan.rTotal  / plan.n;
+              const brokeRpt = broke.rTotal / broke.n;
+              const gap = planRpt - brokeRpt;
+              // Unfavorable = rule-breakers underperform in-plan. Color
+              // the gap red because it represents lost edge.
+              const unfavorable = gap > 0;
+              const gapColor = unfavorable ? red : '#fff';
+
+              // Project lost dollars on the rule-breaker bucket. Hide
+              // the line entirely if it's a trivial amount — per the
+              // spec, anything under $100 is too noisy to show.
+              const dollarPerR = broke.rTotal !== 0 ? broke.plSum / broke.rTotal : 0;
+              const projectedGain = unfavorable ? gap * broke.n * dollarPerR : 0;
+              const showDollar = unfavorable && Math.abs(projectedGain) >= 100;
+
+              // Bar widths normalized to the larger magnitude so the
+              // comparison reads visually.
+              const maxAbs = Math.max(Math.abs(planRpt), Math.abs(brokeRpt), 0.01);
+              const planBarPct  = (Math.abs(planRpt)  / maxAbs) * 100;
+              const brokeBarPct = (Math.abs(brokeRpt) / maxAbs) * 100;
+
+              return (
+                <div style={{
+                  ...cardBase,
+                  border: `1px solid ${unfavorable ? 'rgba(255,68,68,0.3)' : '#2A3143'}`,
+                  boxShadow: unfavorable ? '0 0 18px rgba(255,68,68,0.08)' : 'none',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div style={{ ...labelStyle, color: teal }}>R Gap</div>
+                    <InfoTip text="Your in-plan R per trade minus your rule-breakers' R per trade. Red when in-plan trades earn more R per trade than rule-breakers." />
+                  </div>
+
+                  {/* Hero: the gap value. Sign forced negative when
+                      unfavorable — visualizes lost edge. */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ ...heroStyle, color: gapColor }}>
+                      {fmtRpt(unfavorable ? -Math.abs(gap) : Math.abs(gap))}
+                    </div>
+                    <div style={{ fontFamily: fm, fontSize: 13, color: '#9a9da5', alignSelf: 'flex-end', paddingBottom: 8 }}>
+                      / trade
+                    </div>
+                  </div>
+
+                  <div style={{ ...supportStyle, marginTop: 10, marginBottom: 14 }}>
+                    In Plan {fmtRpt(planRpt)} vs Broke {fmtRpt(brokeRpt)}
+                  </div>
+
+                  {/* Two-bar comparison visual */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fm, fontSize: 11, color: '#9a9da5', marginBottom: 4 }}>
+                        <span>IN PLAN</span>
+                        <span style={{ color: teal, fontWeight: 600 }}>{fmtRpt(planRpt)}</span>
+                      </div>
+                      <div style={trackBase}>
+                        <div style={{ width: `${planBarPct.toFixed(2)}%`, height: '100%', background: teal, transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fm, fontSize: 11, color: '#9a9da5', marginBottom: 4 }}>
+                        <span>BROKE RULES</span>
+                        <span style={{ color: unfavorable ? red : '#fff', fontWeight: 600 }}>{fmtRpt(brokeRpt)}</span>
+                      </div>
+                      <div style={trackBase}>
+                        <div style={{ width: `${brokeBarPct.toFixed(2)}%`, height: '100%', background: unfavorable ? red : '#4b5563', transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dollar context — only when it's a meaningful amount.
+                      Per spec: hide below $100 since the visual already
+                      tells the story. */}
+                  {showDollar && (
+                    <div style={{ fontFamily: fm, fontSize: 12, color: red, marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,68,68,0.15)', lineHeight: 1.4 }}>
+                      ~{formatNumber(projectedGain, { currency: true, decimals: 0 })} lost vs in-plan rate
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
           </div>
-        </div>
-
-        {/* Process — trades where the journal indicates discipline */}
-        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${teal}` }}>
-          <div style={{ fontSize: 14, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Followed the Plan</div>
-          <div style={{ fontSize: 14, color: '#bbb', marginBottom: 8 }}>Trades where your journal shows patience, a clean setup, or rule-following</div>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.process.n.toLocaleString()}</div>
-          <div style={{ fontSize: 13, color: teal, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.process.wr)}</div>
-          <div style={{ fontSize: 12, color: teal, marginTop: 4 }}>{fmtR(processSplit.process.rTotal)} total</div>
-        </div>
-
-        {/* Impulse — trades where the journal indicates rule-breaking */}
-        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '20px 24px', borderLeft: `3px solid ${red}` }}>
-          <div style={{ fontSize: 14, color: red, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>Broke the Rules</div>
-          <div style={{ fontSize: 14, color: '#bbb', marginBottom: 8 }}>Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup</div>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff' }}>{processSplit.impulse.n.toLocaleString()}</div>
-          <div style={{ fontSize: 13, color: red, marginTop: 6 }}>Win Rate: {fmtPct(processSplit.impulse.wr)}</div>
-          <div style={{ fontSize: 12, color: red, marginTop: 4 }}>{fmtR(processSplit.impulse.rTotal)} total</div>
-        </div>
-
-        {/* What If? — how much better your P/L would be without rule-breaking trades */}
-        <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid rgba(0,212,160,0.3)', borderRadius: 12, padding: '20px 24px', boxShadow: '0 0 20px rgba(0,212,160,0.08)' }}>
-          <div style={{ fontSize: 14, color: teal, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 4 }}>What If?</div>
-          <div style={{ fontSize: 12, color: '#bbb', marginBottom: 8 }}>Your total P/L if you removed every trade where you broke your own rules</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: '#bbb' }}>Actual P/L</span>
-            <span style={{ fontSize: 13, color: '#fff' }}>{fmtDollar(totals.totalPL, true)}</span>
-          </div>
-          <div style={{ fontFamily: fd, fontSize: 26, fontWeight: 700, color: teal }}>{fmtDollar(whatIfPL, true)}</div>
-          {indisciplineCost !== 0 && (
-            <div style={{ fontSize: 12, color: red, marginTop: 4 }}>Indiscipline cost you {formatNumber(Math.abs(indisciplineCost), { currency: true })}</div>
-          )}
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ═══ 2 · STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', position: 'relative' }}>
@@ -975,17 +1260,79 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           );
         })()}
 
-        {/* Ticker Performance — horizontal bar ranking with wins/losses toggle */}
+        {/* Ticker Performance — full rewrite.
+            The old version computed two views from the analytics
+            output: `tickers` (every ticker, ranked by NET P/L) for
+            Wins, and `tickerLosses` (filtered to NET P/L < 0) for
+            Losses. The Losses filter hid any ticker whose winning
+            trades outweighed its losing trades — so NVDA with a 38%
+            win rate (62% losers) didn't appear because its winners
+            were larger.
+            New version computes GROSS wins and GROSS losses per
+            ticker by iterating raw trades. A ticker shows up in the
+            Wins view if it has any winning trade, in the Losses view
+            if it has any losing trade. The two views are independent
+            reports of gross-side performance, not net. */}
         {(() => {
-          const source = tickerView === 'wins' ? tickers : tickerLosses;
-          const sorted = tickerView === 'wins'
-            ? [...source].sort((a, b) => b.pl - a.pl)
-            : [...source].sort((a, b) => a.pl - b.pl); // most negative first
-          const maxPL = Math.max(...sorted.map(t => Math.abs(t.pl)));
-          const visible = showAllTickers ? sorted : sorted.slice(0, 4);
-          const subtitle = tickerView === 'wins'
-            ? 'Top-profit tickers, sorted by total P/L'
-            : 'Worst loss tickers, sorted by total loss';
+          // Color lookup — reuse the existing `tickers` array (which
+          // already maps ticker → brand color via TICKER_COLORS in
+          // shared.ts) instead of duplicating the map.
+          const colorOf = (t: string) =>
+            tickers.find(x => x.t === t)?.color || '#6b7280';
+
+          // Aggregate gross wins / losses per ticker from raw trades.
+          // Skipping pl === 0 (breakevens) intentionally — they're
+          // neither wins nor losses by definition.
+          const winsByTicker   = new Map<string, { n: number; total: number }>();
+          const lossesByTicker = new Map<string, { n: number; total: number }>();
+          trades.forEach(t => {
+            if (t.pl > 0) {
+              const cur = winsByTicker.get(t.ticker) || { n: 0, total: 0 };
+              winsByTicker.set(t.ticker, { n: cur.n + 1, total: cur.total + t.pl });
+            } else if (t.pl < 0) {
+              const cur = lossesByTicker.get(t.ticker) || { n: 0, total: 0 };
+              lossesByTicker.set(t.ticker, { n: cur.n + 1, total: cur.total + t.pl }); // total stays negative
+            }
+          });
+
+          type GrossRow = { t: string; color: string; n: number; total: number };
+          const winsView: GrossRow[] = Array.from(winsByTicker.entries())
+            .map(([t, v]) => ({ t, color: colorOf(t), n: v.n, total: v.total }))
+            .sort((a, b) => b.total - a.total); // most won first
+
+          const lossesView: GrossRow[] = Array.from(lossesByTicker.entries())
+            .map(([t, v]) => ({ t, color: colorOf(t), n: v.n, total: v.total }))
+            .sort((a, b) => a.total - b.total); // most lost (most negative) first
+
+          const source  = tickerView === 'wins' ? winsView : lossesView;
+          // Bar scale is per-view — the top row always renders full
+          // width regardless of which view is active.
+          const maxAbs  = Math.max(...source.map(s => Math.abs(s.total)), 1);
+          const visible = showAllTickers ? source : source.slice(0, 4);
+
+          const isWins      = tickerView === 'wins';
+          const accentColor = isWins ? teal : red;
+          const gradStart   = isWins ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)';
+          const subtitle    = isWins ? 'Where your wins came from' : 'Where your losses came from';
+          const noun        = isWins ? 'winning' : 'losing';
+
+          // Empty state — no trades on that side at all.
+          if (source.length === 0) {
+            return (
+              <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18 }}>
+                  <div>
+                    <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff' }}>Ticker performance</div>
+                    <div style={{ fontSize: 13, color: '#aab0bd', marginTop: 4 }}>{subtitle}</div>
+                  </div>
+                </div>
+                <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd', textAlign: 'center', padding: '24px 0' }}>
+                  No {noun} trades in the dataset.
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div style={{ flex: 1, minWidth: 300, background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 18 }}>
@@ -1019,9 +1366,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {visible.map((tk) => {
-                  const positive = tk.pl >= 0;
-                  const barWidth = (Math.abs(tk.pl) / maxPL) * 100;
+                {visible.map(tk => {
+                  const barWidth = (Math.abs(tk.total) / maxAbs) * 100;
                   const domain = tickerDomains[tk.t];
                   return (
                     <div key={tk.t} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1045,15 +1391,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                           style={{
                             position: 'absolute', top: 0, left: 0, bottom: 0,
                             width: `${barWidth}%`,
-                            background: `linear-gradient(to right, ${positive ? 'rgba(0,212,160,0.25)' : 'rgba(255,68,68,0.25)'}, ${positive ? teal : red})`,
+                            background: `linear-gradient(to right, ${gradStart}, ${accentColor})`,
                             transition: 'width 0.5s ease',
                           }}
                         />
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: fm, letterSpacing: 0.5, fontWeight: 500, textShadow: '0 0 4px rgba(0,0,0,0.8)' }}>
-                          {tk.trades} trades · {fmtPct(tk.wr)} win
+                          {tk.n} {noun} trade{tk.n === 1 ? '' : 's'}
                         </div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: positive ? teal : red, fontFamily: fd, width: 86, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.pl)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: accentColor, fontFamily: fd, width: 86, textAlign: 'right', flexShrink: 0 }}>{fmtDollar(tk.total)}</div>
                     </div>
                   );
                 })}
@@ -1419,8 +1765,12 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           // current week's. Switching the Rules vs Execution dropdown
           // moves this entire block along with it.
           const weekTrades = selectedWeekBucket?.trades || [];
-          const weekWins = weekTrades.filter(t => t.pl > 0);
-          const weekWR = weekTrades.length > 0 ? (weekWins.length / weekTrades.length) * 100 : 0;
+          // Classification by t.result, denominator excludes BE-intent
+          // trades — keeps in sync with the headline winRate formula
+          // in shared.ts.
+          const weekWins = weekTrades.filter(t => t.result === 'WIN');
+          const weekDecisive = weekTrades.filter(t => t.result === 'WIN' || t.result === 'LOSS').length;
+          const weekWR = weekDecisive > 0 ? (weekWins.length / weekDecisive) * 100 : 0;
           const weekRRValues = weekWins.map(t => parseRr(t.riskReward));
           const weekAvgR = weekRRValues.length > 0 ? weekRRValues.reduce((a, b) => a + b, 0) / weekRRValues.length : 0;
           const weekTradeCount = weekTrades.length;
@@ -1850,8 +2200,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
           const buckets = bucketDefs.map(b => {
             const inBucket = trades.filter(t => t.riskAmount >= b.min && t.riskAmount < b.max);
-            const wins = inBucket.filter(t => t.result === 'WIN' || (t.result !== 'LOSS' && t.pl > 0));
-            const losses = inBucket.filter(t => t.result === 'LOSS' || (t.result !== 'WIN' && t.pl < 0));
+            // Classification by t.result alone — drops the old defensive
+            // OR clauses that double-counted BE-intent trades with
+            // non-zero slippage as wins or losses.
+            const wins = inBucket.filter(t => t.result === 'WIN');
+            const losses = inBucket.filter(t => t.result === 'LOSS');
             return {
               ...b,
               count: inBucket.length,

@@ -1,12 +1,13 @@
 'use client';
 import React, { useState } from 'react';
-import { Calculator, MessageSquare, BookOpen, TrendingUp, Trophy } from 'lucide-react';
+import { Calculator, MessageSquare, BookOpen, TrendingUp, Trophy, Eye } from 'lucide-react';
 import { fd, fm, teal } from './shared';
 import { GrowthSimulatorContent } from './GrowthSimulatorContent';
 import { PositionSizeContent } from './PositionSizeContent';
 import { OverallJournalContent } from './OverallJournalContent';
+import { WatchingContent } from './WatchingContent';
 
-type ToolSlug = 'position-size' | 'coach-brainstorm' | 'overall-journal' | 'growth-simulator' | 'leaderboard';
+type ToolSlug = 'position-size' | 'coach-brainstorm' | 'overall-journal' | 'watching' | 'growth-simulator' | 'leaderboard';
 
 interface ToolDef {
   slug: ToolSlug;
@@ -33,6 +34,12 @@ const TOOLS: ToolDef[] = [
     title: 'OVERALL JOURNAL',
     description: 'Free-form journal entries unattached to specific trades. Pre-market notes, market read, mindset check-ins.',
     Icon: BookOpen,
+  },
+  {
+    slug: 'watching',
+    title: 'WATCHING',
+    description: 'Pre-market and post-market observations. Stocks you are watching long or short, with timestamps and reasons.',
+    Icon: Eye,
   },
   {
     slug: 'growth-simulator',
@@ -249,6 +256,7 @@ export default function ToolsContent() {
   if (activeTool === 'position-size')    return <PositionSizeContent    onBack={back} />;
   if (activeTool === 'coach-brainstorm') return <CoachBrainstormContent onBack={back} />;
   if (activeTool === 'overall-journal')  return <OverallJournalContent  onBack={back} />;
+  if (activeTool === 'watching')         return <WatchingContent        onBack={back} />;
   if (activeTool === 'growth-simulator') return <GrowthSimulatorContent onBack={back} />;
   if (activeTool === 'leaderboard')      return <LeaderboardContent     onBack={back} />;
   return <ToolGrid onOpen={setActiveTool} />;

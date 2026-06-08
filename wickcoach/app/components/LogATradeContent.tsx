@@ -2,6 +2,18 @@
 import React, { useState, useRef } from "react"
 import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR } from "./shared"
 
+// Returns the current local time as "HH:MM" — the native format
+// <input type="time"> expects for its value attribute. Used to
+// auto-fill Entry Time so logging a fresh trade doesn't require
+// manually typing the time, and as the save-time fallback when the
+// field is empty (e.g. user deleted the prefilled value).
+function currentLocalHHMM(): string {
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
 interface LogATradeContentProps {
   setActiveTab: (tab: string) => void;
   trades: Trade[];
@@ -13,6 +25,19 @@ interface LogATradeContentProps {
 export default function LogATradeContent({ setActiveTab: setTab, trades, setTrades, editingTrade = null, onFinishEdit }: LogATradeContentProps) {
     const [ticker, setTicker] = useState('');
     const [tradeDate, setTradeDate] = useState(toLocalYMD());
+    // Entry / exit times, both "HH:MM" 24-hour (native <input type="time">
+    // format). Optional — if either is empty, that field is stored as
+    // empty string (entry) or undefined (exit). Trader-readable display
+    // happens in PastTradesContent via formatTime().
+    //
+    // entryTime defaults to the current local "HH:MM" so logging a
+    // trade right after taking it doesn't require typing the time —
+    // matches the old auto-stamp behavior before the Date/Time row
+    // split. User can still type a different time, or delete the
+    // value (the save path falls back to wall-clock at submit so the
+    // stored value is never empty for fresh trades).
+    const [entryTime, setEntryTime] = useState(currentLocalHHMM);
+    const [exitTime, setExitTime]   = useState('');
     const [positionType, setPositionType] = useState<'SHARES' | 'DERIVATIVES'>('DERIVATIVES');
     const [strategyType, setStrategyType] = useState('0DTE Call');
     const [strategyInputMode, setStrategyInputMode] = useState<'select' | 'text'>('select');
@@ -23,6 +48,12 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     const [exitPrice, setExitPrice] = useState('');
     const [pl, setPl] = useState('');
     const [plManualOverride, setPlManualOverride] = useState(false);
+    // Explicit breakeven flag. The trader is asserting this trade was
+    // psychologically a "BE intent" — neither a win nor a loss for
+    // win-rate purposes — regardless of the actual dollar P/L. The
+    // P/L input stays fully editable so slippage (a BE trade that
+    // closed at -$12, say) is captured truthfully on the record.
+    const [markBreakeven, setMarkBreakeven] = useState(false);
     const [journal, setJournal] = useState('');
     const [screenshot, setScreenshot] = useState<string | null>(null);
     const [risk, setRisk] = useState('');
@@ -38,11 +69,29 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Prefill the form whenever the parent hands us a trade to edit.
+    // Convert any stored time string ("9:42 AM" or "14:30") into the
+    // "HH:MM" 24-hour form that <input type="time"> requires for its
+    // value attribute. Returns '' for unparseable / missing inputs so
+    // the field renders empty rather than rejecting the value.
+    const to24h = (s: string | undefined): string => {
+      if (!s) return '';
+      const m = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!m) return '';
+      let h = parseInt(m[1], 10);
+      const min = m[2];
+      const ap = (m[3] || '').toUpperCase();
+      if (ap === 'PM' && h !== 12) h += 12;
+      if (ap === 'AM' && h === 12) h = 0;
+      return `${String(h).padStart(2, '0')}:${min}`;
+    };
+
     // Also clears any prior validation error state.
     React.useEffect(() => {
       if (!editingTrade) return;
       setTicker(editingTrade.ticker || '');
       setTradeDate(editingTrade.date || toLocalYMD());
+      setEntryTime(to24h(editingTrade.time));
+      setExitTime(to24h(editingTrade.exitTime));
       // Strategy inference — anything stored as "Shares" routes to the
       // SHARES position type, otherwise treat as derivatives.
       const isShares = editingTrade.strategy === 'Shares';
@@ -56,6 +105,8 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       setExitPrice(String(editingTrade.exitPrice ?? ''));
       setPl(String(editingTrade.pl ?? ''));
       setPlManualOverride(true);
+      // Restore explicit-breakeven flag when re-opening a BE trade for edit.
+      setMarkBreakeven(editingTrade.result === 'BREAKEVEN');
       setJournal(editingTrade.journal || '');
       setScreenshot(editingTrade.screenshot || null);
       setRisk(editingTrade.riskAmount !== undefined ? String(editingTrade.riskAmount) : '');
@@ -119,11 +170,14 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     }, [risk, validationErrors.risk]);
 
     const resetForm = () => {
-      setTicker(''); setTradeDate(toLocalYMD());
+      // After submit, reset to current "HH:MM" so the next trade
+      // benefits from the same auto-fill behavior as the initial load.
+      setTicker(''); setTradeDate(toLocalYMD()); setEntryTime(currentLocalHHMM()); setExitTime('');
       setPositionType('DERIVATIVES'); setStrategyType('0DTE Call');
       setStrategyInputMode('select'); setCustomStrategy('');
       setDirection('LONG'); setContracts(''); setEntryPrice('');
       setExitPrice(''); setPl(''); setPlManualOverride(false);
+      setMarkBreakeven(false);
       setJournal(''); setScreenshot(null); setSubmitted(false);
       setRisk(''); setRiskReward('\u2014');
     };
@@ -231,8 +285,35 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         <input style={inputStyle} placeholder="e.g. QQQ, SPY, TSLA" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
         <div style={{ height: 16 }} />
 
-        <label style={labelStyle}>Date</label>
-        <input type="date" style={{ ...inputStyle, colorScheme: 'dark' }} value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Date</label>
+            <input
+              type="date"
+              style={{ ...inputStyle, colorScheme: 'dark', width: '100%' }}
+              value={tradeDate}
+              onChange={(e) => setTradeDate(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Entry Time</label>
+            <input
+              type="time"
+              style={{ ...inputStyle, colorScheme: 'dark', width: '100%' }}
+              value={entryTime}
+              onChange={(e) => setEntryTime(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Exit Time</label>
+            <input
+              type="time"
+              style={{ ...inputStyle, colorScheme: 'dark', width: '100%' }}
+              value={exitTime}
+              onChange={(e) => setExitTime(e.target.value)}
+            />
+          </div>
+        </div>
         <div style={{ height: 16 }} />
 
         <label style={labelStyle}>Position Type</label>
@@ -272,7 +353,40 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>P/L</label>
-            <input type="number" step={0.01} style={{ ...inputStyle, color: plColor }} placeholder="Auto or manual" value={pl} onChange={(e) => { setPl(e.target.value); setPlManualOverride(true); }} />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+              <input
+                type="number"
+                step={0.01}
+                style={{ ...inputStyle, color: plColor, flex: 1 }}
+                placeholder="Auto or manual"
+                value={pl}
+                onChange={(e) => { setPl(e.target.value); setPlManualOverride(true); }}
+              />
+              {/* BE-intent toggle — marks the trade's result as
+                  BREAKEVEN regardless of P/L sign (so it's excluded
+                  from win-rate denominator). Does NOT touch the
+                  dollar value — slippage stays in the record. */}
+              <button
+                type="button"
+                onClick={() => setMarkBreakeven(v => !v)}
+                title={markBreakeven ? 'Unmark BE intent — count toward win rate' : 'Mark BE intent — exclude from win rate'}
+                style={{
+                  background: markBreakeven ? '#f59e0b' : '#0e0f14',
+                  color: markBreakeven ? '#0A0D14' : '#f59e0b',
+                  border: `1px solid ${markBreakeven ? '#f59e0b' : '#2A3143'}`,
+                  borderRadius: 8,
+                  padding: '0 16px',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease, color 0.15s ease',
+                }}
+              >
+                BE
+              </button>
+            </div>
           </div>
         </div>
         <div style={{ height: 16 }} />
@@ -371,11 +485,18 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           const riskNum = parseFloat(risk) || 0;
           // When risk is 0 we skip R:R calculation entirely (em-dash).
           const savedRiskReward = riskNum > 0 ? riskReward : '\u2014';
+          // Wall-clock fallback for entryTime — covers the case where
+          // the user deleted the prefilled value and then hit save.
+          // Stored as "HH:MM" 24h (the native <input type="time">
+          // format). PastTradesContent.formatTime() converts to
+          // "H:MM AM/PM" for display.
+          const savedEntryTime = entryTime || currentLocalHHMM();
           const baseTrade: Omit<Trade, 'id'> = {
             ticker: ticker || 'UNKNOWN',
             companyName: ticker || 'Unknown',
             date: tradeDate,
-            time: new Date().toLocaleTimeString(),
+            time: savedEntryTime,
+            exitTime: exitTime || undefined,
             strategy: positionType === 'DERIVATIVES' ? (strategyInputMode === 'select' ? strategyType : customStrategy || 'Custom') : 'Shares',
             direction: direction as 'LONG' | 'SHORT',
             contracts: qty,
@@ -387,7 +508,11 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
             riskReward: savedRiskReward,
             journal: journal,
             screenshot: screenshot || undefined,
-            result: computedPl > 0 ? 'WIN' : computedPl < 0 ? 'LOSS' : 'BREAKEVEN',
+            // markBreakeven forces the result regardless of the dollar
+            // sign — a BE-intent trade with -$12 slippage is still a
+            // BE, not a loss. Win-rate denominator (wins + losses) in
+            // shared.ts then correctly excludes this trade.
+            result: markBreakeven ? 'BREAKEVEN' : (computedPl > 0 ? 'WIN' : computedPl < 0 ? 'LOSS' : 'BREAKEVEN'),
           };
           let updated: Trade[];
           if (editingTrade) {

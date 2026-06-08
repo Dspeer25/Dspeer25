@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType } from "./shared";
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
@@ -35,7 +35,13 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     setExpandedGoalId(null);
   }, [weeklyTabResetTick]);
 
-  const currentWeekStart = getCurrentWeekStart();
+  // Weekend-aware "current week" — on Sat/Sun this rolls forward to
+  // the upcoming Monday so the trader can plan next week's goals on
+  // a weekend without faking dates. Matches the journal's logic.
+  // Other surfaces (LogATrade, AnalysisHub) keep using the plain
+  // calendar-week helper because they reason about trades that
+  // already happened, not future planning.
+  const currentWeekStart = getCurrentTradingWeekStart();
   const activeWeekStart = viewedWeekStart || currentWeekStart;
   const isReadOnly = viewedWeekStart !== null && viewedWeekStart !== currentWeekStart;
   const visibleGoals = goals.filter(g => g.weekStart === activeWeekStart);
