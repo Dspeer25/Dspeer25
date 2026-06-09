@@ -1577,8 +1577,14 @@ function Toolbar({
 
 // ─── Editor ──────────────────────────────────────────────────────────
 
-function Editor({ day, onPreWeekChange, onWatchingChange, onSessionChange, onTogglePrivacy }: {
+function Editor({ day, isFirstOfWeek, onPreWeekChange, onWatchingChange, onSessionChange, onTogglePrivacy }: {
   day: DayEntry;
+  /** True when this day is the first journal of its ISO week. Drives
+   *  the Pre-Week Note section's visibility — it only belongs on the
+   *  first entry of the week (Monday, or the earliest entry if Monday
+   *  was skipped). Every other day opens straight into "Watching for
+   *  Tomorrow" with "Session" below. */
+  isFirstOfWeek: boolean;
   onPreWeekChange: (html: string) => void;
   onWatchingChange: (html: string) => void;
   onSessionChange: (html: string) => void;
@@ -1610,22 +1616,29 @@ function Editor({ day, onPreWeekChange, onWatchingChange, onSessionChange, onTog
         </div>
       </div>
 
-      {/* Three discrete journal sections, in order. Each is a
-          self-contained rich-text editor with its own toolbar so the
-          font / size / color picker / bold / etc. work on whichever
-          section the cursor is in. `key={day.id}` on each forces a
-          remount when navigating between days so the editor content
-          reloads cleanly from the new day's stored HTML. */}
-      <SectionEditor
-        key={day.id + ':pre'}
-        title="Pre Week Note"
-        initialHtml={day.preWeekNote || ''}
-        onChange={onPreWeekChange}
-        placeholder="Start-of-week framing. What you're working on, what you're avoiding, what you want this week to look like…"
-        minHeight={300}
-      />
+      {/* Journal sections, in order:
+            - Pre-Week Note (only on the first journal of the week —
+              Monday, or the earliest entry if Monday was skipped)
+            - Watching for Tomorrow
+            - Session
+          Each is a self-contained rich-text editor with its own
+          toolbar so the font / size / color picker / bold / etc.
+          work on whichever section the cursor is in. `key={day.id}`
+          on each forces a remount when navigating between days so
+          the editor content reloads cleanly from the new day's
+          stored HTML. */}
+      {isFirstOfWeek && (
+        <SectionEditor
+          key={day.id + ':pre'}
+          title="Pre Week Note"
+          initialHtml={day.preWeekNote || ''}
+          onChange={onPreWeekChange}
+          placeholder="Start-of-week framing. What you're working on, what you're avoiding, what you want this week to look like…"
+          minHeight={300}
+        />
+      )}
 
-      <div style={{ marginTop: 36 }}>
+      <div style={{ marginTop: isFirstOfWeek ? 36 : 0 }}>
         <SectionEditor
           key={day.id + ':watching'}
           title="Watching for Tomorrow"
@@ -2477,6 +2490,19 @@ export function OverallJournalContent({ onBack }: { onBack: () => void }) {
     const w = findWeek(monthId, weekId);
     const d = findDay(monthId, weekId, dayId);
     if (!m || !w || !d) { setView({ kind: 'months' }); return null; }
+    // First-of-week detection: the journal day whose date is the
+    // earliest among this week's days. Pre-Week Note belongs only on
+    // that one — every other day in the week opens with Watching for
+    // Tomorrow at the top. Falls back to true on a one-day week (the
+    // sole entry is trivially the first).
+    const earliestDayId = (() => {
+      const dated = w.days
+        .map(x => ({ id: x.id, date: parseDayIdToDate(x.id) }))
+        .filter((x): x is { id: string; date: Date } => x.date !== null)
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+      return dated.length > 0 ? dated[0].id : d.id;
+    })();
+    const isFirstOfWeek = d.id === earliestDayId;
     return (
       <>
         <Breadcrumb trail={[
@@ -2487,6 +2513,7 @@ export function OverallJournalContent({ onBack }: { onBack: () => void }) {
         ]} />
         <Editor
           day={d}
+          isFirstOfWeek={isFirstOfWeek}
           onPreWeekChange={(html) => updateDay(m.id, w.id, d.id, { preWeekNote: html })}
           onWatchingChange={(html) => updateDay(m.id, w.id, d.id, { watchingTomorrow: html })}
           onSessionChange={(html) => updateDay(m.id, w.id, d.id, { session: html })}
