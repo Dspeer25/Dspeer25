@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -674,6 +674,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         // ── NUMBER goals (trades column) — deterministic JS scoring.
         //    Same trade + same rule = same result. No Haiku, no cache.
+        //    Account size is threaded in so risk-%-of-account rules
+        //    can derive (riskAmount / accountSize) * 100.
         if (section === 'trades') {
           const rule = g.numberRule;
           if (!rule) {
@@ -681,18 +683,20 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
             // finishes the builder.
             return { ...base, actual: 0, target: 0, nullCount: 0, empty: false };
           }
+          const accountSize = readAccountSize();
           let pass = 0;
           let fail = 0;
           let na = 0;
           for (const t of weekTrades) {
-            const r = scoreNumberGoal(t, rule, { allTrades: weekTrades });
+            const r = scoreNumberGoal(t, rule, { allTrades: weekTrades, accountSize: accountSize ?? undefined });
             if (r === 'pass') pass++;
             else if (r === 'fail') fail++;
             else na++;
           }
           // 'na' trades are excluded from both numerator and denom —
           // matches the user spec for R-target rules where a loss
-          // isn't a violation, just doesn't apply.
+          // isn't a violation, just doesn't apply. Also covers the
+          // risk-%-of-account gate when no account size is set.
           return { ...base, actual: pass, target: pass + fail, nullCount: na, empty: false };
         }
 
@@ -766,6 +770,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     const numberGoal = section === 'trades' ? weekGoals[goalIdx] : undefined;
     const numberRule = numberGoal && getEffectiveKind(numberGoal) === 'number' ? numberGoal.numberRule : undefined;
     const isNumberSection = section === 'trades' && !!numberRule;
+    // Read once per drilldown render — risk-%-of-account rules
+    // need this to compute (riskAmount / accountSize) * 100.
+    const accountSize = isNumberSection ? readAccountSize() : null;
 
     const fmtDate = (iso: string) => {
       // Trade.date is a local-calendar "YYYY-MM-DD" — parsing with
@@ -814,7 +821,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               const hasJournalText = (t.journal || '').trim().length > 0;
               const haikuCompliance: 0 | 1 | null = gs ? gs.compliance : null;
               const numberResult = isNumberSection && numberRule
-                ? scoreNumberGoal(t, numberRule, { allTrades: weekTrades })
+                ? scoreNumberGoal(t, numberRule, { allTrades: weekTrades, accountSize: accountSize ?? undefined })
                 : null;
               const isNumberNa = numberResult === 'na';
               const isPsychSideJournalFallback =
@@ -860,6 +867,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                           return `Trade was a ${t.result === 'LOSS' ? 'loss' : 'breakeven'} — R-target rule doesn't apply. Excluded.`;
                         }
                         return `Win without R:R logged — can't tell if the ${numberRule.value}R target was met. Excluded.`;
+                      }
+                      if (numberRule.field === 'riskPctOfAccount') {
+                        return 'Account size not set in the Position Size Calculator — risk-%-of-account rule can’t score this trade. Excluded.';
                       }
                       return 'Rule does not apply to this trade.';
                     }

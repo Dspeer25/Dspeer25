@@ -56,6 +56,12 @@ function scoreNumberGoal(trade, rule, ctx = {}) {
     if (!Number.isFinite(rr) || rr === 0) return 'na';
     return compareValues(rr, operator, value) ? 'pass' : 'fail';
   }
+  if (field === 'riskPctOfAccount') {
+    if (typeof ctx.accountSize !== 'number' || ctx.accountSize <= 0) return 'na';
+    if (typeof trade.riskAmount !== 'number') return 'fail';
+    const pct = (trade.riskAmount / ctx.accountSize) * 100;
+    return compareValues(pct, operator, value) ? 'pass' : 'fail';
+  }
   const tradeValue = getPerTradeFieldValue(trade, field);
   if (tradeValue === null) return 'fail';
   return compareValues(tradeValue, operator, value) ? 'pass' : 'fail';
@@ -141,6 +147,12 @@ const cases = [
   // Sequence — dailyLoss
   ['day +$300 vs dailyLoss>=-200',  t_win_2_5r,           { field:'dailyLoss', operator:'>=', value:-200 }, { allTrades: day3Trades }, 'pass'],
   ['day -$350 vs dailyLoss>=-200',  { ...baseTrade, id:'l1', result:'LOSS', pl:-200 }, { field:'dailyLoss', operator:'>=', value:-200 }, { allTrades: dayBigLoss }, 'fail'],
+
+  // Risk %-of-account
+  ['$100 risk on $50k acct vs <=1%', t_win_2_5r,    { field:'riskPctOfAccount', operator:'<=', value:1 }, { accountSize: 50000 }, 'pass'],   // 0.2%
+  ['$1000 risk on $50k acct vs <=1%', { ...t_win_2_5r, riskAmount: 1000 }, { field:'riskPctOfAccount', operator:'<=', value:1 }, { accountSize: 50000 }, 'fail'], // 2%
+  ['no account size context',        t_win_2_5r,    { field:'riskPctOfAccount', operator:'<=', value:1 }, {},                       'na'],
+  ['no risk amount logged',          t_no_risk_amt, { field:'riskPctOfAccount', operator:'<=', value:1 }, { accountSize: 50000 }, 'fail'],
 ];
 
 let pass = 0, fail = 0;

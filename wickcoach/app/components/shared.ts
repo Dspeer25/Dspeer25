@@ -1288,6 +1288,7 @@ export interface GoalScoringCriteria {
 export type GoalField =
   | 'riskAmount'
   | 'riskReward'
+  | 'riskPctOfAccount'
   | 'time'
   | 'direction'
   | 'contracts'
@@ -1295,6 +1296,22 @@ export type GoalField =
   | 'result'
   | 'tradesPerDay'
   | 'dailyLoss';
+
+/** Account-size source for risk-%-of-account rules. Returns null when
+ *  the Position Size Calculator hasn't been used yet, so the UI knows
+ *  to disable any rule that depends on it. */
+export const ACCOUNT_SIZE_STORE_KEY = 'wickcoach_position_size_account';
+export function readAccountSize(): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ACCOUNT_SIZE_STORE_KEY);
+    if (!raw) return null;
+    const n = parseFloat(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
 
 export type GoalOperator = '<=' | '>=' | '==' | '<' | '>' | '!=';
 
@@ -1427,6 +1444,19 @@ export function scoreNumberGoal(
     const rr = parseRr(trade.riskReward);
     if (!Number.isFinite(rr) || rr === 0) return 'na';
     return compareValues(rr, operator, value) ? 'pass' : 'fail';
+  }
+
+  // ── Risk-%-of-account — derived field, requires account size in
+  //    ctx. Without account size, the rule can't be evaluated at all,
+  //    so we return 'na' (and the UI disables the option upstream so
+  //    a goal can't even be created in this state). If the trade has
+  //    no riskAmount logged, treat as 'fail' (constraint rules expect
+  //    the trader to log what they need).
+  if (field === 'riskPctOfAccount') {
+    if (typeof ctx.accountSize !== 'number' || ctx.accountSize <= 0) return 'na';
+    if (typeof trade.riskAmount !== 'number') return 'fail';
+    const pct = (trade.riskAmount / ctx.accountSize) * 100;
+    return compareValues(pct, operator, value) ? 'pass' : 'fail';
   }
 
   // ── Per-trade constraint fields — missing value = 'fail' (the

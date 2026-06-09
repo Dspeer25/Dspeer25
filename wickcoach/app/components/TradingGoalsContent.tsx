@@ -1,19 +1,20 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications, GoalField, GoalOperator, NumberGoalRule, getEffectiveKind } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications, GoalField, GoalOperator, NumberGoalRule, getEffectiveKind, readAccountSize } from "./shared";
 
 // Field options for the NUMBER goal builder. Order matches what
 // a trader is most likely to reach for (R targets first).
-const NUMBER_GOAL_FIELDS: { value: GoalField; label: string; valueKind: 'number' | 'time' | 'enum'; enumOptions?: string[]; placeholder: string }[] = [
-  { value: 'riskReward',   label: 'Risk:Reward (R) achieved', valueKind: 'number', placeholder: 'e.g. 2' },
-  { value: 'riskAmount',   label: 'Risk amount ($)',          valueKind: 'number', placeholder: 'e.g. 150' },
-  { value: 'time',         label: 'Entry time (HH:MM)',       valueKind: 'time',   placeholder: '11:00' },
-  { value: 'direction',    label: 'Direction',                valueKind: 'enum',   enumOptions: ['LONG', 'SHORT'], placeholder: '' },
-  { value: 'contracts',    label: 'Contracts / shares',       valueKind: 'number', placeholder: 'e.g. 10' },
-  { value: 'strategy',     label: 'Strategy name',            valueKind: 'enum',   enumOptions: ['0DTE Call', '0DTE Put', 'Scalp', 'Swing', 'Shares'], placeholder: '' },
-  { value: 'result',       label: 'Result',                   valueKind: 'enum',   enumOptions: ['WIN', 'LOSS', 'BREAKEVEN'], placeholder: '' },
-  { value: 'tradesPerDay', label: 'Trades per day (count)',   valueKind: 'number', placeholder: 'e.g. 3' },
-  { value: 'dailyLoss',    label: 'Daily P/L ($ sum)',        valueKind: 'number', placeholder: 'e.g. -200' },
+const NUMBER_GOAL_FIELDS: { value: GoalField; label: string; valueKind: 'number' | 'time' | 'enum'; enumOptions?: string[]; placeholder: string; requiresAccountSize?: boolean }[] = [
+  { value: 'riskReward',       label: 'Risk:Reward (R) achieved', valueKind: 'number', placeholder: 'e.g. 2' },
+  { value: 'riskAmount',       label: 'Risk amount ($)',          valueKind: 'number', placeholder: 'e.g. 150' },
+  { value: 'riskPctOfAccount', label: 'Risk (% of account)',      valueKind: 'number', placeholder: 'e.g. 1', requiresAccountSize: true },
+  { value: 'time',             label: 'Entry time (HH:MM)',       valueKind: 'time',   placeholder: '11:00' },
+  { value: 'direction',        label: 'Direction',                valueKind: 'enum',   enumOptions: ['LONG', 'SHORT'], placeholder: '' },
+  { value: 'contracts',        label: 'Contracts / shares',       valueKind: 'number', placeholder: 'e.g. 10' },
+  { value: 'strategy',         label: 'Strategy name',            valueKind: 'enum',   enumOptions: ['0DTE Call', '0DTE Put', 'Scalp', 'Swing', 'Shares'], placeholder: '' },
+  { value: 'result',           label: 'Result',                   valueKind: 'enum',   enumOptions: ['WIN', 'LOSS', 'BREAKEVEN'], placeholder: '' },
+  { value: 'tradesPerDay',     label: 'Trades per day (count)',   valueKind: 'number', placeholder: 'e.g. 3' },
+  { value: 'dailyLoss',        label: 'Daily P/L ($ sum)',        valueKind: 'number', placeholder: 'e.g. -200' },
 ];
 
 const NUMBER_GOAL_OPERATORS: { value: GoalOperator; label: string }[] = [
@@ -90,6 +91,21 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     setCustomTargets(r.customQuantTargets);
   };
   useEffect(() => { refreshQuantTargets(); }, []);
+
+  // Account size — used to gate the riskPctOfAccount field in the
+  // number-rule builder. Read on mount + on focus so toggling between
+  // the Position Size Calculator and Weekly Goals tabs picks up a
+  // fresh value without a hard refresh.
+  const [accountSize, setAccountSize] = useState<number | null>(null);
+  useEffect(() => {
+    const refresh = () => setAccountSize(readAccountSize());
+    refresh();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', refresh);
+      return () => window.removeEventListener('focus', refresh);
+    }
+  }, []);
+  const hasAccountSize = typeof accountSize === 'number' && accountSize > 0;
 
   const handleQuantValueChange = (id: string, raw: string) => {
     const n = raw.trim() === '' ? null : Number(raw);
@@ -832,9 +848,18 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                             minWidth: 0,
                           }}
                         >
-                          {NUMBER_GOAL_FIELDS.map(f => (
-                            <option key={f.value} value={f.value}>{f.label}</option>
-                          ))}
+                          {NUMBER_GOAL_FIELDS.map(f => {
+                            const gated = f.requiresAccountSize && !hasAccountSize;
+                            return (
+                              <option
+                                key={f.value}
+                                value={f.value}
+                                disabled={gated}
+                              >
+                                {gated ? `${f.label} (set account size first)` : f.label}
+                              </option>
+                            );
+                          })}
                         </select>
                         <select
                           disabled={isReadOnly}
@@ -923,6 +948,26 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                           />
                         )}
                       </div>
+                      {/* Account-size gate. Only fires when the rule
+                          requires it but the trader hasn't set the
+                          Position Size Calculator's account size yet.
+                          Until then the candle will read 'na' for
+                          every trade. */}
+                      {numberFieldMeta?.requiresAccountSize && !hasAccountSize && (
+                        <div style={{
+                          marginTop: 10,
+                          padding: '8px 12px',
+                          background: 'rgba(245,158,11,0.10)',
+                          border: '1px solid rgba(245,158,11,0.3)',
+                          borderRadius: 6,
+                          fontFamily: fm,
+                          fontSize: 12,
+                          color: '#f5d27c',
+                          lineHeight: 1.45,
+                        }}>
+                          Set account size in the Position Size Calculator (Tools tab) before this rule can score. Trades will show as not applicable until then.
+                        </div>
+                      )}
                     </>
                   ) : isReadOnly ? (
                     <div style={{ width: '100%', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, letterSpacing: 1, padding: '2px 0', textTransform: 'uppercase' }}>
