@@ -1271,6 +1271,42 @@ export interface GoalScoringCriteria {
   scope: string;
 }
 
+/**
+ * Trade fields that a NUMBER goal can be scored against.
+ * Per-trade fields:
+ *   riskAmount   — dollars risked on the trade (Trade.riskAmount)
+ *   riskReward   — achieved R:R ratio, parsed from Trade.riskReward
+ *   time         — entry time as "HH:MM" 24h (Trade.time)
+ *   direction    — 'LONG' | 'SHORT'
+ *   contracts    — position size (units / contracts)
+ *   strategy     — strategy label (Trade.strategy)
+ *   result       — 'WIN' | 'LOSS' | 'BREAKEVEN'
+ * Sequence / aggregate fields (need the day's trade set):
+ *   tradesPerDay — count of trades sharing this trade's date
+ *   dailyLoss    — sum of pl across trades sharing this trade's date
+ */
+export type GoalField =
+  | 'riskAmount'
+  | 'riskReward'
+  | 'time'
+  | 'direction'
+  | 'contracts'
+  | 'strategy'
+  | 'result'
+  | 'tradesPerDay'
+  | 'dailyLoss';
+
+export type GoalOperator = '<=' | '>=' | '==' | '<' | '>' | '!=';
+
+export interface NumberGoalRule {
+  field: GoalField;
+  operator: GoalOperator;
+  /** numeric for amounts/counts, "HH:MM" for time, enum literal for direction/strategy/result */
+  value: number | string;
+}
+
+export type GoalKind = 'psych' | 'number';
+
 export interface Goal {
   id: string;
   title: string;
@@ -1283,19 +1319,121 @@ export interface Goal {
   /** ISO date (YYYY-MM-DD) of the Monday that starts the week this goal was active for. */
   weekStart: string;
   /**
-   * Which side of Rules vs. Execution this goal shows up in.
-   *  - 'trade'   → scored from quantitative trade data only (prices, R:R, sizing)
-   *  - 'journal' → scored from journal language only
-   *  - 'both'    → scored independently on both sides; rows may agree or disagree
+   * NEW model: kind discriminates how the goal is scored.
+   *  - 'psych'  → free text, scored by Haiku via /api/coach classify mode.
+   *  - 'number' → deterministic JS scoring via scoreNumberGoal(trade, numberRule).
    *
-   * Missing on legacy records — the load-time migration stamps a
-   * default via `defaultMeasurabilityForType` before render.
+   * Legacy goals (pre-rebuild) have `kind` undefined; the load-time
+   * migration maps them to 'psych' by default since the old default
+   * measurability was 'journal'.
+   */
+  kind?: GoalKind;
+  /** Required when kind === 'number'. Ignored otherwise. */
+  numberRule?: NumberGoalRule;
+  /**
+   * Legacy field — retained for migration compat. Replaced by `kind`
+   * in the new model. 'trade' / 'both' map to 'number'; 'journal' maps
+   * to 'psych'. Read via getEffectiveKind() helper which prefers `kind`
+   * when present.
    */
   measurability: 'trade' | 'journal' | 'both';
   /** Latest completeness score (0-100) emitted by the goal-clarification coach. */
   completeness?: number;
   /** Structured scoring criteria emitted by the coach once the goal is understood. */
   scoringCriteria?: GoalScoringCriteria;
+}
+
+/**
+ * Resolve a goal's effective kind, preferring the new `kind` field and
+ * falling back to the legacy `measurability` flag. Centralized so the
+ * UI and scoring paths agree on which side a goal renders on without
+ * each duplicating the mapping.
+ */
+export function getEffectiveKind(g: Goal): GoalKind {
+  if (g.kind) return g.kind;
+  if (g.measurability === 'trade') return 'number';
+  // 'journal' and the retired 'both' both fall to psych.
+  return 'psych';
+}
+
+// ─── Deterministic number-goal scoring ─────────────────────────────
+// Pure JS. Same trade + same rule = same result, always. No model
+// calls, no caching, no prompt versions. Returns one of three
+// outcomes:
+//   'pass' — trade satisfied the rule
+//   'fail' — trade violated the rule (or missing required field on a
+//            constraint goal)
+//   'na'   — rule doesn't apply to this trade (e.g. R-target on a loss,
+//            or sequence rule with no day context)
+
+export type GoalScoreResult = 'pass' | 'fail' | 'na';
+
+/** Context for sequence/aggregate fields. allTrades should be the full
+ *  week (or full dataset) so dailyLoss / tradesPerDay can find peers. */
+export interface ScoreNumberGoalContext {
+  allTrades?: Trade[];
+  /** Account size for risk-%-of-account style rules. Read from
+   *  `wickcoach_position_size_account` upstream. */
+  accountSize?: number;
+}
+
+function compareValues(a: number | string, op: GoalOperator, b: number | string): boolean {
+  switch (op) {
+    case '<=': return a <= b;
+    case '>=': return a >= b;
+    case '<':  return a < b;
+    case '>':  return a > b;
+    case '==': return a === b;
+    case '!=': return a !== b;
+  }
+}
+
+function getPerTradeFieldValue(t: Trade, field: GoalField): number | string | null {
+  switch (field) {
+    case 'riskAmount': return typeof t.riskAmount === 'number' ? t.riskAmount : null;
+    case 'time':       return t.time && t.time.length > 0 ? t.time : null;
+    case 'direction':  return t.direction;
+    case 'contracts':  return typeof t.contracts === 'number' ? t.contracts : null;
+    case 'strategy':   return t.strategy || null;
+    case 'result':     return t.result;
+    default:           return null;
+  }
+}
+
+export function scoreNumberGoal(
+  trade: Trade,
+  rule: NumberGoalRule,
+  ctx: ScoreNumberGoalContext = {}
+): GoalScoreResult {
+  const { field, operator, value } = rule;
+
+  // ── Sequence / aggregate fields — need the day's trade set ──
+  if (field === 'tradesPerDay' || field === 'dailyLoss') {
+    if (!ctx.allTrades) return 'na';
+    const sameDay = ctx.allTrades.filter(x => x.date === trade.date);
+    if (field === 'tradesPerDay') {
+      return compareValues(sameDay.length, operator, value) ? 'pass' : 'fail';
+    }
+    // dailyLoss — sum of pl across the day. Convention: pass when
+    // dailyLoss is "better than" the rule's threshold.
+    const dayPl = sameDay.reduce((s, x) => s + x.pl, 0);
+    return compareValues(dayPl, operator, value) ? 'pass' : 'fail';
+  }
+
+  // ── R-target — only WIN trades with R:R logged can be evaluated.
+  //    LOSS / BE / WIN-without-rr → na (not a violation).
+  if (field === 'riskReward') {
+    if (trade.result === 'LOSS' || trade.result === 'BREAKEVEN') return 'na';
+    const rr = parseRr(trade.riskReward);
+    if (!Number.isFinite(rr) || rr === 0) return 'na';
+    return compareValues(rr, operator, value) ? 'pass' : 'fail';
+  }
+
+  // ── Per-trade constraint fields — missing value = 'fail' (the
+  //    trader didn't log the data the rule needs).
+  const tradeValue = getPerTradeFieldValue(trade, field);
+  if (tradeValue === null) return 'fail';
+  return compareValues(tradeValue, operator, value) ? 'pass' : 'fail';
 }
 
 export const GOAL_TYPES = ['Trade Management', 'Entry Criteria', 'Patience / Setup', 'Risk Management', 'Psychology', 'General'];
