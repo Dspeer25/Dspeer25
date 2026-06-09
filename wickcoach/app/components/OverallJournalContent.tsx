@@ -225,6 +225,27 @@ function nextTradingDay(d: Date): Date {
   return out;
 }
 
+// Given a calendar date, return the next trading day strictly AFTER
+// it. Friday + 1 → Monday (skips the weekend). Used to pick the
+// default date for a new journal day so a Tuesday entry doesn't get
+// re-created as Monday when today is still Monday.
+function nextTradingDayAfter(d: Date): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + 1);
+  return nextTradingDay(out);
+}
+
+// "YYYY-MM-DD" id + human label ("Tuesday, Jun 9") built from a
+// Date. Centralized so addDay and the helpers downstream share the
+// exact same format — id mismatches caused by ad-hoc formatting
+// would otherwise let duplicate days slip through.
+function buildDayMeta(d: Date): { id: string; label: string } {
+  return {
+    id: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    label: `${DAY_NAMES[d.getDay()]}, ${MONTH_NAMES[d.getMonth()].slice(0, 3)} ${d.getDate()}`,
+  };
+}
+
 // ─── Shared bits ─────────────────────────────────────────────────────
 
 const cardSurface: React.CSSProperties = {
@@ -2112,16 +2133,59 @@ export function OverallJournalContent({ onBack }: { onBack: () => void }) {
   };
 
   const addDay = (monthId: string, weekId: string) => {
-    const cd = currentDay();
     const w = findWeek(monthId, weekId);
-    if (w && w.days.some(d => d.id === cd.id)) {
-      setView({ kind: 'book', monthId, weekId, dayId: cd.id });
+
+    // Pick the target date for the new day:
+    //   - If the week already has days, the new day defaults to the
+    //     next trading day AFTER the most recent existing entry.
+    //   - If today is later than (latest + 1 trading day), use today.
+    //   - If the week is empty, fall back to today (or the upcoming
+    //     Monday on weekends, via nextTradingDay).
+    // This kills the old behavior where the "+ NEW DAY" button always
+    // landed on today's id — which, on a day that already had an
+    // entry, would silently navigate back to it and look like a
+    // pre-filled clone of yesterday's content.
+    const today = nextTradingDay(new Date());
+    let targetDate: Date;
+    if (w && w.days.length > 0) {
+      const latest = w.days
+        .map(d => parseDayIdToDate(d.id))
+        .filter((x): x is Date => x !== null)
+        .sort((a, b) => b.getTime() - a.getTime())[0];
+      if (latest) {
+        const dayAfterLatest = nextTradingDayAfter(latest);
+        targetDate = today.getTime() > dayAfterLatest.getTime() ? today : dayAfterLatest;
+      } else {
+        targetDate = today;
+      }
+    } else {
+      targetDate = today;
+    }
+
+    const meta = buildDayMeta(targetDate);
+
+    // If a day with the computed id already exists (e.g. you've
+    // already filed Tuesday and click + again), navigate to it
+    // instead of stacking a duplicate. Same shortcut as before, just
+    // keyed on the COMPUTED next-day id rather than today's id.
+    if (w && w.days.some(d => d.id === meta.id)) {
+      setView({ kind: 'book', monthId, weekId, dayId: meta.id });
       return;
     }
+
+    // Fresh, blank entry. We explicitly list every section field
+    // (content / preWeekNote / watchingTomorrow / session) so a
+    // future field added to DayEntry can't accidentally inherit
+    // from anywhere. No spread of a previous entry; nothing
+    // carried over.
     const now = new Date().toISOString();
     const d: DayEntry = {
-      ...cd,
+      id: meta.id,
+      label: meta.label,
       content: '',
+      preWeekNote: '',
+      watchingTomorrow: '',
+      session: '',
       aiAnalysisEnabled: false,
       createdAt: now,
       updatedAt: now,
