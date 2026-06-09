@@ -1,6 +1,29 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
-import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications } from "./shared";
+import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications, GoalField, GoalOperator, NumberGoalRule, getEffectiveKind } from "./shared";
+
+// Field options for the NUMBER goal builder. Order matches what
+// a trader is most likely to reach for (R targets first).
+const NUMBER_GOAL_FIELDS: { value: GoalField; label: string; valueKind: 'number' | 'time' | 'enum'; enumOptions?: string[]; placeholder: string }[] = [
+  { value: 'riskReward',   label: 'Risk:Reward (R) achieved', valueKind: 'number', placeholder: 'e.g. 2' },
+  { value: 'riskAmount',   label: 'Risk amount ($)',          valueKind: 'number', placeholder: 'e.g. 150' },
+  { value: 'time',         label: 'Entry time (HH:MM)',       valueKind: 'time',   placeholder: '11:00' },
+  { value: 'direction',    label: 'Direction',                valueKind: 'enum',   enumOptions: ['LONG', 'SHORT'], placeholder: '' },
+  { value: 'contracts',    label: 'Contracts / shares',       valueKind: 'number', placeholder: 'e.g. 10' },
+  { value: 'strategy',     label: 'Strategy name',            valueKind: 'enum',   enumOptions: ['0DTE Call', '0DTE Put', 'Scalp', 'Swing', 'Shares'], placeholder: '' },
+  { value: 'result',       label: 'Result',                   valueKind: 'enum',   enumOptions: ['WIN', 'LOSS', 'BREAKEVEN'], placeholder: '' },
+  { value: 'tradesPerDay', label: 'Trades per day (count)',   valueKind: 'number', placeholder: 'e.g. 3' },
+  { value: 'dailyLoss',    label: 'Daily P/L ($ sum)',        valueKind: 'number', placeholder: 'e.g. -200' },
+];
+
+const NUMBER_GOAL_OPERATORS: { value: GoalOperator; label: string }[] = [
+  { value: '<=', label: '≤  (at most)' },
+  { value: '>=', label: '≥  (at least)' },
+  { value: '<',  label: '<  (less than)' },
+  { value: '>',  label: '>  (greater than)' },
+  { value: '==', label: '=  (equals)' },
+  { value: '!=', label: '≠  (not equals)' },
+];
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
@@ -143,6 +166,62 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       }
     } catch { /* ignore storage errors */ }
 
+    // Kind-rebuild migration. Every goal gets a `kind` stamped from
+    // its measurability ('trade'→'number', else 'psych'). Goal #3
+    // ("GO FOR 2R AND BE PATIENT AT BE") splits per the trader's
+    // direction: the 2R part becomes a NUMBER goal { riskReward >= 2,
+    // label 'Go for 2R' } and a new PSYCH goal { 'Be patient at BE.
+    // Size well.' } is appended to the same week.
+    try {
+      const KIND_MIGRATION_FLAG = 'wickcoach_goal_kind_rebuild_v1';
+      if (!localStorage.getItem(KIND_MIGRATION_FLAG)) {
+        let migrated = false;
+        const next: Goal[] = [];
+        for (const g of working) {
+          const titleUpper = (g.title || '').toUpperCase();
+          const is2rGoal = /GO\s*FOR\s*2R\b/.test(titleUpper) && /PATIEN/.test(titleUpper);
+          if (is2rGoal) {
+            // Convert this goal into the NUMBER half
+            migrated = true;
+            next.push({
+              ...g,
+              title: 'Go for 2R',
+              kind: 'number',
+              measurability: 'trade',
+              numberRule: { field: 'riskReward', operator: '>=', value: 2 },
+            });
+            // Append a new PSYCH half for the patience/sizing language
+            next.push({
+              id: `${g.id}_psych_split`,
+              title: 'Be patient at BE. Size well.',
+              context: [],
+              aiResponses: [],
+              contextComplete: false,
+              actionItems: [],
+              createdAt: new Date().toISOString(),
+              goalType: 'Psychology',
+              weekStart: g.weekStart,
+              measurability: 'journal',
+              kind: 'psych',
+            });
+            continue;
+          }
+          if (!g.kind) {
+            migrated = true;
+            const inferred: 'psych' | 'number' = g.measurability === 'trade' ? 'number' : 'psych';
+            next.push({ ...g, kind: inferred });
+          } else {
+            next.push(g);
+          }
+        }
+        if (migrated) {
+          working = next;
+          writeAllGoals(working);
+        }
+        localStorage.setItem(KIND_MIGRATION_FLAG, '1');
+      }
+    } catch { /* ignore storage errors */ }
+
     // One-time seed of LAST week's history so the HISTORY sidebar has
     // something to click right after upgrading. Gated on a versioned
     // localStorage flag — bumping the version (v2, v3…) re-runs the
@@ -180,7 +259,55 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     }
   }, [goals, expandedGoalId, loadingGoalId]);
 
-  const addNewGoal = () => {
+  // Helper: invalidate cached classifications for current-week trades
+  // whenever the goal set changes shape (kind flip, rule edit). Same
+  // logic as setMeasurability — used by goal creation paths so the
+  // next Analysis mount re-classifies against the new goal list.
+  const invalidateCurrentWeekClassifications = () => {
+    try {
+      const cache = readClassifications();
+      const today = new Date();
+      const day = today.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      const weekStart = new Date(today);
+      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() + diff);
+      const currentWeekTradeIds = new Set(
+        trades.filter(t => {
+          const d = new Date(t.date + 'T00:00:00');
+          return d >= weekStart;
+        }).map(t => t.id)
+      );
+      let changed = false;
+      for (const tradeId of Object.keys(cache)) {
+        if (currentWeekTradeIds.has(tradeId)) {
+          delete cache[tradeId];
+          changed = true;
+        }
+      }
+      if (changed) writeClassifications(cache);
+    } catch { /* ignore */ }
+  };
+
+  const addNewPsychGoal = () => {
+    if (isReadOnly) return;
+    const newGoal: Goal = {
+      id: `g${Date.now()}`,
+      title: '',
+      context: [],
+      aiResponses: [],
+      contextComplete: false,
+      actionItems: [],
+      createdAt: new Date().toISOString(),
+      goalType: 'Psychology',
+      weekStart: currentWeekStart,
+      measurability: 'journal',
+      kind: 'psych',
+    };
+    setGoals(prev => [...prev, newGoal]);
+  };
+
+  const addNewNumberGoal = () => {
     if (isReadOnly) return;
     const newGoal: Goal = {
       id: `g${Date.now()}`,
@@ -192,11 +319,58 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       createdAt: new Date().toISOString(),
       goalType: 'General',
       weekStart: currentWeekStart,
-      // Empty-title path uses the type fallback; once the trader
-      // names the goal, the title-edit handler re-classifies.
-      measurability: defaultMeasurabilityForType('General'),
+      measurability: 'trade',
+      kind: 'number',
+      // Sensible default rule — trader edits inline. R-target is
+      // the most common number goal.
+      numberRule: { field: 'riskReward', operator: '>=', value: 2 },
     };
     setGoals(prev => [...prev, newGoal]);
+    invalidateCurrentWeekClassifications();
+  };
+
+  // Per-field updates for a number goal's rule. Each persists via the
+  // existing useEffect that writes `goals` to localStorage on change.
+  const updateNumberRuleField = (id: string, field: GoalField) => {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const cur = g.numberRule || { field: 'riskReward', operator: '>=', value: 0 };
+      // Coerce value when switching to an enum field so a leftover
+      // number doesn't sit in the dropdown as an invalid option.
+      const meta = NUMBER_GOAL_FIELDS.find(f => f.value === field);
+      let value: number | string = cur.value;
+      if (meta?.valueKind === 'enum' && meta.enumOptions) {
+        value = meta.enumOptions[0];
+      } else if (meta?.valueKind === 'number' && typeof cur.value !== 'number') {
+        value = 0;
+      } else if (meta?.valueKind === 'time' && typeof cur.value !== 'string') {
+        value = '09:30';
+      }
+      return { ...g, numberRule: { ...cur, field, value } };
+    }));
+    invalidateCurrentWeekClassifications();
+  };
+  const updateNumberRuleOperator = (id: string, operator: GoalOperator) => {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const cur = g.numberRule || { field: 'riskReward', operator: '>=', value: 0 };
+      return { ...g, numberRule: { ...cur, operator } };
+    }));
+    invalidateCurrentWeekClassifications();
+  };
+  const updateNumberRuleValue = (id: string, raw: string, valueKind: 'number' | 'time' | 'enum') => {
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      const cur = g.numberRule || { field: 'riskReward', operator: '>=', value: 0 };
+      let value: number | string = raw;
+      if (valueKind === 'number') {
+        const n = parseFloat(raw);
+        value = Number.isFinite(n) ? n : 0;
+      }
+      // 'time' and 'enum' stay as strings.
+      return { ...g, numberRule: { ...cur, value } };
+    }));
+    invalidateCurrentWeekClassifications();
   };
 
   const updateGoalTitle = (id: string, title: string) => {
@@ -568,37 +742,189 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
         )}
         {goalMode === 'psychology' && visibleGoals.map((g, idx) => {
           const isExpanded = expandedGoalId === g.id;
+          const kind = getEffectiveKind(g);
+          const accent = kind === 'number' ? '#4a9eff' : teal;
+          // Number-goal field metadata — drives the value input shape.
+          const numberFieldMeta = kind === 'number'
+            ? (NUMBER_GOAL_FIELDS.find(f => f.value === (g.numberRule?.field || 'riskReward'))
+              || NUMBER_GOAL_FIELDS[0])
+            : null;
           return (
             <div key={g.id} style={{
               background: '#1f2430',
-              border: isExpanded ? '1px solid rgba(0,212,160,0.5)' : '1px solid #2A3143',
+              border: isExpanded ? `1px solid ${kind === 'number' ? 'rgba(74,158,255,0.5)' : 'rgba(0,212,160,0.5)'}` : '1px solid #2A3143',
               borderRadius: 12,
               padding: '24px 28px',
               marginBottom: 16,
               boxShadow: isExpanded
-                ? '0 0 15px rgba(0,212,160,0.18), 0 0 30px rgba(0,212,160,0.06)'
+                ? (kind === 'number'
+                    ? '0 0 15px rgba(74,158,255,0.18), 0 0 30px rgba(74,158,255,0.06)'
+                    : '0 0 15px rgba(0,212,160,0.18), 0 0 30px rgba(0,212,160,0.06)')
                 : '0 2px 10px rgba(0,0,0,0.3)',
               transition: 'all 0.3s ease',
             }}>
               {/* Top row: number + title area + context button + delete */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                {/* Green numbered circle */}
+                {/* Numbered circle — accent color matches goal kind */}
                 <div style={{
                   width: 36,
                   height: 36,
                   borderRadius: '50%',
-                  border: `2px solid ${teal}`,
+                  border: `2px solid ${accent}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: teal, fontFamily: fm, lineHeight: 1 }}>{idx + 1}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: accent, fontFamily: fm, lineHeight: 1 }}>{idx + 1}</span>
                 </div>
 
-                {/* Title + TYPE tag */}
+                {/* Title + KIND tag — number goals render the rule
+                    builder (label / field / operator / value) instead
+                    of a free-text title. */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {isReadOnly ? (
+                  {kind === 'number' ? (
+                    <>
+                      {/* Label input — what the trader names the rule */}
+                      {isReadOnly ? (
+                        <div style={{ width: '100%', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, letterSpacing: 1, padding: '2px 0', textTransform: 'uppercase' }}>
+                          {g.title || '—'}
+                        </div>
+                      ) : (
+                        <input
+                          value={g.title}
+                          onChange={e => updateGoalTitle(g.id, e.target.value.toUpperCase())}
+                          placeholder="LABEL (E.G. GO FOR 2R)"
+                          style={{
+                            width: '100%',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: '1px solid #2a2b32',
+                            outline: 'none',
+                            color: '#ffffff',
+                            fontFamily: fd,
+                            fontSize: 16,
+                            fontWeight: 700,
+                            letterSpacing: 1,
+                            cursor: 'text',
+                            padding: '2px 0',
+                            textTransform: 'uppercase',
+                          }}
+                        />
+                      )}
+                      {/* Builder row: field | operator | value */}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <select
+                          disabled={isReadOnly}
+                          value={g.numberRule?.field || 'riskReward'}
+                          onChange={e => updateNumberRuleField(g.id, e.target.value as GoalField)}
+                          style={{
+                            background: '#0f1318',
+                            border: '1px solid #2A3143',
+                            color: '#e8e8f0',
+                            fontFamily: fm,
+                            fontSize: 13,
+                            padding: '8px 10px',
+                            borderRadius: 6,
+                            cursor: isReadOnly ? 'default' : 'pointer',
+                            outline: 'none',
+                            flex: '1 1 200px',
+                            minWidth: 0,
+                          }}
+                        >
+                          {NUMBER_GOAL_FIELDS.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          disabled={isReadOnly}
+                          value={g.numberRule?.operator || '>='}
+                          onChange={e => updateNumberRuleOperator(g.id, e.target.value as GoalOperator)}
+                          style={{
+                            background: '#0f1318',
+                            border: '1px solid #2A3143',
+                            color: '#e8e8f0',
+                            fontFamily: fm,
+                            fontSize: 13,
+                            padding: '8px 10px',
+                            borderRadius: 6,
+                            cursor: isReadOnly ? 'default' : 'pointer',
+                            outline: 'none',
+                            flex: '0 0 130px',
+                          }}
+                        >
+                          {NUMBER_GOAL_OPERATORS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                        {numberFieldMeta?.valueKind === 'enum' && numberFieldMeta.enumOptions ? (
+                          <select
+                            disabled={isReadOnly}
+                            value={String(g.numberRule?.value ?? numberFieldMeta.enumOptions[0])}
+                            onChange={e => updateNumberRuleValue(g.id, e.target.value, 'enum')}
+                            style={{
+                              background: '#0f1318',
+                              border: '1px solid #2A3143',
+                              color: '#e8e8f0',
+                              fontFamily: fm,
+                              fontSize: 13,
+                              padding: '8px 10px',
+                              borderRadius: 6,
+                              cursor: isReadOnly ? 'default' : 'pointer',
+                              outline: 'none',
+                              flex: '1 1 120px',
+                              minWidth: 0,
+                            }}
+                          >
+                            {numberFieldMeta.enumOptions.map(opt => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        ) : numberFieldMeta?.valueKind === 'time' ? (
+                          <input
+                            type="time"
+                            disabled={isReadOnly}
+                            value={String(g.numberRule?.value ?? '09:30')}
+                            onChange={e => updateNumberRuleValue(g.id, e.target.value, 'time')}
+                            style={{
+                              background: '#0f1318',
+                              border: '1px solid #2A3143',
+                              color: '#e8e8f0',
+                              fontFamily: fm,
+                              fontSize: 13,
+                              padding: '8px 10px',
+                              borderRadius: 6,
+                              cursor: isReadOnly ? 'default' : 'text',
+                              outline: 'none',
+                              flex: '0 0 140px',
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="number"
+                            step="any"
+                            disabled={isReadOnly}
+                            value={typeof g.numberRule?.value === 'number' ? g.numberRule.value : ''}
+                            onChange={e => updateNumberRuleValue(g.id, e.target.value, 'number')}
+                            placeholder={numberFieldMeta?.placeholder}
+                            style={{
+                              background: '#0f1318',
+                              border: '1px solid #2A3143',
+                              color: '#e8e8f0',
+                              fontFamily: fm,
+                              fontSize: 13,
+                              padding: '8px 10px',
+                              borderRadius: 6,
+                              cursor: isReadOnly ? 'default' : 'text',
+                              outline: 'none',
+                              flex: '1 1 120px',
+                              minWidth: 0,
+                            }}
+                          />
+                        )}
+                      </div>
+                    </>
+                  ) : isReadOnly ? (
                     <div style={{ width: '100%', color: '#ffffff', fontFamily: fd, fontSize: 16, fontWeight: 700, letterSpacing: 1, padding: '2px 0', textTransform: 'uppercase' }}>
                       {g.title || '—'}
                     </div>
@@ -645,51 +971,26 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                     >TYPE</span>
                     <span style={{ fontFamily: fm, fontSize: 13, color: '#888' }}>{g.goalType}</span>
 
-                    {/* Measurability pills — two-way pick. PSYCH = scored
-                        from journal text only. NUMBER = scored from trade
-                        fields only (R:R floors, sizing, etc.). The old
-                        "BOTH" option was removed because it double-counted
-                        the same goal across both panels; trader picks the
-                        side they want and we score there. */}
+                    {/* Kind chip — read-only indicator of which side
+                        this goal renders on. PSYCH = scored by Haiku
+                        from journal text. NUMBER = scored by JS from
+                        trade fields. Kind is set at creation and the
+                        trader changes it by deleting + recreating
+                        (number goals carry a rule structure that
+                        can't be re-derived from psych free text). */}
                     <span style={{
                       fontFamily: fm,
                       fontSize: 11,
                       fontWeight: 700,
-                      letterSpacing: 1,
-                      color: '#a0a3ab',
+                      letterSpacing: 1.5,
+                      padding: '2px 10px',
+                      borderRadius: 4,
                       marginLeft: 12,
-                    }}>MEASURED BY</span>
-                    <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>
-                      {(['journal', 'trade'] as const).map(val => {
-                        // Normalize legacy 'both' to 'journal' for the
-                        // active-state read so existing BOTH goals show
-                        // PSYCH as selected until the trader flips them.
-                        const current = (g.measurability === 'both' || !g.measurability) ? 'journal' : g.measurability;
-                        const isActive = current === val;
-                        const label = val === 'journal' ? 'PSYCH' : 'NUMBER';
-                        return (
-                          <span
-                            key={val}
-                            onClick={isReadOnly ? undefined : () => setMeasurability(g.id, val)}
-                            style={{
-                              fontFamily: fm,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              letterSpacing: 1,
-                              padding: '2px 10px',
-                              borderRadius: 4,
-                              cursor: isReadOnly ? 'default' : 'pointer',
-                              userSelect: 'none',
-                              transition: 'all 0.15s ease',
-                              background: isActive ? '#00d4a0' : 'transparent',
-                              color: isActive ? '#0e0f14' : '#00d4a0',
-                              border: '1px solid #00d4a0',
-                              opacity: isActive ? 1 : 0.5,
-                            }}
-                          >{label}</span>
-                        );
-                      })}
-                    </div>
+                      background: kind === 'number' ? 'rgba(74,158,255,0.15)' : 'rgba(0,212,160,0.15)',
+                      color: accent,
+                      border: `1px solid ${accent}`,
+                      userSelect: 'none',
+                    }}>{kind === 'number' ? 'NUMBER' : 'PSYCH'}</span>
                   </div>
 
                   {/* Action items below type tag */}
@@ -873,30 +1174,48 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
           );
         })}
 
-        {/* ═══ Add New Goal Button (Psychology view only, current week only) ═══ */}
+        {/* ═══ Add New Goal — PSYCHOLOGY / NUMERICAL picker ═══
+             Two-button row, always visible. The trader picks which
+             kind of rule they want before any input fields appear:
+             - PSYCHOLOGY → free-text rule, scored by Haiku.
+             - NUMERICAL  → structured rule (field/operator/value),
+                            scored deterministically in JS. */}
         {goalMode === 'psychology' && !isReadOnly && (
-          <div
-            onClick={addNewGoal}
-            onMouseEnter={() => setHoveredAddBtn(true)}
-            onMouseLeave={() => setHoveredAddBtn(false)}
-            style={{
-              border: `1px dashed ${hoveredAddBtn ? teal : '#2a2b32'}`,
-              borderRadius: 12,
-              padding: '22px 20px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              marginTop: 8,
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <span style={{
-              fontSize: 14,
-              color: hoveredAddBtn ? teal : '#666',
-              fontFamily: fm,
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              transition: 'color 0.15s ease',
-            }}>+ Initialize New Parameter</span>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+            <div
+              onClick={addNewPsychGoal}
+              style={{
+                flex: 1,
+                border: `1px dashed #2a2b32`,
+                borderRadius: 12,
+                padding: '22px 20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                background: '#13141a',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = teal; (e.currentTarget.firstChild as HTMLElement).style.color = teal; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; (e.currentTarget.firstChild as HTMLElement).style.color = '#a0a3ab'; }}
+            >
+              <span style={{ fontSize: 14, color: '#a0a3ab', fontFamily: fm, letterSpacing: 2, textTransform: 'uppercase', transition: 'color 0.15s ease' }}>+ Psychology Rule</span>
+            </div>
+            <div
+              onClick={addNewNumberGoal}
+              style={{
+                flex: 1,
+                border: `1px dashed #2a2b32`,
+                borderRadius: 12,
+                padding: '22px 20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                background: '#13141a',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a9eff'; (e.currentTarget.firstChild as HTMLElement).style.color = '#4a9eff'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2b32'; (e.currentTarget.firstChild as HTMLElement).style.color = '#a0a3ab'; }}
+            >
+              <span style={{ fontSize: 14, color: '#a0a3ab', fontFamily: fm, letterSpacing: 2, textTransform: 'uppercase', transition: 'color 0.15s ease' }}>+ Numerical Rule</span>
+            </div>
           </div>
         )}
 

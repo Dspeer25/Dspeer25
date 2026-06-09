@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -482,21 +482,31 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     let cancelled = false;
     (async () => {
       try {
-        // Scope to the current week's goals only. The classify effect
-        // runs exclusively against current-week trades (see weekStart
-        // filter above), so Haiku must see the same goal list the UI
-        // filters to. Sending all-weeks goals produced goalIndex
-        // 3/4/5 entries that didn't map to any rendered candle.
+        // Scope to current week's PSYCH goals only — number goals are
+        // scored deterministically in JS and never round-trip through
+        // Haiku. Keeping the goalIndex aligned to the full week list
+        // matters for the rendered candle's goalIdx mapping, so we
+        // keep that index but tag non-psych entries as "skip" so
+        // Haiku still emits a per-goal entry shape that the renderer
+        // can ignore.
         const currentWeekGoals = getGoalsForWeek(getCurrentWeekStart());
         const goalsList = currentWeekGoals.slice(0, 10).map((g, i) => {
           const ctx = g.context && g.context.length > 0 ? ` — context: ${g.context.join(' | ')}` : '';
           const crit = g.scoringCriteria
             ? ` — compliance: ${g.scoringCriteria.compliance}; violation: ${g.scoringCriteria.violation}; scope: ${g.scoringCriteria.scope}`
             : '';
-          // measurability tells Haiku which score families to emit
-          // for this goalIndex (tradeScores and/or psychScores).
-          const meas = g.measurability ?? 'journal';
-          return `${i}. "${g.title || '(untitled)'}" [${g.goalType}] measurability=${meas}${ctx}${crit}`;
+          // Force measurability=journal for every goal we send.
+          // Number goals never reach Haiku — they're scored in JS —
+          // so we don't ask Haiku for a tradeScores entry on any
+          // goal. Keeps the goalIndex contract intact for psych
+          // goals while preventing stray cross-side emissions.
+          const k = getEffectiveKind(g);
+          // Skip number goals entirely — Haiku doesn't see them.
+          // (Use a sentinel that the renderer can filter on.)
+          if (k === 'number') {
+            return `${i}. (number goal — not scored by Haiku) measurability=skip`;
+          }
+          return `${i}. "${g.title || '(untitled)'}" [${g.goalType}] measurability=journal${ctx}${crit}`;
         }).join('\n');
 
         // Quantitative targets — sent so Haiku can score each trade against
@@ -641,14 +651,11 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     return weekGoals
       .map((g, goalIdx) => ({ g, goalIdx }))
       .filter(({ g }) => {
-        const m = g.measurability ?? 'journal';
-        // BOTH was retired — any legacy 'both' goal is treated as
-        // 'journal' (psych side only) until the trader explicitly
-        // flips it to NUMBER on the goal card.
-        const normalized = m === 'both' ? 'journal' : m;
-        return section === 'trades'
-          ? normalized === 'trade'
-          : normalized === 'journal';
+        // Kind-based filter. Trades column = number goals only,
+        // scored deterministically below. Psych column = psych goals
+        // only, scored by Haiku. No goal appears on both sides.
+        const k = getEffectiveKind(g);
+        return section === 'trades' ? k === 'number' : k === 'psych';
       })
       .slice(0, 3)
       .map(({ g, goalIdx }) => {
@@ -665,70 +672,55 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           return { ...base, actual: 0, target: 0, nullCount: 0, empty: true };
         }
 
-        const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
+        // ── NUMBER goals (trades column) — deterministic JS scoring.
+        //    Same trade + same rule = same result. No Haiku, no cache.
+        if (section === 'trades') {
+          const rule = g.numberRule;
+          if (!rule) {
+            // Rule not built yet — hollow candle until the trader
+            // finishes the builder.
+            return { ...base, actual: 0, target: 0, nullCount: 0, empty: false };
+          }
+          let pass = 0;
+          let fail = 0;
+          let na = 0;
+          for (const t of weekTrades) {
+            const r = scoreNumberGoal(t, rule, { allTrades: weekTrades });
+            if (r === 'pass') pass++;
+            else if (r === 'fail') fail++;
+            else na++;
+          }
+          // 'na' trades are excluded from both numerator and denom —
+          // matches the user spec for R-target rules where a loss
+          // isn't a violation, just doesn't apply.
+          return { ...base, actual: pass, target: pass + fail, nullCount: na, empty: false };
+        }
 
-        // Primary: AI-scored compliance. Reads tradeScores for the
-        // trade column, psychScores for the psych column.
-        //
-        // Null fallback (psych side only): when Haiku returns
-        // compliance=null on a trade with ANY journal text, we
-        // treat it as a violation (0). The "not evaluated" state
-        // is reserved for trades with a literally empty journal —
-        // a deterministic, render-time replacement for Haiku's
-        // bail-out path. Trade side keeps the strict null
-        // semantics because no analogous "any field" heuristic
-        // makes sense there.
+        // ── PSYCH goals (psych column) — Haiku scoring with the
+        //    null → violation fallback, unchanged from before.
+        const aiScoredTrades = weekTrades.filter(t => classifications[t.id]);
         if (aiScoredTrades.length >= 1) {
-          const scoresKey = section === 'trades' ? 'tradeScores' : 'psychScores';
           type PairedScore = { trade: Trade; compliance: 0 | 1 | null };
-          // Build one entry per scored trade, even if Haiku omitted the
-          // entry for this goalIndex. An omitted entry is treated the
-          // same as compliance=null, which lets the loss/journal
-          // fallbacks below convert it to a violation rather than
-          // dropping the trade off the candle entirely (the old
-          // behavior that produced "1/1 trades" when Haiku skipped 4
-          // of 5 entries for a numeric goal).
           const paired: PairedScore[] = aiScoredTrades.map(t => {
-            const arr = classifications[t.id][scoresKey];
+            const arr = classifications[t.id]['psychScores'];
             const gs = Array.isArray(arr) ? arr.find(s => s.goalIndex === goalIdx) : undefined;
             return { trade: t, compliance: gs ? gs.compliance : null };
           });
-          // Apply fallbacks:
-          //  - psych nulls + journal text → ✗ (default violation).
-          //  - trade nulls on a LOSS / BE → drop entirely. R-target
-          //    NUMBER goals can only be evaluated against WINS — a
-          //    losing trade by definition didn't hit the target, so
-          //    it's "not applicable" rather than a violation. We
-          //    exclude it from both the numerator and denominator
-          //    instead of marking it red. Wins without R:R stay
-          //    null because we genuinely can't tell if they met
-          //    the rule (counted as "not evaluated").
-          const resolved = paired
-            .filter(p => {
-              if (section !== 'trades') return true;
-              if (p.compliance !== null) return true; // Haiku spoke — keep
-              return p.trade.result === 'WIN';        // null + non-win → drop
-            })
-            .map(p => {
-              if (p.compliance !== null) return p;
-              if (section === 'psych') {
-                const hasJournal = (p.trade.journal || '').trim().length > 0;
-                return hasJournal ? { ...p, compliance: 0 as const } : p;
-              }
-              // section === 'trades' — only WIN+null reaches here
-              return p;
-            });
+          // Null + journal text → ✗ (default violation). Empty
+          // journal stays null ("not evaluated").
+          const resolved = paired.map(p => {
+            if (p.compliance !== null) return p;
+            const hasJournal = (p.trade.journal || '').trim().length > 0;
+            return hasJournal ? { ...p, compliance: 0 as const } : p;
+          });
           const evaluable = resolved.filter(p => p.compliance === 0 || p.compliance === 1);
           const complied  = evaluable.filter(p => p.compliance === 1).length;
           const nullCount = resolved.length - evaluable.length;
           return { ...base, actual: complied, target: evaluable.length, nullCount, empty: false };
         }
 
-        // Pre-score state: no classifications yet. Render a hollow
-        // grey candle via target=0. We no longer apply the journal
-        // keyword fallback — it was a journal-side proxy and has no
-        // meaning on the trade-data side; applying it symmetrically
-        // across columns risks surfacing numbers that look real.
+        // Pre-classify state for psych — hollow candle until Haiku
+        // runs on the current week's trades.
         return { ...base, actual: 0, target: 0, nullCount: 0, empty: false };
       });
   };
@@ -767,6 +759,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
     const weekTrades = selectedWeekBucket?.trades || [];
     const classifiedCount = weekTrades.filter(t => classifications[t.id]).length;
     const anyClassified = classifiedCount > 0;
+    // For NUMBER goals we score every trade deterministically in JS
+    // — no Haiku, no "haven't been scored yet" gate. Pull the rule
+    // from the matching weekGoal at goalIdx so the per-row status
+    // lines up with the candle aggregate above.
+    const numberGoal = section === 'trades' ? weekGoals[goalIdx] : undefined;
+    const numberRule = numberGoal && getEffectiveKind(numberGoal) === 'number' ? numberGoal.numberRule : undefined;
+    const isNumberSection = section === 'trades' && !!numberRule;
 
     const fmtDate = (iso: string) => {
       // Trade.date is a local-calendar "YYYY-MM-DD" — parsing with
@@ -789,7 +788,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         marginBottom: 12,
         borderRadius: '0 6px 6px 0',
       }}>
-        {!anyClassified ? (
+        {!isNumberSection && !anyClassified ? (
           <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', padding: 12, textAlign: 'center' }}>
             Trades in this week haven&apos;t been scored yet. Re-open Analysis after the batch completes.
           </div>
@@ -808,29 +807,26 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               // for this goal (e.g. journal-only goal in the trades
               // column), and null compliance (no evidence in the
               // respective data source).
-              // Null fallbacks (match buildGoalRows so candle aggregate
-              // and per-trade status stay in sync). Missing entries
-              // (gs undefined) are treated identically to
-              // compliance=null because Haiku sometimes omits the row
-              // entirely. Resolution rules:
-              //   psych  + null + journal text  → ✗
-              //   trade  + null + LOSS / BE     → "not applicable" (grey, excluded reason)
-              //   trade  + null + WIN           → "not evaluated" (genuinely no R:R)
+              // ── Compliance resolution ──
+              // Trade section + number rule → score via JS scorer.
+              // Psych section → Haiku compliance with null + journal
+              // text → ✗ fallback. Missing entries treated as null.
               const hasJournalText = (t.journal || '').trim().length > 0;
               const haikuCompliance: 0 | 1 | null = gs ? gs.compliance : null;
+              const numberResult = isNumberSection && numberRule
+                ? scoreNumberGoal(t, numberRule, { allTrades: weekTrades })
+                : null;
+              const isNumberNa = numberResult === 'na';
               const isPsychSideJournalFallback =
                 section === 'psych' &&
                 haikuCompliance === null &&
                 hasJournalText;
-              const isTradeSideNotApplicable =
-                section === 'trades' &&
-                haikuCompliance === null &&
-                (t.result === 'LOSS' || t.result === 'BREAKEVEN');
-              const effectiveCompliance: 0 | 1 | null =
-                !c ? null
-                : haikuCompliance !== null ? haikuCompliance
-                : isPsychSideJournalFallback ? 0
-                : null;
+              const effectiveCompliance: 0 | 1 | null = isNumberSection
+                ? (numberResult === 'pass' ? 1 : numberResult === 'fail' ? 0 : null)
+                : !c ? null
+                  : haikuCompliance !== null ? haikuCompliance
+                  : isPsychSideJournalFallback ? 0
+                  : null;
               const status: 'passed' | 'violated' | 'none' =
                 effectiveCompliance === null ? 'none'
                 : effectiveCompliance === 1 ? 'passed'
@@ -851,14 +847,31 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 status === 'passed'   ? 'rgba(0, 212, 160, 0.04)'
                 : status === 'violated' ? 'rgba(255, 68, 68, 0.06)'
                 : 'transparent';
-              // Replace Haiku's null reason (or missing entry) when a
-              // fallback fires or a trade is "not applicable".
-              const reason =
-                isPsychSideJournalFallback
+              // Reason text. Number goals build their reason from
+              // the rule + the trade's field value. Psych goals use
+              // Haiku's reason (or the fallback override).
+              const reason = isNumberSection && numberRule
+                ? (() => {
+                    const opLabel = numberRule.operator;
+                    const fieldLabel = numberRule.field;
+                    if (numberResult === 'na') {
+                      if (numberRule.field === 'riskReward') {
+                        if (t.result === 'LOSS' || t.result === 'BREAKEVEN') {
+                          return `Trade was a ${t.result === 'LOSS' ? 'loss' : 'breakeven'} — R-target rule doesn't apply. Excluded.`;
+                        }
+                        return `Win without R:R logged — can't tell if the ${numberRule.value}R target was met. Excluded.`;
+                      }
+                      return 'Rule does not apply to this trade.';
+                    }
+                    if (numberResult === 'pass') {
+                      return `${fieldLabel} satisfied ${opLabel} ${numberRule.value}.`;
+                    }
+                    // fail
+                    return `${fieldLabel} did not satisfy ${opLabel} ${numberRule.value}.`;
+                  })()
+                : isPsychSideJournalFallback
                   ? "Journal present but doesn't establish compliance with this rule — counted as a violation by default. Edit the journal to be explicit if it should pass."
-                  : isTradeSideNotApplicable
-                    ? `Trade was a ${t.result === 'LOSS' ? 'loss' : 'breakeven'} — R-target rule doesn't apply. Excluded from the candle.`
-                    : (gs?.reason || '');
+                  : (gs?.reason || '');
               // Drop the "no evidence in journal" filler on not-evaluated
               // rows — those are informational, the reason line just adds
               // noise. Keep reasons on passed/violated rows.
