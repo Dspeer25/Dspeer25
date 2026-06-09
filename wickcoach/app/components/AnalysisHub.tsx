@@ -681,29 +681,43 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         if (aiScoredTrades.length >= 1) {
           const scoresKey = section === 'trades' ? 'tradeScores' : 'psychScores';
           type PairedScore = { trade: Trade; compliance: 0 | 1 | null };
-          const paired: PairedScore[] = aiScoredTrades
-            .map(t => {
-              const arr = classifications[t.id][scoresKey];
-              const gs = Array.isArray(arr) ? arr.find(s => s.goalIndex === goalIdx) : undefined;
-              return gs ? { trade: t, compliance: gs.compliance } : null;
-            })
-            .filter((p): p is PairedScore => p !== null);
+          // Build one entry per scored trade, even if Haiku omitted the
+          // entry for this goalIndex. An omitted entry is treated the
+          // same as compliance=null, which lets the loss/journal
+          // fallbacks below convert it to a violation rather than
+          // dropping the trade off the candle entirely (the old
+          // behavior that produced "1/1 trades" when Haiku skipped 4
+          // of 5 entries for a numeric goal).
+          const paired: PairedScore[] = aiScoredTrades.map(t => {
+            const arr = classifications[t.id][scoresKey];
+            const gs = Array.isArray(arr) ? arr.find(s => s.goalIndex === goalIdx) : undefined;
+            return { trade: t, compliance: gs ? gs.compliance : null };
+          });
           // Apply fallbacks:
           //  - psych nulls + journal text → ✗ (default violation).
-          //  - trade nulls on a losing trade → ✗ (a loss didn't hit
-          //    the R target, regardless of whether R:R was logged).
-          //    Wins / BE without R:R stay null because we genuinely
-          //    can't tell if they met the rule.
-          const resolved = paired.map(p => {
-            if (p.compliance !== null) return p;
-            if (section === 'psych') {
-              const hasJournal = (p.trade.journal || '').trim().length > 0;
-              return hasJournal ? { ...p, compliance: 0 as const } : p;
-            }
-            // section === 'trades'
-            if (p.trade.result === 'LOSS') return { ...p, compliance: 0 as const };
-            return p;
-          });
+          //  - trade nulls on a LOSS / BE → drop entirely. R-target
+          //    NUMBER goals can only be evaluated against WINS — a
+          //    losing trade by definition didn't hit the target, so
+          //    it's "not applicable" rather than a violation. We
+          //    exclude it from both the numerator and denominator
+          //    instead of marking it red. Wins without R:R stay
+          //    null because we genuinely can't tell if they met
+          //    the rule (counted as "not evaluated").
+          const resolved = paired
+            .filter(p => {
+              if (section !== 'trades') return true;
+              if (p.compliance !== null) return true; // Haiku spoke — keep
+              return p.trade.result === 'WIN';        // null + non-win → drop
+            })
+            .map(p => {
+              if (p.compliance !== null) return p;
+              if (section === 'psych') {
+                const hasJournal = (p.trade.journal || '').trim().length > 0;
+                return hasJournal ? { ...p, compliance: 0 as const } : p;
+              }
+              // section === 'trades' — only WIN+null reaches here
+              return p;
+            });
           const evaluable = resolved.filter(p => p.compliance === 0 || p.compliance === 1);
           const complied  = evaluable.filter(p => p.compliance === 1).length;
           const nullCount = resolved.length - evaluable.length;
@@ -721,6 +735,24 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
   const selectedWeekTradeGoals = buildGoalRows('trades');
   const selectedWeekPsychGoals = buildGoalRows('psych');
+
+  // Render-time diagnostic — fires whenever classifications or the
+  // selected bucket changes so we can confirm in dev-server.log that
+  // the candle math has the data it needs. Logged via console.warn
+  // because Next.js forwards browser warns to the server log.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const wt = selectedWeekBucket?.trades || [];
+    const scoredIds = wt.filter(t => classifications[t.id]).map(t => t.id);
+    console.warn('[AnalysisHub.render] candle data:', {
+      selectedWeekStartISO,
+      bucketTradeCount: wt.length,
+      bucketTradesScored: scoredIds.length,
+      classificationsKnown: Object.keys(classifications).length,
+      tradeRows: selectedWeekTradeGoals.map(r => `goalIdx=${r.goalIdx} "${r.title.slice(0, 30)}" target=${r.target} actual=${r.actual} null=${r.nullCount}`),
+      psychRows: selectedWeekPsychGoals.map(r => `goalIdx=${r.goalIdx} "${r.title.slice(0, 30)}" target=${r.target} actual=${r.actual} null=${r.nullCount}`),
+    });
+  }, [classifications, selectedWeekBucket, selectedWeekStartISO, selectedWeekTradeGoals, selectedWeekPsychGoals]);
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—' };
   const hasGoalsForSelectedWeek = weekGoals.length > 0;
 
@@ -777,22 +809,28 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               // column), and null compliance (no evidence in the
               // respective data source).
               // Null fallbacks (match buildGoalRows so candle aggregate
-              // and per-trade status stay in sync):
-              //   psych null + journal text → ✗
-              //   trade null + LOSS         → ✗
+              // and per-trade status stay in sync). Missing entries
+              // (gs undefined) are treated identically to
+              // compliance=null because Haiku sometimes omits the row
+              // entirely. Resolution rules:
+              //   psych  + null + journal text  → ✗
+              //   trade  + null + LOSS / BE     → "not applicable" (grey, excluded reason)
+              //   trade  + null + WIN           → "not evaluated" (genuinely no R:R)
               const hasJournalText = (t.journal || '').trim().length > 0;
-              const isTradeSideLossNull =
-                section === 'trades' &&
-                gs?.compliance === null &&
-                t.result === 'LOSS';
-              const isPsychSideJournalNull =
+              const haikuCompliance: 0 | 1 | null = gs ? gs.compliance : null;
+              const isPsychSideJournalFallback =
                 section === 'psych' &&
-                gs?.compliance === null &&
+                haikuCompliance === null &&
                 hasJournalText;
+              const isTradeSideNotApplicable =
+                section === 'trades' &&
+                haikuCompliance === null &&
+                (t.result === 'LOSS' || t.result === 'BREAKEVEN');
               const effectiveCompliance: 0 | 1 | null =
-                !c || !gs ? null
-                : (isTradeSideLossNull || isPsychSideJournalNull) ? 0
-                : gs.compliance;
+                !c ? null
+                : haikuCompliance !== null ? haikuCompliance
+                : isPsychSideJournalFallback ? 0
+                : null;
               const status: 'passed' | 'violated' | 'none' =
                 effectiveCompliance === null ? 'none'
                 : effectiveCompliance === 1 ? 'passed'
@@ -813,13 +851,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 status === 'passed'   ? 'rgba(0, 212, 160, 0.04)'
                 : status === 'violated' ? 'rgba(255, 68, 68, 0.06)'
                 : 'transparent';
-              // Replace Haiku's now-contradictory null reasons when
-              // either fallback fires.
+              // Replace Haiku's null reason (or missing entry) when a
+              // fallback fires or a trade is "not applicable".
               const reason =
-                isPsychSideJournalNull
+                isPsychSideJournalFallback
                   ? "Journal present but doesn't establish compliance with this rule — counted as a violation by default. Edit the journal to be explicit if it should pass."
-                  : isTradeSideLossNull
-                    ? "Trade was a loss — didn't reach the R target. Counted as a violation."
+                  : isTradeSideNotApplicable
+                    ? `Trade was a ${t.result === 'LOSS' ? 'loss' : 'breakeven'} — R-target rule doesn't apply. Excluded from the candle.`
                     : (gs?.reason || '');
               // Drop the "no evidence in journal" filler on not-evaluated
               // rows — those are informational, the reason line just adds
@@ -1872,16 +1910,18 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 )}
                 <div style={{
                   fontFamily: fm,
-                  fontSize: 12,
-                  color: '#aab0bd',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: '#ffffff',
                   textAlign: 'center',
-                  lineHeight: 1.35,
-                  marginTop: 2,
-                  maxWidth: 160,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical' as const,
-                  overflow: 'hidden',
+                  lineHeight: 1.4,
+                  marginTop: 6,
+                  maxWidth: 200,
+                  // Full wrap — no line clamp, no truncation. Goal
+                  // titles are the rule being scored; they need to
+                  // read in full. The candle row gets enough vertical
+                  // space below via marginBottom on the panel grid.
+                  wordBreak: 'break-word',
                 }}>
                   <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{row.title}
                 </div>
