@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useRef } from "react"
-import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR } from "./shared"
+import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR, PositionType } from "./shared"
+import StrategyPicker from "./StrategyPicker"
 
 // Returns the current local time as "HH:MM" — the native format
 // <input type="time"> expects for its value attribute. Used to
@@ -38,10 +39,11 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     // stored value is never empty for fresh trades).
     const [entryTime, setEntryTime] = useState(currentLocalHHMM);
     const [exitTime, setExitTime]   = useState('');
-    const [positionType, setPositionType] = useState<'SHARES' | 'DERIVATIVES'>('DERIVATIVES');
+    const [positionType, setPositionType] = useState<PositionType>('OPTIONS');
     const [strategyType, setStrategyType] = useState('0DTE Call');
-    const [strategyInputMode, setStrategyInputMode] = useState<'select' | 'text'>('select');
-    const [customStrategy, setCustomStrategy] = useState('');
+    // Legacy free-text strategy-input toggle is gone — the StrategyPicker
+    // handles both pick and add inline. Removing strategyInputMode and
+    // customStrategy state since they're no longer wired to any UI.
     const [direction, setDirection] = useState('LONG');
     const [contracts, setContracts] = useState('');
     const [entryPrice, setEntryPrice] = useState('');
@@ -92,13 +94,15 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       setTradeDate(editingTrade.date || toLocalYMD());
       setEntryTime(to24h(editingTrade.time));
       setExitTime(to24h(editingTrade.exitTime));
-      // Strategy inference — anything stored as "Shares" routes to the
-      // SHARES position type, otherwise treat as derivatives.
-      const isShares = editingTrade.strategy === 'Shares';
-      setPositionType(isShares ? 'SHARES' : 'DERIVATIVES');
-      setStrategyInputMode('text');
-      setStrategyType('0DTE Call');
-      setCustomStrategy(isShares ? '' : (editingTrade.strategy || ''));
+      // Position-type inference: prefer the explicit field if present,
+      // otherwise fall back to the legacy heuristic (strategy = 'Shares'
+      // → SHARES, everything else → OPTIONS). FUTURES has no legacy
+      // analog, so old trades can't roll forward into it.
+      const inferredType: PositionType =
+        editingTrade.positionType
+        ?? (editingTrade.strategy === 'Shares' ? 'SHARES' : 'OPTIONS');
+      setPositionType(inferredType);
+      setStrategyType(editingTrade.strategy || '');
       setDirection(editingTrade.direction || 'LONG');
       setContracts(String(editingTrade.contracts ?? ''));
       setEntryPrice(String(editingTrade.entryPrice ?? ''));
@@ -132,9 +136,23 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
+    // Per-position-type contract multiplier:
+    //   SHARES  = 1 share = 1 (price moves directly to P/L)
+    //   OPTIONS = 1 contract = 100 shares (standard options multiplier)
+    //   FUTURES = 1 — placeholder. Real futures multipliers vary by
+    //             contract (ES = 50, NQ = 20, GC = 100, CL = 1000…).
+    //             A per-contract multiplier field is the proper fix;
+    //             for now defaulting to 1 keeps the math obvious and
+    //             prevents silently assuming 100.
+    const contractMultiplierFor = (pt: PositionType): number => {
+      if (pt === 'OPTIONS') return 100;
+      // SHARES + FUTURES both default to 1; futures need a per-contract
+      // multiplier field down the road (see comment above).
+      return 1;
+    };
     React.useEffect(() => {
       if (!plManualOverride && entryPrice && exitPrice && contracts) {
-        const multiplier = positionType === 'SHARES' ? 1 : 100;
+        const multiplier = contractMultiplierFor(positionType);
         const diff = direction === 'SHORT'
           ? parseFloat(entryPrice) - parseFloat(exitPrice)
           : parseFloat(exitPrice) - parseFloat(entryPrice);
@@ -173,8 +191,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       // After submit, reset to current "HH:MM" so the next trade
       // benefits from the same auto-fill behavior as the initial load.
       setTicker(''); setTradeDate(toLocalYMD()); setEntryTime(currentLocalHHMM()); setExitTime('');
-      setPositionType('DERIVATIVES'); setStrategyType('0DTE Call');
-      setStrategyInputMode('select'); setCustomStrategy('');
+      setPositionType('OPTIONS'); setStrategyType('0DTE Call');
       setDirection('LONG'); setContracts(''); setEntryPrice('');
       setExitPrice(''); setPl(''); setPlManualOverride(false);
       setMarkBreakeven(false);
@@ -216,11 +233,10 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       textDecorationColor: '#00d4a0',
     };
 
-    const strategyOptions = [
-      '0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp',
-      'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread',
-      'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call',
-    ];
+    // Strategy options moved into the shared StrategyPicker, which
+    // reads from the per-position-type persisted lists in localStorage
+    // and renders inline add/delete UI. See shared.ts and
+    // StrategyPicker.tsx.
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -318,25 +334,24 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
 
         <label style={labelStyle}>Position Type</label>
         <div style={{ display: 'flex', gap: 10 }}>
-          {(['SHARES', 'DERIVATIVES'] as const).map(pt => (
+          {(['SHARES', 'OPTIONS', 'FUTURES'] as const).map(pt => (
             <button key={pt} onClick={() => setPositionType(pt)} style={{ flex: 1, background: positionType === pt ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: positionType === pt ? '1px solid #00d4a0' : '1px solid #2A3143', color: positionType === pt ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{pt}</button>
           ))}
         </div>
         <div style={{ height: 16 }} />
 
-        {positionType === 'DERIVATIVES' && (<>
-          <label style={labelStyle}>Strategy Type</label>
-          {strategyInputMode === 'select' ? (<>
-            <select style={{ ...inputStyle, cursor: 'pointer' }} value={strategyType} onChange={(e) => setStrategyType(e.target.value)}>
-              {strategyOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-            <div onClick={() => setStrategyInputMode('text')} style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 11, cursor: 'pointer', marginTop: 6 }}>Or type your own</div>
-          </>) : (<>
-            <input style={inputStyle} placeholder="Type your strategy" value={customStrategy} onChange={(e) => setCustomStrategy(e.target.value)} />
-            <div onClick={() => setStrategyInputMode('select')} style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 11, cursor: 'pointer', marginTop: 6 }}>Choose from list</div>
-          </>)}
-          <div style={{ height: 16 }} />
-        </>)}
+        {/* Strategy section — shown for all 3 position types, scoped to
+            the current type's persisted list. The picker handles add /
+            delete inline so the trader can curate the dropdown without
+            leaving the form. */}
+        <label style={labelStyle}>Strategy Type</label>
+        <StrategyPicker
+          value={strategyType}
+          onChange={(v) => setStrategyType(v)}
+          positionType={positionType}
+          placeholder="Pick or add a strategy…"
+        />
+        <div style={{ height: 16 }} />
 
         <label style={labelStyle}>Direction</label>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -481,7 +496,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           const entry = parseFloat(entryPrice) || 0;
           const exit = parseFloat(exitPrice) || 0;
           const qty = parseInt(contracts) || 0;
-          const computedPl = plManualOverride ? parseFloat(pl) || 0 : (exit - entry) * qty * (positionType === 'DERIVATIVES' ? 100 : 1);
+          const computedPl = plManualOverride ? parseFloat(pl) || 0 : (exit - entry) * qty * contractMultiplierFor(positionType);
           const riskNum = parseFloat(risk) || 0;
           // When risk is 0 we skip R:R calculation entirely (em-dash).
           const savedRiskReward = riskNum > 0 ? riskReward : '\u2014';
@@ -497,7 +512,11 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
             date: tradeDate,
             time: savedEntryTime,
             exitTime: exitTime || undefined,
-            strategy: positionType === 'DERIVATIVES' ? (strategyInputMode === 'select' ? strategyType : customStrategy || 'Custom') : 'Shares',
+            // Strategy now comes straight from the picker — same path
+            // for all 3 position types. Empty string falls back to a
+            // 'Shares' / 'Untagged' default so the field is never null.
+            strategy: strategyType || (positionType === 'SHARES' ? 'Shares' : 'Untagged'),
+            positionType,
             direction: direction as 'LONG' | 'SHORT',
             contracts: qty,
             entryPrice: entry,

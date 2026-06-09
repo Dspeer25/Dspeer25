@@ -493,6 +493,92 @@ export function toLocalYMD(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+// ─── Position type + per-type strategy storage ──────────────────
+// Three position types: SHARES, OPTIONS (was 'DERIVATIVES'), FUTURES.
+// Each has its own persistent strategy list in localStorage. The
+// trader can add+delete strategies inside Log a Trade or the goal
+// builder; both surfaces read+write the same per-type lists so a
+// custom strategy added in one shows up in the other.
+
+export type PositionType = 'SHARES' | 'OPTIONS' | 'FUTURES';
+
+/** Seed defaults the first time a list is read. Trader can delete
+ *  any of these to clean up the dropdown. */
+export const STRATEGY_DEFAULTS: Record<PositionType, string[]> = {
+  SHARES:  ['Buy & Hold', 'Swing', 'Day Trade', 'Mean Reversion', 'Position Trade'],
+  OPTIONS: ['0DTE Call', '0DTE Put', 'Call Scalp', 'Put Scalp', 'Call Debit Spread', 'Put Debit Spread', 'Put Credit Spread', 'Call Credit Spread', 'Iron Condor', 'Naked Put', 'Naked Call'],
+  FUTURES: ['Trend Follow', 'Breakout', 'Mean Reversion', 'Scalp', 'Swing', 'Range Fade'],
+};
+
+function strategiesKey(pt: PositionType): string {
+  return `wickcoach_custom_strategies_${pt.toLowerCase()}`;
+}
+
+/** Reads the persisted strategy list for a position type. Seeds the
+ *  defaults on first access so the dropdown is never empty. */
+export function readCustomStrategies(pt: PositionType): string[] {
+  if (typeof window === 'undefined') return STRATEGY_DEFAULTS[pt];
+  try {
+    const raw = localStorage.getItem(strategiesKey(pt));
+    if (raw === null) {
+      const defaults = STRATEGY_DEFAULTS[pt];
+      try { localStorage.setItem(strategiesKey(pt), JSON.stringify(defaults)); } catch { /* ignore */ }
+      return defaults;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === 'string') : STRATEGY_DEFAULTS[pt];
+  } catch {
+    return STRATEGY_DEFAULTS[pt];
+  }
+}
+
+export function writeCustomStrategies(pt: PositionType, list: string[]): void {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(strategiesKey(pt), JSON.stringify(list)); } catch { /* ignore */ }
+}
+
+/** Append a strategy if it's not already in the list. Returns the
+ *  resulting list so callers can refresh state without a re-read. */
+export function addCustomStrategy(pt: PositionType, name: string): string[] {
+  const trimmed = name.trim();
+  if (!trimmed) return readCustomStrategies(pt);
+  const current = readCustomStrategies(pt);
+  if (current.includes(trimmed)) return current;
+  const next = [...current, trimmed];
+  writeCustomStrategies(pt, next);
+  return next;
+}
+
+/** Remove a strategy from this position type's list. Existing trades
+ *  that referenced the strategy are left alone — only the future
+ *  selection list is affected. */
+export function removeCustomStrategy(pt: PositionType, name: string): string[] {
+  const current = readCustomStrategies(pt);
+  const next = current.filter(s => s !== name);
+  writeCustomStrategies(pt, next);
+  return next;
+}
+
+/** Union of all three lists, deduped + sorted. Used by the NUMBER
+ *  goal builder's "Strategy name" dropdown where the goal isn't
+ *  scoped to a specific position type. */
+export function readAllCustomStrategies(): string[] {
+  const set = new Set<string>();
+  for (const pt of ['SHARES', 'OPTIONS', 'FUTURES'] as PositionType[]) {
+    for (const s of readCustomStrategies(pt)) set.add(s);
+  }
+  return Array.from(set).sort();
+}
+
+/** Delete a strategy name from every position-type list that contains
+ *  it. Idempotent. Used by the goal builder's delete control where
+ *  the name isn't scoped to one type. */
+export function removeCustomStrategyEverywhere(name: string): void {
+  for (const pt of ['SHARES', 'OPTIONS', 'FUTURES'] as PositionType[]) {
+    removeCustomStrategy(pt, name);
+  }
+}
+
 export interface Trade {
   id: string;
   ticker: string;
@@ -509,6 +595,11 @@ export interface Trade {
    *  with imported records (Trading Tracker doesn't capture it). */
   exitTime?: string;
   strategy: string;
+  /** Position type of the trade. Optional for backward compat —
+   *  legacy trades without this field are inferred as SHARES when
+   *  strategy === 'Shares', otherwise OPTIONS (matches the historical
+   *  SHARES / DERIVATIVES split). */
+  positionType?: PositionType;
   direction: 'LONG' | 'SHORT';
   contracts: number;
   entryPrice: number;

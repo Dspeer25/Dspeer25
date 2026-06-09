@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
 import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications, GoalField, GoalOperator, NumberGoalRule, getEffectiveKind, readAccountSize } from "./shared";
+import StrategyPicker from "./StrategyPicker";
 
 // Field options for the NUMBER goal builder. Order matches what
 // a trader is most likely to reach for (R targets first). Each field
@@ -822,20 +823,10 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
             ? (NUMBER_GOAL_FIELDS.find(f => f.value === (g.numberRule?.field || 'riskReward'))
               || NUMBER_GOAL_FIELDS[0])
             : null;
-          // Strategies the trader has actually logged — used to
-          // populate the "Strategy name" dropdown when the rule
-          // references that field. Falls back to a static set when
-          // there are no trades yet.
-          const loggedStrategies = (() => {
-            if (!numberFieldMeta || numberFieldMeta.value !== 'strategy') return [] as string[];
-            const set = new Set<string>();
-            for (const t of trades) {
-              const s = (t.strategy || '').trim();
-              if (s) set.add(s);
-            }
-            const arr = Array.from(set).sort();
-            return arr.length > 0 ? arr : ['0DTE Call', '0DTE Put', 'Scalp', 'Swing', 'Shares'];
-          })();
+          // (The Strategy field now uses the shared StrategyPicker in
+          // union mode, which reads directly from the persisted
+          // per-position-type strategy lists. No need to derive
+          // options from logged trades anymore.)
           // Pre-render the unit-wrapped number/integer value input so
           // the JSX below can drop it in without nesting the prefix/
           // suffix decorations inline. Used for valueKind 'number'
@@ -1049,38 +1040,21 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                             );
                           }
                           if (meta.valueKind === 'dynamic-enum') {
-                            // Strategy dropdown sourced from logged
-                            // trades. If the stored value isn't in the
-                            // list (renamed strategy, etc.) we still
-                            // show it as a sticky option so the rule
-                            // doesn't silently rebind.
-                            const current = String(g.numberRule?.value ?? '');
-                            const options = current && !loggedStrategies.includes(current)
-                              ? [current, ...loggedStrategies]
-                              : loggedStrategies;
+                            // Strategy picker in UNION mode — reads
+                            // strategies from all 3 position-type
+                            // lists (shared with Log a Trade). Trader
+                            // can add new entries inline and pick which
+                            // list to add them to. Delete removes the
+                            // name from every list that contains it.
                             return (
-                              <select
-                                disabled={isReadOnly}
-                                value={current || options[0] || ''}
-                                onChange={e => updateNumberRuleValue(g.id, e.target.value, 'dynamic-enum')}
-                                style={{
-                                  background: '#0f1318',
-                                  border: '1px solid #2A3143',
-                                  color: '#e8e8f0',
-                                  fontFamily: fm,
-                                  fontSize: 13,
-                                  padding: '8px 10px',
-                                  borderRadius: 6,
-                                  cursor: isReadOnly ? 'default' : 'pointer',
-                                  outline: 'none',
-                                  flex: '1 1 160px',
-                                  minWidth: 0,
-                                }}
-                              >
-                                {options.map(opt => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
+                              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                                <StrategyPicker
+                                  value={String(g.numberRule?.value ?? '')}
+                                  onChange={v => updateNumberRuleValue(g.id, v, 'dynamic-enum')}
+                                  placeholder="Pick or add a strategy…"
+                                  disabled={isReadOnly}
+                                />
+                              </div>
                             );
                           }
                           if (meta.valueKind === 'time') {
