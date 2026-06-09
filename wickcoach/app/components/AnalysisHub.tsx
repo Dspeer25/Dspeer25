@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -1174,7 +1174,146 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         );
       })()}
 
-      {/* ═══ 1 · (legacy OUTCOME CANDLES — REMOVED) ═══ */}
+      {/* ═══ BEHAVIORAL RADAR — 5 deterministic axes, pure JS ═══
+          Replaces the old outcome-candles space. Each axis is a 0-100
+          score computed in shared.ts (test harness:
+          scripts/test-behavioral-radar.mjs). A dented shape on any
+          axis is a visible leak the trader can fix. */}
+      {(() => {
+        const radar = computeBehavioralRadar(trades, { accountSize: readAccountSize() });
+
+        // Geometry — center, axis tip, label ring.
+        const SVG_SIZE = 460;
+        const CX = SVG_SIZE / 2;
+        const CY = SVG_SIZE / 2 - 6;            // shift up slightly so labels below fit
+        const RADIUS = 150;                     // axis-tip distance
+        const LABEL_R = RADIUS + 36;            // axis-label distance
+        const N = 5;
+        const ANGLE_STEP = (2 * Math.PI) / N;
+        // Start at -90° so axis 0 points straight up.
+        const angleFor = (i: number) => -Math.PI / 2 + i * ANGLE_STEP;
+        const point = (i: number, frac: number) => {
+          const a = angleFor(i);
+          return { x: CX + Math.cos(a) * RADIUS * frac, y: CY + Math.sin(a) * RADIUS * frac };
+        };
+        const labelPos = (i: number) => {
+          const a = angleFor(i);
+          return { x: CX + Math.cos(a) * LABEL_R, y: CY + Math.sin(a) * LABEL_R };
+        };
+        // Polygon path string from per-axis fractions (0..1).
+        const polyPath = (fracs: number[]) => fracs
+          .map((f, i) => { const p = point(i, f); return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`; })
+          .join(' ') + ' Z';
+
+        const guideRings = [0.25, 0.50, 0.75, 1.0];
+        const fracs = radar.axes.map(a => a.score / 100);
+
+        // Strongest / weakest axis (only when at least one axis has a
+        // non-zero score so the summary doesn't lie on a brand-new
+        // account). Tied scores → first occurrence wins.
+        const hasSignal = radar.axes.some(a => a.score > 0);
+        const strongest = hasSignal ? radar.axes.reduce((b, x) => x.score > b.score ? x : b) : null;
+        const weakest   = hasSignal ? radar.axes.reduce((b, x) => x.score < b.score ? x : b) : null;
+        const weakestHint = (() => {
+          if (!weakest) return '';
+          switch (weakest.key) {
+            case 'discipline':     return 'your journal shows more impulse than process trades';
+            case 'patience':       return 'too many trades flagged as rushed, FOMO, or revenge';
+            case 'riskControl':    return 'your position sizing varies more than your other habits';
+            case 'edge':           return 'expectancy is below break-even in R terms';
+            case 'exitDiscipline': return 'losers are outsizing winners on the R chart';
+          }
+        })();
+        const summary = hasSignal && strongest && weakest && strongest.key !== weakest.key
+          ? `Strongest: ${strongest.label} (${Math.round(strongest.score)}). Weakest: ${weakest.label} (${Math.round(weakest.score)}) — ${weakestHint}.`
+          : '';
+
+        return (
+          <div style={{
+            background: '#141822',
+            border: '1px solid #2A3143',
+            borderRadius: 16,
+            padding: '32px 28px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 20,
+            marginBottom: 14,
+            position: 'relative',
+          }}>
+            <SectionNum n={2} />
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>Behavioral Radar</div>
+                <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', marginTop: 4, maxWidth: 540, lineHeight: 1.5 }}>Five deterministic 0–100 scores from your trade record. Dents are your leaks.</div>
+              </div>
+            </div>
+
+            <svg width={SVG_SIZE} height={SVG_SIZE} viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} style={{ display: 'block', maxWidth: '100%' }}>
+              {/* Guide rings — concentric pentagons at 25/50/75/100 */}
+              {guideRings.map((g, gi) => (
+                <polygon
+                  key={gi}
+                  points={Array.from({ length: N }, (_, i) => point(i, g)).map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
+                  fill="none"
+                  stroke={gi === guideRings.length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)'}
+                  strokeWidth={1}
+                />
+              ))}
+
+              {/* Axis spokes */}
+              {Array.from({ length: N }, (_, i) => {
+                const tip = point(i, 1);
+                return <line key={i} x1={CX} y1={CY} x2={tip.x} y2={tip.y} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />;
+              })}
+
+              {/* Filled trader shape */}
+              <path d={polyPath(fracs)} fill={teal} fillOpacity={0.22} stroke={teal} strokeWidth={2} strokeLinejoin="round" />
+
+              {/* Score points on each axis */}
+              {radar.axes.map((a, i) => {
+                const p = point(i, a.score / 100);
+                const color = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
+                return <circle key={i} cx={p.x} cy={p.y} r={4} fill={color} stroke="#0A0D14" strokeWidth={1.5} />;
+              })}
+
+              {/* Axis labels + score values, positioned so they don't overlap the polygon */}
+              {radar.axes.map((a, i) => {
+                const lp = labelPos(i);
+                // Anchor based on horizontal position to keep labels off the chart.
+                const ax = angleFor(i);
+                const cos = Math.cos(ax);
+                const anchor = cos > 0.2 ? 'start' : cos < -0.2 ? 'end' : 'middle';
+                const dy = i === 0 ? -8 : 4;
+                const scoreColor = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
+                return (
+                  <g key={a.key}>
+                    <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={13} fontWeight={700} fill="#e8e8f0" letterSpacing={0.5}>{a.label}</text>
+                    <text x={lp.x} y={lp.y + dy + 16} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={14} fontWeight={700} fill={scoreColor}>{Math.round(a.score)}</text>
+                  </g>
+                );
+              })}
+
+              {/* Ring value labels (subtle, on the top axis only so they don't crowd) */}
+              {guideRings.map((g, gi) => {
+                const p = point(0, g);
+                return <text key={gi} x={p.x + 8} y={p.y + 4} fontFamily="DM Mono, monospace" fontSize={10} fill="rgba(255,255,255,0.30)">{Math.round(g * 100)}</text>;
+              })}
+            </svg>
+
+            {summary && (
+              <div style={{ fontFamily: fm, fontSize: 13.5, color: '#d0d4dc', textAlign: 'center', maxWidth: 640, lineHeight: 1.55 }}>
+                {summary}
+              </div>
+            )}
+            {!summary && (
+              <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', textAlign: 'center' }}>
+                Not enough trade data yet to surface a strongest / weakest axis.
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ═══ FOUR STAT CARDS — full rewrite ═══
           Hierarchy flipped: the metric is the hero (huge), labels and

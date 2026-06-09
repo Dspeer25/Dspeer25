@@ -989,6 +989,138 @@ export function computeAvgR(trades: Trade[]): AvgRSnapshot {
   };
 }
 
+// ─── Behavioral Radar (5 axes, deterministic) ────────────────────
+// Same engine philosophy as scoreNumberGoal. Each axis returns 0-100
+// from a pure function; computeBehavioralRadar bundles all 5. 0 means
+// "no signal here" (empty input or no data). Higher = better. Used by
+// the Analysis tab's pentagon chart. Test harness:
+// scripts/test-behavioral-radar.mjs.
+
+export interface BehavioralRadarSnapshot {
+  /** 0-100 across all 5 axes. */
+  discipline: number;
+  patience: number;
+  riskControl: number;
+  edge: number;
+  exitDiscipline: number;
+  /** Same axis names + values in an array, for the renderer. */
+  axes: { key: 'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline'; label: string; score: number }[];
+}
+
+const BAD_PATIENCE_KEYWORDS = [
+  ...PATTERN_KEYWORDS.impulseEntries,
+  ...PATTERN_KEYWORDS.fomoChasing,
+  ...PATTERN_KEYWORDS.revengeTrading,
+];
+
+/** Discipline = process trades / (process + impulse) × 100. Neutral
+ *  trades (no plan/no-impulse keywords) are excluded from both the
+ *  numerator and the denominator. */
+export function scoreDiscipline(trades: Trade[]): number {
+  let process = 0;
+  let impulse = 0;
+  for (const t of trades) {
+    const kind = classifyTrade(t);
+    if (kind === 'process') process++;
+    else if (kind === 'impulse') impulse++;
+  }
+  const denom = process + impulse;
+  if (denom === 0) return 0;
+  return (process / denom) * 100;
+}
+
+/** Patience = (1 − impatientShare) × 100. A trade is "impatient" when
+ *  its journal contains any impulse-entry / FOMO / revenge keyword.
+ *  Denominator = trades with any journal text (we can only judge
+ *  patience from what the trader wrote). */
+export function scorePatience(trades: Trade[]): number {
+  let withJournal = 0;
+  let impatient = 0;
+  for (const t of trades) {
+    const j = t.journal || '';
+    if (j.trim().length === 0) continue;
+    withJournal++;
+    if (journalMatches(j, BAD_PATIENCE_KEYWORDS)) impatient++;
+  }
+  if (withJournal === 0) return 0;
+  return ((withJournal - impatient) / withJournal) * 100;
+}
+
+/** Risk Control = coefficient-of-variation score on logged risk
+ *  amounts, optionally penalized for oversize trades (>3% of account
+ *  when account size is set). CV = 0 → 100, CV ≥ 1 → 0, linear.
+ *  Trades without a riskAmount logged are excluded. */
+export function scoreRiskControl(trades: Trade[], opts: { accountSize?: number | null } = {}): number {
+  const amounts = trades
+    .map(t => t.riskAmount)
+    .filter((r): r is number => typeof r === 'number' && r > 0);
+  if (amounts.length === 0) return 0;
+  const mean = amounts.reduce((s, r) => s + r, 0) / amounts.length;
+  if (mean === 0) return 0;
+  const variance = amounts.reduce((s, r) => s + (r - mean) ** 2, 0) / amounts.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = stdDev / mean;
+  let score = (1 - Math.min(cv, 1)) * 100;
+  // Oversize penalty: subtract up to 50 based on the share of trades
+  // that exceeded 3% of account. A trader oversizing every trade
+  // halves their CV score; oversizing 1-in-5 trades costs 10 points.
+  const acct = opts.accountSize;
+  if (typeof acct === 'number' && acct > 0) {
+    const threshold = acct * 0.03;
+    const oversize = amounts.filter(r => r > threshold).length;
+    const penaltyRatio = oversize / amounts.length;
+    score -= penaltyRatio * 50;
+  }
+  return Math.max(0, Math.min(100, score));
+}
+
+/** Edge = expectancy expressed as R-multiples, mapped to 0-100.
+ *  rExpectancy = (winRate × avgWinR) + (lossRate × avgLossR) — note
+ *  that avgLossR is already negative from computeAvgR, so adding it
+ *  subtracts the loss side. 0R → 50, +1R → 100, −1R → 0, clamped. */
+export function scoreEdge(trades: Trade[]): number {
+  const exp = computeExpectancy(trades);
+  if (exp.decisive === 0) return 0;
+  const r = computeAvgR(trades);
+  const rExp = exp.winRate * r.avgWinR + exp.lossRate * r.avgLossR;
+  const score = 50 + rExp * 50;
+  return Math.max(0, Math.min(100, score));
+}
+
+/** Exit Discipline = avgWinR / (avgWinR + |avgLossR|) × 100. A trader
+ *  whose winners average 2R and losers average 1R scores ~67 (winners
+ *  bigger than losers). 50 means symmetric. Below 50 means losers
+ *  outsize winners. Trades without R:R logged are excluded. */
+export function scoreExitDiscipline(trades: Trade[]): number {
+  const r = computeAvgR(trades);
+  const winR  = r.avgWinR;
+  const lossR = Math.abs(r.avgLossR);
+  const denom = winR + lossR;
+  if (denom === 0) return 0;
+  return (winR / denom) * 100;
+}
+
+export function computeBehavioralRadar(
+  trades: Trade[],
+  opts: { accountSize?: number | null } = {}
+): BehavioralRadarSnapshot {
+  const discipline     = scoreDiscipline(trades);
+  const patience       = scorePatience(trades);
+  const riskControl    = scoreRiskControl(trades, opts);
+  const edge           = scoreEdge(trades);
+  const exitDiscipline = scoreExitDiscipline(trades);
+  return {
+    discipline, patience, riskControl, edge, exitDiscipline,
+    axes: [
+      { key: 'discipline',     label: 'Discipline',      score: discipline },
+      { key: 'patience',       label: 'Patience',        score: patience },
+      { key: 'riskControl',    label: 'Risk Control',    score: riskControl },
+      { key: 'edge',           label: 'Edge',            score: edge },
+      { key: 'exitDiscipline', label: 'Exit Discipline', score: exitDiscipline },
+    ],
+  };
+}
+
 export function computeAnalytics(trades: Trade[]): TraderAnalytics {
   if (!trades || trades.length === 0) return EMPTY_ANALYTICS;
 
