@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate } from "./shared";
+import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
 import AIChatWidget from "./AIChatWidget";
 
 // Local green — all greens in this file resolve to this single swatch.
@@ -104,6 +104,42 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   const [notesTooltip, setNotesTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [aiBtnHover, setAiBtnHover] = useState(false);
   const [chartHeight, setChartHeight] = useState(180);
+  // Equity-curve display mode — '$' (dollars) or '%' (percentage of
+  // starting account size). Persisted in localStorage so the trader's
+  // preferred view sticks across sessions.
+  const EQ_MODE_STORAGE_KEY = 'wickcoach_equity_curve_mode';
+  const [eqMode, setEqMode] = useState<'$' | '%'>(() => {
+    if (typeof window === 'undefined') return '$';
+    try {
+      const raw = localStorage.getItem(EQ_MODE_STORAGE_KEY);
+      return raw === '%' ? '%' : '$';
+    } catch {
+      return '$';
+    }
+  });
+  // Account size read on mount + on window focus so swapping to the
+  // Position Size Calculator to set a value and back picks it up
+  // without a hard refresh.
+  const [accountSize, setAccountSize] = useState<number | null>(null);
+  React.useEffect(() => {
+    const refresh = () => setAccountSize(readAccountSize());
+    refresh();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', refresh);
+      return () => window.removeEventListener('focus', refresh);
+    }
+  }, []);
+  const hasAccountSize = typeof accountSize === 'number' && accountSize > 0;
+  // If the trader had % selected but later cleared their account size,
+  // fall back to $ rather than rendering an undefined curve. The toggle
+  // is also disabled in that state.
+  const effectiveEqMode: '$' | '%' = eqMode === '%' && hasAccountSize ? '%' : '$';
+  const setEqModePersisted = (m: '$' | '%') => {
+    setEqMode(m);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(EQ_MODE_STORAGE_KEY, m); } catch { /* ignore */ }
+    }
+  };
   React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy, eqRange]);
   const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [aiInput, setAiInput] = useState('');
@@ -334,17 +370,43 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     color: active ? teal : '#6b7280', transition: 'all 0.2s',
   });
 
-  // Equity curve data — respects calendar dropdown filter
+  // Equity curve data — respects calendar dropdown filter. Each
+  // point's `value` carries the active-mode reading: dollars in
+  // '$' mode, percentage growth/loss off the starting account in
+  // '%' mode. Computing in one place keeps the line, the Y-axis
+  // labels, the hover tooltip, and the end-of-line label all in
+  // agreement.
   const equityCurveAll = (() => {
     const sorted = filtered.slice().sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     let running = 0;
-    return sorted.map(t => { running += t.pl; return { date: t.date, value: running }; });
+    return sorted.map(t => {
+      running += t.pl;
+      const value = effectiveEqMode === '%' && accountSize
+        ? (running / accountSize) * 100
+        : running;
+      return { date: t.date, value };
+    });
   })();
   const equityCurve = (() => {
     if (equityCurveAll.length === 0) return [];
     const cutoff = calendarRangeStart(eqRange);
     return equityCurveAll.filter(e => parseLocalDate(e.date) >= cutoff);
   })();
+  // Formatter for any equity-curve number — Y-axis labels, end-of-line
+  // label, hover tooltip. Routes through formatNumber for $ to get
+  // commas; emits a 1-decimal "+12.3%" form for percentages.
+  const formatEqValue = (v: number, opts: { explicitSign?: boolean; compact?: boolean } = {}) => {
+    const { explicitSign = true, compact = false } = opts;
+    if (effectiveEqMode === '%') {
+      const sign = v > 0 && explicitSign ? '+' : '';
+      return `${sign}${v.toFixed(1)}%`;
+    }
+    if (compact && Math.abs(v) >= 1000) {
+      const sign = v >= 0 && explicitSign ? '+' : v < 0 ? '-' : '';
+      return `${sign}$${(Math.abs(v) / 1000).toFixed(1)}k`;
+    }
+    return formatNumber(Math.round(v), { currency: true, explicitSign });
+  };
   const eqMin = equityCurve.length > 0 ? Math.min(...equityCurve.map(e => e.value)) : 0;
   const eqMaxVal = equityCurve.length > 0 ? Math.max(...equityCurve.map(e => e.value)) : 1;
   const eqRange2 = Math.max(eqMaxVal - eqMin, 1);
@@ -352,7 +414,8 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     ? equityCurve.map((e, i) => { const x = (i / Math.max(equityCurve.length - 1, 1)) * 700; const y = 10 + (1 - (e.value - eqMin) / eqRange2) * 100; return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`; }).join(' ')
     : 'M0,100 L700,100';
   const eqFill = equityCurve.length > 0 ? eqLine + ` L700,120 L0,120 Z` : 'M0,100 L700,100 L700,120 L0,120 Z';
-  // Y-axis labels
+  // Y-axis labels — kept as floats for % mode (where 12.3% reads
+  // better than 12%); the formatter rounds dollars to whole numbers.
   const eqYLabels = (() => {
     if (equityCurve.length === 0) return [];
     const steps = 4;
@@ -360,7 +423,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
     for (let i = 0; i <= steps; i++) {
       const value = eqMaxVal - (i / steps) * eqRange2;
       const y = 10 + (i / steps) * 100;
-      labels.push({ value: Math.round(value), y });
+      labels.push({ value, y });
     }
     return labels;
   })();
@@ -570,6 +633,43 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
                 >+</span>
                 <span style={{ fontFamily: fm, fontSize: 10, color: '#555', minWidth: 30, textAlign: 'right' }}>{chartHeight}px</span>
               </div>
+              {/* $ / % mode toggle. Disabled when no account size is
+                  set in the Position Size Calculator — the % math
+                  needs a starting balance to divide against. */}
+              <div
+                title={!hasAccountSize ? 'Set account size in Position Size Calculator to view % growth.' : 'Toggle between dollar P/L and % growth off account size'}
+                style={{
+                  display: 'inline-flex',
+                  background: '#0f1318',
+                  border: '1px solid #2A3143',
+                  borderRadius: 6,
+                  padding: 2,
+                  opacity: hasAccountSize ? 1 : 0.5,
+                  cursor: hasAccountSize ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {(['$', '%'] as const).map(m => {
+                  const active = effectiveEqMode === m;
+                  const disabled = m === '%' && !hasAccountSize;
+                  return (
+                    <span
+                      key={m}
+                      onClick={() => !disabled && setEqModePersisted(m)}
+                      style={{
+                        fontFamily: fm,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: '4px 12px',
+                        borderRadius: 4,
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                        background: active ? '#00d4a0' : 'transparent',
+                        color: active ? '#000' : (disabled ? '#555' : 'rgba(255,255,255,0.6)'),
+                        letterSpacing: 0.5,
+                      }}
+                    >{m}</span>
+                  );
+                })}
+              </div>
               <div style={{ display: 'flex', gap: 4 }}>
                 {['1D', '1W', '1M', '3M', 'YTD'].map(p => {
                   const active = eqRange === p;
@@ -590,7 +690,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
             {/* Y-axis labels */}
             <div style={{ width: 65, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 6 }}>
               {eqYLabels.map((label, li) => (
-                <span key={li} style={{ fontFamily: fm, fontSize: 13, color: '#9ca3af', textAlign: 'right', lineHeight: '1', fontWeight: 600 }}>{label.value >= 0 ? '+' : ''}{label.value >= 1000 ? `$${(label.value / 1000).toFixed(1)}k` : `$${label.value}`}</span>
+                <span key={li} style={{ fontFamily: fm, fontSize: 13, color: '#9ca3af', textAlign: 'right', lineHeight: '1', fontWeight: 600 }}>{formatEqValue(label.value, { explicitSign: true, compact: true })}</span>
               ))}
             </div>
             {/* Chart */}
@@ -637,7 +737,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
                 const pxY = (svgY / 120) * chartHeight - 10;
                 return (
                   <div style={{ position: 'absolute', left: `calc(${endXPct}% + 10px)`, top: pxY, fontFamily: fm, fontSize: 11, color: '#00d4a0', fontWeight: 700, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                    {formatNumber(Math.round(lastPt.value), { currency: true, explicitSign: true })}
+                    {formatEqValue(lastPt.value, { explicitSign: true })}
                   </div>
                 );
               })()}
@@ -645,7 +745,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
               {eqHover && (
                 <div style={{ position: 'absolute', left: `${(eqHover.x / 700) * 100}%`, top: -8, transform: 'translateX(-50%) translateY(-100%)', background: '#141822', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', borderRadius: 6, padding: '6px 10px', fontFamily: fm, fontSize: 11, color: '#c9cdd4', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
                   <div style={{ color: '#9ca3af' }}>{parseLocalDate(eqHover.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                  <div style={{ color: eqHover.value >= 0 ? teal : '#ff4444', fontWeight: 700 }}>{formatNumber(Math.round(eqHover.value), { currency: true, explicitSign: true })}</div>
+                  <div style={{ color: eqHover.value >= 0 ? teal : '#ff4444', fontWeight: 700 }}>{formatEqValue(eqHover.value, { explicitSign: true })}</div>
                 </div>
               )}
             </div>
