@@ -3,28 +3,80 @@ import React, { useState, useEffect, useRef } from "react";
 import { fm, fd, teal, Trade, Goal, GoalScoringCriteria, GOAL_TYPES, getDefaultGoals, getCurrentWeekStart, getCurrentTradingWeekStart, getAllWeekStarts, formatWeekRange, readAllGoals, writeAllGoals, startOfWeek, toISODate, buildGoalsContext, buildProfileContext, buildTraderStats, QuantitativeTarget, QuantTargetType, readQuantTargets, updateQuantTarget, addCustomQuantTarget, removeCustomQuantTarget, defaultMeasurabilityForType, readClassifications, writeClassifications, GoalField, GoalOperator, NumberGoalRule, getEffectiveKind, readAccountSize } from "./shared";
 
 // Field options for the NUMBER goal builder. Order matches what
-// a trader is most likely to reach for (R targets first).
-const NUMBER_GOAL_FIELDS: { value: GoalField; label: string; valueKind: 'number' | 'time' | 'enum'; enumOptions?: string[]; placeholder: string; requiresAccountSize?: boolean }[] = [
-  { value: 'riskReward',       label: 'Risk:Reward (R) achieved', valueKind: 'number', placeholder: 'e.g. 2' },
-  { value: 'riskAmount',       label: 'Risk amount ($)',          valueKind: 'number', placeholder: 'e.g. 150' },
-  { value: 'riskPctOfAccount', label: 'Risk (% of account)',      valueKind: 'number', placeholder: 'e.g. 1', requiresAccountSize: true },
-  { value: 'time',             label: 'Entry time (HH:MM)',       valueKind: 'time',   placeholder: '11:00' },
-  { value: 'direction',        label: 'Direction',                valueKind: 'enum',   enumOptions: ['LONG', 'SHORT'], placeholder: '' },
-  { value: 'contracts',        label: 'Contracts / shares',       valueKind: 'number', placeholder: 'e.g. 10' },
-  { value: 'strategy',         label: 'Strategy name',            valueKind: 'enum',   enumOptions: ['0DTE Call', '0DTE Put', 'Scalp', 'Swing', 'Shares'], placeholder: '' },
-  { value: 'result',           label: 'Result',                   valueKind: 'enum',   enumOptions: ['WIN', 'LOSS', 'BREAKEVEN'], placeholder: '' },
-  { value: 'tradesPerDay',     label: 'Trades per day (count)',   valueKind: 'number', placeholder: 'e.g. 3' },
-  { value: 'dailyLoss',        label: 'Daily P/L ($ sum)',        valueKind: 'number', placeholder: 'e.g. -200' },
+// a trader is most likely to reach for (R targets first). Each field
+// declares which operators make sense for it (no < > on an enum like
+// Direction), what the value input should look like (number / time /
+// integer / static enum / dynamic enum sourced from the trader's
+// logged strategies), and any unit decoration ($ prefix, R/% suffix).
+type FieldMeta = {
+  value: GoalField;
+  label: string;
+  shortLabel: string;             // used in the "Reads as" summary line
+  valueKind: 'number' | 'integer' | 'time' | 'enum' | 'dynamic-enum';
+  enumOptions?: string[];         // for 'enum'
+  placeholder: string;
+  prefix?: string;                // unit shown to the LEFT of the number ("$")
+  suffix?: string;                // unit shown to the RIGHT ("R", "%")
+  allowedOperators: GoalOperator[];
+  defaultValue: number | string;  // applied when the field is switched in
+  requiresAccountSize?: boolean;
+};
+const NUMERIC_OPERATORS:  GoalOperator[] = ['>=', '<=', '==', '<', '>'];
+const ORDINAL_TIME_OPERATORS: GoalOperator[] = ['<', '>', '=='];
+const ENUM_OPERATORS:     GoalOperator[] = ['==', '!='];
+
+const NUMBER_GOAL_FIELDS: FieldMeta[] = [
+  { value: 'riskReward',       label: 'Risk:Reward (R) achieved', shortLabel: 'Risk:Reward',    valueKind: 'number',  placeholder: 'e.g. 2',   suffix: 'R', allowedOperators: NUMERIC_OPERATORS, defaultValue: 2 },
+  { value: 'riskAmount',       label: 'Risk amount ($)',          shortLabel: 'Risk amount',    valueKind: 'number',  placeholder: 'e.g. 150', prefix: '$', allowedOperators: NUMERIC_OPERATORS, defaultValue: 150 },
+  { value: 'riskPctOfAccount', label: 'Risk (% of account)',      shortLabel: 'Risk',           valueKind: 'number',  placeholder: 'e.g. 1',   suffix: '%', allowedOperators: NUMERIC_OPERATORS, defaultValue: 1, requiresAccountSize: true },
+  { value: 'time',             label: 'Entry time (HH:MM)',       shortLabel: 'Entry time',     valueKind: 'time',    placeholder: '11:00',                 allowedOperators: ORDINAL_TIME_OPERATORS, defaultValue: '09:30' },
+  { value: 'direction',        label: 'Direction',                shortLabel: 'Direction',      valueKind: 'enum',    enumOptions: ['LONG', 'SHORT'], placeholder: '', allowedOperators: ENUM_OPERATORS, defaultValue: 'LONG' },
+  { value: 'contracts',        label: 'Contracts / shares',       shortLabel: 'Contracts',      valueKind: 'integer', placeholder: 'e.g. 10',               allowedOperators: NUMERIC_OPERATORS, defaultValue: 10 },
+  { value: 'strategy',         label: 'Strategy name',            shortLabel: 'Strategy',       valueKind: 'dynamic-enum', placeholder: '',                 allowedOperators: ENUM_OPERATORS, defaultValue: '' },
+  { value: 'result',           label: 'Result',                   shortLabel: 'Result',         valueKind: 'enum',    enumOptions: ['WIN', 'LOSS', 'BREAKEVEN'], placeholder: '', allowedOperators: ENUM_OPERATORS, defaultValue: 'WIN' },
+  { value: 'tradesPerDay',     label: 'Trades per day (count)',   shortLabel: 'Trades per day', valueKind: 'integer', placeholder: 'e.g. 3',                allowedOperators: NUMERIC_OPERATORS, defaultValue: 3 },
+  { value: 'dailyLoss',        label: 'Daily P/L ($ sum)',        shortLabel: 'Daily P/L',      valueKind: 'number',  placeholder: 'e.g. -200', prefix: '$', allowedOperators: NUMERIC_OPERATORS, defaultValue: -200 },
 ];
 
-const NUMBER_GOAL_OPERATORS: { value: GoalOperator; label: string }[] = [
-  { value: '<=', label: '≤  (at most)' },
-  { value: '>=', label: '≥  (at least)' },
-  { value: '<',  label: '<  (less than)' },
-  { value: '>',  label: '>  (greater than)' },
-  { value: '==', label: '=  (equals)' },
-  { value: '!=', label: '≠  (not equals)' },
+const NUMBER_GOAL_OPERATORS: { value: GoalOperator; symbol: string; verbose: string }[] = [
+  { value: '<=', symbol: '≤', verbose: '≤  (at most)' },
+  { value: '>=', symbol: '≥', verbose: '≥  (at least)' },
+  { value: '<',  symbol: '<', verbose: '<  (less than)' },
+  { value: '>',  symbol: '>', verbose: '>  (greater than)' },
+  { value: '==', symbol: '=', verbose: '=  (equals)' },
+  { value: '!=', symbol: '≠', verbose: '≠  (not equals)' },
 ];
+
+// Dropdown label for an operator depends on the field. Time
+// rephrases <,>,= as before/after/at so it reads as English instead
+// of math. Everything else uses the verbose symbol form.
+function operatorDropdownLabel(op: GoalOperator, field: GoalField): string {
+  if (field === 'time') {
+    switch (op) {
+      case '<':  return 'before';
+      case '>':  return 'after';
+      case '==': return 'at';
+      case '!=': return 'not at';
+      case '<=': return 'at or before';
+      case '>=': return 'at or after';
+    }
+  }
+  return NUMBER_GOAL_OPERATORS.find(o => o.value === op)?.verbose || op;
+}
+
+// Plain-English summary of a complete rule. "Risk:Reward ≥ 2R",
+// "Entry time before 10:00", "Direction = LONG".
+function summarizeRule(rule: NumberGoalRule | undefined, meta: FieldMeta | undefined): string {
+  if (!rule || !meta) return '';
+  const opMeta = NUMBER_GOAL_OPERATORS.find(o => o.value === rule.operator);
+  const opStr = meta.value === 'time'
+    ? operatorDropdownLabel(rule.operator, 'time')
+    : (opMeta?.symbol || rule.operator);
+  let valueStr = String(rule.value);
+  if (meta.prefix) valueStr = `${meta.prefix}${valueStr}`;
+  if (meta.suffix) valueStr = `${valueStr}${meta.suffix}`;
+  return `${meta.shortLabel} ${opStr} ${valueStr}`;
+}
 import { MiniStickFigure } from "./Logo";
 
 export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabResetTick = 0 }: { trades: Trade[]; onMessageSent?: (inputRect: DOMRect) => void; weeklyTabResetTick?: number }) {
@@ -347,22 +399,21 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
 
   // Per-field updates for a number goal's rule. Each persists via the
   // existing useEffect that writes `goals` to localStorage on change.
+  // When the field changes we reset the value to the new field's
+  // sensible default AND clamp the operator into the field's allowed
+  // set — switching from "Direction = LONG" to "Risk:Reward" should
+  // never leave the rule reading "Risk:Reward = LONG" or with a "≠"
+  // operator that doesn't make sense numerically.
   const updateNumberRuleField = (id: string, field: GoalField) => {
     setGoals(prev => prev.map(g => {
       if (g.id !== id) return g;
       const cur = g.numberRule || { field: 'riskReward', operator: '>=', value: 0 };
-      // Coerce value when switching to an enum field so a leftover
-      // number doesn't sit in the dropdown as an invalid option.
       const meta = NUMBER_GOAL_FIELDS.find(f => f.value === field);
-      let value: number | string = cur.value;
-      if (meta?.valueKind === 'enum' && meta.enumOptions) {
-        value = meta.enumOptions[0];
-      } else if (meta?.valueKind === 'number' && typeof cur.value !== 'number') {
-        value = 0;
-      } else if (meta?.valueKind === 'time' && typeof cur.value !== 'string') {
-        value = '09:30';
-      }
-      return { ...g, numberRule: { ...cur, field, value } };
+      if (!meta) return { ...g, numberRule: { ...cur, field } };
+      const operator: GoalOperator = meta.allowedOperators.includes(cur.operator)
+        ? cur.operator
+        : meta.allowedOperators[0];
+      return { ...g, numberRule: { field, operator, value: meta.defaultValue } };
     }));
     invalidateCurrentWeekClassifications();
   };
@@ -374,7 +425,7 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
     }));
     invalidateCurrentWeekClassifications();
   };
-  const updateNumberRuleValue = (id: string, raw: string, valueKind: 'number' | 'time' | 'enum') => {
+  const updateNumberRuleValue = (id: string, raw: string, valueKind: 'number' | 'integer' | 'time' | 'enum' | 'dynamic-enum') => {
     setGoals(prev => prev.map(g => {
       if (g.id !== id) return g;
       const cur = g.numberRule || { field: 'riskReward', operator: '>=', value: 0 };
@@ -382,8 +433,14 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
       if (valueKind === 'number') {
         const n = parseFloat(raw);
         value = Number.isFinite(n) ? n : 0;
+      } else if (valueKind === 'integer') {
+        // parseInt strips decimals if the trader pastes 10.5; we keep
+        // it as the integer part. NaN guards against an empty input
+        // briefly during typing.
+        const n = parseInt(raw, 10);
+        value = Number.isFinite(n) ? n : 0;
       }
-      // 'time' and 'enum' stay as strings.
+      // 'time', 'enum', 'dynamic-enum' stay as strings.
       return { ...g, numberRule: { ...cur, value } };
     }));
     invalidateCurrentWeekClassifications();
@@ -765,6 +822,87 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
             ? (NUMBER_GOAL_FIELDS.find(f => f.value === (g.numberRule?.field || 'riskReward'))
               || NUMBER_GOAL_FIELDS[0])
             : null;
+          // Strategies the trader has actually logged — used to
+          // populate the "Strategy name" dropdown when the rule
+          // references that field. Falls back to a static set when
+          // there are no trades yet.
+          const loggedStrategies = (() => {
+            if (!numberFieldMeta || numberFieldMeta.value !== 'strategy') return [] as string[];
+            const set = new Set<string>();
+            for (const t of trades) {
+              const s = (t.strategy || '').trim();
+              if (s) set.add(s);
+            }
+            const arr = Array.from(set).sort();
+            return arr.length > 0 ? arr : ['0DTE Call', '0DTE Put', 'Scalp', 'Swing', 'Shares'];
+          })();
+          // Pre-render the unit-wrapped number/integer value input so
+          // the JSX below can drop it in without nesting the prefix/
+          // suffix decorations inline. Used for valueKind 'number'
+          // and 'integer'.
+          const renderUnitInput = (isInteger: boolean) => {
+            const meta = numberFieldMeta!;
+            const raw = typeof g.numberRule?.value === 'number' ? g.numberRule.value : '';
+            return (
+              <div style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                background: '#0f1318',
+                border: '1px solid #2A3143',
+                borderRadius: 6,
+                flex: '1 1 140px',
+                minWidth: 0,
+                overflow: 'hidden',
+              }}>
+                {meta.prefix && (
+                  <span style={{
+                    padding: '8px 8px 8px 10px',
+                    color: '#a0a3ab',
+                    fontFamily: fm,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: '#0b0e13',
+                    borderRight: '1px solid #2A3143',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}>{meta.prefix}</span>
+                )}
+                <input
+                  type="number"
+                  step={isInteger ? 1 : 'any'}
+                  min={isInteger && meta.value !== 'dailyLoss' ? 0 : undefined}
+                  disabled={isReadOnly}
+                  value={raw}
+                  onChange={e => updateNumberRuleValue(g.id, e.target.value, isInteger ? 'integer' : 'number')}
+                  placeholder={meta.placeholder}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#e8e8f0',
+                    fontFamily: fm,
+                    fontSize: 13,
+                    padding: '8px 10px',
+                    flex: 1,
+                    minWidth: 0,
+                    outline: 'none',
+                  }}
+                />
+                {meta.suffix && (
+                  <span style={{
+                    padding: '8px 10px 8px 8px',
+                    color: '#a0a3ab',
+                    fontFamily: fm,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: '#0b0e13',
+                    borderLeft: '1px solid #2A3143',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}>{meta.suffix}</span>
+                )}
+              </div>
+            );
+          };
           return (
             <div key={g.id} style={{
               background: '#1f2430',
@@ -875,78 +1013,113 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                             borderRadius: 6,
                             cursor: isReadOnly ? 'default' : 'pointer',
                             outline: 'none',
-                            flex: '0 0 130px',
+                            flex: '0 0 150px',
                           }}
                         >
-                          {NUMBER_GOAL_OPERATORS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
+                          {numberFieldMeta!.allowedOperators.map(op => (
+                            <option key={op} value={op}>{operatorDropdownLabel(op, numberFieldMeta!.value)}</option>
                           ))}
                         </select>
-                        {numberFieldMeta?.valueKind === 'enum' && numberFieldMeta.enumOptions ? (
-                          <select
-                            disabled={isReadOnly}
-                            value={String(g.numberRule?.value ?? numberFieldMeta.enumOptions[0])}
-                            onChange={e => updateNumberRuleValue(g.id, e.target.value, 'enum')}
-                            style={{
-                              background: '#0f1318',
-                              border: '1px solid #2A3143',
-                              color: '#e8e8f0',
-                              fontFamily: fm,
-                              fontSize: 13,
-                              padding: '8px 10px',
-                              borderRadius: 6,
-                              cursor: isReadOnly ? 'default' : 'pointer',
-                              outline: 'none',
-                              flex: '1 1 120px',
-                              minWidth: 0,
-                            }}
-                          >
-                            {numberFieldMeta.enumOptions.map(opt => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        ) : numberFieldMeta?.valueKind === 'time' ? (
-                          <input
-                            type="time"
-                            disabled={isReadOnly}
-                            value={String(g.numberRule?.value ?? '09:30')}
-                            onChange={e => updateNumberRuleValue(g.id, e.target.value, 'time')}
-                            style={{
-                              background: '#0f1318',
-                              border: '1px solid #2A3143',
-                              color: '#e8e8f0',
-                              fontFamily: fm,
-                              fontSize: 13,
-                              padding: '8px 10px',
-                              borderRadius: 6,
-                              cursor: isReadOnly ? 'default' : 'text',
-                              outline: 'none',
-                              flex: '0 0 140px',
-                            }}
-                          />
-                        ) : (
-                          <input
-                            type="number"
-                            step="any"
-                            disabled={isReadOnly}
-                            value={typeof g.numberRule?.value === 'number' ? g.numberRule.value : ''}
-                            onChange={e => updateNumberRuleValue(g.id, e.target.value, 'number')}
-                            placeholder={numberFieldMeta?.placeholder}
-                            style={{
-                              background: '#0f1318',
-                              border: '1px solid #2A3143',
-                              color: '#e8e8f0',
-                              fontFamily: fm,
-                              fontSize: 13,
-                              padding: '8px 10px',
-                              borderRadius: 6,
-                              cursor: isReadOnly ? 'default' : 'text',
-                              outline: 'none',
-                              flex: '1 1 120px',
-                              minWidth: 0,
-                            }}
-                          />
-                        )}
+                        {(() => {
+                          const meta = numberFieldMeta!;
+                          if (meta.valueKind === 'enum' && meta.enumOptions) {
+                            return (
+                              <select
+                                disabled={isReadOnly}
+                                value={String(g.numberRule?.value ?? meta.enumOptions[0])}
+                                onChange={e => updateNumberRuleValue(g.id, e.target.value, 'enum')}
+                                style={{
+                                  background: '#0f1318',
+                                  border: '1px solid #2A3143',
+                                  color: '#e8e8f0',
+                                  fontFamily: fm,
+                                  fontSize: 13,
+                                  padding: '8px 10px',
+                                  borderRadius: 6,
+                                  cursor: isReadOnly ? 'default' : 'pointer',
+                                  outline: 'none',
+                                  flex: '1 1 120px',
+                                  minWidth: 0,
+                                }}
+                              >
+                                {meta.enumOptions.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            );
+                          }
+                          if (meta.valueKind === 'dynamic-enum') {
+                            // Strategy dropdown sourced from logged
+                            // trades. If the stored value isn't in the
+                            // list (renamed strategy, etc.) we still
+                            // show it as a sticky option so the rule
+                            // doesn't silently rebind.
+                            const current = String(g.numberRule?.value ?? '');
+                            const options = current && !loggedStrategies.includes(current)
+                              ? [current, ...loggedStrategies]
+                              : loggedStrategies;
+                            return (
+                              <select
+                                disabled={isReadOnly}
+                                value={current || options[0] || ''}
+                                onChange={e => updateNumberRuleValue(g.id, e.target.value, 'dynamic-enum')}
+                                style={{
+                                  background: '#0f1318',
+                                  border: '1px solid #2A3143',
+                                  color: '#e8e8f0',
+                                  fontFamily: fm,
+                                  fontSize: 13,
+                                  padding: '8px 10px',
+                                  borderRadius: 6,
+                                  cursor: isReadOnly ? 'default' : 'pointer',
+                                  outline: 'none',
+                                  flex: '1 1 160px',
+                                  minWidth: 0,
+                                }}
+                              >
+                                {options.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            );
+                          }
+                          if (meta.valueKind === 'time') {
+                            return (
+                              <input
+                                type="time"
+                                disabled={isReadOnly}
+                                value={String(g.numberRule?.value ?? '09:30')}
+                                onChange={e => updateNumberRuleValue(g.id, e.target.value, 'time')}
+                                style={{
+                                  background: '#0f1318',
+                                  border: '1px solid #2A3143',
+                                  color: '#e8e8f0',
+                                  fontFamily: fm,
+                                  fontSize: 13,
+                                  padding: '8px 10px',
+                                  borderRadius: 6,
+                                  cursor: isReadOnly ? 'default' : 'text',
+                                  outline: 'none',
+                                  flex: '0 0 140px',
+                                }}
+                              />
+                            );
+                          }
+                          // number / integer — share the prefix/suffix
+                          // wrapper helper defined above.
+                          return renderUnitInput(meta.valueKind === 'integer');
+                        })()}
+                      </div>
+                      {/* Plain-English summary line — reads the rule
+                          back to the trader at a glance. */}
+                      <div style={{
+                        marginTop: 10,
+                        fontFamily: fm,
+                        fontSize: 13,
+                        color: '#a0a3ab',
+                      }}>
+                        <span style={{ color: '#6b7280', letterSpacing: 1, textTransform: 'uppercase', fontSize: 11, fontWeight: 700, marginRight: 8 }}>READS AS</span>
+                        <span style={{ color: '#e8e8f0', fontWeight: 600 }}>{summarizeRule(g.numberRule, numberFieldMeta!) || '—'}</span>
                       </div>
                       {/* Account-size gate. Only fires when the rule
                           requires it but the trader hasn't set the
