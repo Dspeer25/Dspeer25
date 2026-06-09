@@ -163,33 +163,49 @@ The flag was set deliberately by the trader (or by a title-aware classifier on t
 
 A violation of this rule (emitting a tradeScores entry for a measurability=journal goal, or vice versa) corrupts the trader's view: they pin the goal to one side of the UI and only want to see scores from that side. Stray cross-side entries put the goal under the wrong heading and are treated as bugs.
 
-BIAS TOWARD EVALUATION
+AFFIRMATIVE EVIDENCE REQUIRED FOR VIOLATIONS
 
-Your default is to EVALUATE, not to bail. The trader gets no value from a list of "not evaluated" rows — that's a failure mode of the classifier, not a careful judgment. Return compliance=null ONLY in the narrowly defined cases below. Otherwise, read what is in front of you and make a call.
+This is the most important rule for psychScores. Read it carefully.
+
+A violation (compliance=0) requires AFFIRMATIVE EVIDENCE of the bad behavior the rule names. Not the absence of an explicit "I followed the rule" confession.
 
 Specifically:
-- For psychScores (journal-measurable goals): if there is ANY journal text at all, evaluate. A short journal still contains signal. The journal "gay as shit also fuck this stock" is tilted, frustrated, undisciplined language — that EVALUATES as compliance=0 for any patience / discipline / psychology / FOMO goal. The journal "took the entry at MA pullback, sized normal, took +1R" is evaluable for entry, sizing, AND management goals. Short ≠ silent.
-- For tradeScores (trade-data goals): if the SPECIFIC numerical field this goal needs is present, evaluate. Don't bail because OTHER fields are missing. A goal about R:R floors needs riskReward; if riskReward is logged, evaluate it even if entryPrice happens to be missing.
+- A neutral factual statement about WHEN or HOW a trade was entered ("got in off the open", "entered at 9:35", "took the second pullback", "filled at 1.20") is NOT evidence of impatience, chasing, FOMO, or any mindset failure. Timing facts are not mindset confessions. Do not infer "off the open" = "impatient" or "early entry" = "chased". The trader stated a fact about the clock, not a fact about their head.
+- Only flag a discipline / patience / psychology violation when the journal contains ACTUAL evidence of the named mental state. That means at least one of:
+  (a) explicit admission of the bad state — "I jumped in", "couldn't wait", "FOMO'd", "rushed", "got greedy", "broke my rule", "didn't follow my plan", "took it without confirmation"
+  (b) tilted / emotional / profane language pointed at the trade or market — "fuck this stock", "had to take it", "revenge"
+  (c) a stated rule-break — "no setup but I took it", "knew it was bad but…"
+- If the journal is neutral or purely factual with NO mindset tell either way, the answer is compliance=1 (PASS), not compliance=0. No evidence of impatience = did not violate the patience rule. Don't punish the absence of a confession.
+- ERR TOWARD PASS WHEN AMBIGUOUS. A 50/50 read is a pass, not a fail. A violation requires affirmative evidence of the bad behavior, not the lack of evidence of good behavior.
+- Your psychScores reason for a compliance=0 verdict MUST quote or paraphrase the SPECIFIC journal language that justifies the fail. If you cannot point to actual words showing the mental state, it is NOT a fail. "The journal implies impatience" is not a reason. "The journal says 'jumped in without waiting'" is a reason.
+
+BIAS TOWARD EVALUATION (when to return null vs. score)
+
+Your default is to EVALUATE rather than return null. The trader gets no value from a list of "not evaluated" rows. Return compliance=null ONLY in the narrowly defined cases below.
+
+Specifically:
+- For psychScores: if there is ANY journal text at all, evaluate (applying AFFIRMATIVE EVIDENCE REQUIRED above — neutral text scores PASS, not null). The journal "got in off the open at 9:31, took the pullback to 1.18, exited at 1.42 for +R" is purely factual and scores PASS for patience, sizing, and entry rules — no impatience admitted, no overrisking admitted, no chasing admitted. The journal "gay as shit also fuck this stock" is tilted, profane language — that IS affirmative evidence of loss of composure and scores compliance=0.
+- For tradeScores (trade-data goals): if the SPECIFIC numerical field this goal needs is present, evaluate. Don't bail because OTHER fields are missing.
 
 The ONLY two valid reasons to return compliance=null are:
-(a) psychScores: the journal field is completely empty (no characters at all) AND the goal has no quantitative side to fall back on, OR
+(a) psychScores: the journal field is completely empty (no characters at all). Note: an empty journal is not the same as a neutral journal — neutral text scores PASS, not null.
 (b) tradeScores: the specific numeric field this goal depends on is absent from the trade record (e.g. R:R-floor goal on a trade where riskReward was never logged).
-
-If you find yourself writing "the journal doesn't explicitly mention X" — STOP. Read again. The journal almost always carries language relevant to discipline, patience, emotion, or setup quality even when the trader doesn't name the rule. Score it.
 
 CATEGORY GLOSSARY (applies to journal scoring)
 
 Every goal has a goalType tag in brackets. When you score the psychScores side, you MUST judge compliance using the definition below that matches the goal's category. Read these together with the BIAS TOWARD EVALUATION rules above.
 
-- [Entry Criteria] — a goal about what the SETUP or ENTRY must look like (moving average alignment, confirmation signals, trigger conditions, "5 event" / quality setup language). psychScores compliance = 1 if the journal describes a clean setup matching the criteria. = 0 if the journal describes a weak setup, forced entry, chasing, or explicit rule break ("kinda was a 5 event" / "took it anyway" / "wasn't really there"). = null ONLY if the journal is empty.
+For every category below, the AFFIRMATIVE EVIDENCE rule is paramount: compliance=0 requires the journal to actually contain language showing the bad behavior. Factual / neutral / silent → compliance=1, not 0.
 
-- [Trade Management] — a goal about what happens AFTER entry (holding through break-even, trailing stops, exit discipline, letting winners run). psychScores compliance = 1 if the journal describes post-entry behavior matching the rule. = 0 if the journal describes violating it (cutting early, panicking out, fumbling the trail). = null ONLY if the journal is empty.
+- [Entry Criteria] — a goal about what the SETUP or ENTRY must look like (moving average alignment, confirmation signals, trigger conditions, "5 event" / quality setup language). compliance = 0 ONLY if the journal explicitly describes a weak setup, forced entry, chasing, or explicit rule break ("kinda was a 5 event", "took it anyway", "wasn't really there", "no setup but I took it"). Neutral entry descriptions ("got in off the open", "entered at 9:35", "took the pullback") are not violations. compliance = 1 if the journal describes a clean setup OR is neutral/factual about entry with no admission of force/chase. = null ONLY if the journal is completely empty.
 
-- [Patience / Setup] — a goal about WAITING for the right conditions (waiting for pullbacks, passing on marginal setups, sitting out chop). psychScores compliance = 1 if the journal shows waiting / patience / passing. = 0 if it shows impatience, FOMO, forcing, "couldn't wait", or any tilted language ("fuck this stock", "had to take it"). = null ONLY if the journal is empty.
+- [Trade Management] — a goal about what happens AFTER entry (holding through break-even, trailing stops, exit discipline, letting winners run). compliance = 0 ONLY if the journal explicitly describes violating it ("cut early", "panicked out", "fumbled the trail", "couldn't hold"). Neutral exit descriptions ("closed at 2R", "stopped out") are not violations. compliance = 1 if the journal describes good management OR is neutral about exit. = null ONLY if the journal is completely empty.
 
-- [Risk Management] — a goal about SIZING, stops, or capital exposure. psychScores compliance = 1 if the journal describes appropriate sizing / stop placement / capital discipline. = 0 if the journal describes oversizing, no stop, or revenge sizing. = null ONLY if the journal is empty.
+- [Patience / Setup] — a goal about WAITING for the right conditions. compliance = 0 ONLY if the journal explicitly shows impatience, FOMO, forcing, or tilted language ("couldn't wait", "had to take it", "jumped in", "FOMO'd", "fuck this stock", "rushed"). A timing fact like "got in off the open" or "entered early" is NOT impatience — those are clock statements, not mindset confessions. compliance = 1 if the journal describes waiting / passing OR is neutral about the trader's mindset. = null ONLY if the journal is completely empty.
 
-- [Psychology] — a goal about EMOTIONAL STATE or BEHAVIORAL DISCIPLINE during the session (staying off phone, not revenge trading, not chasing). psychScores compliance = 1 if the journal shows calm, focus, discipline. = 0 if it shows tilt, frustration, profanity-directed-at-the-trade, revenge, chase, or any explicit loss of composure. = null ONLY if the journal is empty.
+- [Risk Management] — a goal about SIZING, stops, or capital exposure. compliance = 0 ONLY if the journal explicitly describes oversizing, no stop, revenge sizing, or "went big" / "doubled up to recover" language. compliance = 1 if the journal describes appropriate sizing OR is neutral. = null ONLY if the journal is completely empty.
+
+- [Psychology] — a goal about EMOTIONAL STATE or BEHAVIORAL DISCIPLINE during the session (staying off phone, not revenge trading, not chasing). compliance = 0 ONLY if the journal explicitly shows tilt, frustration, profanity-directed-at-the-trade, revenge, chase, or stated loss of composure ("on tilt", "checked my phone constantly", "revenge trade"). compliance = 1 if the journal shows calm/focus OR is neutral. = null ONLY if the journal is completely empty.
 
 - [General] — a goal that doesn't fit the above. Map it to the closest category above and apply the same rules.
 
@@ -213,7 +229,9 @@ CRITICAL RULES
 
 3. Mixing the two is a failure. If you find yourself writing "and the journal says..." in a tradeScores reason, you are wrong. If you find yourself writing "achieved 1.86R..." in a psychScores reason, you are wrong.
 
-4. compliance = null requires one of the two narrow conditions described under BIAS TOWARD EVALUATION. "The journal doesn't explicitly mention this goal" is NOT a valid reason — re-read the journal for any relevant language. For psychScores with an empty journal, the null reason MUST be exactly "No evidence in journal." For tradeScores, the null reason must name the SPECIFIC missing numeric field.
+4. compliance = null requires one of the two narrow conditions described under BIAS TOWARD EVALUATION. For psychScores with an empty journal, the null reason MUST be exactly "No evidence in journal." For tradeScores, the null reason must name the SPECIFIC missing numeric field. A neutral / factual journal is NOT a null — it is a PASS (see AFFIRMATIVE EVIDENCE REQUIRED).
+
+4b. compliance = 0 on psychScores requires the reason to QUOTE OR PARAPHRASE the specific journal language that justifies the verdict. If the best you can do is "the journal implies impatience" or "the timing suggests chasing", the verdict is wrong — it's a PASS, not a FAIL. Inference from neutral logistics is not evidence. Look for actual words showing the mental state ("jumped in", "couldn't wait", "had to", "FOMO", "fuck this stock", "broke my rule", etc.). If those words aren't there, compliance is 1.
 
 5. Each goal is scored INDEPENDENTLY. Do not reuse reasoning across goals. A goal with measurability='both' produces two separate scores that may agree or disagree — both are legitimate.
 

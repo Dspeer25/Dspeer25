@@ -712,10 +712,18 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           });
           // Null + journal text → ✗ (default violation). Empty
           // journal stays null ("not evaluated").
+          // Render-time fallback: when Haiku returns null but the
+          // journal has text, treat as compliance=1 (PASS). Absence
+          // of an explicit "I broke the rule" confession is not the
+          // same as a violation — affirmative evidence is required.
+          // This matches the prompt's AFFIRMATIVE EVIDENCE REQUIRED
+          // rule and prevents over-inference from neutral logistics.
+          // (Previously this fallback flipped to 0; that baked the
+          // same over-inference into the renderer.)
           const resolved = paired.map(p => {
             if (p.compliance !== null) return p;
             const hasJournal = (p.trade.journal || '').trim().length > 0;
-            return hasJournal ? { ...p, compliance: 0 as const } : p;
+            return hasJournal ? { ...p, compliance: 1 as const } : p;
           });
           const evaluable = resolved.filter(p => p.compliance === 0 || p.compliance === 1);
           const complied  = evaluable.filter(p => p.compliance === 1).length;
@@ -824,6 +832,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 ? scoreNumberGoal(t, numberRule, { allTrades: weekTrades, accountSize: accountSize ?? undefined })
                 : null;
               const isNumberNa = numberResult === 'na';
+              // Psych null + text → PASS (1). Absence of confession
+              // is not a violation; affirmative evidence required.
+              // Matches the prompt's AFFIRMATIVE EVIDENCE REQUIRED
+              // rule and the candle aggregate above.
               const isPsychSideJournalFallback =
                 section === 'psych' &&
                 haikuCompliance === null &&
@@ -832,7 +844,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 ? (numberResult === 'pass' ? 1 : numberResult === 'fail' ? 0 : null)
                 : !c ? null
                   : haikuCompliance !== null ? haikuCompliance
-                  : isPsychSideJournalFallback ? 0
+                  : isPsychSideJournalFallback ? 1
                   : null;
               const status: 'passed' | 'violated' | 'none' =
                 effectiveCompliance === null ? 'none'
@@ -880,7 +892,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     return `${fieldLabel} did not satisfy ${opLabel} ${numberRule.value}.`;
                   })()
                 : isPsychSideJournalFallback
-                  ? "Journal present but doesn't establish compliance with this rule — counted as a violation by default. Edit the journal to be explicit if it should pass."
+                  ? "Journal present with no affirmative evidence of a violation — counted as a pass. (Violations require explicit mindset language; neutral or factual statements aren't evidence of impatience or rule-breaking.)"
                   : (gs?.reason || '');
               // Drop the "no evidence in journal" filler on not-evaluated
               // rows — those are informational, the reason line just adds
