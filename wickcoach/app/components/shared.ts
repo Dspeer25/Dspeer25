@@ -872,6 +872,123 @@ const EMPTY_ANALYTICS: TraderAnalytics = {
   },
 };
 
+// ─── Deterministic KPI metrics ────────────────────────────────────
+// Pure JS, same architecture as scoreNumberGoal. Same trade set in →
+// same numbers out, always. No Haiku, no caching, no surprises. Used
+// by the Analysis tab's KPI header row and verified by the test
+// harness at scripts/test-kpi-metrics.mjs.
+
+export interface ExpectancySnapshot {
+  /** wins.length */
+  wins: number;
+  /** losses.length */
+  losses: number;
+  /** breakeven.length — excluded from all the math below */
+  breakeven: number;
+  /** wins + losses (denominator for winRate / lossRate) */
+  decisive: number;
+  /** Mean dollar P/L of winning trades. 0 when wins.length === 0. */
+  avgWin: number;
+  /** Mean absolute dollar P/L of losing trades. Positive number.
+   *  0 when losses.length === 0. */
+  avgLoss: number;
+  /** wins / decisive (0..1). 0 when decisive === 0. */
+  winRate: number;
+  /** losses / decisive (0..1). 0 when decisive === 0. */
+  lossRate: number;
+  /** (winRate × avgWin) − (lossRate × avgLoss). 0 when no decisive
+   *  trades, by construction. */
+  expectancy: number;
+}
+
+export function computeExpectancy(trades: Trade[]): ExpectancySnapshot {
+  const wins   = trades.filter(t => t.result === 'WIN');
+  const losses = trades.filter(t => t.result === 'LOSS');
+  const breakeven = trades.filter(t => t.result === 'BREAKEVEN');
+  const decisive = wins.length + losses.length;
+  const avgWin  = wins.length   > 0 ? wins.reduce((s, t)   => s + t.pl, 0) / wins.length   : 0;
+  // Losing trades have negative pl; we want the average MAGNITUDE.
+  const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + t.pl, 0) / losses.length) : 0;
+  const winRate  = decisive > 0 ? wins.length   / decisive : 0;
+  const lossRate = decisive > 0 ? losses.length / decisive : 0;
+  const expectancy = (winRate * avgWin) - (lossRate * avgLoss);
+  return {
+    wins: wins.length,
+    losses: losses.length,
+    breakeven: breakeven.length,
+    decisive,
+    avgWin,
+    avgLoss,
+    winRate,
+    lossRate,
+    expectancy,
+  };
+}
+
+export interface ProfitFactorSnapshot {
+  /** Sum of pl across all winning trades. >= 0. */
+  grossProfit: number;
+  /** Absolute sum of pl across all losing trades. >= 0. */
+  grossLoss: number;
+  /** grossProfit / grossLoss. Number.POSITIVE_INFINITY when grossLoss
+   *  is 0 (and grossProfit > 0); 0 when both are 0. The display layer
+   *  formats infinity as the ∞ glyph. */
+  ratio: number;
+}
+
+export function computeProfitFactor(trades: Trade[]): ProfitFactorSnapshot {
+  const wins   = trades.filter(t => t.result === 'WIN');
+  const losses = trades.filter(t => t.result === 'LOSS');
+  const grossProfit = wins.reduce((s, t) => s + t.pl, 0);
+  // Use Math.abs because losing trades carry negative pl.
+  const grossLoss   = Math.abs(losses.reduce((s, t) => s + t.pl, 0));
+  let ratio: number;
+  if (grossLoss === 0) {
+    ratio = grossProfit > 0 ? Number.POSITIVE_INFINITY : 0;
+  } else {
+    ratio = grossProfit / grossLoss;
+  }
+  return { grossProfit, grossLoss, ratio };
+}
+
+export interface AvgRSnapshot {
+  /** Average R-multiple of winning trades with an R:R logged. 0 when
+   *  no qualifying winners. */
+  avgWinR: number;
+  /** Average R-multiple of losing trades with an R:R logged (returned
+   *  as a NEGATIVE number — the convention is "−1.0R" for a one-R
+   *  loss). 0 when no qualifying losers. */
+  avgLossR: number;
+  /** Count of winners that contributed to avgWinR. */
+  winRCount: number;
+  /** Count of losers that contributed to avgLossR. */
+  lossRCount: number;
+}
+
+export function computeAvgR(trades: Trade[]): AvgRSnapshot {
+  const winsWithR = trades
+    .filter(t => t.result === 'WIN')
+    .map(t => parseRr(t.riskReward))
+    .filter(r => Number.isFinite(r) && r !== 0);
+  const lossesWithR = trades
+    .filter(t => t.result === 'LOSS')
+    .map(t => parseRr(t.riskReward))
+    .filter(r => Number.isFinite(r) && r !== 0);
+  const avgWinR  = winsWithR.length   > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length   : 0;
+  // Losing trades' R values can be stored either as positive (just the
+  // magnitude) or negative depending on the trader's logging habit.
+  // We force the displayed value to NEGATIVE so the card always reads
+  // "+W.WR / −L.LR" without callers having to remember the convention.
+  const avgLossRRaw = lossesWithR.length > 0 ? lossesWithR.reduce((s, r) => s + r, 0) / lossesWithR.length : 0;
+  const avgLossR = avgLossRRaw === 0 ? 0 : -Math.abs(avgLossRRaw);
+  return {
+    avgWinR,
+    avgLossR,
+    winRCount:  winsWithR.length,
+    lossRCount: lossesWithR.length,
+  };
+}
+
 export function computeAnalytics(trades: Trade[]): TraderAnalytics {
   if (!trades || trades.length === 0) return EMPTY_ANALYTICS;
 

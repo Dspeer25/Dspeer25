@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -163,7 +163,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses' | 'net'>('net');
-  const [hoveredSlice, setHoveredSlice] = useState<'wins' | 'losses' | 'breakeven' | null>(null);
+  // (hoveredSlice state retired with the OUTCOME CANDLES section.)
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
   const [expandedRow, setExpandedRow] = useState<{ section: 'trades' | 'psych'; goalIdx: number } | null>(null);
@@ -394,9 +394,9 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const wins = totals.wins;
   const losses = totals.losses;
   const be = totals.breakeven;
-  const winPct = totalTrades ? wins / totalTrades : 0;
-  const lossPct = totalTrades ? losses / totalTrades : 0;
-  const bePct = totalTrades ? be / totalTrades : 0;
+  // (winPct / lossPct / bePct retired — the candle bar that consumed
+  // them was removed when the KPI header row replaced the Outcome
+  // Candles section. Win rate is now derived from computeExpectancy.)
   const circ = 2 * Math.PI * 40; // r=40
 
   const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0] || { h: '—', pl: 0, count: 0 };
@@ -1054,200 +1054,127 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         </div>
       </div>
 
-      {/* ═══ 1 · OUTCOME CANDLES ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 16, padding: '32px 28px', display: 'flex', alignItems: 'center', gap: 40, position: 'relative', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <SectionNum n={1} />
+      {/* ═══ KPI HEADER ROW — 4 deterministic metrics ═══
+          Pure-JS computed from the trade set. No Haiku, same input =
+          same output. Test harness: scripts/test-kpi-metrics.mjs. */}
+      {(() => {
+        const exp = computeExpectancy(trades);
+        const pf  = computeProfitFactor(trades);
+        const r   = computeAvgR(trades);
 
-        {/* Candlestick trio — proportional to losses / breakeven / wins */}
-        <div style={{ position: 'relative', width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color: '#fff', lineHeight: 1 }}>{totalTrades}</div>
-          <div style={{ fontFamily: fm, fontSize: 12, color: '#aab0bd', letterSpacing: 2, textTransform: 'uppercase', marginTop: 4, marginBottom: 18 }}>Total Trades</div>
-          {(() => {
-            // Body height scales each candle to its share of the total, so
-            // the tallest candle dominates visually and the two smaller ones
-            // stay proportional. Minimum body height keeps zero/low counts
-            // readable without dwarfing the rest.
-            const maxCount = Math.max(wins, losses, be, 1);
-            const maxBody = 150;
-            const minBody = 6;
-            const bodyFor = (n: number) => n === 0 ? 0 : Math.max(minBody, (n / maxCount) * maxBody);
-            const wickH = 14;
-            const baselineY = 180;
-            const candle = (x: number, n: number, kind: 'wins' | 'losses' | 'breakeven') => {
-              const h = bodyFor(n);
-              const topY = baselineY - h;
-              const active = hoveredSlice === kind;
-              const color = kind === 'losses' ? red : teal;
-              const filled = kind !== 'breakeven';
-              return (
-                <g
-                  key={kind}
-                  style={{ cursor: 'pointer' }}
-                  onMouseEnter={() => setHoveredSlice(kind)}
-                  onMouseLeave={() => setHoveredSlice(null)}
-                >
-                  {/* invisible hit target so the whole column is hoverable */}
-                  <rect x={x - 18} y={baselineY - maxBody - wickH - 20} width={36} height={maxBody + wickH * 2 + 40} fill="transparent" />
-                  {/* upper wick */}
-                  {n > 0 && <line x1={x} y1={topY - wickH} x2={x} y2={topY} stroke={color} strokeWidth={2} strokeLinecap="round" />}
-                  {/* body */}
-                  {n > 0 && (
-                    <rect
-                      x={x - 14}
-                      y={topY}
-                      width={28}
-                      height={h}
-                      rx={2}
-                      fill={filled ? color : 'rgba(0,212,160,0.12)'}
-                      stroke={color}
-                      strokeWidth={active ? 3 : filled ? 0 : 2}
-                      style={{ transition: 'stroke-width 0.15s ease' }}
-                    />
-                  )}
-                  {/* lower wick */}
-                  {n > 0 && <line x1={x} y1={baselineY} x2={x} y2={baselineY + wickH} stroke={color} strokeWidth={2} strokeLinecap="round" />}
-                  {/* count label above */}
-                  <text x={x} y={topY - wickH - 6} textAnchor="middle" fontFamily="Chakra Petch, sans-serif" fontSize="15" fontWeight="700" fill={filled ? color : teal}>
-                    {n}
-                  </text>
-                  {/* axis label below */}
-                  <text x={x} y={baselineY + wickH + 16} textAnchor="middle" fontFamily="DM Mono, monospace" fontSize="11" fill={active ? color : '#aab0bd'} letterSpacing="1">
-                    {kind === 'wins' ? 'WINS' : kind === 'losses' ? 'LOSSES' : 'BE'}
-                  </text>
-                </g>
-              );
-            };
-            return (
-              <svg width="260" height="220" viewBox="0 0 260 220" style={{ display: 'block' }}>
-                {/* baseline */}
-                <line x1={20} y1={baselineY} x2={240} y2={baselineY} stroke="#2A3143" strokeWidth={1} strokeDasharray="2,3" />
-                {candle(55, losses, 'losses')}
-                {candle(130, be, 'breakeven')}
-                {candle(205, wins, 'wins')}
-              </svg>
-            );
-          })()}
-        </div>
+        // ── Formatters scoped to this block ────────────────────────
+        const fmtMoney2 = (v: number) => {
+          const sign = v > 0 ? '+' : v < 0 ? '-' : '';
+          const abs = Math.abs(v);
+          return `${sign}$${abs.toFixed(2).replace(/\B(?=(\d{3})+(?=\.))/g, ',')}`;
+        };
+        const fmtMoneyInt = (v: number) => {
+          const sign = v > 0 ? '+' : v < 0 ? '-' : '';
+          const abs = Math.round(Math.abs(v));
+          return `${sign}$${abs.toLocaleString()}`;
+        };
+        const fmtPF = (ratio: number) => {
+          if (!Number.isFinite(ratio)) return '∞';
+          return ratio.toFixed(2);
+        };
+        const fmtRSigned = (v: number) => {
+          if (v === 0) return '—';
+          const sign = v > 0 ? '+' : '−';
+          return `${sign}${Math.abs(v).toFixed(1)}R`;
+        };
 
-        {/* Legend + hover detail */}
-        <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
-              <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Wins</span>
-              <span style={{ color: teal, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{wins}</span>
-              <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(winPct * 100)})</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 10, height: 10, background: red, borderRadius: 2, display: 'inline-block' }} />
-              <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Losses</span>
-              <span style={{ color: red, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{losses}</span>
-              <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(lossPct * 100)})</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 10, height: 10, background: 'rgba(0,212,160,0.12)', border: `1.5px solid ${teal}`, borderRadius: 2, display: 'inline-block', boxSizing: 'border-box' }} />
-              <span style={{ color: '#ddd', fontSize: 13, fontFamily: fm }}>Break Even</span>
-              <span style={{ color: teal, fontSize: 13, fontFamily: fd, fontWeight: 700 }}>{be}</span>
-              <span style={{ color: '#aab0bd', fontSize: 13 }}>({fmtPct(bePct * 100)})</span>
-            </div>
-          </div>
+        // Card chrome shared by all four cards.
+        const kpiCard: React.CSSProperties = {
+          flex: 1,
+          minWidth: 200,
+          background: '#141822',
+          border: '1px solid #2A3143',
+          borderRadius: 12,
+          padding: '18px 22px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+          position: 'relative',
+        };
+        const kpiLabel: React.CSSProperties = {
+          fontFamily: fd,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          textTransform: 'uppercase' as const,
+          color: '#9a9da5',
+        };
+        const kpiHero: React.CSSProperties = {
+          fontFamily: fd,
+          fontSize: 44,
+          fontWeight: 700,
+          lineHeight: 1.05,
+          letterSpacing: '-0.5px',
+          marginTop: 4,
+        };
+        const kpiSupport: React.CSSProperties = {
+          fontFamily: fm,
+          fontSize: 12,
+          color: '#9a9da5',
+          marginTop: 4,
+          lineHeight: 1.4,
+        };
 
-          {/* Hover tooltip — only visible while hovering a slice */}
-          <div
-            style={{
-              background: hoveredSlice === 'wins' ? 'rgba(0,212,160,0.08)' : hoveredSlice === 'losses' ? 'rgba(255,68,68,0.08)' : hoveredSlice === 'breakeven' ? 'rgba(0,212,160,0.04)' : 'transparent',
-              border: hoveredSlice === 'wins' ? '1px solid rgba(0,212,160,0.4)' : hoveredSlice === 'losses' ? '1px solid rgba(255,68,68,0.4)' : hoveredSlice === 'breakeven' ? '1px dashed rgba(0,212,160,0.4)' : '1px dashed #2A3143',
-              borderRadius: 10,
-              padding: '14px 16px',
-              minHeight: 160,
-              transition: 'all 0.25s ease',
-            }}
-          >
-            {hoveredSlice === 'wins' && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
-                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-                  </svg>
-                  <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: teal, letterSpacing: 1.5 }}>MAJOR PSYCHOLOGICAL WINS</div>
-                </div>
-                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {[
-                    `Patience: ${patterns.patience} trades journaled as patient waits`,
-                    `Clean Execution: ${patterns.cleanExecution} textbook trades`,
-                    `Stop Discipline: ${patterns.stopDiscipline} clean stop-outs`,
-                    `Trusting Process: ${patterns.trustingProcess} entries kept you on plan`,
-                  ].map(p => (
-                    <li key={p} style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{p}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {hoveredSlice === 'losses' && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
-                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={red} opacity="0.9" />
-                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={red} strokeWidth="0.8" />
-                  </svg>
-                  <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: red, letterSpacing: 1.5 }}>MAJOR PSYCHOLOGICAL ISSUES</div>
-                </div>
-                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {[
-                    `Revenge Trading: ${patterns.revengeTrading} trades journaled as revenge`,
-                    `Impulse Entries: ${patterns.impulseEntries} entries with no setup`,
-                    `FOMO / Chasing: ${patterns.fomoChasing} trades chasing price`,
-                    `Ignoring Rules: ${patterns.ignoringRules} trades broke your plan`,
-                  ].map(p => (
-                    <li key={p} style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{p}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {hoveredSlice === 'breakeven' && (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <svg width="16" height="20" viewBox="0 0 20 24" fill="none">
-                    <circle cx="8" cy="4" r="2.8" stroke="#7a7d88" strokeWidth="1.2" fill="none" />
-                    <line x1="8" y1="6.8" x2="8" y2="15" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="3" y2="13" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="9.5" x2="14.5" y2="6" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="4.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <line x1="8" y1="15" x2="11.5" y2="21" stroke="#7a7d88" strokeWidth="1.2" />
-                    <rect x="13.5" y="4" width="4" height="5" rx="0.5" fill={teal} opacity="0.9" />
-                    <line x1="15.5" y1="2" x2="15.5" y2="12" stroke={teal} strokeWidth="0.8" />
-                  </svg>
-                  <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: teal, letterSpacing: 1.5 }}>BREAKEVEN TRADES</div>
-                </div>
-                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <li style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>{be} trade{be === 1 ? '' : 's'} closed flat — setup neither validated nor invalidated</li>
-                  <li style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>Review whether you exited too early on moving setups, or held too long on stalled ones</li>
-                  <li style={{ color: '#ddd', fontSize: 12, lineHeight: 1.5 }}>Breakeven counts as risk-controlled even without profit — that is still discipline</li>
-                </ul>
-              </>
-            )}
-            {!hoveredSlice && (
-              <div style={{ color: '#aab0bd', fontSize: 14, fontFamily: fm, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, paddingTop: 56, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>
-                <MiniStickFigure size={26} />
-                <span>Hover a candle for WickCoach analysis</span>
+        const expColor = exp.expectancy > 0 ? teal : exp.expectancy < 0 ? red : '#aab0bd';
+        const pfColor  = pf.ratio >= 1 ? teal : red;
+
+        return (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+
+            {/* ── 1. Expectancy (the headline metric) ──────────────── */}
+            <div style={kpiCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={kpiLabel}>Expectancy</div>
+                <InfoTip text="Expected dollar value per decisive trade: (winRate × avgWin) − (lossRate × avgLoss). Breakeven trades excluded from every input. Positive means the system pays out on average; negative means it bleeds." />
               </div>
-            )}
+              <div style={{ ...kpiHero, color: expColor }}>{fmtMoney2(exp.expectancy)}</div>
+              <div style={kpiSupport}>per trade · {exp.decisive} decisive trade{exp.decisive === 1 ? '' : 's'}</div>
+            </div>
+
+            {/* ── 2. Profit Factor ─────────────────────────────────── */}
+            <div style={kpiCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={kpiLabel}>Profit Factor</div>
+                <InfoTip text="Gross winnings divided by gross losses. ≥ 1 means you take more in than you give back; under 1 means the system is net-negative regardless of win rate. ∞ when there are no losses yet." />
+              </div>
+              <div style={{ ...kpiHero, color: pfColor }}>{fmtPF(pf.ratio)}</div>
+              <div style={kpiSupport}>{fmtMoneyInt(pf.grossProfit)} won / {fmtMoneyInt(-pf.grossLoss)} lost</div>
+            </div>
+
+            {/* ── 3. Win Rate (reuses computeExpectancy's denominator
+                  so the number can't drift from the candle math) ──── */}
+            <div style={kpiCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={kpiLabel}>Win Rate</div>
+                <InfoTip text="Wins divided by decisive trades (wins + losses). Breakeven trades are excluded from the denominator — the standard trading convention." />
+              </div>
+              <div style={{ ...kpiHero, color: '#fff' }}>{Math.round(exp.winRate * 100)}%</div>
+              <div style={kpiSupport}>{exp.wins}W / {exp.losses}L · {exp.breakeven}BE</div>
+            </div>
+
+            {/* ── 4. Avg Win / Avg Loss (R) ────────────────────────── */}
+            <div style={kpiCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={kpiLabel}>Avg Win / Loss (R)</div>
+                <InfoTip text="Average R-multiple of winning trades next to the average R-multiple of losing trades (the loss side is always shown negative). Trades without an R:R logged are excluded from both averages." />
+              </div>
+              <div style={{ ...kpiHero, fontSize: 36 }}>
+                <span style={{ color: r.avgWinR > 0 ? teal : '#fff' }}>{fmtRSigned(r.avgWinR)}</span>
+                <span style={{ color: '#6b7280', margin: '0 6px' }}>/</span>
+                <span style={{ color: r.avgLossR < 0 ? red : '#fff' }}>{fmtRSigned(r.avgLossR)}</span>
+              </div>
+              <div style={kpiSupport}>avg winner vs avg loser</div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
+
+      {/* ═══ 1 · (legacy OUTCOME CANDLES — REMOVED) ═══ */}
 
       {/* ═══ FOUR STAT CARDS — full rewrite ═══
           Hierarchy flipped: the metric is the hero (huge), labels and
@@ -1311,26 +1238,6 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
 
         return (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-
-            {/* ── 1. Total Trades ─────────────────────────────────── */}
-            <div style={cardBase}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ ...labelStyle, color: '#aab0bd' }}>Total Trades</div>
-                <InfoTip text="Every executed trade in the current dataset, regardless of outcome or rule compliance." />
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <div style={{ ...heroStyle, color: '#fff' }}>{totals.n.toLocaleString()}</div>
-              </div>
-              <div style={{ ...supportStyle, marginTop: 10, marginBottom: 12 }}>
-                {fmtPct(totals.winRate)} win rate
-              </div>
-              {/* Full-width win/loss/BE bar — taller than before */}
-              <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden' }}>
-                <div style={{ width: `${(winPct  * 100).toFixed(2)}%`, background: teal,      transition: 'width 0.3s ease' }} />
-                <div style={{ width: `${(lossPct * 100).toFixed(2)}%`, background: red,       transition: 'width 0.3s ease' }} />
-                <div style={{ width: `${(bePct   * 100).toFixed(2)}%`, background: '#4b5563', transition: 'width 0.3s ease' }} />
-              </div>
-            </div>
 
             {/* ── 2. In Plan ──────────────────────────────────────── */}
             <div style={{ ...cardBase, borderLeft: `3px solid ${teal}` }}>
