@@ -1,6 +1,6 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe } from './shared';
+import React, { useEffect, useRef, useState } from 'react';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -20,14 +20,26 @@ const tickerDomains: Record<string, string> = {
 const blue = '#4a9eff';
 
 // One-line plain-English description per behavioral-radar axis. Used
-// by the always-visible explanation list to the right of the radar.
+// by the hover tooltip + the expanded citation panel header.
 const AXIS_EXPLANATIONS: Record<'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline', string> = {
   discipline:     'How often your trades followed your plan vs traded on impulse.',
   patience:       'How often you waited for your setup instead of forcing entries.',
   riskControl:    'How well you stayed within your risk — sizing, revenge-sizing, and what you wrote about it.',
-  edge:           'Your expectancy — whether your wins outweigh your losses per trade.',
+  edge:           'Edge measures whether you make money over time. Above 50 means your wins outweigh your losses per trade; below 50 means you’re losing your edge.',
   exitDiscipline: 'Whether your winners run bigger than your losers in R terms.',
 };
+
+// Plain-language verdict bands for every 0–100 axis score. Three
+// bands keep the language honest — "Weak" / "Developing" / "Strong"
+// — with a slightly longer aside so the trader doesn't have to guess
+// what a band means at first glance. Color tracks the existing teal /
+// amber / red bucket so the verdict reinforces the color.
+function getRadarVerdict(score: number | null): { label: string; color: string; band: 'weak' | 'developing' | 'strong' | 'unscored' } {
+  if (score === null) return { label: 'Not scored', color: '#6b7280', band: 'unscored' };
+  if (score >= 67)    return { label: 'Strong',                  color: '#00d4a0', band: 'strong' };
+  if (score >= 34)    return { label: 'Developing · mixed',      color: '#f5d27c', band: 'developing' };
+  return                    { label: 'Weak · needs work',        color: '#ff4444', band: 'weak' };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────
 // Thin wrappers around the site-wide formatter so every caller in
@@ -197,6 +209,23 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   const [expandedRadarAxis, setExpandedRadarAxis] = useState<RadarAxisKey | null>(null);
   const toggleExpandedRadarAxis = (key: RadarAxisKey) =>
     setExpandedRadarAxis(prev => prev === key ? null : key);
+  // 250 ms grace period when the cursor leaves a wedge so the trader
+  // can move onto the tooltip without it vanishing. Tooltip's own
+  // mouseenter cancels the pending close.
+  const radarCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelRadarClose = () => {
+    if (radarCloseTimerRef.current) {
+      clearTimeout(radarCloseTimerRef.current);
+      radarCloseTimerRef.current = null;
+    }
+  };
+  const scheduleRadarClose = () => {
+    cancelRadarClose();
+    radarCloseTimerRef.current = setTimeout(() => {
+      setHoveredRadarAxis(null);
+      radarCloseTimerRef.current = null;
+    }, 250);
+  };
   // (hoveredSlice state retired with the OUTCOME CANDLES section.)
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
@@ -1228,16 +1257,99 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           classifications,
         });
 
+        // ── Revenge-sizing diagnostic ───────────────────────────────
+        // Verifies: (a) trades are sorted by true chronological order,
+        // not array order; (b) riskAmount values aren't all defaulted;
+        // (c) the >20% bump threshold isn't over-firing trivially. Dumps
+        // each detected revenge pair so we can sanity-check that the
+        // "previous trade" really was a loss that immediately preceded
+        // this one. Console.warn so it lands in dev-server.log via
+        // Next's browser-log forwarding.
+        if (typeof window !== 'undefined') {
+          const withRisk = tradesInWindow.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
+          const sorted = [...withRisk].sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+            return (a.time || '').localeCompare(b.time || '');
+          });
+          // Verify the sort actually changed the order vs the raw input.
+          // If they're identical the input was already sorted; either
+          // way we'll log whether the comparison did meaningful work.
+          let reorderMoves = 0;
+          for (let i = 0; i < sorted.length; i++) {
+            if (sorted[i].id !== withRisk[i].id) reorderMoves++;
+          }
+          // Detect raw-time format inconsistency that could break the
+          // string comparison (e.g. mixed "9:35 AM" and "09:35").
+          const ampmTimes = sorted.filter(t => /am|pm/i.test(t.time || '')).length;
+          const h24Times = sorted.filter(t => /^\d{1,2}:\d{2}$/.test(t.time || '')).length;
+          const blankTimes = sorted.filter(t => !(t.time || '').trim()).length;
+          // riskAmount uniqueness — if 100+ trades all have the same
+          // exact riskAmount, it's almost certainly a defaulted value
+          // pretending to be real data.
+          const amountCounts: Record<string, number> = {};
+          for (const t of withRisk) {
+            const k = String(t.riskAmount);
+            amountCounts[k] = (amountCounts[k] || 0) + 1;
+          }
+          const topAmounts = Object.entries(amountCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          // Walk the sorted list and collect every revenge-sized pair
+          // with the actual numbers behind it. Also bucket the bump
+          // size so we can see whether the threshold is firing on
+          // borderline 20-25% bumps or real revenge spikes.
+          let postLossCount = 0;
+          const revengePairs: { idx: number; bumpPct: number; prev: Trade; cur: Trade }[] = [];
+          for (let i = 1; i < sorted.length; i++) {
+            const prev = sorted[i - 1];
+            const cur = sorted[i];
+            if (prev.result !== 'LOSS') continue;
+            postLossCount++;
+            const prevR = prev.riskAmount as number;
+            const curR = cur.riskAmount as number;
+            if (curR > prevR * 1.20) {
+              revengePairs.push({ idx: i, bumpPct: ((curR - prevR) / prevR) * 100, prev, cur });
+            }
+          }
+          // Distribution of bump sizes to spot threshold over-firing.
+          const bucket = (p: number) => p < 30 ? '20-30%' : p < 50 ? '30-50%' : p < 100 ? '50-100%' : '100%+';
+          const bumpHistogram: Record<string, number> = { '20-30%': 0, '30-50%': 0, '50-100%': 0, '100%+': 0 };
+          for (const r of revengePairs) bumpHistogram[bucket(r.bumpPct)]++;
+          // Same-day vs cross-day pairs — same-day with identical times
+          // would suggest array order is doing the work, not real
+          // chronology.
+          const sameDayPairs = revengePairs.filter(r => r.prev.date === r.cur.date).length;
+          const sameDaySameTimePairs = revengePairs.filter(r => r.prev.date === r.cur.date && r.prev.time === r.cur.time).length;
+
+          console.warn('[Revenge-sizing diagnostic]', {
+            timeframe: radarTimeframe,
+            totalTrades: tradesInWindow.length,
+            tradesWithRiskAmount: withRisk.length,
+            tradesMissingRiskAmount: tradesInWindow.length - withRisk.length,
+            reorderMoves_vs_inputOrder: reorderMoves,
+            timeFormat: { ampm: ampmTimes, '24h': h24Times, blank: blankTimes },
+            top5_riskAmount_values: topAmounts,
+            postLossTrades: postLossCount,
+            revengeFlagged: revengePairs.length,
+            bumpHistogram,
+            sameDayPairs,
+            sameDaySameTimePairs,
+            firstPairs: revengePairs.slice(0, 20).map(r => ({
+              prev: { date: r.prev.date, time: r.prev.time, ticker: r.prev.ticker, result: r.prev.result, riskAmount: r.prev.riskAmount },
+              cur:  { date: r.cur.date,  time: r.cur.time,  ticker: r.cur.ticker,  riskAmount: r.cur.riskAmount },
+              bumpPct: r.bumpPct.toFixed(1) + '%',
+            })),
+          });
+        }
+
         // Geometry — wider than tall so the five labels fan out without
-        // clipping. Patience / Risk Control on the right (anchor=start)
-        // and Edge / Exit Discipline on the left (anchor=end) all sit
-        // outside the polygon with breathing room.
-        const SVG_W = 760;
-        const SVG_H = 500;
+        // clipping. Bumped 20% over the original sizing so the radar
+        // dominates the card visually and the per-section tooltips
+        // have room to be readable without crowding the polygon.
+        const SVG_W = 920;
+        const SVG_H = 600;
         const CX = SVG_W / 2;
-        const CY = SVG_H / 2 - 4;                // small lift so the summary line below has air
-        const RADIUS = 178;                      // axis-tip distance — bigger polygon fills the new canvas
-        const LABEL_R = RADIUS + 42;             // axis-label distance
+        const CY = SVG_H / 2 - 6;
+        const RADIUS = 220;                      // axis-tip distance
+        const LABEL_R = RADIUS + 52;             // axis-label distance
         const N = 5;
         const ANGLE_STEP = (2 * Math.PI) / N;
         // Start at -90° so axis 0 points straight up.
@@ -1406,16 +1518,16 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
                 if (a.score === null) {
                   return (
                     <g key={a.key}>
-                      <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={13} fontWeight={700} fill="#6b7280" letterSpacing={0.5}>{a.label}</text>
-                      <text x={lp.x} y={lp.y + dy + 16} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={11} fontWeight={500} fill="#6b7280" fontStyle="italic">{a.hint || 'no signal yet'}</text>
+                      <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={18} fontWeight={700} fill="#6b7280" letterSpacing={0.5}>{a.label}</text>
+                      <text x={lp.x} y={lp.y + dy + 22} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={13} fontWeight={500} fill="#6b7280" fontStyle="italic">{a.hint || 'no signal yet'}</text>
                     </g>
                   );
                 }
                 const scoreColor = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
                 return (
                   <g key={a.key}>
-                    <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={13} fontWeight={700} fill="#e8e8f0" letterSpacing={0.5}>{a.label}</text>
-                    <text x={lp.x} y={lp.y + dy + 16} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={14} fontWeight={700} fill={scoreColor}>{Math.round(a.score)}</text>
+                    <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={18} fontWeight={700} fill="#e8e8f0" letterSpacing={0.5}>{a.label}</text>
+                    <text x={lp.x} y={lp.y + dy + 22} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={20} fontWeight={700} fill={scoreColor}>{Math.round(a.score)}</text>
                   </g>
                 );
               })}
@@ -1448,8 +1560,8 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
                     points={`${CX},${CY} ${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`}
                     fill="transparent"
                     style={{ cursor: 'pointer' }}
-                    onMouseEnter={() => setHoveredRadarAxis(axis.key)}
-                    onMouseLeave={() => setHoveredRadarAxis(null)}
+                    onMouseEnter={() => { cancelRadarClose(); setHoveredRadarAxis(axis.key); }}
+                    onMouseLeave={() => scheduleRadarClose()}
                     onClick={() => toggleExpandedRadarAxis(axis.key)}
                   />
                 );
@@ -1498,33 +1610,48 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
                   exitDiscipline: { top: topPct, left: leftPct, transform: transformByKey.exitDiscipline },
                 };
                 return (
-                  <div style={{
+                  <div
+                    onMouseEnter={() => { cancelRadarClose(); setHoveredRadarAxis(axis.key); }}
+                    onMouseLeave={() => scheduleRadarClose()}
+                    onClick={() => toggleExpandedRadarAxis(axis.key)}
+                    style={{
                     position: 'absolute',
                     ...pos[axis.key],
                     background: '#0e0f14',
-                    border: '1px solid rgba(0,212,160,0.45)',
-                    borderRadius: 10,
-                    padding: '12px 14px',
-                    width: 260,
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,212,160,0.10) inset',
-                    pointerEvents: 'none',
+                    border: '1px solid rgba(0,212,160,0.55)',
+                    borderRadius: 12,
+                    padding: '18px 22px',
+                    width: 360,
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,160,0.12) inset',
+                    cursor: 'pointer',
                     zIndex: 5,
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#e8e8f0', letterSpacing: 0.4 }}>{axis.label}</span>
-                      <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, marginBottom: 4 }}>
+                      <span style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.4 }}>{axis.label}</span>
+                      <span style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color, lineHeight: 1 }}>
                         {score === null ? '—' : Math.round(score)}
                       </span>
                     </div>
-                    <div style={{ fontFamily: fm, fontSize: 12.5, color: '#d0d4dc', lineHeight: 1.45 }}>
+                    {/* Plain-language verdict band right under the score
+                        so "Edge 64" reads as "Edge 64 · Developing"
+                        rather than a context-free number. */}
+                    {(() => {
+                      const verdict = getRadarVerdict(score);
+                      return (
+                        <div style={{ fontFamily: fm, fontSize: 13, color: verdict.color, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                          {verdict.label}
+                        </div>
+                      );
+                    })()}
+                    <div style={{ fontFamily: fm, fontSize: 15, color: '#d0d4dc', lineHeight: 1.5 }}>
                       {explanation}
                     </div>
                     {smallSample && (
-                      <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 6, fontStyle: 'italic' }}>
+                      <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginTop: 10, fontStyle: 'italic' }}>
                         small sample ({axis.applicable} trade{axis.applicable === 1 ? '' : 's'})
                       </div>
                     )}
-                    <div style={{ fontFamily: fm, fontSize: 11, color: teal, marginTop: 6, letterSpacing: 0.5, fontWeight: 700 }}>
+                    <div style={{ fontFamily: fm, fontSize: 13, color: teal, marginTop: 12, letterSpacing: 0.8, fontWeight: 700 }}>
                       click for cited trades ›
                     </div>
                   </div>
@@ -1555,17 +1682,14 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               if (!axis) return null;
               const score = axis.score;
               const color = score === null ? '#6b7280' : score >= 67 ? teal : score >= 33 ? '#f5d27c' : red;
-              const negCount = axis.contributors.filter(c => c.kind === 'negative').length;
-              const posCount = axis.contributors.filter(c => c.kind === 'positive').length;
-              // Pick which side to cite: lean negative when score is
-              // below 50 (room to improve, surface the leaks);
-              // positive when score is 50+ (show what's working).
-              const showNegativeFirst = score === null || score < 50;
-              const ordered = showNegativeFirst
-                ? [...axis.contributors.filter(c => c.kind === 'negative'), ...axis.contributors.filter(c => c.kind === 'positive')]
-                : [...axis.contributors.filter(c => c.kind === 'positive'), ...axis.contributors.filter(c => c.kind === 'negative')];
-              const cited = ordered.slice(0, 5);
+              const negatives = axis.contributors.filter(c => c.kind === 'negative');
+              const positives = axis.contributors.filter(c => c.kind === 'positive');
+              const negCount = negatives.length;
+              const posCount = positives.length;
+              const hurting   = negatives.slice(0, 5);
+              const lifting   = positives.slice(0, 5);
               const tradeIndex = new Map(tradesInWindow.map(t => [t.id, t]));
+              const verdict = getRadarVerdict(score);
               // Plain-English breakdown line per axis. Counts come from
               // the contributor split (never recomputed from scratch).
               let breakdown = '';
@@ -1595,79 +1719,111 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
                   {/* Header */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
-                      <span style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.4 }}>{axis.label}</span>
-                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color }}>{score === null ? '—' : Math.round(score)}</span>
-                      <span style={{ fontFamily: fm, fontSize: 12.5, color: '#94A3B8' }}>{AXIS_EXPLANATIONS[axis.key]}</span>
+                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff', letterSpacing: 0.4 }}>{axis.label}</span>
+                      <span style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>{score === null ? '—' : Math.round(score)}</span>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: verdict.color, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
+                        · {verdict.label}
+                      </span>
                     </div>
                     <span
                       onClick={() => setExpandedRadarAxis(null)}
                       title="Close"
-                      style={{ cursor: 'pointer', fontFamily: fm, fontSize: 18, color: '#6b7280', padding: '0 8px', userSelect: 'none' }}
+                      style={{ cursor: 'pointer', fontFamily: fm, fontSize: 20, color: '#6b7280', padding: '0 8px', userSelect: 'none' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.color = '#fff'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.color = '#6b7280'; }}
                     >✕</span>
                   </div>
 
-                  {/* Breakdown */}
+                  {/* Plain-English explanation of the axis (always
+                      reads, regardless of score), then the breakdown
+                      counts pulled straight from the contributor split. */}
+                  <div style={{ fontFamily: fm, fontSize: 14, color: '#d0d4dc', lineHeight: 1.5 }}>
+                    {AXIS_EXPLANATIONS[axis.key]}
+                  </div>
                   {breakdown && (
-                    <div style={{ fontFamily: fm, fontSize: 13.5, color: '#d0d4dc', lineHeight: 1.5 }}>{breakdown}</div>
+                    <div style={{ fontFamily: fm, fontSize: 13.5, color: '#94A3B8', lineHeight: 1.5 }}>{breakdown}</div>
                   )}
 
-                  {/* Cited trades — clickable rows linking to Past Trades */}
-                  {cited.length === 0 && (
-                    <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic' }}>
-                      No specific trades to cite in this window yet.
-                    </div>
-                  )}
-                  {cited.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-                      <span style={{ fontFamily: fm, fontSize: 11, color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' as const }}>
-                        {showNegativeFirst ? 'Worst offenders' : 'Best supporters'} · click to open in Past Trades
-                      </span>
-                      {cited.map((c, idx) => {
-                        const tr = tradeIndex.get(c.tradeId);
-                        if (!tr) return null;
-                        const plColor = tr.pl > 0 ? teal : tr.pl < 0 ? red : '#aab0bd';
-                        const dateLabel = (() => {
-                          const d = parseLocalDate(tr.date);
-                          return Number.isFinite(d.getTime()) ? `${d.getMonth() + 1}/${d.getDate()}` : tr.date;
-                        })();
-                        const tickColor = c.kind === 'negative' ? red : teal;
-                        const tickChar = c.kind === 'negative' ? '✗' : '✓';
-                        return (
-                          <div
-                            key={`${c.tradeId}-${idx}`}
-                            onClick={() => onShowTrade && onShowTrade(c.tradeId)}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: '18px 60px 56px 90px 1fr',
-                              gap: 12,
-                              alignItems: 'center',
-                              padding: '10px 12px',
-                              background: c.kind === 'negative' ? 'rgba(255,68,68,0.05)' : 'rgba(0,212,160,0.05)',
-                              border: '1px solid #2A3143',
-                              borderLeft: `3px solid ${tickColor}`,
-                              borderRadius: 6,
-                              cursor: onShowTrade ? 'pointer' : 'default',
-                              transition: 'background 0.15s ease, transform 0.15s ease',
-                            }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(2px)'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)'; }}
-                          >
-                            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: tickColor, textAlign: 'center' }}>{tickChar}</span>
-                            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: '#fff' }}>{tr.ticker}</span>
+                  {/* Two-column split — every score below 100 has
+                      trades dragging it down AND trades lifting it.
+                      Showing only one side hides half the story. */}
+                  {(() => {
+                    // Reusable row renderer keyed on contributor kind
+                    // so both columns get identical chrome.
+                    const renderCitedRow = (c: AxisContributor, idx: number) => {
+                      const tr = tradeIndex.get(c.tradeId);
+                      if (!tr) return null;
+                      const plColor = tr.pl > 0 ? teal : tr.pl < 0 ? red : '#aab0bd';
+                      const dateLabel = (() => {
+                        const d = parseLocalDate(tr.date);
+                        return Number.isFinite(d.getTime()) ? `${d.getMonth() + 1}/${d.getDate()}` : tr.date;
+                      })();
+                      const tickColor = c.kind === 'negative' ? red : teal;
+                      const tickChar = c.kind === 'negative' ? '✗' : '✓';
+                      return (
+                        <div
+                          key={`${c.tradeId}-${idx}`}
+                          onClick={() => onShowTrade && onShowTrade(c.tradeId)}
+                          style={{
+                            padding: '12px 14px',
+                            background: c.kind === 'negative' ? 'rgba(255,68,68,0.05)' : 'rgba(0,212,160,0.05)',
+                            border: '1px solid #2A3143',
+                            borderLeft: `3px solid ${tickColor}`,
+                            borderRadius: 6,
+                            cursor: onShowTrade ? 'pointer' : 'default',
+                            transition: 'background 0.15s ease, transform 0.15s ease',
+                          }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = c.kind === 'negative' ? 'translateX(-2px)' : 'translateX(2px)'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                            <span style={{ fontFamily: fm, fontSize: 16, fontWeight: 700, color: tickColor }}>{tickChar}</span>
+                            <span style={{ fontFamily: fm, fontSize: 15, fontWeight: 700, color: '#fff' }}>{tr.ticker}</span>
                             <span style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8' }}>{dateLabel}</span>
-                            <span style={{ fontFamily: fm, fontSize: 13, fontWeight: 600, color: plColor, textAlign: 'right' }}>
+                            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: plColor, marginLeft: 'auto' }}>
                               {formatNumber(tr.pl, { currency: true, explicitSign: true, decimals: 0 })}
                             </span>
-                            <span style={{ fontFamily: fm, fontSize: 12.5, color: '#d0d4dc', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {c.reason}{c.value ? ` · ${c.value}` : ''}
-                            </span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <div style={{ fontFamily: fm, fontSize: 13, color: '#d0d4dc', lineHeight: 1.4 }}>
+                            {c.reason}{c.value ? ` · ${c.value}` : ''}
+                          </div>
+                        </div>
+                      );
+                    };
+                    return (
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+                        {/* LEFT — Hurting */}
+                        <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ width: 10, height: 10, background: red, borderRadius: 2 }} />
+                            <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: red, letterSpacing: 0.5 }}>What's hurting this score</span>
+                            <span style={{ fontFamily: fm, fontSize: 12, color: '#94A3B8' }}>{negCount} total</span>
+                          </div>
+                          {hurting.length === 0 ? (
+                            <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic', padding: '14px 0' }}>
+                              Nothing hurting this axis in the active window.
+                            </div>
+                          ) : hurting.map((c, idx) => renderCitedRow(c, idx))}
+                        </div>
+                        {/* RIGHT — Supporting */}
+                        <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ width: 10, height: 10, background: teal, borderRadius: 2 }} />
+                            <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: teal, letterSpacing: 0.5 }}>What's supporting this score</span>
+                            <span style={{ fontFamily: fm, fontSize: 12, color: '#94A3B8' }}>{posCount} total</span>
+                          </div>
+                          {lifting.length === 0 ? (
+                            <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic', padding: '14px 0' }}>
+                              Nothing lifting this axis in the active window.
+                            </div>
+                          ) : lifting.map((c, idx) => renderCitedRow(c, idx))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <div style={{ fontFamily: fm, fontSize: 11, color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' as const, marginTop: 4 }}>
+                    click any trade to open in Past Trades
+                  </div>
                 </div>
               );
             })()}
