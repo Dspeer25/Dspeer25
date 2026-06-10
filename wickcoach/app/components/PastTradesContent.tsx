@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef } from "react";
 import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
+import { Calendar, LineChart, ChevronLeft, ChevronRight } from "lucide-react";
 import AIChatWidget from "./AIChatWidget";
 
 // Local green — all greens in this file resolve to this single swatch.
@@ -117,6 +118,56 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
       return '$';
     }
   });
+  // Day filter — set by clicking a calendar day cell. Narrows the
+  // trades table to that single date (overriding the date-range
+  // filters, which it is strictly more specific than). Cleared via
+  // the "clear filter" chip, by re-clicking the day, or by switching
+  // back to the equity curve.
+  const [dayFilter, setDayFilter] = useState<string | null>(null);
+  // Calendar month being viewed — defaults to the current month.
+  const [calMonth, setCalMonth] = useState<{ y: number; m: number }>(() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+  // Chart-area view — 'curve' (equity line) or 'calendar' (daily net
+  // P/L month grid). Persisted so the preferred view sticks across
+  // sessions, same pattern as the $/% mode above.
+  const CHART_VIEW_STORAGE_KEY = 'wickcoach_pasttrades_chart_view';
+  const [chartView, setChartView] = useState<'curve' | 'calendar'>(() => {
+    if (typeof window === 'undefined') return 'curve';
+    try {
+      return localStorage.getItem(CHART_VIEW_STORAGE_KEY) === 'calendar' ? 'calendar' : 'curve';
+    } catch {
+      return 'curve';
+    }
+  });
+  const setChartViewPersisted = (v: 'curve' | 'calendar') => {
+    setChartView(v);
+    // A single-day equity "curve" is one point — meaningless. Drop the
+    // day filter when leaving the calendar.
+    if (v === 'curve') setDayFilter(null);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(CHART_VIEW_STORAGE_KEY, v); } catch { /* ignore */ }
+    }
+  };
+  // The calendar reads live from the trades store — re-read from
+  // localStorage on window focus so changes made elsewhere show up
+  // without a hard refresh. Reset whenever the trades prop changes so
+  // in-app edits always win over a stale focus snapshot.
+  const [focusTrades, setFocusTrades] = useState<Trade[] | null>(null);
+  React.useEffect(() => { setFocusTrades(null); }, [trades]);
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const refresh = () => {
+      try {
+        const raw = localStorage.getItem('wickcoach_trades');
+        if (raw) setFocusTrades(JSON.parse(raw) as Trade[]);
+      } catch { /* keep last good copy */ }
+    };
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
+  const calendarTrades = focusTrades ?? trades;
   // Account size read on mount + on window focus so swapping to the
   // Position Size Calculator to set a value and back picks it up
   // without a hard refresh.
@@ -180,7 +231,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
       try { localStorage.setItem(EQ_MODE_STORAGE_KEY, m); } catch { /* ignore */ }
     }
   };
-  React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy, eqRange]);
+  React.useEffect(() => { setCurrentPage(1); }, [search, stratFilter, resultFilter, dateRange, sortBy, eqRange, dayFilter]);
   const [aiMessages, setAiMessages] = useState<{role: 'user'|'assistant', content: string}[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -266,7 +317,12 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
     if (resultFilter === 'Wins' && t.result !== 'WIN') return false;
     if (resultFilter === 'Losses' && t.result !== 'LOSS') return false;
     if (resultFilter === 'Break Even' && t.result !== 'BREAKEVEN') return false;
-    if (dateRange === 'This Week') {
+    if (dayFilter) {
+      // A clicked calendar day is strictly more specific than any
+      // date-range dropdown setting — apply it instead, so clicking a
+      // day outside the active range can't produce an empty table.
+      if (t.date !== dayFilter) return false;
+    } else if (dateRange === 'This Week') {
       // Calendar week, Monday-anchored — matches the 1W chip behavior
       // on the equity curve, so the table and the chart agree on what
       // "this week" means.
@@ -299,8 +355,11 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
     return 0;
   });
 
-  // Stats — also respect equity curve time filter
+  // Stats — also respect equity curve time filter. A clicked calendar
+  // day bypasses the chip cutoff too (same reasoning as above: the day
+  // may sit outside the active chip window).
   const statTrades = (() => {
+    if (dayFilter) return filtered;
     const cutoff = calendarRangeStart(eqRange);
     return filtered.filter(t => parseLocalDate(t.date) >= cutoff);
   })();
@@ -468,6 +527,60 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
     return labels;
   })();
   const breakEven = statTrades.filter(t => t.result === 'BREAKEVEN');
+
+  // ── Daily P/L calendar ──
+  // Day buckets keyed on the stored YYYY-MM-DD date strings so cell
+  // lookups are exact-match against trade.date. Computed fresh every
+  // render from the live trades store — no caching, no mock data.
+  const dayBuckets = (() => {
+    const map = new Map<string, { pl: number; count: number }>();
+    for (const t of calendarTrades) {
+      const cur = map.get(t.date) || { pl: 0, count: 0 };
+      cur.pl += t.pl;
+      cur.count += 1;
+      map.set(t.date, cur);
+    }
+    return map;
+  })();
+  const calKey = (y: number, m: number, d: number) =>
+    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  // Month grid: leading/trailing nulls pad the Sun–Sat rows.
+  const calCells = (() => {
+    const { y, m } = calMonth;
+    const firstDow = new Date(y, m, 1).getDay(); // Sun = 0
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const cells: ({ day: number; key: string; pl: number; count: number } | null)[] = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = calKey(y, m, d);
+      const b = dayBuckets.get(key);
+      cells.push({ day: d, key, pl: b ? b.pl : 0, count: b ? b.count : 0 });
+    }
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  })();
+  // Tint scaling anchor — biggest absolute day P/L in the visible month.
+  const calMaxAbs = Math.max(...calCells.map(c => (c && c.count > 0 ? Math.abs(c.pl) : 0)), 1);
+  const calCellBg = (c: { pl: number; count: number }) => {
+    if (c.count === 0) return '#0f1318';
+    const alpha = (0.08 + 0.3 * (Math.abs(c.pl) / calMaxAbs)).toFixed(3);
+    if (c.pl > 0) return `rgba(0,212,160,${alpha})`;
+    if (c.pl < 0) return `rgba(255,68,68,${alpha})`;
+    return 'rgba(245,158,11,0.10)'; // traded to net $0 — faint amber
+  };
+  const calTradingDays = calCells.filter((c): c is { day: number; key: string; pl: number; count: number } => c !== null && c.count > 0);
+  const calGreenDays = calTradingDays.filter(c => c.pl > 0).length;
+  const calRedDays = calTradingDays.filter(c => c.pl < 0).length;
+  const calMonthPL = calTradingDays.reduce((s, c) => s + c.pl, 0);
+  const calDayWinRate = calTradingDays.length > 0 ? Math.round((calGreenDays / calTradingDays.length) * 100) : 0;
+  const todayKey = (() => { const d = new Date(); return calKey(d.getFullYear(), d.getMonth(), d.getDate()); })();
+  const calMonthLabel = new Date(calMonth.y, calMonth.m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const stepCalMonth = (delta: number) => {
+    setCalMonth(({ y, m }) => {
+      const d = new Date(y, m + delta, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    });
+  };
 
   // Pagination — feeds off statTrades (= filtered + chip cutoff) so the
   // table row set matches what the stat cards and equity curve are
@@ -645,12 +758,14 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
         <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 8, padding: 24, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4a0" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
-              <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#ffffff' }}>Cumulative Equity Curve</span>
+              {chartView === 'calendar'
+                ? <Calendar size={14} color={teal} strokeWidth={2} />
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4a0" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>}
+              <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: '#ffffff' }}>{chartView === 'calendar' ? 'Daily P/L Calendar' : 'Cumulative Equity Curve'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {/* Height scale control */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Height scale control — curve-only; the calendar sizes itself */}
+              <div style={{ display: chartView === 'curve' ? 'flex' : 'none', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', letterSpacing: 1, textTransform: 'uppercase' }}>Scale</span>
                 <span
                   onClick={() => setChartHeight(h => Math.max(120, h - 40))}
@@ -675,11 +790,13 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
               </div>
               {/* $ / % mode toggle. Disabled when no account size is
                   set in the Position Size Calculator — the % math
-                  needs a starting balance to divide against. */}
+                  needs a starting balance to divide against. Hidden in
+                  calendar view: the calendar is its own view,
+                  independent of the curve's display mode. */}
               <div
                 title={!hasAccountSize ? 'Set account size in Position Size Calculator to view % growth.' : 'Toggle between dollar P/L and % growth off account size'}
                 style={{
-                  display: 'inline-flex',
+                  display: chartView === 'curve' ? 'inline-flex' : 'none',
                   background: '#0f1318',
                   border: '1px solid #2A3143',
                   borderRadius: 6,
@@ -710,7 +827,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
                   );
                 })}
               </div>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ display: chartView === 'curve' ? 'flex' : 'none', gap: 4 }}>
                 {['1D', '1W', '1M', '3M', 'YTD'].map(p => {
                   const active = eqRange === p;
                   return (
@@ -724,8 +841,29 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
                   );
                 })}
               </div>
+              {/* Curve / calendar view toggle — same segmented style as $/% */}
+              <div style={{ display: 'inline-flex', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 6, padding: 2 }}>
+                {([['curve', LineChart, 'Equity curve'], ['calendar', Calendar, 'Daily P/L calendar']] as ['curve' | 'calendar', typeof LineChart, string][]).map(([v, Icon, label]) => {
+                  const active = chartView === v;
+                  return (
+                    <span
+                      key={v}
+                      onClick={() => setChartViewPersisted(v)}
+                      title={label}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '4px 12px', borderRadius: 4, cursor: 'pointer',
+                        background: active ? '#00d4a0' : 'transparent',
+                      }}
+                    >
+                      <Icon size={14} color={active ? '#000' : 'rgba(255,255,255,0.6)'} strokeWidth={2.2} />
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           </div>
+          {chartView === 'curve' ? (<>
           <div style={{ display: 'flex', position: 'relative' }}>
             {/* Y-axis labels */}
             <div style={{ width: 65, flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 6 }}>
@@ -799,6 +937,72 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
               ))}
             </div>
           )}
+          </>) : (
+          <div>
+            {/* Month navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 14 }}>
+              <span
+                onClick={() => stepCalMonth(-1)}
+                title="Previous month"
+                style={{ cursor: 'pointer', width: 26, height: 26, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' }}
+              ><ChevronLeft size={15} color={teal} /></span>
+              <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 600, color: '#ffffff', minWidth: 170, textAlign: 'center', letterSpacing: 0.5 }}>{calMonthLabel}</span>
+              <span
+                onClick={() => stepCalMonth(1)}
+                title="Next month"
+                style={{ cursor: 'pointer', width: 26, height: 26, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' }}
+              ><ChevronRight size={15} color={teal} /></span>
+            </div>
+            {/* Day-of-week headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 6 }}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', textAlign: 'center', textTransform: 'uppercase' as const, letterSpacing: 1 }}>{d}</div>
+              ))}
+            </div>
+            {/* Day grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+              {calCells.map((c, i) => c === null ? (
+                <div key={i} style={{ minHeight: 76, borderRadius: 6 }} />
+              ) : (
+                <div
+                  key={i}
+                  onClick={() => { if (c.count > 0) setDayFilter(dayFilter === c.key ? null : c.key); }}
+                  title={c.count > 0 ? `${c.count} trade${c.count !== 1 ? 's' : ''} — click to filter the table below` : undefined}
+                  style={{
+                    minHeight: 76, borderRadius: 6, padding: '8px 10px',
+                    background: calCellBg(c),
+                    border: dayFilter === c.key ? `1px solid ${teal}` : c.key === todayKey ? '1px solid rgba(0,212,160,0.45)' : '1px solid #1a1b22',
+                    cursor: c.count > 0 ? 'pointer' : 'default',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ fontFamily: fm, fontSize: 12, fontWeight: 600, color: c.count > 0 ? '#e0e0e0' : '#a0a3ab' }}>{c.day}</div>
+                  {c.count > 0 && (
+                    <div>
+                      <div style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: c.pl > 0 ? teal : c.pl < 0 ? '#ff4444' : '#f59e0b' }}>
+                        {formatNumber(Math.round(c.pl), { currency: true, explicitSign: true })}
+                      </div>
+                      <div style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', marginTop: 2 }}>{c.count} trade{c.count !== 1 ? 's' : ''}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Month summary — live, comma-formatted */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 16, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: fm, fontSize: 13 }}>
+                <span style={{ color: '#a0a3ab' }}>Month net </span>
+                <span style={{ color: calMonthPL > 0 ? teal : calMonthPL < 0 ? '#ff4444' : '#e0e0e0', fontWeight: 700 }}>{formatNumber(Math.round(calMonthPL), { currency: true, explicitSign: true })}</span>
+              </span>
+              <span style={{ fontFamily: fm, fontSize: 13, color: teal, fontWeight: 600 }}>{calGreenDays} green</span>
+              <span style={{ fontFamily: fm, fontSize: 13, color: '#ff4444', fontWeight: 600 }}>{calRedDays} red</span>
+              <span style={{ fontFamily: fm, fontSize: 13 }}>
+                <span style={{ color: '#e0e0e0', fontWeight: 700 }}>{calDayWinRate}%</span>
+                <span style={{ color: '#a0a3ab' }}> day win rate</span>
+              </span>
+            </div>
+          </div>
+          )}
         </div>
 
         {/* ── FILTER BAR ── */}
@@ -829,6 +1033,18 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
               </span>
             ))}
           </div>
+          {/* Calendar day filter chip */}
+          {dayFilter && (
+            <span
+              onClick={() => setDayFilter(null)}
+              title="Clear the calendar day filter"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: fm, fontSize: 13, fontWeight: 600, color: teal, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.4)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            >
+              Showing {parseLocalDate(dayFilter).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <span style={{ color: '#a0a3ab' }}>·</span>
+              clear filter ✕
+            </span>
+          )}
           {/* Sort reset */}
           {sortBy !== 'date-desc' && (
             <span onClick={() => setSortBy('date-desc')} title="Reset sort to default" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, cursor: 'pointer', background: '#0f1318', borderTop: '1px solid #2A3143', borderRight: '1px solid #2A3143', borderBottom: '1px solid #2A3143', borderLeft: '1px solid #2A3143', marginLeft: 4 }}>
