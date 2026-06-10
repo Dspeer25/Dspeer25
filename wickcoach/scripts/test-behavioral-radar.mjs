@@ -69,12 +69,19 @@ function computeExpectancy(trades) {
   const lossRate = decisive > 0 ? losses.length / decisive : 0;
   return { wins: wins.length, losses: losses.length, decisive, avgWin, avgLoss, winRate, lossRate, expectancy: (winRate * avgWin) - (lossRate * avgLoss) };
 }
+function lossEffectiveR(t) {
+  const logged = parseRr(t.riskReward);
+  if (Number.isFinite(logged) && logged !== 0) return { magnitude: Math.abs(logged), source: 'logged' };
+  if (typeof t.riskAmount === 'number' && t.riskAmount > 0 && Number.isFinite(t.pl) && t.pl !== 0) {
+    return { magnitude: Math.abs(t.pl) / t.riskAmount, source: 'computed' };
+  }
+  return { magnitude: 1, source: 'assumed' };
+}
 function computeAvgR(trades) {
   const winsWithR = trades.filter(t => t.result === 'WIN').map(t => parseRr(t.riskReward)).filter(r => Number.isFinite(r) && r !== 0);
-  const lossesWithR = trades.filter(t => t.result === 'LOSS').map(t => parseRr(t.riskReward)).filter(r => Number.isFinite(r) && r !== 0);
-  const avgWinR  = winsWithR.length   > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length : 0;
-  const avgLossRRaw = lossesWithR.length > 0 ? lossesWithR.reduce((s, r) => s + r, 0) / lossesWithR.length : 0;
-  const avgLossR = avgLossRRaw === 0 ? 0 : -Math.abs(avgLossRRaw);
+  const lossMags = trades.filter(t => t.result === 'LOSS').map(t => lossEffectiveR(t).magnitude);
+  const avgWinR  = winsWithR.length > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length : 0;
+  const avgLossR = lossMags.length  > 0 ? -(lossMags.reduce((s, r) => s + r, 0) / lossMags.length) : 0;
   return { avgWinR, avgLossR };
 }
 
@@ -133,18 +140,23 @@ function scoreExitDisciplineDetail(trades) {
   const winR = r.avgWinR, lossR = Math.abs(r.avgLossR);
   const denom = winR + lossR;
   const score = denom === 0 ? 0 : (winR / denom) * 100;
-  const withR = trades.map(t => ({ t, r: parseRr(t.riskReward) })).filter(x => Number.isFinite(x.r) && x.r !== 0);
-  const losersByR = withR.filter(x => x.t.result === 'LOSS').sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
-  const winnersByR = withR.filter(x => x.t.result === 'WIN').sort((a, b) => a.r - b.r);
-  const neg = [];
-  for (const { t: tr } of losersByR) neg.push({ tradeId: tr.id, reason: 'loss R', kind: 'negative' });
-  const smallWinners = winnersByR.filter(x => x.r < winR);
-  for (const { t: tr } of smallWinners) neg.push({ tradeId: tr.id, reason: 'small win R', kind: 'negative' });
+  const losses = trades.filter(t => t.result === 'LOSS')
+    .map(t => ({ t, magnitude: lossEffectiveR(t).magnitude }))
+    .sort((a, b) => b.magnitude - a.magnitude);
+  const winnersByR = trades.filter(t => t.result === 'WIN')
+    .map(t => ({ t, r: parseRr(t.riskReward) }))
+    .filter(x => Number.isFinite(x.r) && x.r !== 0)
+    .sort((a, b) => a.r - b.r);
+  const neg = losses.map(({ t: tr }) => ({ tradeId: tr.id, reason: 'loss R', kind: 'negative' }));
+  if (losses.length > 0) {
+    const smallWinners = winnersByR.filter(x => x.r < winR);
+    for (const { t: tr } of smallWinners) neg.push({ tradeId: tr.id, reason: 'small win R', kind: 'negative' });
+  }
   const pos = [];
   for (const { t: tr, r: rr } of winnersByR.slice().reverse()) {
     if (rr >= winR) pos.push({ tradeId: tr.id, reason: 'win R', kind: 'positive' });
   }
-  return { score, applicable: withR.length, contributors: [...neg, ...pos] };
+  return { score, applicable: winnersByR.length + losses.length, contributors: [...neg, ...pos] };
 }
 function scoreRiskControlDetail(trades, opts = {}) {
   const result = scoreRiskControl(trades, opts);
@@ -682,14 +694,64 @@ function classMap(trades, verdicts) {
   ];
   check('exit · 1R / 2R → 33.33', scoreExitDiscipline(trades), (1 / 3) * 100);
 }
-// Exit Discipline — trades without R:R excluded
+// Exit Discipline — WINS without R:R excluded (losses always count)
 {
   const trades = [
     t('WIN',  100, { riskReward: '' }),     // excluded
     t('WIN',  100, { riskReward: '2' }),
     t('LOSS', -100, { riskReward: '-1' }),
   ];
-  check('exit · unparseable R:R excluded → 66.67', scoreExitDiscipline(trades), (2 / 3) * 100);
+  check('exit · unparseable win R:R excluded → 66.67', scoreExitDiscipline(trades), (2 / 3) * 100);
+}
+
+// Exit Discipline — blank-R:R loss assumed −1R (kills the fake 100:
+// previously avgLossR = 0 → score divided to 100 with losses present)
+{
+  const trades = [
+    t('WIN',  200, { riskReward: '2' }),
+    t('LOSS', -100, {}),                    // no R:R, no riskAmount → assumed −1R
+  ];
+  check('exit · unlabeled loss assumed −1R → 66.67', scoreExitDiscipline(trades), (2 / 3) * 100);
+}
+// Exit Discipline — early-closed loss uses pl/riskAmount, not −1R
+{
+  const trades = [
+    t('WIN',  200, { riskReward: '2' }),
+    t('LOSS', -40, { riskAmount: 100 }),    // computed → 0.4R
+  ];
+  check('exit · early-close loss 0.4R via pl/risk → 83.33', scoreExitDiscipline(trades), (2 / 2.4) * 100);
+}
+// Exit Discipline — invariant: score 100 ⟺ empty hurting column.
+// No losses → 100, and sub-average winners are NOT listed as
+// negatives (they can't move a lossless ratio).
+{
+  const trades = [
+    t('WIN', 300, { riskReward: '3' }),
+    t('WIN', 100, { riskReward: '1' }),     // sub-avg, but no losses
+  ];
+  const d = scoreExitDisciplineDetail(trades);
+  check('exit invariant · no losses → 100', d.score, 100);
+  check('exit invariant · no losses → zero negatives', d.contributors.filter(c => c.kind === 'negative').length, 0);
+}
+// Exit Discipline — losses present → sub-avg winners count again
+{
+  const trades = [
+    t('WIN', 300, { riskReward: '3' }),
+    t('WIN', 100, { riskReward: '1' }),     // sub-avg (avg 2R)
+    t('LOSS', -100, { riskReward: '-1' }),
+  ];
+  const d = scoreExitDisciplineDetail(trades);
+  check('exit · losses present → loss + sub-avg win negatives', d.contributors.filter(c => c.kind === 'negative').length, 2);
+  check('exit · applicable = R-logged wins + all losses', d.applicable, 3);
+}
+// Edge — unlabeled loss now counts via assumed −1R
+{
+  // 1W 2R + 1L assumed −1R → rExp = 0.5×2 + 0.5×(−1) = 0.5 → 75
+  const trades = [
+    t('WIN',  200, { riskReward: '2' }),
+    t('LOSS', -100, {}),
+  ];
+  check('edge · unlabeled loss assumed −1R → 75', scoreEdge(trades), 75);
 }
 
 // ── Time parser (mirrors timeToMinutes in shared.ts) ──

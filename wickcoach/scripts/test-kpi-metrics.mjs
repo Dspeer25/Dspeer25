@@ -42,19 +42,26 @@ function computeProfitFactor(trades) {
   return { grossProfit, grossLoss, ratio };
 }
 
-// ── Mirror of computeAvgR ──
+// ── Mirror of lossEffectiveR + computeAvgR ──
+function lossEffectiveR(t) {
+  const logged = parseRr(t.riskReward);
+  if (Number.isFinite(logged) && logged !== 0) return { magnitude: Math.abs(logged), source: 'logged' };
+  if (typeof t.riskAmount === 'number' && t.riskAmount > 0 && Number.isFinite(t.pl) && t.pl !== 0) {
+    return { magnitude: Math.abs(t.pl) / t.riskAmount, source: 'computed' };
+  }
+  return { magnitude: 1, source: 'assumed' };
+}
 function computeAvgR(trades) {
   const winsWithR = trades.filter(t => t.result === 'WIN').map(t => parseRr(t.riskReward)).filter(r => Number.isFinite(r) && r !== 0);
-  const lossesWithR = trades.filter(t => t.result === 'LOSS').map(t => parseRr(t.riskReward)).filter(r => Number.isFinite(r) && r !== 0);
-  const avgWinR  = winsWithR.length   > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length : 0;
-  const avgLossRRaw = lossesWithR.length > 0 ? lossesWithR.reduce((s, r) => s + r, 0) / lossesWithR.length : 0;
-  const avgLossR = avgLossRRaw === 0 ? 0 : -Math.abs(avgLossRRaw);
-  return { avgWinR, avgLossR, winRCount: winsWithR.length, lossRCount: lossesWithR.length };
+  const lossMags = trades.filter(t => t.result === 'LOSS').map(t => lossEffectiveR(t).magnitude);
+  const avgWinR  = winsWithR.length > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length : 0;
+  const avgLossR = lossMags.length  > 0 ? -(lossMags.reduce((s, r) => s + r, 0) / lossMags.length) : 0;
+  return { avgWinR, avgLossR, winRCount: winsWithR.length, lossRCount: lossMags.length };
 }
 
 // ── Test helpers ──
-function trade(result, pl, riskReward = '') {
-  return { id: 't', result, pl, riskReward };
+function trade(result, pl, riskReward = '', riskAmount) {
+  return { id: 't', result, pl, riskReward, riskAmount };
 }
 function near(a, b, eps = 1e-6) {
   if (a === Infinity && b === Infinity) return true;
@@ -166,19 +173,36 @@ function check(name, got, expected) {
   check('avgR · loss stored positive → forced negative', computeAvgR(trades).avgLossR, -1.5);
 }
 
-// 10. AvgR ignores trades with no R:R logged
+// 10. AvgR ignores WINS with no R:R logged; losses without R:R now
+//     count via the assumed −1R fallback (a stopped-out loss is −1R
+//     by definition, so blank loss R:R is expected, not missing data).
 {
   const trades = [
     trade('WIN',  200, '2'),
     trade('WIN',  200, ''),         // no R:R — excluded
     trade('WIN',  200, '—'),        // em-dash placeholder — excluded
     trade('LOSS', -100, '-1'),
-    trade('LOSS', -100, ''),        // excluded
+    trade('LOSS', -100, ''),        // assumed −1R
   ];
-  check('avgR · unparseable excluded · winRCount',  computeAvgR(trades).winRCount, 1);
-  check('avgR · unparseable excluded · lossRCount', computeAvgR(trades).lossRCount, 1);
-  check('avgR · unparseable excluded · avgWinR',    computeAvgR(trades).avgWinR, 2);
-  check('avgR · unparseable excluded · avgLossR',   computeAvgR(trades).avgLossR, -1);
+  check('avgR · unparseable win excluded · winRCount', computeAvgR(trades).winRCount, 1);
+  check('avgR · blank loss assumed −1R · lossRCount',  computeAvgR(trades).lossRCount, 2);
+  check('avgR · unparseable win excluded · avgWinR',   computeAvgR(trades).avgWinR, 2);
+  check('avgR · blank loss assumed −1R · avgLossR',    computeAvgR(trades).avgLossR, -1);
+}
+
+// 10b. Loss R priority chain: logged R:R > computed pl/riskAmount >
+//      assumed −1R. Wins never use the chain.
+{
+  const trades = [
+    trade('LOSS', -200, '-2'),       // logged → 2R
+    trade('LOSS', -40,  '', 100),    // computed |pl|/risk → 0.4R
+    trade('LOSS', -100, ''),         // assumed → 1R
+  ];
+  check('avgR chain · lossRCount = all losses', computeAvgR(trades).lossRCount, 3);
+  check('avgR chain · avgLossR = −(2+0.4+1)/3', computeAvgR(trades).avgLossR, -(3.4 / 3));
+  check('avgR chain · logged beats pl/risk',    lossEffectiveR(trade('LOSS', -40, '-2', 100)).magnitude, 2);
+  check('avgR chain · computed source',         lossEffectiveR(trade('LOSS', -40, '', 100)).source === 'computed' ? 1 : 0, 1);
+  check('avgR chain · assumed source',          lossEffectiveR(trade('LOSS', -40, '')).source === 'assumed' ? 1 : 0, 1);
 }
 
 // 11. Real-world-ish dataset (sanity check against a manual computation)

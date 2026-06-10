@@ -1014,14 +1014,37 @@ export interface AvgRSnapshot {
   /** Average R-multiple of winning trades with an R:R logged. 0 when
    *  no qualifying winners. */
   avgWinR: number;
-  /** Average R-multiple of losing trades with an R:R logged (returned
-   *  as a NEGATIVE number — the convention is "−1.0R" for a one-R
-   *  loss). 0 when no qualifying losers. */
+  /** Average effective R-multiple of ALL losing trades (returned as a
+   *  NEGATIVE number — the convention is "−1.0R" for a one-R loss).
+   *  Per-loss priority: logged R:R > |pl| / riskAmount > assumed 1R
+   *  (see lossEffectiveR). 0 only when there are no losses. */
   avgLossR: number;
   /** Count of winners that contributed to avgWinR. */
   winRCount: number;
-  /** Count of losers that contributed to avgLossR. */
+  /** Count of losses contributing to avgLossR — equals the LOSS count,
+   *  since every loss has an effective R via lossEffectiveR. */
   lossRCount: number;
+}
+
+/** Effective R magnitude for a LOSS trade. Priority: logged R:R >
+ *  computed |pl| / riskAmount > assumed 1R. A stopped-out loss is −1R
+ *  by definition, so traders rarely log R:R on losses — the assumption
+ *  fills that gap, and pl/riskAmount catches manually-closed losses
+ *  where a flat −1R would overstate the damage. Magnitudes are always
+ *  positive (the per-trade value handles either logging sign). */
+function lossEffectiveR(t: Trade): { magnitude: number; source: 'logged' | 'computed' | 'assumed' } {
+  const logged = parseRr(t.riskReward);
+  if (Number.isFinite(logged) && logged !== 0) return { magnitude: Math.abs(logged), source: 'logged' };
+  if (typeof t.riskAmount === 'number' && t.riskAmount > 0 && Number.isFinite(t.pl) && t.pl !== 0) {
+    return { magnitude: Math.abs(t.pl) / t.riskAmount, source: 'computed' };
+  }
+  return { magnitude: 1, source: 'assumed' };
+}
+
+function lossRReason(t: Trade): string {
+  const { magnitude, source } = lossEffectiveR(t);
+  const tag = source === 'assumed' ? ' (assumed stop)' : source === 'computed' ? ' (pl/risk)' : '';
+  return `loss · −${magnitude.toFixed(1)}R${tag}`;
 }
 
 export function computeAvgR(trades: Trade[]): AvgRSnapshot {
@@ -1029,22 +1052,18 @@ export function computeAvgR(trades: Trade[]): AvgRSnapshot {
     .filter(t => t.result === 'WIN')
     .map(t => parseRr(t.riskReward))
     .filter(r => Number.isFinite(r) && r !== 0);
-  const lossesWithR = trades
+  // Wins without R:R stay excluded — win R genuinely varies and can't
+  // be assumed. Losses always count via the lossEffectiveR chain.
+  const lossMags = trades
     .filter(t => t.result === 'LOSS')
-    .map(t => parseRr(t.riskReward))
-    .filter(r => Number.isFinite(r) && r !== 0);
-  const avgWinR  = winsWithR.length   > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length   : 0;
-  // Losing trades' R values can be stored either as positive (just the
-  // magnitude) or negative depending on the trader's logging habit.
-  // We force the displayed value to NEGATIVE so the card always reads
-  // "+W.WR / −L.LR" without callers having to remember the convention.
-  const avgLossRRaw = lossesWithR.length > 0 ? lossesWithR.reduce((s, r) => s + r, 0) / lossesWithR.length : 0;
-  const avgLossR = avgLossRRaw === 0 ? 0 : -Math.abs(avgLossRRaw);
+    .map(t => lossEffectiveR(t).magnitude);
+  const avgWinR  = winsWithR.length > 0 ? winsWithR.reduce((s, r) => s + r, 0) / winsWithR.length : 0;
+  const avgLossR = lossMags.length  > 0 ? -(lossMags.reduce((s, r) => s + r, 0) / lossMags.length) : 0;
   return {
     avgWinR,
     avgLossR,
     winRCount:  winsWithR.length,
-    lossRCount: lossesWithR.length,
+    lossRCount: lossMags.length,
   };
 }
 
@@ -1649,15 +1668,12 @@ function scoreEdgeDetail(trades: Trade[]): AxisScoreDetail {
   const winners = decisives
     .filter(t => t.result === 'WIN')
     .sort((a, b) => b.pl - a.pl); // most positive first
-  const negatives: AxisContributor[] = losers.map(t => {
-    const rr = parseRr(t.riskReward);
-    return {
-      tradeId: t.id,
-      reason: `loss · ${rr !== 0 ? `${rr.toFixed(1)}R` : 'no R logged'}`,
-      value: formatDollar(t.pl),
-      kind: 'negative',
-    };
-  });
+  const negatives: AxisContributor[] = losers.map(t => ({
+    tradeId: t.id,
+    reason: lossRReason(t),
+    value: formatDollar(t.pl),
+    kind: 'negative' as const,
+  }));
   const positives: AxisContributor[] = winners.map(t => {
     const rr = parseRr(t.riskReward);
     return {
@@ -1685,37 +1701,37 @@ function scoreExitDisciplineDetail(trades: Trade[]): AxisScoreDetail {
   const denom = winR + lossR;
   const score = denom === 0 ? 0 : (winR / denom) * 100;
 
-  // Contributors: trades with R logged. Worst losers (largest |R|)
-  // first; then smallest winners (sub-average R that drag avg down);
-  // then best-supporting winners.
-  const withR = trades
+  // Hurting: every loss (effective R via lossEffectiveR — logged >
+  // pl/risk > assumed −1R), biggest first; then sub-average winners,
+  // but ONLY when losses exist — with no losses the ratio is 100
+  // regardless of win spread, so listing them would break the
+  // invariant: score 100 ⟺ empty hurting column.
+  const losses = trades
+    .filter(t => t.result === 'LOSS')
+    .map(t => ({ trade: t, magnitude: lossEffectiveR(t).magnitude }))
+    .sort((a, b) => b.magnitude - a.magnitude);
+  const winnersByR = trades
+    .filter(t => t.result === 'WIN')
     .map(t => ({ trade: t, r: parseRr(t.riskReward) }))
-    .filter(x => Number.isFinite(x.r) && x.r !== 0);
-  const losersByR = withR
-    .filter(x => x.trade.result === 'LOSS')
-    .sort((a, b) => Math.abs(b.r) - Math.abs(a.r)); // biggest |R| loss first
-  const winnersByR = withR
-    .filter(x => x.trade.result === 'WIN')
+    .filter(x => Number.isFinite(x.r) && x.r !== 0)
     .sort((a, b) => a.r - b.r); // smallest R wins first, then larger
   const avgWin = r.avgWinR;
-  const negatives: AxisContributor[] = [];
-  for (const { trade, r: rr } of losersByR) {
-    negatives.push({
-      tradeId: trade.id,
-      reason: `loss · −${Math.abs(rr).toFixed(1)}R`,
-      value: formatDollar(trade.pl),
-      kind: 'negative',
-    });
-  }
-  // Small winners that pulled the average down (below avg)
-  const smallWinners = winnersByR.filter(x => x.r < avgWin);
-  for (const { trade, r: rr } of smallWinners) {
-    negatives.push({
-      tradeId: trade.id,
-      reason: `win · only +${rr.toFixed(1)}R (under your ${avgWin.toFixed(1)}R avg)`,
-      value: formatDollar(trade.pl),
-      kind: 'negative',
-    });
+  const negatives: AxisContributor[] = losses.map(({ trade }) => ({
+    tradeId: trade.id,
+    reason: lossRReason(trade),
+    value: formatDollar(trade.pl),
+    kind: 'negative' as const,
+  }));
+  if (losses.length > 0) {
+    // Small winners that pulled the average down (below avg)
+    for (const { trade, r: rr } of winnersByR.filter(x => x.r < avgWin)) {
+      negatives.push({
+        tradeId: trade.id,
+        reason: `win · only +${rr.toFixed(1)}R (under your ${avgWin.toFixed(1)}R avg)`,
+        value: formatDollar(trade.pl),
+        kind: 'negative',
+      });
+    }
   }
   const positives: AxisContributor[] = [];
   // Best-supporting: biggest winners
@@ -1729,13 +1745,15 @@ function scoreExitDisciplineDetail(trades: Trade[]): AxisScoreDetail {
       });
     }
   }
-  return { score, applicable: withR.length, contributors: [...negatives, ...positives] };
+  return { score, applicable: winnersByR.length + losses.length, contributors: [...negatives, ...positives] };
 }
 
 /** Exit Discipline = avgWinR / (avgWinR + |avgLossR|) × 100. A trader
  *  whose winners average 2R and losers average 1R scores ~67 (winners
  *  bigger than losers). 50 means symmetric. Below 50 means losers
- *  outsize winners. Trades without R:R logged are excluded. */
+ *  outsize winners. Wins without R:R logged are excluded; losses
+ *  always count via lossEffectiveR (logged > pl/risk > assumed −1R),
+ *  so the score can't divide to a fake 100 while losses exist. */
 export function scoreExitDiscipline(trades: Trade[]): number {
   return scoreExitDisciplineDetail(trades).score ?? 0;
 }
