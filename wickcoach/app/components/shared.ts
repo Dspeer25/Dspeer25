@@ -874,6 +874,28 @@ const EMPTY_ANALYTICS: TraderAnalytics = {
   },
 };
 
+// ─── Time-of-day parser ───────────────────────────────────────────
+// Trade.time is stored as either a "9:30 AM" / "1:08 PM" string or a
+// "09:30" 24-hour string depending on the entry path. String compare
+// is a trap — "1:08 PM" < "9:30 AM" lexicographically because '1' <
+// '9', so a naive sort puts the trading day in 10am, 11am, 1pm…,
+// then 9am order. Anything that orders trades by time MUST go
+// through timeToMinutes, never raw string compare.
+export function timeToMinutes(t: string | undefined | null): number {
+  if (!t) return -1;
+  const s = String(t).trim();
+  if (!s) return -1;
+  const ampm = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    let h = parseInt(ampm[1], 10) % 12;
+    if (/PM/i.test(ampm[3])) h += 12;
+    return h * 60 + parseInt(ampm[2], 10);
+  }
+  const h24 = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (h24) return parseInt(h24[1], 10) * 60 + parseInt(h24[2], 10);
+  return -1;
+}
+
 // ─── Behavioral Radar timeframe filter ────────────────────────────
 // Drives the All-time / YTD / Monthly / Weekly segmented control on
 // the Analysis tab. Pure JS — same trade set in + same window out.
@@ -1313,10 +1335,12 @@ function computeDataSizing(
     return { score: null, revenge: null, stability: null, oversize: null };
   }
 
-  // A. Revenge-sizing. Chronological order matters — date then time.
+  // A. Revenge-sizing. Chronological order matters — date then time
+  //    parsed to minutes since midnight (NEVER raw string compare —
+  //    AM/PM strings sort lexicographically wrong; see timeToMinutes).
   const sorted = [...withRisk].sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return (a.time || '').localeCompare(b.time || '');
+    return timeToMinutes(a.time) - timeToMinutes(b.time);
   });
   let postLossCount = 0;
   let revengeCount = 0;
@@ -1417,12 +1441,14 @@ function buildRiskControlContributors(
     }
   }
 
-  // Revenge-sizing
+  // Revenge-sizing (chronological order via timeToMinutes — see
+  // computeDataSizing for the same fix). Raw string compare on
+  // "1:08 PM" vs "9:30 AM" is wrong because '1' < '9'.
   const withRisk = trades.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
   if (withRisk.length >= 2) {
     const sorted = [...withRisk].sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return (a.time || '').localeCompare(b.time || '');
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
     });
     for (let i = 1; i < sorted.length; i++) {
       const prev = sorted[i - 1];

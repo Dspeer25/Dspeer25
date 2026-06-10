@@ -186,7 +186,7 @@ function scoreRiskControlDetail(trades, opts = {}) {
   if (withRisk.length >= 2) {
     const sorted = [...withRisk].sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return (a.time || '').localeCompare(b.time || '');
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
     });
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i - 1].result === 'LOSS' && sorted[i].riskAmount > sorted[i - 1].riskAmount * 1.20) {
@@ -275,7 +275,7 @@ function computeDataSizing(trades, accountSize) {
   if (withRisk.length === 0) return { score: null, revenge: null, stability: null, oversize: null };
   const sorted = [...withRisk].sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return (a.time || '').localeCompare(b.time || '');
+    return timeToMinutes(a.time) - timeToMinutes(b.time);
   });
   let postLossCount = 0, revengeCount = 0;
   for (let i = 1; i < sorted.length; i++) {
@@ -692,6 +692,22 @@ function classMap(trades, verdicts) {
   check('exit · unparseable R:R excluded → 66.67', scoreExitDiscipline(trades), (2 / 3) * 100);
 }
 
+// ── Time parser (mirrors timeToMinutes in shared.ts) ──
+function timeToMinutes(t) {
+  if (!t) return -1;
+  const s = String(t).trim();
+  if (!s) return -1;
+  const ampm = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    let h = parseInt(ampm[1], 10) % 12;
+    if (/PM/i.test(ampm[3])) h += 12;
+    return h * 60 + parseInt(ampm[2], 10);
+  }
+  const h24 = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (h24) return parseInt(h24[1], 10) * 60 + parseInt(h24[2], 10);
+  return -1;
+}
+
 // ── Timeframe filter ──
 function parseLocalDate(s) {
   const m = (s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -798,6 +814,46 @@ function tradeAtOffset(daysAgo, opts = {}) {
   const xr = scoreExitDisciplineDetail(trades);
   // Biggest |R| loss first
   check('contrib · exit · biggest |R| loss first', xr.contributors[0].tradeId === 'e3' ? 1 : 0, 1);
+}
+
+// ── timeToMinutes — proves AM/PM strings parse to correct order ──
+check('time · "9:30 AM" → 570',         timeToMinutes('9:30 AM'),  9 * 60 + 30);
+check('time · "10:56 AM" → 656',        timeToMinutes('10:56 AM'), 10 * 60 + 56);
+check('time · "12:00 PM" → 720 (noon)', timeToMinutes('12:00 PM'), 720);
+check('time · "12:30 AM" → 30 (00:30)', timeToMinutes('12:30 AM'), 30);
+check('time · "1:08 PM" → 788',         timeToMinutes('1:08 PM'),  13 * 60 + 8);
+check('time · "09:30" 24h → 570',       timeToMinutes('09:30'),    9 * 60 + 30);
+check('time · "" → -1 (blank)',         timeToMinutes(''),         -1);
+check('time · null → -1',               timeToMinutes(null),       -1);
+// Order assertion — 9:30 AM must sort BEFORE 10:56 AM (broken under
+// raw string compare because '1' < '9').
+check('time order · 9:30 AM < 10:56 AM', timeToMinutes('9:30 AM') < timeToMinutes('10:56 AM') ? 1 : 0, 1);
+// Order assertion — 1:08 PM must sort AFTER 9:30 AM (also broken
+// under raw string compare).
+check('time order · 1:08 PM > 9:30 AM',  timeToMinutes('1:08 PM') > timeToMinutes('9:30 AM') ? 1 : 0, 1);
+
+// ── Revenge-sizing with AM/PM strings — verifies the fix end-to-end ──
+{
+  // 4 trades on the same day in AM/PM format. Real chronological
+  // order is: 9:30 AM (LOSS $100) → 10:56 AM (LOSS $100) → 1:08 PM
+  // ($300 — revenge after 10:56 loss) → 3:30 PM ($150 — not revenge,
+  // bumped only 50% from 100, but the previous trade is a WIN now
+  // because we made it one).
+  const trades = [
+    t('LOSS', -100, { id: 'tm1', riskAmount: 100, date: '2026-06-09', time: '10:56 AM' }),
+    t('LOSS', -100, { id: 'tm2', riskAmount: 100, date: '2026-06-09', time: '9:30 AM'  }),
+    t('WIN',  100,  { id: 'tm3', riskAmount: 300, date: '2026-06-09', time: '1:08 PM'  }),
+    t('WIN',  100,  { id: 'tm4', riskAmount: 150, date: '2026-06-09', time: '3:30 PM'  }),
+  ];
+  // With timeToMinutes ordering:
+  //   tm2 (9:30 LOSS 100) → tm1 (10:56 LOSS 100, no bump) → tm3 (1:08 win, $300, +200% revenge) → tm4 (3:30, prev was WIN, skipped)
+  // Expected: 1 revenge flagged.
+  const r = scoreRiskControl(trades, { goals: [] });
+  // Sanity: data subscore should account for 1 revenge in 2 post-loss trades = 50% revenge rate.
+  // revenge subscore = (1 - 1/2) * 100 = 50.
+  // stability: amounts [100,100,150,300]. median = 125 (between 100 and 150). 300 > 250 → 1 outlier; 100 not <62.5 → not outliers. stability = (1-1/4)*100 = 75.
+  // data blend (no oversize, no account): 50 * 0.5/0.8 + 75 * 0.3/0.8 = 31.25 + 28.125 = 59.375
+  check('AM/PM fix · data score (with 1 real revenge) ≈ 59.375', r.dataScore, 59.375);
 }
 
 console.log('─'.repeat(70));

@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor, timeToMinutes } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -1269,7 +1269,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           const withRisk = tradesInWindow.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
           const sorted = [...withRisk].sort((a, b) => {
             if (a.date !== b.date) return a.date.localeCompare(b.date);
-            return (a.time || '').localeCompare(b.time || '');
+            return timeToMinutes(a.time) - timeToMinutes(b.time);
           });
           // Verify the sort actually changed the order vs the raw input.
           // If they're identical the input was already sorted; either
