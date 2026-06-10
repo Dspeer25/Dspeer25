@@ -89,6 +89,133 @@ function scoreDiscipline(trades) {
   const denom = process + impulse;
   return denom === 0 ? 0 : (process / denom) * 100;
 }
+
+// Detail-returning mirrors for contributor tests
+function matchedKeyword(j, kws) {
+  const l = (j || '').toLowerCase();
+  for (const k of kws) if (k && l.includes(k)) return k;
+  return null;
+}
+function scoreDisciplineDetail(trades) {
+  let process = 0, impulse = 0;
+  const neg = [], pos = [];
+  for (const t of trades) {
+    const j = t.journal || '';
+    if (!j.trim()) continue;
+    const k = classifyTrade(t);
+    if (k === 'impulse') {
+      impulse++;
+      neg.push({ tradeId: t.id, reason: 'impulse', kind: 'negative' });
+    } else if (k === 'process') {
+      process++;
+      pos.push({ tradeId: t.id, reason: 'process', kind: 'positive' });
+    }
+  }
+  const denom = process + impulse;
+  const score = denom === 0 ? 0 : (process / denom) * 100;
+  return { score, applicable: denom, contributors: [...neg, ...pos] };
+}
+function scoreEdgeDetail(trades) {
+  const e = computeExpectancy(trades);
+  if (e.decisive === 0) return { score: 0, applicable: 0, contributors: [] };
+  const r = computeAvgR(trades);
+  const rExp = e.winRate * r.avgWinR + e.lossRate * r.avgLossR;
+  const score = Math.max(0, Math.min(100, 50 + rExp * 50));
+  const decisives = trades.filter(t => t.result === 'WIN' || t.result === 'LOSS');
+  const losers = decisives.filter(t => t.result === 'LOSS').sort((a, b) => a.pl - b.pl);
+  const winners = decisives.filter(t => t.result === 'WIN').sort((a, b) => b.pl - a.pl);
+  const neg = losers.map(t => ({ tradeId: t.id, reason: 'loss', kind: 'negative' }));
+  const pos = winners.map(t => ({ tradeId: t.id, reason: 'win', kind: 'positive' }));
+  return { score, applicable: e.decisive, contributors: [...neg, ...pos] };
+}
+function scoreExitDisciplineDetail(trades) {
+  const r = computeAvgR(trades);
+  const winR = r.avgWinR, lossR = Math.abs(r.avgLossR);
+  const denom = winR + lossR;
+  const score = denom === 0 ? 0 : (winR / denom) * 100;
+  const withR = trades.map(t => ({ t, r: parseRr(t.riskReward) })).filter(x => Number.isFinite(x.r) && x.r !== 0);
+  const losersByR = withR.filter(x => x.t.result === 'LOSS').sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
+  const winnersByR = withR.filter(x => x.t.result === 'WIN').sort((a, b) => a.r - b.r);
+  const neg = [];
+  for (const { t: tr } of losersByR) neg.push({ tradeId: tr.id, reason: 'loss R', kind: 'negative' });
+  const smallWinners = winnersByR.filter(x => x.r < winR);
+  for (const { t: tr } of smallWinners) neg.push({ tradeId: tr.id, reason: 'small win R', kind: 'negative' });
+  const pos = [];
+  for (const { t: tr, r: rr } of winnersByR.slice().reverse()) {
+    if (rr >= winR) pos.push({ tradeId: tr.id, reason: 'win R', kind: 'positive' });
+  }
+  return { score, applicable: withR.length, contributors: [...neg, ...pos] };
+}
+function scoreRiskControlDetail(trades, opts = {}) {
+  const result = scoreRiskControl(trades, opts);
+  const accountSize = opts.accountSize;
+  const hasAccount = typeof accountSize === 'number' && accountSize > 0;
+  const goal = computeGoalAdherence(trades, opts.goals || [], accountSize);
+  const neg = [], pos = [];
+  const rule = goal.winningRule;
+  // We didn't capture winningRule in the test mirror — re-derive from goals
+  const goals = opts.goals || [];
+  let strictest = null;
+  if (goals.length > 0) {
+    let key = Infinity;
+    for (const g of goals) {
+      if (g.kind !== 'number') continue;
+      const r = g.numberRule;
+      if (!r) continue;
+      if (r.field !== 'riskAmount' && r.field !== 'riskPctOfAccount') continue;
+      if (r.operator !== '<=' && r.operator !== '<') continue;
+      const v = typeof r.value === 'number' ? r.value : parseFloat(String(r.value));
+      if (!Number.isFinite(v)) continue;
+      const k = r.field === 'riskPctOfAccount' ? v : (hasAccount ? (v / accountSize) * 100 : v);
+      if (k < key) { key = k; strictest = r; }
+    }
+  }
+  const withRisk = trades.filter(t => typeof t.riskAmount === 'number' && t.riskAmount > 0);
+  // Goal violations
+  if (strictest) {
+    const ruleValue = typeof strictest.value === 'number' ? strictest.value : parseFloat(String(strictest.value));
+    const op = strictest.operator;
+    for (const t of withRisk) {
+      const actual = strictest.field === 'riskPctOfAccount' && hasAccount ? (t.riskAmount / accountSize) * 100 : t.riskAmount;
+      const within = op === '<=' ? actual <= ruleValue : actual < ruleValue;
+      if (!within) neg.push({ tradeId: t.id, reason: 'over rule', kind: 'negative' });
+      else pos.push({ tradeId: t.id, reason: 'within rule', kind: 'positive' });
+    }
+  }
+  // Revenge
+  if (withRisk.length >= 2) {
+    const sorted = [...withRisk].sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (a.time || '').localeCompare(b.time || '');
+    });
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i - 1].result === 'LOSS' && sorted[i].riskAmount > sorted[i - 1].riskAmount * 1.20) {
+        neg.push({ tradeId: sorted[i].id, reason: 'revenge', kind: 'negative' });
+      }
+    }
+  }
+  // Oversize
+  if (hasAccount) {
+    const threshold = accountSize * 0.03;
+    for (const t of withRisk) if (t.riskAmount > threshold) neg.push({ tradeId: t.id, reason: 'oversize', kind: 'negative' });
+  }
+  // Journal tags
+  if (opts.classifications) {
+    for (const t of trades) {
+      const v = opts.classifications[t.id]?.riskLanguage;
+      if (v === 'negative') neg.push({ tradeId: t.id, reason: 'journal neg', kind: 'negative' });
+      else if (v === 'positive') pos.push({ tradeId: t.id, reason: 'journal pos', kind: 'positive' });
+    }
+  }
+  let withTagged = 0;
+  if (opts.classifications) {
+    for (const t of trades) {
+      const v = opts.classifications[t.id]?.riskLanguage;
+      if (v === 'positive' || v === 'negative') withTagged++;
+    }
+  }
+  return { score: result.score, applicable: Math.max(withRisk.length, withTagged), contributors: [...neg, ...pos] };
+}
 function scorePatience(trades) {
   let withJournal = 0, impatient = 0;
   for (const t of trades) {
@@ -563,6 +690,114 @@ function classMap(trades, verdicts) {
     t('LOSS', -100, { riskReward: '-1' }),
   ];
   check('exit · unparseable R:R excluded → 66.67', scoreExitDiscipline(trades), (2 / 3) * 100);
+}
+
+// ── Timeframe filter ──
+function parseLocalDate(s) {
+  const m = (s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return new Date(NaN);
+  return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+}
+function filterTradesForTimeframe(trades, timeframe) {
+  if (timeframe === 'all') return trades;
+  const now = new Date();
+  let cutoff;
+  if (timeframe === 'ytd') cutoff = new Date(now.getFullYear(), 0, 1);
+  else if (timeframe === 'month') cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+  else {
+    const day = now.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    cutoff = new Date(now);
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() + diff);
+  }
+  return trades.filter(t => parseLocalDate(t.date) >= cutoff);
+}
+
+// Build a trade dated relative to now (offset in days, negative = past)
+function tradeAtOffset(daysAgo, opts = {}) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return t(opts.result || 'WIN', opts.pl ?? 100, { ...opts, date });
+}
+
+// Timeframe filtering
+{
+  const trades = [
+    tradeAtOffset(0,   { id: 'tf_today',        riskAmount: 100 }),
+    tradeAtOffset(3,   { id: 'tf_this_week',    riskAmount: 100 }),
+    tradeAtOffset(20,  { id: 'tf_this_month',   riskAmount: 100 }),
+    tradeAtOffset(180, { id: 'tf_this_year',    riskAmount: 100 }),
+    tradeAtOffset(400, { id: 'tf_last_year',    riskAmount: 100 }),
+  ];
+  const all = filterTradesForTimeframe(trades, 'all');
+  const ytd = filterTradesForTimeframe(trades, 'ytd');
+  const month = filterTradesForTimeframe(trades, 'month');
+  const week = filterTradesForTimeframe(trades, 'week');
+  check('timeframe · all → 5',    all.length, 5);
+  check('timeframe · ytd ≤ 4',    ytd.length <= 4 ? 1 : 0, 1); // depends on current date — excludes last_year
+  check('timeframe · month ≤ 3',  month.length <= 3 ? 1 : 0, 1);
+  check('timeframe · week ≤ 2',   week.length <= 2 ? 1 : 0, 1);
+}
+
+// ── Contributors — Discipline ──
+{
+  const trades = [
+    t('WIN',  100, { id: 'd1', journal: 'patient on the pullback' }),
+    t('LOSS', -50, { id: 'd2', journal: 'stopped out cleanly' }),
+    t('WIN',  100, { id: 'd3', journal: 'fomo into the breakout' }),
+    t('LOSS', -50, { id: 'd4', journal: 'revenge after the last' }),
+  ];
+  const r = scoreDisciplineDetail(trades);
+  check('contrib · discipline · applicable = 4', r.applicable, 4);
+  // 2 negative (fomo, revenge) then 2 positive (patient, stopped out)
+  check('contrib · discipline · 2 negatives first', r.contributors.filter(c => c.kind === 'negative').length, 2);
+  check('contrib · discipline · 2 positives after', r.contributors.filter(c => c.kind === 'positive').length, 2);
+  check('contrib · discipline · first is impulse trade', r.contributors[0].tradeId === 'd3' || r.contributors[0].tradeId === 'd4' ? 1 : 0, 1);
+}
+
+// ── Contributors — Risk Control (goal violation + revenge + journal) ──
+{
+  const trades = [
+    t('LOSS', -50, { id: 'rc1', riskAmount: 100, date: '2026-06-09', time: '09:30' }),
+    t('WIN',  100, { id: 'rc2', riskAmount: 150, date: '2026-06-09', time: '09:35', journal: 'sized up to recover' }), // revenge-sized, no goal violation, journal NEG
+    t('WIN',  100, { id: 'rc3', riskAmount: 100, date: '2026-06-09', time: '09:40', journal: 'kept it small' }),       // journal POS
+    t('WIN',  100, { id: 'rc4', riskAmount: 400, date: '2026-06-09', time: '09:45' }),                                  // goal violation (over $200 cap)
+  ];
+  const classifications = {
+    rc2: { riskLanguage: 'negative' },
+    rc3: { riskLanguage: 'positive' },
+  };
+  const r = scoreRiskControlDetail(trades, {
+    goals: [{ kind: 'number', numberRule: { field: 'riskAmount', operator: '<=', value: 200 } }],
+    accountSize: 5000, // 3% = $150
+    classifications,
+  });
+  check('contrib · risk · applicable = 4 (all w/ riskAmount)', r.applicable, 4);
+  // Expected negative contributors (rc2 revenge + journal, rc4 over rule + oversize, rc3 some positive)
+  const negIds = new Set(r.contributors.filter(c => c.kind === 'negative').map(c => c.tradeId));
+  check('contrib · risk · rc4 cited as negative (over rule)', negIds.has('rc4') ? 1 : 0, 1);
+  check('contrib · risk · rc2 cited as negative (revenge / journal)', negIds.has('rc2') ? 1 : 0, 1);
+  const posIds = new Set(r.contributors.filter(c => c.kind === 'positive').map(c => c.tradeId));
+  check('contrib · risk · rc3 cited as positive (journal)', posIds.has('rc3') ? 1 : 0, 1);
+}
+
+// ── Contributors — Edge / Exit Discipline ──
+{
+  const trades = [
+    t('WIN',  300, { id: 'e1', riskReward: '3' }),
+    t('WIN',  100, { id: 'e2', riskReward: '1' }),
+    t('LOSS', -200, { id: 'e3', riskReward: '-2' }),
+    t('LOSS', -100, { id: 'e4', riskReward: '-1' }),
+  ];
+  const er = scoreEdgeDetail(trades);
+  check('contrib · edge · applicable = 4 decisive', er.applicable, 4);
+  // Losses first in contributor order — biggest loss should be first negative
+  check('contrib · edge · biggest loss first', er.contributors[0].tradeId === 'e3' ? 1 : 0, 1);
+  const xr = scoreExitDisciplineDetail(trades);
+  // Biggest |R| loss first
+  check('contrib · exit · biggest |R| loss first', xr.contributors[0].tradeId === 'e3' ? 1 : 0, 1);
 }
 
 console.log('─'.repeat(70));

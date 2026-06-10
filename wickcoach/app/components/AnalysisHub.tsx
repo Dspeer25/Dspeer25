@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -163,6 +163,23 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses' | 'net'>('net');
+  // Behavioral Radar timeframe — persists across sessions so the
+  // trader's preferred lens (Weekly debrief vs All-time review) stays
+  // selected. Default to All-time on first visit.
+  const RADAR_TIMEFRAME_KEY = 'wickcoach_radar_timeframe';
+  const [radarTimeframe, setRadarTimeframe] = useState<RadarTimeframe>(() => {
+    if (typeof window === 'undefined') return 'all';
+    try {
+      const raw = localStorage.getItem(RADAR_TIMEFRAME_KEY);
+      return raw === 'ytd' || raw === 'month' || raw === 'week' ? raw : 'all';
+    } catch { return 'all'; }
+  });
+  const setRadarTimeframePersisted = (tf: RadarTimeframe) => {
+    setRadarTimeframe(tf);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(RADAR_TIMEFRAME_KEY, tf); } catch { /* ignore */ }
+    }
+  };
   // (hoveredSlice state retired with the OUTCOME CANDLES section.)
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
@@ -1180,10 +1197,15 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           scripts/test-behavioral-radar.mjs). A dented shape on any
           axis is a visible leak the trader can fix. */}
       {(() => {
+        // Filter trades to the active timeframe selection. All 5 axes
+        // recompute from the windowed set, and the citation panel
+        // (built next step) sees the same set so a Weekly view doesn't
+        // cite an All-time trade.
+        const tradesInWindow = filterTradesForTimeframe(trades, radarTimeframe);
         // Pass goals + account size + cached classifications so the
         // Risk Control axis can blend all three subscores (goal
         // adherence + data sizing + Haiku risk-language verdict).
-        const radar = computeBehavioralRadar(trades, {
+        const radar = computeBehavioralRadar(tradesInWindow, {
           goals: realGoals,
           accountSize: readAccountSize(),
           classifications,
@@ -1272,6 +1294,38 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               <div>
                 <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>Behavioral Radar</div>
                 <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', marginTop: 4, maxWidth: 540, lineHeight: 1.5 }}>Five deterministic 0–100 scores from your trade record. Dents are your leaks.</div>
+              </div>
+              {/* Timeframe segmented control + trade count for the
+                  active window. Selection persists in localStorage. */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                <div style={{ display: 'inline-flex', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 999, padding: 3 }}>
+                  {(['all', 'ytd', 'month', 'week'] as const).map(tf => {
+                    const active = radarTimeframe === tf;
+                    return (
+                      <button
+                        key={tf}
+                        onClick={() => setRadarTimeframePersisted(tf)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 999,
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontFamily: fm,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: 1,
+                          textTransform: 'uppercase' as const,
+                          background: active ? teal : 'transparent',
+                          color: active ? '#0A0D14' : '#aab0bd',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >{RADAR_TIMEFRAME_LABEL[tf]}</button>
+                    );
+                  })}
+                </div>
+                <span style={{ fontFamily: fm, fontSize: 11, color: '#94A3B8', letterSpacing: 0.5 }}>
+                  {tradesInWindow.length} trade{tradesInWindow.length === 1 ? '' : 's'} {radarTimeframe === 'all' ? 'total' : radarTimeframe === 'ytd' ? 'YTD' : radarTimeframe === 'month' ? 'this month' : 'this week'}
+                </span>
               </div>
             </div>
 

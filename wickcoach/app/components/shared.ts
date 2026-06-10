@@ -874,6 +874,41 @@ const EMPTY_ANALYTICS: TraderAnalytics = {
   },
 };
 
+// ─── Behavioral Radar timeframe filter ────────────────────────────
+// Drives the All-time / YTD / Monthly / Weekly segmented control on
+// the Analysis tab. Pure JS — same trade set in + same window out.
+
+export type RadarTimeframe = 'all' | 'ytd' | 'month' | 'week';
+
+export const RADAR_TIMEFRAME_LABEL: Record<RadarTimeframe, string> = {
+  all:   'All-time',
+  ytd:   'YTD',
+  month: 'Monthly',
+  week:  'Weekly',
+};
+
+/** Filter trades to those falling inside the named timeframe relative
+ *  to the current local date. ISO week = Monday-start. Empty input
+ *  yields empty output. */
+export function filterTradesForTimeframe(trades: Trade[], timeframe: RadarTimeframe): Trade[] {
+  if (timeframe === 'all') return trades;
+  const now = new Date();
+  let cutoff: Date;
+  if (timeframe === 'ytd') {
+    cutoff = new Date(now.getFullYear(), 0, 1);
+  } else if (timeframe === 'month') {
+    cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else {
+    // ISO week (Mon-start)
+    const day = now.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    cutoff = new Date(now);
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() + diff);
+  }
+  return trades.filter(t => parseLocalDate(t.date) >= cutoff);
+}
+
 // ─── Deterministic KPI metrics ────────────────────────────────────
 // Pure JS, same architecture as scoreNumberGoal. Same trade set in →
 // same numbers out, always. No Haiku, no caching, no surprises. Used
@@ -998,6 +1033,33 @@ export function computeAvgR(trades: Trade[]): AvgRSnapshot {
 // the Analysis tab's pentagon chart. Test harness:
 // scripts/test-behavioral-radar.mjs.
 
+// ─── Behavioral Radar contributors ────────────────────────────────
+// Each axis returns a list of trades that drove its score. The
+// citation panel reads from these — never recomputes. Negative
+// contributors hurt the score; positive contributors support it.
+
+export type AxisContributorKind = 'positive' | 'negative';
+
+export interface AxisContributor {
+  tradeId: string;
+  /** Short, human-readable explanation of why this trade contributed.
+   *  Journal axes: a brief excerpt or keyword match. Numerical axes:
+   *  the relevant number (R-multiple, $ amount, %). */
+  reason: string;
+  /** Optional secondary value (e.g. "$1,200 risk", "+2.5R") rendered
+   *  alongside the reason in the citation panel. */
+  value?: string;
+  kind: AxisContributorKind;
+}
+
+export interface AxisScoreDetail {
+  score: number | null;
+  /** Count of trades that fed this axis. Drives the "small sample"
+   *  note in the renderer when below ~5. */
+  applicable: number;
+  contributors: AxisContributor[];
+}
+
 export interface BehavioralRadarSnapshot {
   /** 0-100. riskControl can be null when no risk rule is set, account
    *  size needed but missing, or no trades have a logged riskAmount. */
@@ -1008,12 +1070,15 @@ export interface BehavioralRadarSnapshot {
   exitDiscipline: number;
   /** Per-axis array for the renderer. score === null indicates a
    *  no-signal axis; hint carries the inline guidance to show on the
-   *  spoke (e.g. "set a risk goal to score this"). */
+   *  spoke (e.g. "set a risk goal to score this"). contributors lists
+   *  the trades that drove the score, ordered most-negative first. */
   axes: {
     key: 'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline';
     label: string;
     score: number | null;
     hint?: string;
+    applicable: number;
+    contributors: AxisContributor[];
   }[];
   /** Full result detail for the Risk Control axis so the UI can show
    *  rule-specific tooltips ("within 87/123 trades of riskAmount ≤ 200"). */
@@ -1026,20 +1091,104 @@ const BAD_PATIENCE_KEYWORDS = [
   ...PATTERN_KEYWORDS.revengeTrading,
 ];
 
+/** Find the first keyword in `keywords` that appears in `journal`
+ *  (case-insensitive). Used by the contributor citation logic. */
+function matchedKeyword(journal: string, keywords: string[]): string | null {
+  const j = (journal || '').toLowerCase();
+  for (const k of keywords) {
+    if (k && j.includes(k)) return k;
+  }
+  return null;
+}
+
+/** Pull a short excerpt from `journal` centered on a matched keyword.
+ *  Used for the citation panel — the trader sees the words behind
+ *  the verdict, not a wall of journal text. */
+function journalExcerpt(journal: string | undefined, keyword: string | null, charsAround = 40): string {
+  const j = journal || '';
+  if (!j) return '';
+  if (!keyword) {
+    return j.length > 100 ? j.slice(0, 100).trimEnd() + '…' : j;
+  }
+  const idx = j.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx === -1) return j.length > 100 ? j.slice(0, 100).trimEnd() + '…' : j;
+  const start = Math.max(0, idx - charsAround);
+  const end = Math.min(j.length, idx + keyword.length + charsAround);
+  let snip = j.slice(start, end).trim();
+  if (start > 0) snip = '…' + snip;
+  if (end < j.length) snip = snip + '…';
+  return snip;
+}
+
+/** Internal Discipline scoring — returns score + applicable count +
+ *  per-trade contributor list ranked most-negative first. */
+function scoreDisciplineDetail(trades: Trade[]): AxisScoreDetail {
+  let process = 0;
+  let impulse = 0;
+  const negatives: AxisContributor[] = [];
+  const positives: AxisContributor[] = [];
+  for (const t of trades) {
+    const j = t.journal || '';
+    if (!j.trim()) continue;
+    const kind = classifyTrade(t);
+    if (kind === 'impulse') {
+      impulse++;
+      const kw = matchedKeyword(j, IMPULSE_KEYWORDS) || '';
+      negatives.push({
+        tradeId: t.id,
+        reason: kw ? `impulse language: "${journalExcerpt(j, kw)}"` : `flagged impulse: "${journalExcerpt(j, null)}"`,
+        kind: 'negative',
+      });
+    } else if (kind === 'process') {
+      process++;
+      const kw = matchedKeyword(j, PROCESS_KEYWORDS) || '';
+      positives.push({
+        tradeId: t.id,
+        reason: kw ? `process language: "${journalExcerpt(j, kw)}"` : `process trade: "${journalExcerpt(j, null)}"`,
+        kind: 'positive',
+      });
+    }
+  }
+  const denom = process + impulse;
+  const score = denom === 0 ? 0 : (process / denom) * 100;
+  return { score, applicable: denom, contributors: [...negatives, ...positives] };
+}
+
 /** Discipline = process trades / (process + impulse) × 100. Neutral
  *  trades (no plan/no-impulse keywords) are excluded from both the
  *  numerator and the denominator. */
 export function scoreDiscipline(trades: Trade[]): number {
-  let process = 0;
-  let impulse = 0;
+  return scoreDisciplineDetail(trades).score ?? 0;
+}
+
+function scorePatienceDetail(trades: Trade[]): AxisScoreDetail {
+  let withJournal = 0;
+  let impatient = 0;
+  const negatives: AxisContributor[] = [];
+  const positives: AxisContributor[] = [];
   for (const t of trades) {
-    const kind = classifyTrade(t);
-    if (kind === 'process') process++;
-    else if (kind === 'impulse') impulse++;
+    const j = t.journal || '';
+    if (j.trim().length === 0) continue;
+    withJournal++;
+    if (journalMatches(j, BAD_PATIENCE_KEYWORDS)) {
+      impatient++;
+      const kw = matchedKeyword(j, BAD_PATIENCE_KEYWORDS) || '';
+      negatives.push({
+        tradeId: t.id,
+        reason: kw ? `impatience: "${journalExcerpt(j, kw)}"` : `impatience flagged: "${journalExcerpt(j, null)}"`,
+        kind: 'negative',
+      });
+    } else {
+      const kw = matchedKeyword(j, PATTERN_KEYWORDS.patience) || '';
+      positives.push({
+        tradeId: t.id,
+        reason: kw ? `patience: "${journalExcerpt(j, kw)}"` : `no impatience flagged in: "${journalExcerpt(j, null)}"`,
+        kind: 'positive',
+      });
+    }
   }
-  const denom = process + impulse;
-  if (denom === 0) return 0;
-  return (process / denom) * 100;
+  const score = withJournal === 0 ? 0 : ((withJournal - impatient) / withJournal) * 100;
+  return { score, applicable: withJournal, contributors: [...negatives, ...positives] };
 }
 
 /** Patience = (1 − impatientShare) × 100. A trade is "impatient" when
@@ -1047,16 +1196,7 @@ export function scoreDiscipline(trades: Trade[]): number {
  *  Denominator = trades with any journal text (we can only judge
  *  patience from what the trader wrote). */
 export function scorePatience(trades: Trade[]): number {
-  let withJournal = 0;
-  let impatient = 0;
-  for (const t of trades) {
-    const j = t.journal || '';
-    if (j.trim().length === 0) continue;
-    withJournal++;
-    if (journalMatches(j, BAD_PATIENCE_KEYWORDS)) impatient++;
-  }
-  if (withJournal === 0) return 0;
-  return ((withJournal - impatient) / withJournal) * 100;
+  return scorePatienceDetail(trades).score ?? 0;
 }
 
 /** Risk Control evaluation result. Holds the blended score plus a
@@ -1237,6 +1377,155 @@ function computeJournalLanguage(
   return (pos / mentions) * 100;
 }
 
+/** Build the contributor list for Risk Control across all three
+ *  subscores. Negative-first ordering: goal violations, then
+ *  revenge-sizing, then oversize, then median-deviation outliers,
+ *  then journal-tagged negatives. Then the positives. */
+function buildRiskControlContributors(
+  trades: Trade[],
+  goal: GoalAdherenceResult,
+  data: DataSizingResult,
+  accountSize: number | null | undefined,
+  classifications: Record<string, TradeClassification> | undefined,
+): AxisContributor[] {
+  const negatives: AxisContributor[] = [];
+  const positives: AxisContributor[] = [];
+  const hasAccount = typeof accountSize === 'number' && accountSize > 0;
+
+  // Goal violations
+  const rule = goal.winningRule;
+  if (rule && typeof goal.applicable === 'number') {
+    const ruleValue = typeof rule.value === 'number' ? rule.value : parseFloat(String(rule.value));
+    const op = rule.operator;
+    for (const t of trades) {
+      const ra = t.riskAmount;
+      if (typeof ra !== 'number' || ra <= 0) continue;
+      const actual = rule.field === 'riskPctOfAccount' && hasAccount
+        ? (ra / (accountSize as number)) * 100
+        : ra;
+      const within = op === '<=' ? actual <= ruleValue : actual < ruleValue;
+      if (!within) {
+        const unit = rule.field === 'riskPctOfAccount' ? '%' : '';
+        const prefix = rule.field === 'riskPctOfAccount' ? '' : '$';
+        negatives.push({
+          tradeId: t.id,
+          reason: `over rule ${op} ${prefix}${ruleValue}${unit}`,
+          value: `${prefix}${actual.toFixed(rule.field === 'riskPctOfAccount' ? 2 : 0)}${unit}`,
+          kind: 'negative',
+        });
+      }
+    }
+  }
+
+  // Revenge-sizing
+  const withRisk = trades.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
+  if (withRisk.length >= 2) {
+    const sorted = [...withRisk].sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (a.time || '').localeCompare(b.time || '');
+    });
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1];
+      const cur = sorted[i];
+      if (prev.result !== 'LOSS') continue;
+      const prevRisk = prev.riskAmount as number;
+      const curRisk = cur.riskAmount as number;
+      if (curRisk > prevRisk * 1.20) {
+        const bumpPct = ((curRisk - prevRisk) / prevRisk) * 100;
+        negatives.push({
+          tradeId: cur.id,
+          reason: `revenge-sized after a loss · risk +${bumpPct.toFixed(0)}%`,
+          value: `$${prevRisk.toFixed(0)} → $${curRisk.toFixed(0)}`,
+          kind: 'negative',
+        });
+      }
+    }
+  }
+
+  // Account oversize
+  if (hasAccount) {
+    const threshold = (accountSize as number) * 0.03;
+    for (const t of withRisk) {
+      const ra = t.riskAmount as number;
+      if (ra > threshold) {
+        const pct = (ra / (accountSize as number)) * 100;
+        negatives.push({
+          tradeId: t.id,
+          reason: `oversized vs account · ${pct.toFixed(1)}% (over 3%)`,
+          value: `$${ra.toFixed(0)}`,
+          kind: 'negative',
+        });
+      }
+    }
+  }
+
+  // Median-deviation outliers
+  if (withRisk.length >= 3) {
+    const amounts = [...withRisk.map(t => t.riskAmount as number)].sort((a, b) => a - b);
+    const median = amounts.length % 2 === 1
+      ? amounts[(amounts.length - 1) / 2]
+      : (amounts[amounts.length / 2 - 1] + amounts[amounts.length / 2]) / 2;
+    if (median > 0) {
+      for (const t of withRisk) {
+        const ra = t.riskAmount as number;
+        if (ra > median * 2 || ra < median * 0.5) {
+          negatives.push({
+            tradeId: t.id,
+            reason: `sizing outlier · ${ra > median * 2 ? '>' : '<'} ${ra > median * 2 ? '2×' : '½×'} median ($${median.toFixed(0)})`,
+            value: `$${ra.toFixed(0)}`,
+            kind: 'negative',
+          });
+        }
+      }
+    }
+  }
+
+  // Journal-tagged negatives + positives
+  if (classifications) {
+    for (const t of trades) {
+      const verdict = classifications[t.id]?.riskLanguage;
+      if (verdict === 'negative') {
+        negatives.push({
+          tradeId: t.id,
+          reason: `risk language: "${journalExcerpt(t.journal, null)}"`,
+          kind: 'negative',
+        });
+      } else if (verdict === 'positive') {
+        positives.push({
+          tradeId: t.id,
+          reason: `risk discipline: "${journalExcerpt(t.journal, null)}"`,
+          kind: 'positive',
+        });
+      }
+    }
+  }
+
+  // Within-rule trades as positive contributors (subset to avoid wall)
+  if (rule) {
+    const ruleValue = typeof rule.value === 'number' ? rule.value : parseFloat(String(rule.value));
+    const op = rule.operator;
+    for (const t of withRisk) {
+      const ra = t.riskAmount as number;
+      const actual = rule.field === 'riskPctOfAccount' && hasAccount
+        ? (ra / (accountSize as number)) * 100
+        : ra;
+      const within = op === '<=' ? actual <= ruleValue : actual < ruleValue;
+      if (within) {
+        const unit = rule.field === 'riskPctOfAccount' ? '%' : '';
+        const prefix = rule.field === 'riskPctOfAccount' ? '' : '$';
+        positives.push({
+          tradeId: t.id,
+          reason: `within rule ${op} ${prefix}${ruleValue}${unit}`,
+          value: `${prefix}${actual.toFixed(rule.field === 'riskPctOfAccount' ? 2 : 0)}${unit}`,
+          kind: 'positive',
+        });
+      }
+    }
+  }
+
+  return [...negatives, ...positives];
+}
+
 /** Risk Control = blended adherence + sizing-behavior + journal-language
  *  score. Each subscore is independently optional; available ones blend
  *  via renormalizing weights (goal 0.50, data 0.30, journal 0.20). The
@@ -1289,17 +1578,132 @@ export function scoreRiskControl(
   };
 }
 
+/** Risk Control detail with contributors — feeds the citation panel. */
+function scoreRiskControlDetail(
+  trades: Trade[],
+  opts: {
+    goals?: Goal[];
+    accountSize?: number | null;
+    classifications?: Record<string, TradeClassification>;
+  } = {}
+): AxisScoreDetail {
+  const result = scoreRiskControl(trades, opts);
+  const goals = opts.goals || [];
+  const goal = computeGoalAdherence(trades, goals, opts.accountSize);
+  const data = computeDataSizing(trades, opts.accountSize);
+  const contributors = buildRiskControlContributors(trades, goal, data, opts.accountSize, opts.classifications);
+  // Applicable = trades that fed any subscore (riskAmount logged OR
+  // riskLanguage tagged positive/negative). Used for the small-sample
+  // note.
+  const withRisk = trades.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0).length;
+  let withTagged = 0;
+  if (opts.classifications) {
+    for (const t of trades) {
+      const v = opts.classifications[t.id]?.riskLanguage;
+      if (v === 'positive' || v === 'negative') withTagged++;
+    }
+  }
+  const applicable = Math.max(withRisk, withTagged);
+  return { score: result.score, applicable, contributors };
+}
+
+function scoreEdgeDetail(trades: Trade[]): AxisScoreDetail {
+  const exp = computeExpectancy(trades);
+  if (exp.decisive === 0) return { score: 0, applicable: 0, contributors: [] };
+  const r = computeAvgR(trades);
+  const rExp = exp.winRate * r.avgWinR + exp.lossRate * r.avgLossR;
+  const score = Math.max(0, Math.min(100, 50 + rExp * 50));
+
+  // Worst-offender first: biggest losses, then smallest winners.
+  // Best-supporting after: biggest winners.
+  const decisives = trades.filter(t => t.result === 'WIN' || t.result === 'LOSS');
+  const losers = decisives
+    .filter(t => t.result === 'LOSS')
+    .sort((a, b) => a.pl - b.pl); // most negative first
+  const winners = decisives
+    .filter(t => t.result === 'WIN')
+    .sort((a, b) => b.pl - a.pl); // most positive first
+  const negatives: AxisContributor[] = losers.map(t => {
+    const rr = parseRr(t.riskReward);
+    return {
+      tradeId: t.id,
+      reason: `loss · ${rr !== 0 ? `${rr.toFixed(1)}R` : 'no R logged'}`,
+      value: formatDollar(t.pl),
+      kind: 'negative',
+    };
+  });
+  const positives: AxisContributor[] = winners.map(t => {
+    const rr = parseRr(t.riskReward);
+    return {
+      tradeId: t.id,
+      reason: `win · ${rr !== 0 ? `+${rr.toFixed(1)}R` : 'no R logged'}`,
+      value: formatDollar(t.pl),
+      kind: 'positive',
+    };
+  });
+  return { score, applicable: exp.decisive, contributors: [...negatives, ...positives] };
+}
+
 /** Edge = expectancy expressed as R-multiples, mapped to 0-100.
  *  rExpectancy = (winRate × avgWinR) + (lossRate × avgLossR) — note
  *  that avgLossR is already negative from computeAvgR, so adding it
  *  subtracts the loss side. 0R → 50, +1R → 100, −1R → 0, clamped. */
 export function scoreEdge(trades: Trade[]): number {
-  const exp = computeExpectancy(trades);
-  if (exp.decisive === 0) return 0;
+  return scoreEdgeDetail(trades).score ?? 0;
+}
+
+function scoreExitDisciplineDetail(trades: Trade[]): AxisScoreDetail {
   const r = computeAvgR(trades);
-  const rExp = exp.winRate * r.avgWinR + exp.lossRate * r.avgLossR;
-  const score = 50 + rExp * 50;
-  return Math.max(0, Math.min(100, score));
+  const winR  = r.avgWinR;
+  const lossR = Math.abs(r.avgLossR);
+  const denom = winR + lossR;
+  const score = denom === 0 ? 0 : (winR / denom) * 100;
+
+  // Contributors: trades with R logged. Worst losers (largest |R|)
+  // first; then smallest winners (sub-average R that drag avg down);
+  // then best-supporting winners.
+  const withR = trades
+    .map(t => ({ trade: t, r: parseRr(t.riskReward) }))
+    .filter(x => Number.isFinite(x.r) && x.r !== 0);
+  const losersByR = withR
+    .filter(x => x.trade.result === 'LOSS')
+    .sort((a, b) => Math.abs(b.r) - Math.abs(a.r)); // biggest |R| loss first
+  const winnersByR = withR
+    .filter(x => x.trade.result === 'WIN')
+    .sort((a, b) => a.r - b.r); // smallest R wins first, then larger
+  const avgWin = r.avgWinR;
+  const negatives: AxisContributor[] = [];
+  for (const { trade, r: rr } of losersByR) {
+    negatives.push({
+      tradeId: trade.id,
+      reason: `loss · −${Math.abs(rr).toFixed(1)}R`,
+      value: formatDollar(trade.pl),
+      kind: 'negative',
+    });
+  }
+  // Small winners that pulled the average down (below avg)
+  const smallWinners = winnersByR.filter(x => x.r < avgWin);
+  for (const { trade, r: rr } of smallWinners) {
+    negatives.push({
+      tradeId: trade.id,
+      reason: `win · only +${rr.toFixed(1)}R (under your ${avgWin.toFixed(1)}R avg)`,
+      value: formatDollar(trade.pl),
+      kind: 'negative',
+    });
+  }
+  const positives: AxisContributor[] = [];
+  // Best-supporting: biggest winners
+  for (const { trade, r: rr } of winnersByR.slice().reverse()) {
+    if (rr >= avgWin) {
+      positives.push({
+        tradeId: trade.id,
+        reason: `win · +${rr.toFixed(1)}R`,
+        value: formatDollar(trade.pl),
+        kind: 'positive',
+      });
+    }
+  }
+  return { score, applicable: withR.length, contributors: [...negatives, ...positives] };
 }
 
 /** Exit Discipline = avgWinR / (avgWinR + |avgLossR|) × 100. A trader
@@ -1307,12 +1711,7 @@ export function scoreEdge(trades: Trade[]): number {
  *  bigger than losers). 50 means symmetric. Below 50 means losers
  *  outsize winners. Trades without R:R logged are excluded. */
 export function scoreExitDiscipline(trades: Trade[]): number {
-  const r = computeAvgR(trades);
-  const winR  = r.avgWinR;
-  const lossR = Math.abs(r.avgLossR);
-  const denom = winR + lossR;
-  if (denom === 0) return 0;
-  return (winR / denom) * 100;
+  return scoreExitDisciplineDetail(trades).score ?? 0;
 }
 
 export function computeBehavioralRadar(
@@ -1323,29 +1722,32 @@ export function computeBehavioralRadar(
     classifications?: Record<string, TradeClassification>;
   } = {}
 ): BehavioralRadarSnapshot {
-  const discipline     = scoreDiscipline(trades);
-  const patience       = scorePatience(trades);
-  const riskControlDetail = scoreRiskControl(trades, opts);
-  const edge           = scoreEdge(trades);
-  const exitDiscipline = scoreExitDiscipline(trades);
+  const disciplineDetail     = scoreDisciplineDetail(trades);
+  const patienceDetail       = scorePatienceDetail(trades);
+  const riskControlDetail    = scoreRiskControl(trades, opts);
+  const riskControlAxisDetail = scoreRiskControlDetail(trades, opts);
+  const edgeDetail           = scoreEdgeDetail(trades);
+  const exitDisciplineDetail = scoreExitDisciplineDetail(trades);
+
   // Risk Control only goes silent when goal + data + journal are ALL
-  // null. Single hint covers that case — the trader needs at least
-  // one signal: a rule, a logged riskAmount, or a journal that
-  // mentions sizing.
+  // null. Single hint covers that case.
   let riskHint: string | undefined;
   if (riskControlDetail.reason === 'no_signal') {
     riskHint = 'log riskAmount or write about your sizing to score this';
   }
+
   return {
-    discipline, patience,
-    riskControl: riskControlDetail.score,
-    edge, exitDiscipline,
+    discipline:     disciplineDetail.score ?? 0,
+    patience:       patienceDetail.score ?? 0,
+    riskControl:    riskControlDetail.score,
+    edge:           edgeDetail.score ?? 0,
+    exitDiscipline: exitDisciplineDetail.score ?? 0,
     axes: [
-      { key: 'discipline',     label: 'Discipline',      score: discipline },
-      { key: 'patience',       label: 'Patience',        score: patience },
-      { key: 'riskControl',    label: 'Risk Control',    score: riskControlDetail.score, hint: riskHint },
-      { key: 'edge',           label: 'Edge',            score: edge },
-      { key: 'exitDiscipline', label: 'Exit Discipline', score: exitDiscipline },
+      { key: 'discipline',     label: 'Discipline',      score: disciplineDetail.score ?? 0,    applicable: disciplineDetail.applicable,    contributors: disciplineDetail.contributors },
+      { key: 'patience',       label: 'Patience',        score: patienceDetail.score ?? 0,      applicable: patienceDetail.applicable,      contributors: patienceDetail.contributors },
+      { key: 'riskControl',    label: 'Risk Control',    score: riskControlDetail.score,        hint: riskHint, applicable: riskControlAxisDetail.applicable, contributors: riskControlAxisDetail.contributors },
+      { key: 'edge',           label: 'Edge',            score: edgeDetail.score ?? 0,          applicable: edgeDetail.applicable,          contributors: edgeDetail.contributors },
+      { key: 'exitDiscipline', label: 'Exit Discipline', score: exitDisciplineDetail.score ?? 0, applicable: exitDisciplineDetail.applicable, contributors: exitDisciplineDetail.contributors },
     ],
     riskControlDetail,
   };
