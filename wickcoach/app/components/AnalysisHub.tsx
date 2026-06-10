@@ -1188,12 +1188,16 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           accountSize: readAccountSize(),
         });
 
-        // Geometry — center, axis tip, label ring.
-        const SVG_SIZE = 460;
-        const CX = SVG_SIZE / 2;
-        const CY = SVG_SIZE / 2 - 6;            // shift up slightly so labels below fit
-        const RADIUS = 150;                     // axis-tip distance
-        const LABEL_R = RADIUS + 36;            // axis-label distance
+        // Geometry — wider than tall so the five labels fan out without
+        // clipping. Patience / Risk Control on the right (anchor=start)
+        // and Edge / Exit Discipline on the left (anchor=end) all sit
+        // outside the polygon with breathing room.
+        const SVG_W = 760;
+        const SVG_H = 500;
+        const CX = SVG_W / 2;
+        const CY = SVG_H / 2 - 4;                // small lift so the summary line below has air
+        const RADIUS = 178;                      // axis-tip distance — bigger polygon fills the new canvas
+        const LABEL_R = RADIUS + 42;             // axis-label distance
         const N = 5;
         const ANGLE_STEP = (2 * Math.PI) / N;
         // Start at -90° so axis 0 points straight up.
@@ -1208,21 +1212,19 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         };
         const guideRings = [0.25, 0.50, 0.75, 1.0];
 
-        // Polygon vertices come from scored axes only — a null axis
-        // drops out, turning the pentagon into a quadrilateral (or
-        // smaller) and visually announcing the missing signal.
-        const scoredIndices = radar.axes
-          .map((a, i) => (a.score !== null ? i : -1))
-          .filter(i => i >= 0);
-        const polyPath = scoredIndices.length >= 3
-          ? scoredIndices
-              .map((i, idx) => {
-                const score = radar.axes[i].score as number;
-                const p = point(i, score / 100);
-                return `${idx === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-              })
-              .join(' ') + ' Z'
-          : '';
+        // Polygon path covers all 5 axes — null axes are rendered at
+        // the 50% ring as a neutral placeholder so the shape stays
+        // intact (no crater toward center) and the muted grey label +
+        // hint explicitly reads "not scored yet". The placeholder
+        // vertex carries no implied score; it's a visual stand-in.
+        const NULL_PLACEHOLDER_FRAC = 0.5;
+        const polyPath = radar.axes
+          .map((a, i) => {
+            const frac = a.score !== null ? a.score / 100 : NULL_PLACEHOLDER_FRAC;
+            const p = point(i, frac);
+            return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+          })
+          .join(' ') + ' Z';
 
         // Strongest / weakest only consider scored axes so a null
         // Risk Control doesn't pollute the summary.
@@ -1272,7 +1274,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
             </div>
 
-            <svg width={SVG_SIZE} height={SVG_SIZE} viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} style={{ display: 'block', maxWidth: '100%' }}>
+            <svg width="100%" height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '100%' }}>
               {/* Guide rings — concentric pentagons at 25/50/75/100 */}
               {guideRings.map((g, gi) => (
                 <polygon
@@ -1284,19 +1286,36 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 />
               ))}
 
-              {/* Axis spokes */}
+              {/* Axis spokes — null axes get a dashed treatment so the
+                  "not scored yet" status reads at a glance. */}
               {Array.from({ length: N }, (_, i) => {
                 const tip = point(i, 1);
-                return <line key={i} x1={CX} y1={CY} x2={tip.x} y2={tip.y} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />;
+                const isNull = radar.axes[i].score === null;
+                return (
+                  <line
+                    key={i}
+                    x1={CX} y1={CY} x2={tip.x} y2={tip.y}
+                    stroke={isNull ? 'rgba(148,163,184,0.30)' : 'rgba(255,255,255,0.08)'}
+                    strokeWidth={1}
+                    strokeDasharray={isNull ? '4 4' : undefined}
+                  />
+                );
               })}
 
-              {/* Filled trader shape (only drawn when ≥ 3 axes have
-                  a score — a polygon needs at least three vertices) */}
-              {polyPath && <path d={polyPath} fill={teal} fillOpacity={0.22} stroke={teal} strokeWidth={2} strokeLinejoin="round" />}
+              {/* Filled trader shape — covers every axis. Null axes
+                  contribute a placeholder vertex at the 50% ring so the
+                  shape stays intact rather than collapsing to the
+                  center on the affected spoke. */}
+              <path d={polyPath} fill={teal} fillOpacity={0.22} stroke={teal} strokeWidth={2} strokeLinejoin="round" />
 
-              {/* Score points on each scored axis (null axes get no point) */}
+              {/* Score points: filled colored dot for scored axes,
+                  outlined muted-grey dot at the placeholder ring for
+                  null axes (visually says "this is a stand-in"). */}
               {radar.axes.map((a, i) => {
-                if (a.score === null) return null;
+                if (a.score === null) {
+                  const p = point(i, NULL_PLACEHOLDER_FRAC);
+                  return <circle key={i} cx={p.x} cy={p.y} r={4.5} fill="#0A0D14" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="2 2" />;
+                }
                 const p = point(i, a.score / 100);
                 const color = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
                 return <circle key={i} cx={p.x} cy={p.y} r={4} fill={color} stroke="#0A0D14" strokeWidth={1.5} />;
