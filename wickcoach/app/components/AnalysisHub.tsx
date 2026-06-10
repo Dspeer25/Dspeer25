@@ -19,6 +19,16 @@ const tickerDomains: Record<string, string> = {
 // Blue used by "Trades vs. Goals" sliders — complementary to teal.
 const blue = '#4a9eff';
 
+// One-line plain-English description per behavioral-radar axis. Used
+// by the always-visible explanation list to the right of the radar.
+const AXIS_EXPLANATIONS: Record<'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline', string> = {
+  discipline:     'How often your trades followed your plan vs traded on impulse.',
+  patience:       'How often you waited for your setup instead of forcing entries.',
+  riskControl:    'How well you stayed within your risk — sizing, revenge-sizing, and what you wrote about it.',
+  edge:           'Your expectancy — whether your wins outweigh your losses per trade.',
+  exitDiscipline: 'Whether your winners run bigger than your losers in R terms.',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────
 // Thin wrappers around the site-wide formatter so every caller in
 // this file prints the same shape: no trailing zeros, thousands
@@ -180,6 +190,10 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       try { localStorage.setItem(RADAR_TIMEFRAME_KEY, tf); } catch { /* ignore */ }
     }
   };
+  // Hover state for the per-axis explanation rows beside the radar.
+  // STEP 3 will reuse this same key to drive the click-to-expand
+  // citation panel.
+  const [hoveredRadarAxis, setHoveredRadarAxis] = useState<'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline' | null>(null);
   // (hoveredSlice state retired with the OUTCOME CANDLES section.)
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
@@ -1329,7 +1343,8 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
               </div>
             </div>
 
-            <svg width="100%" height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '100%' }}>
+            <div style={{ width: '100%', maxWidth: SVG_W, margin: '0 auto', position: 'relative', aspectRatio: `${SVG_W} / ${SVG_H}` }}>
+            <svg width="100%" height="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
               {/* Guide rings — concentric pentagons at 25/50/75/100 */}
               {guideRings.map((g, gi) => (
                 <polygon
@@ -1407,7 +1422,111 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 const p = point(0, g);
                 return <text key={gi} x={p.x + 8} y={p.y + 4} fontFamily="DM Mono, monospace" fontSize={10} fill="rgba(255,255,255,0.30)">{Math.round(g * 100)}</text>;
               })}
+
+              {/* ── Per-axis hover wedges — invisible hit targets that
+                  cover the pentagon section centered on each axis. A
+                  wedge spans the 72° slice from the midpoint angle to
+                  the previous axis to the midpoint to the next axis,
+                  out to the label ring so labels are also hoverable.
+                  Hovering one shows the floating definition tooltip
+                  below; the click target (STEP 3) will live on these
+                  same wedges. */}
+              {radar.axes.map((axis, i) => {
+                const halfStep = ANGLE_STEP / 2;
+                const aThis = angleFor(i);
+                const aPrev = aThis - halfStep;
+                const aNext = aThis + halfStep;
+                const wedgeR = LABEL_R + 60; // generous reach to cover labels too
+                const p1 = { x: CX + Math.cos(aPrev) * wedgeR, y: CY + Math.sin(aPrev) * wedgeR };
+                const p2 = { x: CX + Math.cos(aNext) * wedgeR, y: CY + Math.sin(aNext) * wedgeR };
+                return (
+                  <polygon
+                    key={`hit-${axis.key}`}
+                    points={`${CX},${CY} ${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`}
+                    fill="transparent"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredRadarAxis(axis.key)}
+                    onMouseLeave={() => setHoveredRadarAxis(null)}
+                  />
+                );
+              })}
             </svg>
+
+              {/* Floating definition tooltip — positioned near the
+                  hovered axis's actual section, in the dead corner
+                  outside the pentagon so it doesn't sit on top of
+                  the chart. Each axis has its own anchor so the
+                  tooltip follows the cursor to that area. */}
+              {hoveredRadarAxis && (() => {
+                const axis = radar.axes.find(a => a.key === hoveredRadarAxis);
+                if (!axis) return null;
+                const score = axis.score;
+                const color = score === null ? '#6b7280' : score >= 67 ? teal : score >= 33 ? '#f5d27c' : red;
+                const explanation = AXIS_EXPLANATIONS[axis.key];
+                const smallSample = axis.applicable > 0 && axis.applicable < 5;
+                // Per-axis tooltip positioning. The container's
+                // aspect-ratio is locked to the viewBox, so converting
+                // each axis-label's viewBox coord to percentages gives
+                // a 1:1 anchor onto the label itself. Then transform
+                // places the tooltip on the natural outward side of
+                // that label:
+                //   Discipline (top)        → just above the label
+                //   Patience (top-right)    → just to the right
+                //   Risk Control (bot-right)→ just below
+                //   Edge (bottom-left)      → just below
+                //   Exit Discipline (top-l) → just to the left
+                const i = radar.axes.findIndex(a => a.key === axis.key);
+                const lp = labelPos(i);
+                const leftPct = `${(lp.x / SVG_W) * 100}%`;
+                const topPct  = `${(lp.y / SVG_H) * 100}%`;
+                const transformByKey: Record<typeof axis.key, string> = {
+                  discipline:     'translate(-50%, calc(-100% - 14px))',
+                  patience:       'translate(14px, -50%)',
+                  riskControl:    'translate(-50%, 14px)',
+                  edge:           'translate(-50%, 14px)',
+                  exitDiscipline: 'translate(calc(-100% - 14px), -50%)',
+                };
+                const pos: Record<typeof axis.key, React.CSSProperties> = {
+                  discipline:     { top: topPct, left: leftPct, transform: transformByKey.discipline },
+                  patience:       { top: topPct, left: leftPct, transform: transformByKey.patience },
+                  riskControl:    { top: topPct, left: leftPct, transform: transformByKey.riskControl },
+                  edge:           { top: topPct, left: leftPct, transform: transformByKey.edge },
+                  exitDiscipline: { top: topPct, left: leftPct, transform: transformByKey.exitDiscipline },
+                };
+                return (
+                  <div style={{
+                    position: 'absolute',
+                    ...pos[axis.key],
+                    background: '#0e0f14',
+                    border: '1px solid rgba(0,212,160,0.45)',
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                    width: 260,
+                    boxShadow: '0 12px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,212,160,0.10) inset',
+                    pointerEvents: 'none',
+                    zIndex: 5,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
+                      <span style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#e8e8f0', letterSpacing: 0.4 }}>{axis.label}</span>
+                      <span style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color }}>
+                        {score === null ? '—' : Math.round(score)}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: fm, fontSize: 12.5, color: '#d0d4dc', lineHeight: 1.45 }}>
+                      {explanation}
+                    </div>
+                    {smallSample && (
+                      <div style={{ fontFamily: fm, fontSize: 11, color: '#6b7280', marginTop: 6, fontStyle: 'italic' }}>
+                        small sample ({axis.applicable} trade{axis.applicable === 1 ? '' : 's'})
+                      </div>
+                    )}
+                    <div style={{ fontFamily: fm, fontSize: 11, color: teal, marginTop: 6, letterSpacing: 0.5, fontWeight: 700 }}>
+                      click for cited trades ›
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
 
             {summary && (
               <div style={{ fontFamily: fm, fontSize: 13.5, color: '#d0d4dc', textAlign: 'center', maxWidth: 640, lineHeight: 1.55 }}>
