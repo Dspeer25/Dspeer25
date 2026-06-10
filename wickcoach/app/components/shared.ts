@@ -999,14 +999,25 @@ export function computeAvgR(trades: Trade[]): AvgRSnapshot {
 // scripts/test-behavioral-radar.mjs.
 
 export interface BehavioralRadarSnapshot {
-  /** 0-100 across all 5 axes. */
+  /** 0-100. riskControl can be null when no risk rule is set, account
+   *  size needed but missing, or no trades have a logged riskAmount. */
   discipline: number;
   patience: number;
-  riskControl: number;
+  riskControl: number | null;
   edge: number;
   exitDiscipline: number;
-  /** Same axis names + values in an array, for the renderer. */
-  axes: { key: 'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline'; label: string; score: number }[];
+  /** Per-axis array for the renderer. score === null indicates a
+   *  no-signal axis; hint carries the inline guidance to show on the
+   *  spoke (e.g. "set a risk goal to score this"). */
+  axes: {
+    key: 'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline';
+    label: string;
+    score: number | null;
+    hint?: string;
+  }[];
+  /** Full result detail for the Risk Control axis so the UI can show
+   *  rule-specific tooltips ("within 87/123 trades of riskAmount ≤ 200"). */
+  riskControlDetail: RiskControlResult;
 }
 
 const BAD_PATIENCE_KEYWORDS = [
@@ -1048,32 +1059,107 @@ export function scorePatience(trades: Trade[]): number {
   return ((withJournal - impatient) / withJournal) * 100;
 }
 
-/** Risk Control = coefficient-of-variation score on logged risk
- *  amounts, optionally penalized for oversize trades (>3% of account
- *  when account size is set). CV = 0 → 100, CV ≥ 1 → 0, linear.
- *  Trades without a riskAmount logged are excluded. */
-export function scoreRiskControl(trades: Trade[], opts: { accountSize?: number | null } = {}): number {
-  const amounts = trades
-    .map(t => t.riskAmount)
-    .filter((r): r is number => typeof r === 'number' && r > 0);
-  if (amounts.length === 0) return 0;
-  const mean = amounts.reduce((s, r) => s + r, 0) / amounts.length;
-  if (mean === 0) return 0;
-  const variance = amounts.reduce((s, r) => s + (r - mean) ** 2, 0) / amounts.length;
-  const stdDev = Math.sqrt(variance);
-  const cv = stdDev / mean;
-  let score = (1 - Math.min(cv, 1)) * 100;
-  // Oversize penalty: subtract up to 50 based on the share of trades
-  // that exceeded 3% of account. A trader oversizing every trade
-  // halves their CV score; oversizing 1-in-5 trades costs 10 points.
-  const acct = opts.accountSize;
-  if (typeof acct === 'number' && acct > 0) {
-    const threshold = acct * 0.03;
-    const oversize = amounts.filter(r => r > threshold).length;
-    const penaltyRatio = oversize / amounts.length;
-    score -= penaltyRatio * 50;
+/** Risk Control evaluation result. `null` score means the axis has no
+ *  signal yet — `reason` tells the renderer which hint to surface. */
+export type RiskControlReason = 'scored' | 'no_rule' | 'needs_account_size' | 'no_trades_with_risk';
+export interface RiskControlResult {
+  score: number | null;
+  reason: RiskControlReason;
+  /** Debug detail when scored — the numerator and denominator behind
+   *  the percentage. Useful for tooltips and the test harness. */
+  within?: number;
+  applicable?: number;
+  /** The rule that won the strictest-wins pick, if any. */
+  winningRule?: NumberGoalRule;
+}
+
+/** Risk Control = adherence to the trader's OWN stated risk rule.
+ *  Walks the goals list for NUMBER rules on `riskAmount` or
+ *  `riskPctOfAccount` with operator `<=` or `<`. If multiple rules
+ *  match, picks the STRICTEST (smallest threshold normalized to
+ *  %-of-account when account size is set; otherwise smallest raw
+ *  dollar value). Returns null (with a reason hint) when no rule is
+ *  set, when the rule needs account size that isn't set, or when no
+ *  trades have a logged riskAmount to score against. Variance alone
+ *  is no longer penalized — sizing by setup quality is intentional;
+ *  staying inside the rule is what matters. */
+export function scoreRiskControl(
+  trades: Trade[],
+  opts: { goals?: Goal[]; accountSize?: number | null } = {}
+): RiskControlResult {
+  const goals = opts.goals || [];
+  const accountSize = opts.accountSize;
+  const hasAccount = typeof accountSize === 'number' && accountSize > 0;
+
+  // Find every matching risk rule on a number goal.
+  const matchingRules: NumberGoalRule[] = [];
+  for (const g of goals) {
+    if (getEffectiveKind(g) !== 'number') continue;
+    const r = g.numberRule;
+    if (!r) continue;
+    if (r.field !== 'riskAmount' && r.field !== 'riskPctOfAccount') continue;
+    if (r.operator !== '<=' && r.operator !== '<') continue;
+    matchingRules.push(r);
   }
-  return Math.max(0, Math.min(100, score));
+
+  if (matchingRules.length === 0) {
+    return { score: null, reason: 'no_rule' };
+  }
+
+  // If any rule depends on account size and we don't have one, the
+  // whole axis short-circuits to the needs-account-size hint.
+  const anyPctRule = matchingRules.some(r => r.field === 'riskPctOfAccount');
+  if (anyPctRule && !hasAccount) {
+    return { score: null, reason: 'needs_account_size' };
+  }
+
+  // Pick the strictest rule. With an account size, normalize every
+  // threshold to %-of-account and pick the smallest. Without one
+  // (only $-rules can reach here), compare raw dollar thresholds.
+  let strictest: NumberGoalRule | null = null;
+  let strictestKey = Infinity;
+  for (const r of matchingRules) {
+    const v = typeof r.value === 'number' ? r.value : parseFloat(String(r.value));
+    if (!Number.isFinite(v)) continue;
+    let key: number;
+    if (r.field === 'riskPctOfAccount') {
+      key = v; // already pct
+    } else {
+      key = hasAccount ? (v / (accountSize as number)) * 100 : v;
+    }
+    if (key < strictestKey) {
+      strictestKey = key;
+      strictest = r;
+    }
+  }
+  if (!strictest) return { score: null, reason: 'no_rule' };
+
+  const tradesWithRisk = trades.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
+  if (tradesWithRisk.length === 0) {
+    return { score: null, reason: 'no_trades_with_risk', winningRule: strictest };
+  }
+
+  const ruleValue = typeof strictest.value === 'number' ? strictest.value : parseFloat(String(strictest.value));
+  const op = strictest.operator;
+  let within = 0;
+  for (const t of tradesWithRisk) {
+    let actual: number;
+    if (strictest.field === 'riskPctOfAccount') {
+      actual = ((t.riskAmount as number) / (accountSize as number)) * 100;
+    } else {
+      actual = t.riskAmount as number;
+    }
+    const ok = op === '<=' ? actual <= ruleValue : actual < ruleValue;
+    if (ok) within++;
+  }
+  const score = (within / tradesWithRisk.length) * 100;
+  return {
+    score: Math.max(0, Math.min(100, score)),
+    reason: 'scored',
+    within,
+    applicable: tradesWithRisk.length,
+    winningRule: strictest,
+  };
 }
 
 /** Edge = expectancy expressed as R-multiples, mapped to 0-100.
@@ -1104,22 +1190,36 @@ export function scoreExitDiscipline(trades: Trade[]): number {
 
 export function computeBehavioralRadar(
   trades: Trade[],
-  opts: { accountSize?: number | null } = {}
+  opts: { goals?: Goal[]; accountSize?: number | null } = {}
 ): BehavioralRadarSnapshot {
   const discipline     = scoreDiscipline(trades);
   const patience       = scorePatience(trades);
-  const riskControl    = scoreRiskControl(trades, opts);
+  const riskControlDetail = scoreRiskControl(trades, opts);
   const edge           = scoreEdge(trades);
   const exitDiscipline = scoreExitDiscipline(trades);
+  // Pick the hint text shown on the Risk Control spoke when it has
+  // no signal yet. Each hint points at the single concrete action
+  // the trader can take to score the axis.
+  let riskHint: string | undefined;
+  if (riskControlDetail.reason === 'no_rule') {
+    riskHint = 'set a risk goal to score this';
+  } else if (riskControlDetail.reason === 'needs_account_size') {
+    riskHint = 'set account size to score this';
+  } else if (riskControlDetail.reason === 'no_trades_with_risk') {
+    riskHint = 'log riskAmount on trades to score this';
+  }
   return {
-    discipline, patience, riskControl, edge, exitDiscipline,
+    discipline, patience,
+    riskControl: riskControlDetail.score,
+    edge, exitDiscipline,
     axes: [
       { key: 'discipline',     label: 'Discipline',      score: discipline },
       { key: 'patience',       label: 'Patience',        score: patience },
-      { key: 'riskControl',    label: 'Risk Control',    score: riskControl },
+      { key: 'riskControl',    label: 'Risk Control',    score: riskControlDetail.score, hint: riskHint },
       { key: 'edge',           label: 'Edge',            score: edge },
       { key: 'exitDiscipline', label: 'Exit Discipline', score: exitDiscipline },
     ],
+    riskControlDetail,
   };
 }
 

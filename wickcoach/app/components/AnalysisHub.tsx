@@ -1180,7 +1180,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           scripts/test-behavioral-radar.mjs). A dented shape on any
           axis is a visible leak the trader can fix. */}
       {(() => {
-        const radar = computeBehavioralRadar(trades, { accountSize: readAccountSize() });
+        // Pass the trader's full goal list (across all weeks) so the
+        // Risk Control axis can find a matching risk rule. Strictest
+        // wins inside scoreRiskControl.
+        const radar = computeBehavioralRadar(trades, {
+          goals: realGoals,
+          accountSize: readAccountSize(),
+        });
 
         // Geometry — center, axis tip, label ring.
         const SVG_SIZE = 460;
@@ -1200,26 +1206,43 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           const a = angleFor(i);
           return { x: CX + Math.cos(a) * LABEL_R, y: CY + Math.sin(a) * LABEL_R };
         };
-        // Polygon path string from per-axis fractions (0..1).
-        const polyPath = (fracs: number[]) => fracs
-          .map((f, i) => { const p = point(i, f); return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`; })
-          .join(' ') + ' Z';
-
         const guideRings = [0.25, 0.50, 0.75, 1.0];
-        const fracs = radar.axes.map(a => a.score / 100);
 
-        // Strongest / weakest axis (only when at least one axis has a
-        // non-zero score so the summary doesn't lie on a brand-new
-        // account). Tied scores → first occurrence wins.
-        const hasSignal = radar.axes.some(a => a.score > 0);
-        const strongest = hasSignal ? radar.axes.reduce((b, x) => x.score > b.score ? x : b) : null;
-        const weakest   = hasSignal ? radar.axes.reduce((b, x) => x.score < b.score ? x : b) : null;
+        // Polygon vertices come from scored axes only — a null axis
+        // drops out, turning the pentagon into a quadrilateral (or
+        // smaller) and visually announcing the missing signal.
+        const scoredIndices = radar.axes
+          .map((a, i) => (a.score !== null ? i : -1))
+          .filter(i => i >= 0);
+        const polyPath = scoredIndices.length >= 3
+          ? scoredIndices
+              .map((i, idx) => {
+                const score = radar.axes[i].score as number;
+                const p = point(i, score / 100);
+                return `${idx === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+              })
+              .join(' ') + ' Z'
+          : '';
+
+        // Strongest / weakest only consider scored axes so a null
+        // Risk Control doesn't pollute the summary.
+        const scoredAxes = radar.axes.filter(a => a.score !== null) as { key: typeof radar.axes[number]['key']; label: string; score: number; hint?: string }[];
+        const hasSignal = scoredAxes.some(a => a.score > 0);
+        const strongest = hasSignal ? scoredAxes.reduce((b, x) => x.score > b.score ? x : b) : null;
+        const weakest   = hasSignal ? scoredAxes.reduce((b, x) => x.score < b.score ? x : b) : null;
         const weakestHint = (() => {
           if (!weakest) return '';
           switch (weakest.key) {
             case 'discipline':     return 'your journal shows more impulse than process trades';
             case 'patience':       return 'too many trades flagged as rushed, FOMO, or revenge';
-            case 'riskControl':    return 'your position sizing varies more than your other habits';
+            case 'riskControl': {
+              // Speak to the actual rule that won the strictest pick.
+              const d = radar.riskControlDetail;
+              if (d.reason === 'scored' && typeof d.within === 'number' && typeof d.applicable === 'number') {
+                return `${d.applicable - d.within} of ${d.applicable} trades broke your stated risk rule`;
+              }
+              return 'too many trades exceeded your stated risk rule';
+            }
             case 'edge':           return 'expectancy is below break-even in R terms';
             case 'exitDiscipline': return 'losers are outsizing winners on the R chart';
           }
@@ -1267,24 +1290,35 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 return <line key={i} x1={CX} y1={CY} x2={tip.x} y2={tip.y} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />;
               })}
 
-              {/* Filled trader shape */}
-              <path d={polyPath(fracs)} fill={teal} fillOpacity={0.22} stroke={teal} strokeWidth={2} strokeLinejoin="round" />
+              {/* Filled trader shape (only drawn when ≥ 3 axes have
+                  a score — a polygon needs at least three vertices) */}
+              {polyPath && <path d={polyPath} fill={teal} fillOpacity={0.22} stroke={teal} strokeWidth={2} strokeLinejoin="round" />}
 
-              {/* Score points on each axis */}
+              {/* Score points on each scored axis (null axes get no point) */}
               {radar.axes.map((a, i) => {
+                if (a.score === null) return null;
                 const p = point(i, a.score / 100);
                 const color = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
                 return <circle key={i} cx={p.x} cy={p.y} r={4} fill={color} stroke="#0A0D14" strokeWidth={1.5} />;
               })}
 
-              {/* Axis labels + score values, positioned so they don't overlap the polygon */}
+              {/* Axis labels + score values. Null axes show the hint
+                  instead of a number, all in muted grey so the eye
+                  reads them as inactive. */}
               {radar.axes.map((a, i) => {
                 const lp = labelPos(i);
-                // Anchor based on horizontal position to keep labels off the chart.
                 const ax = angleFor(i);
                 const cos = Math.cos(ax);
                 const anchor = cos > 0.2 ? 'start' : cos < -0.2 ? 'end' : 'middle';
                 const dy = i === 0 ? -8 : 4;
+                if (a.score === null) {
+                  return (
+                    <g key={a.key}>
+                      <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={13} fontWeight={700} fill="#6b7280" letterSpacing={0.5}>{a.label}</text>
+                      <text x={lp.x} y={lp.y + dy + 16} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={11} fontWeight={500} fill="#6b7280" fontStyle="italic">{a.hint || 'no signal yet'}</text>
+                    </g>
+                  );
+                }
                 const scoreColor = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
                 return (
                   <g key={a.key}>

@@ -100,22 +100,41 @@ function scorePatience(trades) {
   return withJournal === 0 ? 0 : ((withJournal - impatient) / withJournal) * 100;
 }
 function scoreRiskControl(trades, opts = {}) {
-  const amounts = trades.map(t => t.riskAmount).filter(r => typeof r === 'number' && r > 0);
-  if (amounts.length === 0) return 0;
-  const mean = amounts.reduce((s, r) => s + r, 0) / amounts.length;
-  if (mean === 0) return 0;
-  const variance = amounts.reduce((s, r) => s + (r - mean) ** 2, 0) / amounts.length;
-  const stdDev = Math.sqrt(variance);
-  const cv = stdDev / mean;
-  let score = (1 - Math.min(cv, 1)) * 100;
-  const acct = opts.accountSize;
-  if (typeof acct === 'number' && acct > 0) {
-    const threshold = acct * 0.03;
-    const oversize = amounts.filter(r => r > threshold).length;
-    const penaltyRatio = oversize / amounts.length;
-    score -= penaltyRatio * 50;
+  const goals = opts.goals || [];
+  const accountSize = opts.accountSize;
+  const hasAccount = typeof accountSize === 'number' && accountSize > 0;
+  const matching = [];
+  for (const g of goals) {
+    if (g.kind !== 'number') continue;
+    const r = g.numberRule;
+    if (!r) continue;
+    if (r.field !== 'riskAmount' && r.field !== 'riskPctOfAccount') continue;
+    if (r.operator !== '<=' && r.operator !== '<') continue;
+    matching.push(r);
   }
-  return Math.max(0, Math.min(100, score));
+  if (matching.length === 0) return { score: null, reason: 'no_rule' };
+  const anyPctRule = matching.some(r => r.field === 'riskPctOfAccount');
+  if (anyPctRule && !hasAccount) return { score: null, reason: 'needs_account_size' };
+  let strictest = null;
+  let strictestKey = Infinity;
+  for (const r of matching) {
+    const v = typeof r.value === 'number' ? r.value : parseFloat(String(r.value));
+    if (!Number.isFinite(v)) continue;
+    const key = r.field === 'riskPctOfAccount' ? v : (hasAccount ? (v / accountSize) * 100 : v);
+    if (key < strictestKey) { strictestKey = key; strictest = r; }
+  }
+  if (!strictest) return { score: null, reason: 'no_rule' };
+  const tradesWithRisk = trades.filter(t => typeof t.riskAmount === 'number' && t.riskAmount > 0);
+  if (tradesWithRisk.length === 0) return { score: null, reason: 'no_trades_with_risk' };
+  const ruleValue = typeof strictest.value === 'number' ? strictest.value : parseFloat(String(strictest.value));
+  const op = strictest.operator;
+  let within = 0;
+  for (const t of tradesWithRisk) {
+    const actual = strictest.field === 'riskPctOfAccount' ? (t.riskAmount / accountSize) * 100 : t.riskAmount;
+    const ok = op === '<=' ? actual <= ruleValue : actual < ruleValue;
+    if (ok) within++;
+  }
+  return { score: (within / tradesWithRisk.length) * 100, reason: 'scored', within, applicable: tradesWithRisk.length };
 }
 function scoreEdge(trades) {
   const exp = computeExpectancy(trades);
@@ -155,7 +174,12 @@ function check(name, got, expected) {
 // Empty input: every axis 0
 check('empty · discipline',     scoreDiscipline([]),     0);
 check('empty · patience',       scorePatience([]),       0);
-check('empty · risk control',   scoreRiskControl([]),    0);
+// empty input + no goals → null with no_rule reason
+{
+  const r = scoreRiskControl([]);
+  check('empty · risk control · score null',  r.score === null ? 1 : 0, 1);
+  check('empty · risk control · reason no_rule', r.reason === 'no_rule' ? 1 : 0, 1);
+}
 check('empty · edge',           scoreEdge([]),           0);
 check('empty · exit discipline',scoreExitDiscipline([]), 0);
 
@@ -235,46 +259,96 @@ check('empty · exit discipline',scoreExitDiscipline([]), 0);
   check('patience · empty journals excluded → 0/1 patient = 0', scorePatience(trades), 0);
 }
 
-// Risk Control — perfect sizing (10 trades all $100)
+// Risk Control — rule adherence. Helper to build a NUMBER goal.
+function riskGoal(field, op, value) {
+  return { kind: 'number', numberRule: { field, operator: op, value } };
+}
+
+// 1. No matching goal at all → null/no_rule
 {
   const trades = Array.from({length: 10}, () => t('WIN', 100, { riskAmount: 100 }));
-  check('risk control · perfect sizing → 100', scoreRiskControl(trades), 100);
+  const r = scoreRiskControl(trades, { goals: [] });
+  check('risk control · no rule → null', r.score === null ? 1 : 0, 1);
+  check('risk control · no rule · reason', r.reason === 'no_rule' ? 1 : 0, 1);
 }
-// Risk Control — wild variance
+// 2. $200 cap, 10 of 10 within → 100
+{
+  const trades = Array.from({length: 10}, () => t('WIN', 100, { riskAmount: 200 }));
+  const r = scoreRiskControl(trades, { goals: [riskGoal('riskAmount', '<=', 200)] });
+  check('risk control · 10/10 within $200 cap → 100', r.score, 100);
+}
+// 3. $200 cap, 7 of 10 within → 70
 {
   const trades = [
-    t('WIN', 100, { riskAmount: 50 }),
-    t('WIN', 100, { riskAmount: 100 }),
-    t('WIN', 100, { riskAmount: 200 }),
-    t('WIN', 100, { riskAmount: 500 }),
-    t('LOSS', -50, { riskAmount: 25 }),
+    ...Array.from({length: 7}, () => t('WIN', 100, { riskAmount: 150 })),
+    ...Array.from({length: 3}, () => t('WIN', 100, { riskAmount: 400 })),
   ];
-  // mean = 175, stdDev ≈ 169.55, CV ≈ 0.969 → score ≈ 3.1
-  const score = scoreRiskControl(trades);
-  check('risk control · wild variance → low (< 10)', score < 10 ? 1 : 0, 1);
+  const r = scoreRiskControl(trades, { goals: [riskGoal('riskAmount', '<=', 200)] });
+  check('risk control · 7/10 within $200 cap → 70', r.score, 70);
 }
-// Risk Control — oversize penalty
+// 4. $200 cap, 0 of 10 within → 0
 {
-  // 5 trades all $100, account = $1000. 3% of $1000 = $30. All 5 oversize.
-  // CV = 0 → 100. Penalty: 5/5 = 100% × 50 = 50. Final = 50.
+  const trades = Array.from({length: 10}, () => t('WIN', 100, { riskAmount: 400 }));
+  const r = scoreRiskControl(trades, { goals: [riskGoal('riskAmount', '<=', 200)] });
+  check('risk control · 0/10 within $200 cap → 0', r.score, 0);
+}
+// 5. riskPctOfAccount <= 1, account $50k, all 5 under $500 → 100
+{
+  const trades = Array.from({length: 5}, () => t('WIN', 100, { riskAmount: 400 })); // 0.8% of $50k
+  const r = scoreRiskControl(trades, {
+    goals: [riskGoal('riskPctOfAccount', '<=', 1)],
+    accountSize: 50000,
+  });
+  check('risk control · pct rule satisfied → 100', r.score, 100);
+}
+// 6. pct rule but no account → null/needs_account_size
+{
+  const trades = Array.from({length: 5}, () => t('WIN', 100, { riskAmount: 400 }));
+  const r = scoreRiskControl(trades, { goals: [riskGoal('riskPctOfAccount', '<=', 1)] });
+  check('risk control · pct rule no account → null', r.score === null ? 1 : 0, 1);
+  check('risk control · pct rule no account · reason', r.reason === 'needs_account_size' ? 1 : 0, 1);
+}
+// 7. Rule set but every trade missing riskAmount → null/no_trades_with_risk
+{
+  const trades = Array.from({length: 5}, () => t('WIN', 100));
+  const r = scoreRiskControl(trades, { goals: [riskGoal('riskAmount', '<=', 200)] });
+  check('risk control · no trades w/ risk → null', r.score === null ? 1 : 0, 1);
+  check('risk control · no trades w/ risk · reason', r.reason === 'no_trades_with_risk' ? 1 : 0, 1);
+}
+// 8. Two $-rules → strictest ($200) wins
+{
+  const trades = [
+    ...Array.from({length: 5}, () => t('WIN', 100, { riskAmount: 150 })),
+    ...Array.from({length: 5}, () => t('WIN', 100, { riskAmount: 250 })),
+  ];
+  // Under <=300, 10/10 within (100). Under <=200, 5/10 within (50). Strictest wins.
+  const r = scoreRiskControl(trades, {
+    goals: [riskGoal('riskAmount', '<=', 300), riskGoal('riskAmount', '<=', 200)],
+  });
+  check('risk control · 2 $-rules · strictest $200 → 50', r.score, 50);
+}
+// 9. Mixed $ + pct rules with account size → pct stricter wins
+{
+  // $-rule: <=500. Pct-rule: <=1% of $20k = $200. Pct stricter.
+  const trades = [
+    ...Array.from({length: 4}, () => t('WIN', 100, { riskAmount: 150 })), // under both
+    ...Array.from({length: 6}, () => t('WIN', 100, { riskAmount: 300 })), // under $-rule but over pct ($200)
+  ];
+  const r = scoreRiskControl(trades, {
+    goals: [riskGoal('riskAmount', '<=', 500), riskGoal('riskPctOfAccount', '<=', 1)],
+    accountSize: 20000,
+  });
+  // Pct rule wins. 4/10 within $200 → 40.
+  check('risk control · pct stricter than $ → 40', r.score, 40);
+}
+// 10. Strict-less-than vs less-or-equal — boundary case
+{
+  // <= 100 with exactly $100 → within. < 100 with exactly $100 → over.
   const trades = Array.from({length: 5}, () => t('WIN', 100, { riskAmount: 100 }));
-  check('risk control · all oversize, perfect CV → 50', scoreRiskControl(trades, { accountSize: 1000 }), 50);
-}
-// Risk Control — no oversize, account size set
-{
-  // 5 trades all $20, account = $1000. 3% = $30. None oversize.
-  const trades = Array.from({length: 5}, () => t('WIN', 100, { riskAmount: 20 }));
-  check('risk control · no oversize, perfect CV → 100', scoreRiskControl(trades, { accountSize: 1000 }), 100);
-}
-// Risk Control — trades without riskAmount excluded
-{
-  const trades = [
-    t('WIN', 100, { riskAmount: 100 }),
-    t('WIN', 100),                       // no riskAmount — excluded
-    t('LOSS', -50, { riskAmount: 100 }),
-  ];
-  // 2 amounts both 100 → CV = 0 → 100
-  check('risk control · missing riskAmount excluded → 100', scoreRiskControl(trades), 100);
+  const rLE = scoreRiskControl(trades, { goals: [riskGoal('riskAmount', '<=', 100)] });
+  const rLT = scoreRiskControl(trades, { goals: [riskGoal('riskAmount', '<', 100)] });
+  check('risk control · <=100 with exactly 100 → 100', rLE.score, 100);
+  check('risk control · <100 with exactly 100 → 0',   rLT.score, 0);
 }
 
 // Edge — neutral expectancy → 50
