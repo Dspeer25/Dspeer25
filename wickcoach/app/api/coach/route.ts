@@ -209,6 +209,25 @@ For every category below, the AFFIRMATIVE EVIDENCE rule is paramount: compliance
 
 - [General] — a goal that doesn't fit the above. Map it to the closest category above and apply the same rules.
 
+RISK LANGUAGE TAG (per trade, independent of goals)
+
+In addition to the per-goal scores, emit a SINGLE riskLanguage tag per trade that classifies the journal's stance on the trader's SIZING / RISK choices specifically. This powers the Behavioral Radar's Risk Control axis and is read aggregate-style — counts of positive vs. negative across all trades. Same affirmative-evidence doctrine as psychScores: neutral is the default; non-neutral verdicts require explicit language pointed at sizing.
+
+Values:
+- "negative" — the journal explicitly admits oversizing, revenge sizing, doubling down, or violating a stated size discipline. Examples: "too big", "oversized", "way oversized", "shouldn't have risked that much", "risked too much", "had to make it back", "doubled down", "went big", "sized up after the loss", "piled in", "bet the house", "all in". Synonyms and trader-specific phrasings count — read for intent, not for the exact words.
+- "positive" — the journal explicitly describes sizing discipline. Examples: "kept it small", "sized down", "sized small", "respected my risk", "small size", "half size", "reduced size", "within my risk plan", "stayed disciplined on size", "sized appropriately for the setup". Again, intent matters more than exact phrasing.
+- "neutral" — the journal is silent on sizing, OR purely factual about the trade ("got in off the open, took +1R", "entered at 9:35, stopped out"), OR addresses non-sizing subjects (setup, exit, psychology) without mentioning size. Neutral is the DEFAULT — when in doubt, return neutral.
+
+Hard rules for riskLanguage:
+- Negative wins ties. If the journal contains BOTH positive and negative sizing language ("kept it small but doubled down on the runner"), the verdict is "negative".
+- A timing or setup statement is NOT sizing language. "Got in off the open" → neutral. "Entered the second pullback" → neutral. The radar's other axes handle those.
+- A P/L statement is NOT sizing language. "Took a $200 loss" → neutral. The dollar amount alone doesn't speak to whether the SIZE was disciplined.
+- An empty journal → neutral.
+- "Sized fine" / "size was right" — positive (affirmative discipline).
+- "Should have sized bigger to capture more" — NOT negative for this axis. It's a regret about EXIT/SIZING-UP retrospectively, not an admission of having OVERSIZED in the moment. → neutral.
+
+The radar reads negative + positive counts only; neutrals are dropped from the denominator. So "neutral by default" is a strict floor — over-classification as negative is the worst error and silently distorts the score.
+
 TRADE-DATA SCORING GUIDANCE (applies to tradeScores)
 
 When scoring a goal from trade data, you are looking for quantitative signals only. Per BIAS TOWARD EVALUATION above, evaluate whenever the specific field this goal needs is present.
@@ -286,6 +305,7 @@ Correct classification:
   "psychScore": 45,
   "tradeType": "impulse",
   "psychReason": "Journal admits killing the trade early against stated rule.",
+  "riskLanguage": "neutral",
   "targetScores": [
     {"targetId": "target-rr", "met": false, "actual": 1.86, "target": 3.0}
   ]
@@ -316,6 +336,7 @@ Return ONLY valid JSON, no other text, no markdown, no code fences. The shape is
       "psychScore": 0-100,
       "tradeType": "process" or "impulse" or "neutral",
       "psychReason": "one short sentence",
+      "riskLanguage": "positive" or "negative" or "neutral",
       "targetScores": [
         {"targetId": "target-rr", "met": true or false, "actual": <number>, "target": <number>}
       ]

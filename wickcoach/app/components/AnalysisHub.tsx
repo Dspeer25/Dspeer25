@@ -1180,12 +1180,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
           scripts/test-behavioral-radar.mjs). A dented shape on any
           axis is a visible leak the trader can fix. */}
       {(() => {
-        // Pass the trader's full goal list (across all weeks) so the
-        // Risk Control axis can find a matching risk rule. Strictest
-        // wins inside scoreRiskControl.
+        // Pass goals + account size + cached classifications so the
+        // Risk Control axis can blend all three subscores (goal
+        // adherence + data sizing + Haiku risk-language verdict).
         const radar = computeBehavioralRadar(trades, {
           goals: realGoals,
           accountSize: readAccountSize(),
+          classifications,
         });
 
         // Geometry — wider than tall so the five labels fan out without

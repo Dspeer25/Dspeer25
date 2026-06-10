@@ -1059,39 +1059,57 @@ export function scorePatience(trades: Trade[]): number {
   return ((withJournal - impatient) / withJournal) * 100;
 }
 
-/** Risk Control evaluation result. `null` score means the axis has no
- *  signal yet — `reason` tells the renderer which hint to surface. */
-export type RiskControlReason = 'scored' | 'no_rule' | 'needs_account_size' | 'no_trades_with_risk';
+/** Risk Control evaluation result. Holds the blended score plus a
+ *  per-subscore breakdown so the UI can tooltip the exact mix. */
+export type RiskControlReason = 'scored' | 'no_signal';
 export interface RiskControlResult {
   score: number | null;
   reason: RiskControlReason;
-  /** Debug detail when scored — the numerator and denominator behind
-   *  the percentage. Useful for tooltips and the test harness. */
+  /** Goal adherence subscore: % of trades within the strictest matching
+   *  risk rule. Null when no rule is set, the rule needs account size
+   *  that isn't set, or no trades have riskAmount logged. */
+  goalScore: number | null;
+  /** Data sizing subscore: weighted blend of revenge-sizing, median-
+   *  deviation, and account-oversize sub-signals. Null when no trades
+   *  have riskAmount logged. */
+  dataScore: number | null;
+  /** Journal language subscore: positive / (positive + negative) × 100
+   *  where verdicts come from Haiku's per-trade riskLanguage tag.
+   *  Null when no trade was tagged positive or negative. */
+  journalScore: number | null;
+  /** Goal-side breakdown when goalScore was computed. */
   within?: number;
   applicable?: number;
-  /** The rule that won the strictest-wins pick, if any. */
   winningRule?: NumberGoalRule;
+  /** Data-side breakdown when dataScore was computed. */
+  revengeSubscore?: number | null;
+  stabilitySubscore?: number | null;
+  oversizeSubscore?: number | null;
 }
 
-/** Risk Control = adherence to the trader's OWN stated risk rule.
- *  Walks the goals list for NUMBER rules on `riskAmount` or
- *  `riskPctOfAccount` with operator `<=` or `<`. If multiple rules
- *  match, picks the STRICTEST (smallest threshold normalized to
- *  %-of-account when account size is set; otherwise smallest raw
- *  dollar value). Returns null (with a reason hint) when no rule is
- *  set, when the rule needs account size that isn't set, or when no
- *  trades have a logged riskAmount to score against. Variance alone
- *  is no longer penalized — sizing by setup quality is intentional;
- *  staying inside the rule is what matters. */
-export function scoreRiskControl(
-  trades: Trade[],
-  opts: { goals?: Goal[]; accountSize?: number | null } = {}
-): RiskControlResult {
-  const goals = opts.goals || [];
-  const accountSize = opts.accountSize;
-  const hasAccount = typeof accountSize === 'number' && accountSize > 0;
+// Renormalizing weighted mean — drops null components and rescales the
+// remaining weights to sum to 1. Returns null when nothing scores.
+function weightedMean(items: { score: number | null; weight: number }[]): number | null {
+  const avail = items.filter((x): x is { score: number; weight: number } => x.score !== null);
+  if (avail.length === 0) return null;
+  const total = avail.reduce((s, x) => s + x.weight, 0);
+  if (total === 0) return null;
+  return avail.reduce((s, x) => s + x.score * x.weight / total, 0);
+}
 
-  // Find every matching risk rule on a number goal.
+// ─── Subscore #1: Goal adherence (pure JS) ────────────────────────
+interface GoalAdherenceResult {
+  score: number | null;
+  within?: number;
+  applicable?: number;
+  winningRule?: NumberGoalRule;
+}
+function computeGoalAdherence(
+  trades: Trade[],
+  goals: Goal[],
+  accountSize: number | null | undefined,
+): GoalAdherenceResult {
+  const hasAccount = typeof accountSize === 'number' && accountSize > 0;
   const matchingRules: NumberGoalRule[] = [];
   for (const g of goals) {
     if (getEffectiveKind(g) !== 'number') continue;
@@ -1101,64 +1119,173 @@ export function scoreRiskControl(
     if (r.operator !== '<=' && r.operator !== '<') continue;
     matchingRules.push(r);
   }
+  if (matchingRules.length === 0) return { score: null };
 
-  if (matchingRules.length === 0) {
-    return { score: null, reason: 'no_rule' };
-  }
-
-  // If any rule depends on account size and we don't have one, the
-  // whole axis short-circuits to the needs-account-size hint.
   const anyPctRule = matchingRules.some(r => r.field === 'riskPctOfAccount');
-  if (anyPctRule && !hasAccount) {
-    return { score: null, reason: 'needs_account_size' };
-  }
+  if (anyPctRule && !hasAccount) return { score: null };
 
-  // Pick the strictest rule. With an account size, normalize every
-  // threshold to %-of-account and pick the smallest. Without one
-  // (only $-rules can reach here), compare raw dollar thresholds.
   let strictest: NumberGoalRule | null = null;
   let strictestKey = Infinity;
   for (const r of matchingRules) {
     const v = typeof r.value === 'number' ? r.value : parseFloat(String(r.value));
     if (!Number.isFinite(v)) continue;
-    let key: number;
-    if (r.field === 'riskPctOfAccount') {
-      key = v; // already pct
-    } else {
-      key = hasAccount ? (v / (accountSize as number)) * 100 : v;
-    }
-    if (key < strictestKey) {
-      strictestKey = key;
-      strictest = r;
-    }
+    const key = r.field === 'riskPctOfAccount'
+      ? v
+      : (hasAccount ? (v / (accountSize as number)) * 100 : v);
+    if (key < strictestKey) { strictestKey = key; strictest = r; }
   }
-  if (!strictest) return { score: null, reason: 'no_rule' };
+  if (!strictest) return { score: null };
 
   const tradesWithRisk = trades.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
-  if (tradesWithRisk.length === 0) {
-    return { score: null, reason: 'no_trades_with_risk', winningRule: strictest };
-  }
+  if (tradesWithRisk.length === 0) return { score: null, winningRule: strictest };
 
   const ruleValue = typeof strictest.value === 'number' ? strictest.value : parseFloat(String(strictest.value));
   const op = strictest.operator;
   let within = 0;
   for (const t of tradesWithRisk) {
-    let actual: number;
-    if (strictest.field === 'riskPctOfAccount') {
-      actual = ((t.riskAmount as number) / (accountSize as number)) * 100;
-    } else {
-      actual = t.riskAmount as number;
-    }
+    const actual = strictest.field === 'riskPctOfAccount'
+      ? ((t.riskAmount as number) / (accountSize as number)) * 100
+      : (t.riskAmount as number);
     const ok = op === '<=' ? actual <= ruleValue : actual < ruleValue;
     if (ok) within++;
   }
-  const score = (within / tradesWithRisk.length) * 100;
   return {
-    score: Math.max(0, Math.min(100, score)),
-    reason: 'scored',
+    score: Math.max(0, Math.min(100, (within / tradesWithRisk.length) * 100)),
     within,
     applicable: tradesWithRisk.length,
     winningRule: strictest,
+  };
+}
+
+// ─── Subscore #2: Data sizing (pure JS) ───────────────────────────
+interface DataSizingResult {
+  score: number | null;
+  revenge: number | null;
+  stability: number | null;
+  oversize: number | null;
+}
+function computeDataSizing(
+  trades: Trade[],
+  accountSize: number | null | undefined,
+): DataSizingResult {
+  const withRisk = trades.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
+  if (withRisk.length === 0) {
+    return { score: null, revenge: null, stability: null, oversize: null };
+  }
+
+  // A. Revenge-sizing. Chronological order matters — date then time.
+  const sorted = [...withRisk].sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return (a.time || '').localeCompare(b.time || '');
+  });
+  let postLossCount = 0;
+  let revengeCount = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i - 1].result !== 'LOSS') continue;
+    postLossCount++;
+    if ((sorted[i].riskAmount as number) > (sorted[i - 1].riskAmount as number) * 1.20) revengeCount++;
+  }
+  const revenge: number | null = postLossCount > 0
+    ? Math.max(0, Math.min(100, (1 - revengeCount / postLossCount) * 100))
+    : null;
+
+  // B. Median deviation. Trades > 2× median OR < 0.5× median count
+  //    as "erratic". Single-trade edge case → no deviation possible.
+  const amounts = [...withRisk.map(t => t.riskAmount as number)].sort((a, b) => a - b);
+  const median = amounts.length % 2 === 1
+    ? amounts[(amounts.length - 1) / 2]
+    : (amounts[amounts.length / 2 - 1] + amounts[amounts.length / 2]) / 2;
+  let deviated = 0;
+  if (median > 0) {
+    for (const r of amounts) {
+      if (r > median * 2 || r < median * 0.5) deviated++;
+    }
+  }
+  const stability: number | null = (1 - deviated / withRisk.length) * 100;
+
+  // C. Account oversize. Only when account size is set.
+  let oversize: number | null = null;
+  if (typeof accountSize === 'number' && accountSize > 0) {
+    const threshold = accountSize * 0.03;
+    const over = withRisk.filter(t => (t.riskAmount as number) > threshold).length;
+    oversize = Math.max(0, Math.min(100, (1 - over / withRisk.length) * 100));
+  }
+
+  const score = weightedMean([
+    { score: revenge,   weight: 0.50 },
+    { score: stability, weight: 0.30 },
+    { score: oversize,  weight: 0.20 },
+  ]);
+  return { score, revenge, stability, oversize };
+}
+
+// ─── Subscore #3: Journal language (Haiku via classifications cache) ─
+function computeJournalLanguage(
+  trades: Trade[],
+  classifications: Record<string, TradeClassification> | undefined,
+): number | null {
+  if (!classifications) return null;
+  let pos = 0;
+  let neg = 0;
+  for (const t of trades) {
+    const verdict = classifications[t.id]?.riskLanguage;
+    if (verdict === 'positive') pos++;
+    else if (verdict === 'negative') neg++;
+  }
+  const mentions = pos + neg;
+  if (mentions === 0) return null;
+  return (pos / mentions) * 100;
+}
+
+/** Risk Control = blended adherence + sizing-behavior + journal-language
+ *  score. Each subscore is independently optional; available ones blend
+ *  via renormalizing weights (goal 0.50, data 0.30, journal 0.20). The
+ *  axis only goes silent when ALL three subscores are null — i.e., no
+ *  goal, no riskAmount on any trade, and no Haiku verdict tagging any
+ *  journal positive or negative on sizing. */
+export function scoreRiskControl(
+  trades: Trade[],
+  opts: {
+    goals?: Goal[];
+    accountSize?: number | null;
+    classifications?: Record<string, TradeClassification>;
+  } = {}
+): RiskControlResult {
+  const goals = opts.goals || [];
+  const accountSize = opts.accountSize;
+
+  const goal    = computeGoalAdherence(trades, goals, accountSize);
+  const data    = computeDataSizing(trades, accountSize);
+  const journal = computeJournalLanguage(trades, opts.classifications);
+
+  const blended = weightedMean([
+    { score: goal.score,   weight: 0.50 },
+    { score: data.score,   weight: 0.30 },
+    { score: journal,      weight: 0.20 },
+  ]);
+
+  if (blended === null) {
+    return {
+      score: null,
+      reason: 'no_signal',
+      goalScore: null,
+      dataScore: null,
+      journalScore: null,
+    };
+  }
+
+  return {
+    score: Math.max(0, Math.min(100, blended)),
+    reason: 'scored',
+    goalScore:   goal.score,
+    dataScore:   data.score,
+    journalScore: journal,
+    within:      goal.within,
+    applicable:  goal.applicable,
+    winningRule: goal.winningRule,
+    revengeSubscore:   data.revenge,
+    stabilitySubscore: data.stability,
+    oversizeSubscore:  data.oversize,
   };
 }
 
@@ -1190,23 +1317,24 @@ export function scoreExitDiscipline(trades: Trade[]): number {
 
 export function computeBehavioralRadar(
   trades: Trade[],
-  opts: { goals?: Goal[]; accountSize?: number | null } = {}
+  opts: {
+    goals?: Goal[];
+    accountSize?: number | null;
+    classifications?: Record<string, TradeClassification>;
+  } = {}
 ): BehavioralRadarSnapshot {
   const discipline     = scoreDiscipline(trades);
   const patience       = scorePatience(trades);
   const riskControlDetail = scoreRiskControl(trades, opts);
   const edge           = scoreEdge(trades);
   const exitDiscipline = scoreExitDiscipline(trades);
-  // Pick the hint text shown on the Risk Control spoke when it has
-  // no signal yet. Each hint points at the single concrete action
-  // the trader can take to score the axis.
+  // Risk Control only goes silent when goal + data + journal are ALL
+  // null. Single hint covers that case — the trader needs at least
+  // one signal: a rule, a logged riskAmount, or a journal that
+  // mentions sizing.
   let riskHint: string | undefined;
-  if (riskControlDetail.reason === 'no_rule') {
-    riskHint = 'set a risk goal to score this';
-  } else if (riskControlDetail.reason === 'needs_account_size') {
-    riskHint = 'set account size to score this';
-  } else if (riskControlDetail.reason === 'no_trades_with_risk') {
-    riskHint = 'log riskAmount on trades to score this';
+  if (riskControlDetail.reason === 'no_signal') {
+    riskHint = 'log riskAmount or write about your sizing to score this';
   }
   return {
     discipline, patience,
@@ -1632,7 +1760,7 @@ export function buildProfileContext(): string {
 /** Bump when the classify system prompt in app/api/coach/route.ts
  *  changes its schema or scoring rules. Cached entries stamped with
  *  a different version are re-scored on next Analysis mount. */
-export const CLASSIFY_PROMPT_VERSION = 'v3.6-2026-06-affirmative-evidence-required';
+export const CLASSIFY_PROMPT_VERSION = 'v3.7-2026-06-risk-language-tag';
 
 export interface TradeClassification {
   tradeId: string;
@@ -1657,6 +1785,12 @@ export interface TradeClassification {
   psychScore: number;      // 0-100
   tradeType: 'process' | 'impulse' | 'neutral';
   psychReason: string;
+  /** Per-trade verdict on the journal's stance toward the trader's
+   *  sizing / risk decisions. Powers the Risk Control radar axis's
+   *  journal subscore. Affirmative-evidence doctrine: neutral is the
+   *  default; non-neutral requires explicit sizing language. Optional
+   *  for backward compat with cache entries produced before v3.7. */
+  riskLanguage?: 'positive' | 'negative' | 'neutral';
   /** Per-trade numeric targets scored by Haiku (target-rr, custom numerics). */
   targetScores?: Array<{ targetId: string; met: boolean; actual: number; target: number }>;
 }
