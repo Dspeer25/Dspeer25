@@ -87,7 +87,7 @@ function calendarRangeStart(range: string, now: Date = new Date()): Date {
   }
 }
 
-export default function PastTradesContent({ trades, setActiveTab, onEditTrade }: { trades: Trade[]; setActiveTab: (tab: string) => void; onEditTrade?: (t: Trade) => void }) {
+export default function PastTradesContent({ trades, setActiveTab, onEditTrade, highlightTradeId, onClearHighlight }: { trades: Trade[]; setActiveTab: (tab: string) => void; onEditTrade?: (t: Trade) => void; highlightTradeId?: string | null; onClearHighlight?: () => void }) {
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [stratFilter, setStratFilter] = useState('All');
@@ -121,6 +121,46 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
   // Position Size Calculator to set a value and back picks it up
   // without a hard refresh.
   const [accountSize, setAccountSize] = useState<number | null>(null);
+
+  // When the Analysis tab routes a cited trade here, jump to its
+  // page, scroll the row into view, and let the row's pulse animation
+  // run. After a short window we clear the highlight so the row goes
+  // back to normal styling. If the trade doesn't appear under the
+  // active filters/chip we don't change those — just no-op and let
+  // the trader notice the banner upstream if we add one later.
+  React.useEffect(() => {
+    if (!highlightTradeId) return;
+    // The page calculation needs statTrades; defer until after the
+    // current render flush so the rest of the component is settled.
+    const tick = setTimeout(() => {
+      // Look the trade up in the FULL ordered trade list; if filters
+      // hide it, we can't scroll to a row that doesn't exist. We use
+      // a quick query against rendered data-trade-id attributes after
+      // the page swap.
+      // First, set the page that contains this trade in statTrades.
+      const idx = statTrades.findIndex(t => t.id === highlightTradeId);
+      if (idx >= 0) {
+        const page = Math.floor(idx / perPage) + 1;
+        setCurrentPage(page);
+      }
+      // After the page state propagates, scroll to the row.
+      const scrollTick = setTimeout(() => {
+        if (typeof document === 'undefined') return;
+        const el = document.querySelector(`[data-trade-id="${highlightTradeId}"]`);
+        if (el && typeof (el as HTMLElement).scrollIntoView === 'function') {
+          (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 80);
+      // Clear the highlight after ~4s so the row settles back to
+      // normal. The Analysis tab can re-trigger a fresh highlight by
+      // clicking another cited trade.
+      const clearTick = setTimeout(() => { if (onClearHighlight) onClearHighlight(); }, 4200);
+      return () => { clearTimeout(scrollTick); clearTimeout(clearTick); };
+    }, 30);
+    return () => clearTimeout(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightTradeId]);
+
   React.useEffect(() => {
     const refresh = () => setAccountSize(readAccountSize());
     refresh();
@@ -845,8 +885,9 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
           ) : (<>
             {pagedTrades.map((t, idx) => {
               const rowBg = idx % 2 === 0 ? '#111218' : '#161822';
+              const isHighlighted = highlightTradeId === t.id;
               return (
-                <div key={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: rowBg, borderBottom: '1px solid #2A3143', borderLeft: '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.15s', cursor: 'pointer', position: 'relative' }} onMouseEnter={e => { e.currentTarget.style.background = '#1c1d28'; setHoveredRowId(t.id); }} onMouseLeave={e => { e.currentTarget.style.background = rowBg; setHoveredRowId(h => h === t.id ? null : h); }}>
+                <div key={t.id} data-trade-id={t.id} style={{ display: 'grid', gridTemplateColumns: colWidths.map(w => w + 'px').join(' '), background: isHighlighted ? 'rgba(0,212,160,0.08)' : rowBg, borderBottom: '1px solid #2A3143', borderLeft: isHighlighted ? `3px solid ${teal}` : '2px solid transparent', alignItems: 'center', fontFamily: fm, fontSize: 15, color: '#e8e8f0', transition: 'background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease', cursor: 'pointer', position: 'relative', boxShadow: isHighlighted ? '0 0 18px rgba(0,212,160,0.30)' : 'none', animation: isHighlighted ? 'tradeRowGlow 1.6s ease-in-out infinite' : 'none' }} onMouseEnter={e => { if (!isHighlighted) e.currentTarget.style.background = '#1c1d28'; setHoveredRowId(t.id); }} onMouseLeave={e => { if (!isHighlighted) e.currentTarget.style.background = rowBg; setHoveredRowId(h => h === t.id ? null : h); }}>
                   {/* Asset */}
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, overflow: 'hidden', padding: '14px 8px', borderRight: '1px solid rgba(42,49,67,0.5)', whiteSpace: 'nowrap' }}>
                     <TickerTile ticker={t.ticker} />
@@ -1020,6 +1061,10 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade }:
           0% { box-shadow: 0 0 0 0 rgba(0,212,160,0.4); }
           70% { box-shadow: 0 0 0 4px rgba(0,212,160,0); }
           100% { box-shadow: 0 0 0 0 rgba(0,212,160,0); }
+        }
+        @keyframes tradeRowGlow {
+          0%, 100% { box-shadow: 0 0 14px rgba(0,212,160,0.25); }
+          50%      { box-shadow: 0 0 26px rgba(0,212,160,0.55); }
         }
       `}</style>
     </div>

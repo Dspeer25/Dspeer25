@@ -33,6 +33,12 @@ export default function WickCoachFull() {
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
+  // Trade highlighted via the Analysis behavioral-radar citation
+  // panel. When a trader clicks a cited trade row, we stash the id
+  // here, swap to Past Trades, and PastTradesContent scrolls to +
+  // visually highlights the matching row. Cleared after a short
+  // window inside Past Trades.
+  const [highlightTradeId, setHighlightTradeId] = useState<string | null>(null);
   // (Trader Profile tab retired — the +1 fly-to-tab animation and
   // its glow/ref plumbing are gone with it. Weekly Goals no longer
   // emits an onMessageSent callback.)
@@ -166,9 +172,9 @@ export default function WickCoachFull() {
               <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} editingTrade={editingTrade} onFinishEdit={() => { setEditingTrade(null); setActiveTab('Past Trades'); }} />
             </div>
           )}
-          {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} onEditTrade={(t) => { setEditingTrade(t); setActiveTab('Log a Trade'); }} />}
+          {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} onEditTrade={(t) => { setEditingTrade(t); setActiveTab('Log a Trade'); }} highlightTradeId={highlightTradeId} onClearHighlight={() => setHighlightTradeId(null)} />}
           {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} weeklyTabResetTick={weeklyTabResetTick} />}
-          {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
+          {activeTab === 'Analysis' && <AnalysisContent trades={trades} onShowTrade={(id) => { setHighlightTradeId(id); setActiveTab('Past Trades'); }} />}
           {activeTab === 'Tools' && <ToolsContent />}
           {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>

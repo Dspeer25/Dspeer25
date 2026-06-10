@@ -169,7 +169,7 @@ function buildWeekBuckets(trades: Trade[], goalWeekStarts: string[]): WeekBucket
 }
 
 // ─── Component ────────────────────────────────────────────────
-export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
+export default function AnalysisContent({ trades = [], onShowTrade }: { trades?: Trade[]; onShowTrade?: (tradeId: string) => void }) {
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses' | 'net'>('net');
@@ -190,10 +190,13 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
       try { localStorage.setItem(RADAR_TIMEFRAME_KEY, tf); } catch { /* ignore */ }
     }
   };
-  // Hover state for the per-axis explanation rows beside the radar.
-  // STEP 3 will reuse this same key to drive the click-to-expand
-  // citation panel.
-  const [hoveredRadarAxis, setHoveredRadarAxis] = useState<'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline' | null>(null);
+  // Hover state for the per-axis tooltips on the radar; click state for
+  // the citation panel that opens beneath the radar.
+  type RadarAxisKey = 'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline';
+  const [hoveredRadarAxis, setHoveredRadarAxis] = useState<RadarAxisKey | null>(null);
+  const [expandedRadarAxis, setExpandedRadarAxis] = useState<RadarAxisKey | null>(null);
+  const toggleExpandedRadarAxis = (key: RadarAxisKey) =>
+    setExpandedRadarAxis(prev => prev === key ? null : key);
   // (hoveredSlice state retired with the OUTCOME CANDLES section.)
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
@@ -1447,6 +1450,7 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                     style={{ cursor: 'pointer' }}
                     onMouseEnter={() => setHoveredRadarAxis(axis.key)}
                     onMouseLeave={() => setHoveredRadarAxis(null)}
+                    onClick={() => toggleExpandedRadarAxis(axis.key)}
                   />
                 );
               })}
@@ -1538,6 +1542,135 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
                 Not enough trade data yet to surface a strongest / weakest axis.
               </div>
             )}
+
+            {/* ── Citation panel — opens beneath the radar when an
+                axis section is clicked. Reads from the contributors[]
+                already computed in shared.ts; never recomputes. Shows
+                the worst-offending trades for a low score and the
+                best-supporting trades for a high score, capped at 5.
+                Each cited trade row routes to Past Trades via
+                onShowTrade and highlights there. */}
+            {expandedRadarAxis && (() => {
+              const axis = radar.axes.find(a => a.key === expandedRadarAxis);
+              if (!axis) return null;
+              const score = axis.score;
+              const color = score === null ? '#6b7280' : score >= 67 ? teal : score >= 33 ? '#f5d27c' : red;
+              const negCount = axis.contributors.filter(c => c.kind === 'negative').length;
+              const posCount = axis.contributors.filter(c => c.kind === 'positive').length;
+              // Pick which side to cite: lean negative when score is
+              // below 50 (room to improve, surface the leaks);
+              // positive when score is 50+ (show what's working).
+              const showNegativeFirst = score === null || score < 50;
+              const ordered = showNegativeFirst
+                ? [...axis.contributors.filter(c => c.kind === 'negative'), ...axis.contributors.filter(c => c.kind === 'positive')]
+                : [...axis.contributors.filter(c => c.kind === 'positive'), ...axis.contributors.filter(c => c.kind === 'negative')];
+              const cited = ordered.slice(0, 5);
+              const tradeIndex = new Map(tradesInWindow.map(t => [t.id, t]));
+              // Plain-English breakdown line per axis. Counts come from
+              // the contributor split (never recomputed from scratch).
+              let breakdown = '';
+              if (axis.key === 'discipline') {
+                breakdown = `${posCount} of ${axis.applicable} journaled trades followed plan. ${negCount} flagged for impulse.`;
+              } else if (axis.key === 'patience') {
+                breakdown = `${posCount} of ${axis.applicable} journaled trades showed patience. ${negCount} flagged for rushing / FOMO / revenge.`;
+              } else if (axis.key === 'riskControl') {
+                breakdown = `${negCount} sizing infractions across ${axis.applicable} trades with risk logged.`;
+              } else if (axis.key === 'edge') {
+                breakdown = `${posCount} winning vs ${negCount} losing trades. Biggest losses drag the score the most.`;
+              } else if (axis.key === 'exitDiscipline') {
+                breakdown = `${axis.applicable} trades with R logged. Below-average winners and oversized losers pull the ratio toward 50.`;
+              }
+              return (
+                <div style={{
+                  width: '100%',
+                  marginTop: 18,
+                  background: '#0e0f14',
+                  border: '1px solid rgba(0,212,160,0.30)',
+                  borderRadius: 12,
+                  padding: '18px 22px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.4 }}>{axis.label}</span>
+                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color }}>{score === null ? '—' : Math.round(score)}</span>
+                      <span style={{ fontFamily: fm, fontSize: 12.5, color: '#94A3B8' }}>{AXIS_EXPLANATIONS[axis.key]}</span>
+                    </div>
+                    <span
+                      onClick={() => setExpandedRadarAxis(null)}
+                      title="Close"
+                      style={{ cursor: 'pointer', fontFamily: fm, fontSize: 18, color: '#6b7280', padding: '0 8px', userSelect: 'none' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.color = '#fff'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.color = '#6b7280'; }}
+                    >✕</span>
+                  </div>
+
+                  {/* Breakdown */}
+                  {breakdown && (
+                    <div style={{ fontFamily: fm, fontSize: 13.5, color: '#d0d4dc', lineHeight: 1.5 }}>{breakdown}</div>
+                  )}
+
+                  {/* Cited trades — clickable rows linking to Past Trades */}
+                  {cited.length === 0 && (
+                    <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic' }}>
+                      No specific trades to cite in this window yet.
+                    </div>
+                  )}
+                  {cited.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                      <span style={{ fontFamily: fm, fontSize: 11, color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' as const }}>
+                        {showNegativeFirst ? 'Worst offenders' : 'Best supporters'} · click to open in Past Trades
+                      </span>
+                      {cited.map((c, idx) => {
+                        const tr = tradeIndex.get(c.tradeId);
+                        if (!tr) return null;
+                        const plColor = tr.pl > 0 ? teal : tr.pl < 0 ? red : '#aab0bd';
+                        const dateLabel = (() => {
+                          const d = parseLocalDate(tr.date);
+                          return Number.isFinite(d.getTime()) ? `${d.getMonth() + 1}/${d.getDate()}` : tr.date;
+                        })();
+                        const tickColor = c.kind === 'negative' ? red : teal;
+                        const tickChar = c.kind === 'negative' ? '✗' : '✓';
+                        return (
+                          <div
+                            key={`${c.tradeId}-${idx}`}
+                            onClick={() => onShowTrade && onShowTrade(c.tradeId)}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '18px 60px 56px 90px 1fr',
+                              gap: 12,
+                              alignItems: 'center',
+                              padding: '10px 12px',
+                              background: c.kind === 'negative' ? 'rgba(255,68,68,0.05)' : 'rgba(0,212,160,0.05)',
+                              border: '1px solid #2A3143',
+                              borderLeft: `3px solid ${tickColor}`,
+                              borderRadius: 6,
+                              cursor: onShowTrade ? 'pointer' : 'default',
+                              transition: 'background 0.15s ease, transform 0.15s ease',
+                            }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(2px)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)'; }}
+                          >
+                            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: tickColor, textAlign: 'center' }}>{tickChar}</span>
+                            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: '#fff' }}>{tr.ticker}</span>
+                            <span style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8' }}>{dateLabel}</span>
+                            <span style={{ fontFamily: fm, fontSize: 13, fontWeight: 600, color: plColor, textAlign: 'right' }}>
+                              {formatNumber(tr.pl, { currency: true, explicitSign: true, decimals: 0 })}
+                            </span>
+                            <span style={{ fontFamily: fm, fontSize: 12.5, color: '#d0d4dc', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {c.reason}{c.value ? ` · ${c.value}` : ''}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
