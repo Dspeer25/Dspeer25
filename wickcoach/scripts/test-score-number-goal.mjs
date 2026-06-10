@@ -15,6 +15,22 @@ function parseRr(rr) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// ── Mirror of timeToMinutes from shared.ts ──
+function timeToMinutes(t) {
+  if (!t) return -1;
+  const s = String(t).trim();
+  if (!s) return -1;
+  const ampm = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    let h = parseInt(ampm[1], 10) % 12;
+    if (/PM/i.test(ampm[3])) h += 12;
+    return h * 60 + parseInt(ampm[2], 10);
+  }
+  const h24 = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (h24) return parseInt(h24[1], 10) * 60 + parseInt(h24[2], 10);
+  return -1;
+}
+
 // ── Mirror of scoreNumberGoal ──
 function compareValues(a, op, b) {
   switch (op) {
@@ -30,7 +46,6 @@ function compareValues(a, op, b) {
 function getPerTradeFieldValue(t, field) {
   switch (field) {
     case 'riskAmount': return typeof t.riskAmount === 'number' ? t.riskAmount : null;
-    case 'time':       return t.time && t.time.length > 0 ? t.time : null;
     case 'direction':  return t.direction;
     case 'contracts':  return typeof t.contracts === 'number' ? t.contracts : null;
     case 'strategy':   return t.strategy || null;
@@ -62,6 +77,13 @@ function scoreNumberGoal(trade, rule, ctx = {}) {
     const pct = (trade.riskAmount / ctx.accountSize) * 100;
     return compareValues(pct, operator, value) ? 'pass' : 'fail';
   }
+  if (field === 'time') {
+    const ruleMinutes = timeToMinutes(String(value));
+    if (ruleMinutes < 0) return 'na';
+    const tradeMinutes = timeToMinutes(trade.time);
+    if (tradeMinutes < 0) return 'fail';
+    return compareValues(tradeMinutes, operator, ruleMinutes) ? 'pass' : 'fail';
+  }
   const tradeValue = getPerTradeFieldValue(trade, field);
   if (tradeValue === null) return 'fail';
   return compareValues(tradeValue, operator, value) ? 'pass' : 'fail';
@@ -84,6 +106,8 @@ const t_be              = { ...baseTrade, id: 't5', result: 'BREAKEVEN', pl: 0, 
 const t_no_risk_amt     = { ...baseTrade, id: 't6', riskAmount: undefined };
 const t_late_entry      = { ...baseTrade, id: 't7', time: '14:30' };
 const t_no_time         = { ...baseTrade, id: 't8', time: '' };
+const t_ampm_morning    = { ...baseTrade, id: 't12', time: '9:30 AM' };
+const t_ampm_afternoon  = { ...baseTrade, id: 't13', time: '1:08 PM' };
 const t_short           = { ...baseTrade, id: 't9', direction: 'SHORT' };
 const t_big_size        = { ...baseTrade, id: 't10', contracts: 20 };
 const t_other_strategy  = { ...baseTrade, id: 't11', strategy: 'Scalp' };
@@ -121,6 +145,15 @@ const cases = [
   ['14:30 vs time<=11:00',          t_late_entry,{ field:'time', operator:'<=', value:'11:00' }, {}, 'fail'],
   ['no time logged',                t_no_time,   { field:'time', operator:'<=', value:'11:00' }, {}, 'fail'],
   ['09:35 vs time>=09:30',          t_win_2_5r,  { field:'time', operator:'>=', value:'09:30' }, {}, 'pass'],
+
+  // Time — AM/PM trade times vs 24h rule values (regression: raw
+  // string compare scored "9:30 AM" > "11:00" because '9' > '1')
+  ['9:30 AM vs time<=11:00',        t_ampm_morning,   { field:'time', operator:'<=', value:'11:00' }, {}, 'pass'],
+  ['1:08 PM vs time<=11:00',        t_ampm_afternoon, { field:'time', operator:'<=', value:'11:00' }, {}, 'fail'],
+  ['1:08 PM vs time>=09:30',        t_ampm_afternoon, { field:'time', operator:'>=', value:'09:30' }, {}, 'pass'],
+  ['9:30 AM == 09:30 cross-format', t_ampm_morning,   { field:'time', operator:'==', value:'09:30' }, {}, 'pass'],
+  ['9:30 AM != 09:30 cross-format', t_ampm_morning,   { field:'time', operator:'!=', value:'09:30' }, {}, 'fail'],
+  ['unparseable rule value',        t_ampm_morning,   { field:'time', operator:'<=', value:'noon'  }, {}, 'na'],
 
   // Direction
   ['LONG vs direction==LONG',       t_win_2_5r,  { field:'direction', operator:'==', value:'LONG' },  {}, 'pass'],

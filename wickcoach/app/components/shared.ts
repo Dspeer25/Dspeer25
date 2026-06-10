@@ -2280,7 +2280,9 @@ export interface GoalScoringCriteria {
  * Per-trade fields:
  *   riskAmount   — dollars risked on the trade (Trade.riskAmount)
  *   riskReward   — achieved R:R ratio, parsed from Trade.riskReward
- *   time         — entry time as "HH:MM" 24h (Trade.time)
+ *   time         — entry time (Trade.time, "9:30 AM" / "1:08 PM" or 24h
+ *                  "HH:MM"); compared as minutes-since-midnight against
+ *                  the rule's 24h "HH:MM" value via timeToMinutes
  *   direction    — 'LONG' | 'SHORT'
  *   contracts    — position size (units / contracts)
  *   strategy     — strategy label (Trade.strategy)
@@ -2412,7 +2414,6 @@ function compareValues(a: number | string, op: GoalOperator, b: number | string)
 function getPerTradeFieldValue(t: Trade, field: GoalField): number | string | null {
   switch (field) {
     case 'riskAmount': return typeof t.riskAmount === 'number' ? t.riskAmount : null;
-    case 'time':       return t.time && t.time.length > 0 ? t.time : null;
     case 'direction':  return t.direction;
     case 'contracts':  return typeof t.contracts === 'number' ? t.contracts : null;
     case 'strategy':   return t.strategy || null;
@@ -2461,6 +2462,18 @@ export function scoreNumberGoal(
     if (typeof trade.riskAmount !== 'number') return 'fail';
     const pct = (trade.riskAmount / ctx.accountSize) * 100;
     return compareValues(pct, operator, value) ? 'pass' : 'fail';
+  }
+
+  // ── Time-of-entry — Trade.time is "9:30 AM" / "1:08 PM" or 24h
+  //    "HH:MM"; rule.value is 24h "HH:MM" from the builder's time
+  //    input. Compare as minutes-since-midnight — a raw string compare
+  //    sorts "1:08 PM" before "9:30 AM" (see timeToMinutes).
+  if (field === 'time') {
+    const ruleMinutes = timeToMinutes(String(value));
+    if (ruleMinutes < 0) return 'na';
+    const tradeMinutes = timeToMinutes(trade.time);
+    if (tradeMinutes < 0) return 'fail';
+    return compareValues(tradeMinutes, operator, ruleMinutes) ? 'pass' : 'fail';
   }
 
   // ── Per-trade constraint fields — missing value = 'fail' (the
