@@ -1315,6 +1315,98 @@ export default function AnalysisContent({ trades = [] }: { trades?: Trade[] }) {
         );
       })()}
 
+      {/* ═══ STRENGTHS / IMPROVE / GAP — absorbed from Trader Profile ═══
+          Reads from computeAnalytics().patterns and .processSplit, both
+          deterministic. The old standalone Trader Profile tab is being
+          retired; the radar above covers the headline behavioral
+          summary, and this block keeps the per-pattern counts and the
+          plan-vs-rule-break R gap visible inside Analysis. */}
+      {(() => {
+        const procR = processSplit.process.n ? processSplit.process.rTotal / processSplit.process.n : 0;
+        const impR  = processSplit.impulse.n ? processSplit.impulse.rTotal / processSplit.impulse.n : 0;
+        const strengthRows = [
+          { name: 'Patience',         count: patterns.patience,        desc: 'Waited for the setup' },
+          { name: 'Clean Execution',  count: patterns.cleanExecution,  desc: 'Followed the plan' },
+          { name: 'Stop Discipline',  count: patterns.stopDiscipline,  desc: 'Honored your stop' },
+          { name: 'Trusting Process', count: patterns.trustingProcess, desc: 'Stuck to your rules' },
+        ];
+        const improveRows = [
+          { name: 'Ignoring Rules',  count: patterns.ignoringRules,  desc: 'Traded against your own plan' },
+          { name: 'Impulse Entries', count: patterns.impulseEntries, desc: 'Entered without a setup' },
+          { name: 'Revenge Trading', count: patterns.revengeTrading, desc: 'Traded to recover a loss' },
+          { name: 'FOMO / Chasing',  count: patterns.fomoChasing,    desc: 'Chased price instead of waiting' },
+        ];
+        const anyStrength = strengthRows.some(r => r.count > 0);
+        const anyImprove  = improveRows.some(r => r.count > 0);
+
+        return (
+          <>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+              {/* Your strengths */}
+              <div style={{ flex: 1, minWidth: 280, background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${teal}`, borderRadius: 12, padding: '24px 28px' }}>
+                <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: teal, marginBottom: 4, letterSpacing: 0.5 }}>Your strengths</div>
+                <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginBottom: 16 }}>Patterns from your journal entries that show discipline</div>
+                {anyStrength ? strengthRows.filter(p => p.count > 0).map(p => (
+                  <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(42,49,67,0.4)' }}>
+                    <div>
+                      <div style={{ fontFamily: fm, fontSize: 14, color: '#e8e8f0', fontWeight: 500 }}>{p.name}</div>
+                      <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginTop: 2 }}>{p.desc}</div>
+                    </div>
+                    <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: teal, flexShrink: 0, marginLeft: 16 }}>{p.count}</div>
+                  </div>
+                )) : (
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', padding: '20px 0', textAlign: 'center' }}>
+                    No strength patterns detected yet. Write more about why you took each trade.
+                  </div>
+                )}
+              </div>
+
+              {/* Areas to improve */}
+              <div style={{ flex: 1, minWidth: 280, background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${red}`, borderRadius: 12, padding: '24px 28px' }}>
+                <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: red, marginBottom: 4, letterSpacing: 0.5 }}>Areas to improve</div>
+                <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginBottom: 16 }}>Patterns from your journal entries that show rule-breaking</div>
+                {anyImprove ? improveRows.filter(p => p.count > 0).map(p => (
+                  <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(42,49,67,0.4)' }}>
+                    <div>
+                      <div style={{ fontFamily: fm, fontSize: 14, color: '#e8e8f0', fontWeight: 500 }}>{p.name}</div>
+                      <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginTop: 2 }}>{p.desc}</div>
+                    </div>
+                    <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: red, flexShrink: 0, marginLeft: 16 }}>{p.count}</div>
+                  </div>
+                )) : (
+                  <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', padding: '20px 0', textAlign: 'center' }}>
+                    No weakness patterns detected yet. Write more about why you took each trade.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* The gap that matters — plan-following R vs rule-breaking R */}
+            {processSplit.process.n > 0 && processSplit.impulse.n > 0 && (
+              <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', marginBottom: 16 }}>
+                <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>The gap that matters</div>
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>When you follow the plan</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>R {procR.toFixed(1)}</span>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>avg · {processSplit.process.wr.toFixed(0)}% WR · {processSplit.process.n} trades</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>When you break the rules</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: red }}>R {impR.toFixed(1)}</span>
+                      <span style={{ fontFamily: fm, fontSize: 13, color: red }}>avg · {processSplit.impulse.wr.toFixed(0)}% WR · {processSplit.impulse.n} trades</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
+
       {/* ═══ FOUR STAT CARDS — full rewrite ═══
           Hierarchy flipped: the metric is the hero (huge), labels and
           support metrics are small. Descriptive copy moved to hover

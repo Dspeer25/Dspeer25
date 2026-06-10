@@ -17,7 +17,10 @@ import AnalysisContent from "./components/AnalysisHub";
 import PastTradesContent from "./components/PastTradesContent";
 import TradingGoalsContent from "./components/TradingGoalsContent";
 import LogATradeContent from "./components/LogATradeContent";
-import TraderProfileContent from "./components/TraderProfileContent";
+// (TraderProfileContent retired — the Analysis tab now houses the
+// behavioral radar plus the Strengths / Improve / Gap content. The
+// homepage marketing CarouselTraderProfile mock is unrelated and
+// remains imported above.)
 import ToolsContent from "./components/ToolsContent";
 import SplashScreen from "./components/SplashScreen";
 
@@ -30,9 +33,9 @@ export default function WickCoachFull() {
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const traderProfileTabRef = useRef<HTMLSpanElement>(null);
-  const [floatingPlusOnes, setFloatingPlusOnes] = useState<{ id: string; startX: number; startY: number; endX: number; endY: number; animated: boolean }[]>([]);
-  const [profileTabGlow, setProfileTabGlow] = useState(false);
+  // (Trader Profile tab retired — the +1 fly-to-tab animation and
+  // its glow/ref plumbing are gone with it. Weekly Goals no longer
+  // emits an onMessageSent callback.)
   const [showAllBrokers, setShowAllBrokers] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginName, setLoginName] = useState('');
@@ -46,25 +49,6 @@ export default function WickCoachFull() {
   // watches this prop and prefills its fields on mount.
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
 
-  const triggerFloatingPlusOne = (inputRect: DOMRect) => {
-    const tabEl = traderProfileTabRef.current;
-    if (!tabEl) return;
-    const tabRect = tabEl.getBoundingClientRect();
-    const startX = inputRect.left + inputRect.width / 2 - 20;
-    const startY = inputRect.top - 10;
-    const endX = tabRect.left + tabRect.width / 2 - 20;
-    const endY = tabRect.top + tabRect.height / 2 - 10;
-    const id = `fp_${Date.now()}_${Math.random()}`;
-    setFloatingPlusOnes(prev => [...prev, { id, startX, startY, endX, endY, animated: false }]);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setFloatingPlusOnes(prev => prev.map(f => f.id === id ? { ...f, animated: true } : f));
-      });
-    });
-    setTimeout(() => { setProfileTabGlow(true); }, 1300);
-    setTimeout(() => { setProfileTabGlow(false); }, 2100);
-    setTimeout(() => { setFloatingPlusOnes(prev => prev.filter(f => f.id !== id)); }, 1600);
-  };
 
   useEffect(() => {
     try {
@@ -133,7 +117,7 @@ export default function WickCoachFull() {
     return () => clearTimeout(t);
   }, [textVisible]);
 
-  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Trader Profile", "Tools"];
+  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Tools"];
 
   const privacyCards = [
     { icon: <Eye size={22} color={teal} />, title: "Your trades stay yours", text: "All data stored locally in your browser. Nothing leaves your machine." },
@@ -174,7 +158,7 @@ export default function WickCoachFull() {
       {/* ═══ APP VIEW ═══ */}
       {view === 'app' && (<>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); if (t === 'Weekly Goals') setWeeklyTabResetTick(n => n + 1); }} onLogoClick={() => setView('home')} profileTabGlow={profileTabGlow} traderProfileTabRef={traderProfileTabRef} onLoginClick={() => setShowLogin(true)} />
+          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); if (t === 'Weekly Goals') setWeeklyTabResetTick(n => n + 1); }} onLogoClick={() => setView('home')} onLoginClick={() => setShowLogin(true)} />
         </div>
         <div style={{ backgroundImage: 'linear-gradient(to bottom, #181c26 0px, #151923 120px, #12151d 260px, #0A0D14 420px, #0A0D14 100%)', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
           {activeTab === 'Log a Trade' && (
@@ -183,20 +167,13 @@ export default function WickCoachFull() {
             </div>
           )}
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} onEditTrade={(t) => { setEditingTrade(t); setActiveTab('Log a Trade'); }} />}
-          {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} onMessageSent={triggerFloatingPlusOne} weeklyTabResetTick={weeklyTabResetTick} />}
+          {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} weeklyTabResetTick={weeklyTabResetTick} />}
           {activeTab === 'Analysis' && <AnalysisContent trades={trades} />}
-          {activeTab === 'Trader Profile' && <TraderProfileContent trades={trades} />}
           {activeTab === 'Tools' && <ToolsContent />}
-          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Trader Profile' && activeTab !== 'Tools' && (
+          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>
           )}
         </div>
-        {floatingPlusOnes.map(f => (
-          <div key={f.id} style={{ position: 'fixed', left: f.startX, top: f.startY, transform: f.animated ? `translate(${f.endX - f.startX}px, ${f.endY - f.startY}px) scale(0.4)` : 'translate(0,0) scale(1)', opacity: f.animated ? 0 : 1, transition: 'all 1.5s cubic-bezier(0.25, 0.1, 0.25, 1)', zIndex: 9999, pointerEvents: 'none' as const, display: 'flex', flexDirection: 'column' as const, alignItems: 'center' }}>
-            <span style={{ fontSize: 20, fontWeight: 700, color: teal, fontFamily: fm, textShadow: '0 0 12px rgba(0,212,160,0.5)' }}>+1</span>
-            <span style={{ fontSize: 9, color: '#6b7280', fontFamily: fm }}>Trader Profile</span>
-          </div>
-        ))}
       </>)}
 
       {/* ═══ HOME VIEW ═══ */}

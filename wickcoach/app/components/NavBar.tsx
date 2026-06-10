@@ -11,12 +11,10 @@ interface NavBarProps {
   onLogoClick: () => void;
   showClickHint?: boolean;
   tabGlow?: boolean;
-  profileTabGlow?: boolean;
-  traderProfileTabRef?: React.RefObject<HTMLSpanElement | null>;
   onLoginClick?: () => void;
 }
 
-export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick, showClickHint = false, tabGlow = false, profileTabGlow = false, traderProfileTabRef, onLoginClick }: NavBarProps) {
+export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick, showClickHint = false, tabGlow = false, onLoginClick }: NavBarProps) {
   return (
     <>
       {view === 'app' && (
@@ -61,7 +59,6 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
             const borderIdle = isTools ? 'rgba(255,255,255,0.55)' : 'rgba(0,212,160,0.6)';
             return (
               <span
-                ref={t === 'Trader Profile' ? traderProfileTabRef : undefined}
                 key={t}
                 onClick={() => onTabClick(t)}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = bgHover; }}
@@ -83,7 +80,7 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: t === 'Trader Profile' && profileTabGlow ? '0 0 15px rgba(0,212,160,0.4)' : 'none',
+                  boxShadow: 'none',
                   transition: 'border-color 0.2s ease, background 0.2s ease, box-shadow 0.3s ease',
                   animation: !isActive
                     ? `${isTools ? 'tabPulseWhite' : 'tabPulse'} 3s ease-in-out ${idx * 0.4}s infinite`

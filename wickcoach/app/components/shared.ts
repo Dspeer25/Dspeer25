@@ -806,7 +806,9 @@ const PROCESS_KEYWORDS = [
   'stuck to', 'honored', 'stopped out', 'on plan',
 ];
 
-// Per-pattern keyword sets for the Trader Profile observations board.
+// Per-pattern keyword sets. These power both the in-Analysis
+// Strengths / Areas-to-improve lists and the behavioral-radar
+// Patience axis.
 const PATTERN_KEYWORDS = {
   ignoringRules:    ['broke rules', 'ignored rules', 'against my rules', 'shouldn\'t have', 'broke my', 'violated'],
   impulseEntries:   ['impulse', 'impulsive', 'jumped in', 'didn\'t wait', 'rushed', 'quick', 'no setup'],
