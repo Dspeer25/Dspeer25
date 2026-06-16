@@ -399,7 +399,7 @@ Do NOT include a "statistics" key — the client already has the real numbers.`;
   // Haiku is dramatically cheaper and fast enough for pure classification;
   // every other mode keeps the Sonnet voice-capable model.
   const useHaiku = mode === 'classify' || mode === 'regression';
-  const model = useHaiku ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514';
+  const model = useHaiku ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-6';
   const maxTokens = useHaiku ? 4000 : 500;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
