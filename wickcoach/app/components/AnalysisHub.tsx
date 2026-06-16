@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor, timeToMinutes } from './shared';
+import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -529,17 +529,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
       if (cached.promptVersion !== CLASSIFY_PROMPT_VERSION) return true;
       return false;
     });
-    // Diagnostic — promoted to console.warn so it can't be filtered
-    // out of a default-level browser console. Tells you whether the
-    // effect even fired, and how many trades it's about to send.
-    const currentWeekGoalsForLog = getGoalsForWeek(getCurrentWeekStart());
-    console.warn('[AnalysisHub.classify] effect fired:', {
-      totalTrades: trades.length,
-      currentWeekGoals: currentWeekGoalsForLog.length,
-      unscoredCount: unscored.length,
-      promptVersion: CLASSIFY_PROMPT_VERSION,
-      goals: currentWeekGoalsForLog.map((g, i) => `${i}: "${g.title?.slice(0, 50)}" measurability=${g.measurability}`),
-    });
     if (unscored.length === 0) return;
 
     let cancelled = false;
@@ -803,23 +792,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   const selectedWeekTradeGoals = buildGoalRows('trades');
   const selectedWeekPsychGoals = buildGoalRows('psych');
 
-  // Render-time diagnostic — fires whenever classifications or the
-  // selected bucket changes so we can confirm in dev-server.log that
-  // the candle math has the data it needs. Logged via console.warn
-  // because Next.js forwards browser warns to the server log.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const wt = selectedWeekBucket?.trades || [];
-    const scoredIds = wt.filter(t => classifications[t.id]).map(t => t.id);
-    console.warn('[AnalysisHub.render] candle data:', {
-      selectedWeekStartISO,
-      bucketTradeCount: wt.length,
-      bucketTradesScored: scoredIds.length,
-      classificationsKnown: Object.keys(classifications).length,
-      tradeRows: selectedWeekTradeGoals.map(r => `goalIdx=${r.goalIdx} "${r.title.slice(0, 30)}" target=${r.target} actual=${r.actual} null=${r.nullCount}`),
-      psychRows: selectedWeekPsychGoals.map(r => `goalIdx=${r.goalIdx} "${r.title.slice(0, 30)}" target=${r.target} actual=${r.actual} null=${r.nullCount}`),
-    });
-  }, [classifications, selectedWeekBucket, selectedWeekStartISO, selectedWeekTradeGoals, selectedWeekPsychGoals]);
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—' };
   const hasGoalsForSelectedWeek = weekGoals.length > 0;
 
@@ -1256,89 +1228,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           accountSize: readAccountSize(),
           classifications,
         });
-
-        // ── Revenge-sizing diagnostic ───────────────────────────────
-        // Verifies: (a) trades are sorted by true chronological order,
-        // not array order; (b) riskAmount values aren't all defaulted;
-        // (c) the >20% bump threshold isn't over-firing trivially. Dumps
-        // each detected revenge pair so we can sanity-check that the
-        // "previous trade" really was a loss that immediately preceded
-        // this one. Console.warn so it lands in dev-server.log via
-        // Next's browser-log forwarding.
-        if (typeof window !== 'undefined') {
-          const withRisk = tradesInWindow.filter(t => typeof t.riskAmount === 'number' && (t.riskAmount as number) > 0);
-          const sorted = [...withRisk].sort((a, b) => {
-            if (a.date !== b.date) return a.date.localeCompare(b.date);
-            return timeToMinutes(a.time) - timeToMinutes(b.time);
-          });
-          // Verify the sort actually changed the order vs the raw input.
-          // If they're identical the input was already sorted; either
-          // way we'll log whether the comparison did meaningful work.
-          let reorderMoves = 0;
-          for (let i = 0; i < sorted.length; i++) {
-            if (sorted[i].id !== withRisk[i].id) reorderMoves++;
-          }
-          // Detect raw-time format inconsistency that could break the
-          // string comparison (e.g. mixed "9:35 AM" and "09:35").
-          const ampmTimes = sorted.filter(t => /am|pm/i.test(t.time || '')).length;
-          const h24Times = sorted.filter(t => /^\d{1,2}:\d{2}$/.test(t.time || '')).length;
-          const blankTimes = sorted.filter(t => !(t.time || '').trim()).length;
-          // riskAmount uniqueness — if 100+ trades all have the same
-          // exact riskAmount, it's almost certainly a defaulted value
-          // pretending to be real data.
-          const amountCounts: Record<string, number> = {};
-          for (const t of withRisk) {
-            const k = String(t.riskAmount);
-            amountCounts[k] = (amountCounts[k] || 0) + 1;
-          }
-          const topAmounts = Object.entries(amountCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-          // Walk the sorted list and collect every revenge-sized pair
-          // with the actual numbers behind it. Also bucket the bump
-          // size so we can see whether the threshold is firing on
-          // borderline 20-25% bumps or real revenge spikes.
-          let postLossCount = 0;
-          const revengePairs: { idx: number; bumpPct: number; prev: Trade; cur: Trade }[] = [];
-          for (let i = 1; i < sorted.length; i++) {
-            const prev = sorted[i - 1];
-            const cur = sorted[i];
-            if (prev.result !== 'LOSS') continue;
-            postLossCount++;
-            const prevR = prev.riskAmount as number;
-            const curR = cur.riskAmount as number;
-            if (curR > prevR * 1.20) {
-              revengePairs.push({ idx: i, bumpPct: ((curR - prevR) / prevR) * 100, prev, cur });
-            }
-          }
-          // Distribution of bump sizes to spot threshold over-firing.
-          const bucket = (p: number) => p < 30 ? '20-30%' : p < 50 ? '30-50%' : p < 100 ? '50-100%' : '100%+';
-          const bumpHistogram: Record<string, number> = { '20-30%': 0, '30-50%': 0, '50-100%': 0, '100%+': 0 };
-          for (const r of revengePairs) bumpHistogram[bucket(r.bumpPct)]++;
-          // Same-day vs cross-day pairs — same-day with identical times
-          // would suggest array order is doing the work, not real
-          // chronology.
-          const sameDayPairs = revengePairs.filter(r => r.prev.date === r.cur.date).length;
-          const sameDaySameTimePairs = revengePairs.filter(r => r.prev.date === r.cur.date && r.prev.time === r.cur.time).length;
-
-          console.warn('[Revenge-sizing diagnostic]', {
-            timeframe: radarTimeframe,
-            totalTrades: tradesInWindow.length,
-            tradesWithRiskAmount: withRisk.length,
-            tradesMissingRiskAmount: tradesInWindow.length - withRisk.length,
-            reorderMoves_vs_inputOrder: reorderMoves,
-            timeFormat: { ampm: ampmTimes, '24h': h24Times, blank: blankTimes },
-            top5_riskAmount_values: topAmounts,
-            postLossTrades: postLossCount,
-            revengeFlagged: revengePairs.length,
-            bumpHistogram,
-            sameDayPairs,
-            sameDaySameTimePairs,
-            firstPairs: revengePairs.slice(0, 20).map(r => ({
-              prev: { date: r.prev.date, time: r.prev.time, ticker: r.prev.ticker, result: r.prev.result, riskAmount: r.prev.riskAmount },
-              cur:  { date: r.cur.date,  time: r.cur.time,  ticker: r.cur.ticker,  riskAmount: r.cur.riskAmount },
-              bumpPct: r.bumpPct.toFixed(1) + '%',
-            })),
-          });
-        }
 
         // Geometry — wider than tall so the five labels fan out without
         // clipping. Bumped 20% over the original sizing so the radar
