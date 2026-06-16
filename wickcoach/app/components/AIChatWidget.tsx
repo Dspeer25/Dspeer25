@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { fm, fd } from './shared';
 import Logo from './Logo';
 
@@ -18,9 +18,84 @@ interface AIChatWidgetProps {
   welcomeMsg?: string | null;
 }
 
+// ── Markdown helpers for the coach renderer ──────────────────────
+// The coach is told to emit only bold (**x**), dash bullets, headings,
+// and pipe tables. Parsing lives here so the sidebar and the expanded
+// workspace share one renderer.
+const MONO = "'SF Mono', ui-monospace, monospace";
+
+function mdParseRow(line: string): string[] {
+  let s = line.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|')) s = s.slice(0, -1);
+  return s.split('|').map(c => c.trim());
+}
+
+// A |---|:--:|---| separator row: every cell is only dashes/colons.
+function mdIsDelimiterRow(line: string): boolean {
+  const t = line.trim();
+  if (!t.includes('-') || !t.includes('|')) return false;
+  return mdParseRow(t).every(c => /^:?-+:?$/.test(c));
+}
+
+const mdLooksLikeRow = (line: string): boolean => line.includes('|') && line.trim().length > 0;
+
+// Numeric value of a cell like "-1,103", "$200", "1.5R", "2.3%" — or
+// null when the cell is non-numeric text.
+function mdNumericCell(s: string): number | null {
+  const cleaned = s.replace(/[$,%\s]/g, '').replace(/r$/i, '');
+  if (cleaned === '' || cleaned === '-' || cleaned === '+') return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Inline: **bold** → teal bold, `code` → stripped.
+function renderInline(content: string, keyBase: string): React.ReactNode[] {
+  const cleaned = content.replace(/`([^`]+)`/g, '$1');
+  return cleaned.split(/\*\*(.*?)\*\*/g).map((part, pi) =>
+    pi % 2 === 1
+      ? <span key={`${keyBase}-b${pi}`} style={{ color: teal, fontWeight: 700 }}>{part}</span>
+      : <React.Fragment key={`${keyBase}-t${pi}`}>{part}</React.Fragment>
+  );
+}
+
+// A markdown table → styled <table>: teal header, row borders, mono
+// right-aligned numeric cells (red negative, teal positive).
+function renderTable(header: string[], rows: string[][], key: number): React.ReactNode {
+  return (
+    <div key={`tbl-${key}`} style={{ overflowX: 'auto', margin: '10px 0', borderRadius: 8, border: '1px solid #1F2E25', background: '#141822' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontFamily: fm, fontSize: 13 }}>
+        <thead>
+          <tr>
+            {header.map((h, hi) => (
+              <th key={hi} style={{ textAlign: 'left', color: teal, fontWeight: 700, padding: '9px 12px', borderBottom: '1px solid rgba(0,212,160,0.35)', whiteSpace: 'nowrap', letterSpacing: 0.3 }}>{renderInline(h, `th-${key}-${hi}`)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri}>
+              {header.map((_, ci) => {
+                const cell = row[ci] ?? '';
+                const n = mdNumericCell(cell);
+                const isNum = n !== null;
+                const color = !isNum ? '#e0e0e0' : n < 0 ? '#ff4444' : n > 0 ? teal : '#e0e0e0';
+                return (
+                  <td key={ci} style={{ padding: '8px 12px', borderTop: ri === 0 ? 'none' : '1px solid rgba(255,255,255,0.05)', color, textAlign: isNum ? 'right' : 'left', fontFamily: isNum ? MONO : fm, whiteSpace: 'nowrap' }}>{renderInline(cell, `td-${key}-${ri}-${ci}`)}</td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function AIChatWidget({ isOpen, onClose, messages, input, setInput, onSend, loading, welcomeMsg }: AIChatWidgetProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,55 +120,62 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
   };
 
-  // Lightweight markdown-ish renderer:
-  //   **bold**            → teal bold
-  //   #, ##, ### headings → strip hashes, render the line as bold white
-  //   -  *  •  line start → bullet with teal dot
-  //   `code`              → stripped (no monospace treatment needed)
-  // Anything else stays as plain text, preserving line breaks.
+  // Block-based renderer so markdown tables can sit between text lines.
+  // Inline bold/headings/bullets and tables are handled by the shared
+  // helpers above. Anything else renders as plain text on its own line.
   const formatAiText = (text: string): React.ReactNode[] => {
     const lines = text.split('\n');
     const nodes: React.ReactNode[] = [];
-    lines.forEach((rawLine, li) => {
-      if (li > 0) nodes.push(<br key={`br-${li}`} />);
+    let i = 0;
+    let key = 0;
+    while (i < lines.length) {
+      const line = lines[i];
 
-      let line = rawLine;
+      // Table: a row immediately followed by a |---|---| delimiter
+      if (mdLooksLikeRow(line) && i + 1 < lines.length && mdIsDelimiterRow(lines[i + 1])) {
+        const header = mdParseRow(line);
+        i += 2;
+        const rows: string[][] = [];
+        while (i < lines.length && mdLooksLikeRow(lines[i]) && !mdIsDelimiterRow(lines[i])) {
+          rows.push(mdParseRow(lines[i]));
+          i++;
+        }
+        nodes.push(renderTable(header, rows, key++));
+        continue;
+      }
 
-      // Strip leading heading markers, remember we saw one
+      // Blank line → paragraph spacing
+      if (line.trim() === '') {
+        nodes.push(<div key={`sp-${key++}`} style={{ height: 6 }} />);
+        i++;
+        continue;
+      }
+
+      // Heading → bold white line
       const headingMatch = line.match(/^#{1,6}\s+(.*)$/);
-      const isHeading = !!headingMatch;
-      if (headingMatch) line = headingMatch[1];
+      if (headingMatch) {
+        nodes.push(<div key={`hd-${key++}`} style={{ fontWeight: 700, color: '#fff', marginTop: 4 }}>{renderInline(headingMatch[1], `hd-${i}`)}</div>);
+        i++;
+        continue;
+      }
 
-      // Detect a bullet prefix (•, -, *) — but not the ** that opens bold
-      const bulletMatch = line.match(/^(?:•|-|\*)\s+(.*)$/) && !line.startsWith('**')
-        ? line.match(/^(?:•|-|\*)\s+(.*)$/)
-        : null;
-      const content = bulletMatch ? bulletMatch[1] : line;
-
-      // Inline: split on **bold** and strip single backticks
-      const cleanedContent = content.replace(/`([^`]+)`/g, '$1');
-      const parts = cleanedContent.split(/\*\*(.*?)\*\*/g);
-      const rendered = parts.map((part, pi) =>
-        pi % 2 === 1
-          ? <span key={pi} style={{ color: teal, fontWeight: 700 }}>{part}</span>
-          : part
-      );
-
+      // Bullet (•, -, *) — but not the ** that opens bold
+      const bulletMatch = !line.startsWith('**') ? line.match(/^\s*(?:•|-|\*)\s+(.*)$/) : null;
       if (bulletMatch) {
         nodes.push(
-          <span key={`bullet-${li}`} style={{ display: 'flex', gap: 6, alignItems: 'flex-start', marginTop: 4 }}>
+          <div key={`bl-${key++}`} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 }}>
             <span style={{ color: teal, flexShrink: 0 }}>•</span>
-            <span>{rendered}</span>
-          </span>
+            <span>{renderInline(bulletMatch[1], `bl-${i}`)}</span>
+          </div>
         );
-      } else if (isHeading) {
-        nodes.push(
-          <span key={`line-${li}`} style={{ fontWeight: 700, color: '#fff' }}>{rendered}</span>
-        );
-      } else {
-        nodes.push(<span key={`line-${li}`}>{rendered}</span>);
+        i++;
+        continue;
       }
-    });
+
+      // Plain line
+      nodes.push(<div key={`ln-${key++}`}>{renderInline(line, `ln-${i}`)}</div>);
+      i++;
+    }
     return nodes;
   };
 
@@ -113,22 +195,24 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
         .aiWidgetScroll::-webkit-scrollbar-track { background: transparent; }
         .aiWidgetScroll::-webkit-scrollbar-thumb { background: rgba(0,212,160,0.15); border-radius: 3px; }
         .aiWidgetScroll { scrollbar-width: thin; scrollbar-color: rgba(0,212,160,0.15) transparent; }
+        .aiCoachInput::placeholder { color: rgba(129,155,141,0.75); opacity: 1; }
       `}</style>
 
-      {/* Backdrop */}
+      {/* Backdrop — dims deeper in expanded workspace mode */}
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 40 }}
+        style={{ position: 'fixed', inset: 0, background: expanded ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.3)', zIndex: 40, transition: 'background 0.28s ease' }}
       />
-      {/* Widget — docked to right side */}
+      {/* Widget — docked to right side; expands to half-screen workspace */}
       <div
         style={{
           position: 'fixed',
           top: 0,
           right: 0,
           height: '100vh',
-          width: 440,
-          maxWidth: '90vw',
+          width: expanded ? '50vw' : 440,
+          maxWidth: expanded ? '50vw' : '90vw',
+          minWidth: expanded ? 540 : undefined,
           zIndex: 50,
           display: 'flex',
           flexDirection: 'column',
@@ -136,6 +220,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
           borderRadius: '28px 0 0 28px',
           overflow: 'hidden',
           boxShadow: '-10px 0 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,160,0.1)',
+          transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Ambient glow */}
@@ -167,6 +252,20 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button
+                onClick={() => setExpanded(e => !e)}
+                aria-label={expanded ? 'Collapse to sidebar' : 'Expand to half screen'}
+                title={expanded ? 'Collapse to sidebar' : 'Expand to half screen'}
+                style={{ padding: 8, color: teal, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = teal; }}
+              >
+                {expanded ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" /></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 17 6 12 11 7" /><polyline points="18 17 13 12 18 7" /></svg>
+                )}
+              </button>
               <button
                 aria-label="More"
                 style={{ padding: 8, color: 'rgba(129,155,141,1)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}
@@ -201,7 +300,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
             }}
           >
             {!hasMessages && welcomeMsg && (
-              <div style={{ alignSelf: 'flex-start', maxWidth: '85%', background: '#151C18', border: '1px solid #1F2E25', color: 'rgba(229,231,235,1)', borderRadius: '20px 20px 20px 4px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontFamily: fm }}>
+              <div style={{ alignSelf: 'flex-start', maxWidth: expanded ? '94%' : '85%', background: '#151C18', border: '1px solid #1F2E25', color: 'rgba(229,231,235,1)', borderRadius: '20px 20px 20px 4px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontFamily: fm }}>
                 {formatAiText(welcomeMsg)}
               </div>
             )}
@@ -214,7 +313,7 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
 
             {messages.map((msg, i) => (
               msg.role === 'assistant' ? (
-                <div key={i} style={{ alignSelf: 'flex-start', maxWidth: '85%', background: '#151C18', border: '1px solid #1F2E25', color: 'rgba(229,231,235,1)', borderRadius: '20px 20px 20px 4px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontFamily: fm }}>
+                <div key={i} style={{ alignSelf: 'flex-start', maxWidth: expanded ? '94%' : '85%', background: '#151C18', border: '1px solid #1F2E25', color: 'rgba(229,231,235,1)', borderRadius: '20px 20px 20px 4px', padding: '12px 16px', fontSize: 14, lineHeight: 1.6, fontFamily: fm }}>
                   {formatAiText(msg.content)}
                 </div>
               ) : (
@@ -259,10 +358,11 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
               </button>
               <textarea
                 ref={textareaRef}
+                className="aiCoachInput"
                 value={input}
                 onChange={handleGrow}
                 onKeyDown={handleKey}
-                placeholder="Ask WickCoach..."
+                placeholder="Ask about your trades, make tables or charts, dig into a pattern..."
                 rows={1}
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontFamily: fm, fontSize: 14, color: '#fff', resize: 'none', minHeight: 44, maxHeight: 120, padding: '10px 0', lineHeight: 1.5 }}
               />
