@@ -1,5 +1,12 @@
-export const fm = "'DM Mono', monospace";
-export const fd = "'Chakra Petch', sans-serif";
+// Site-wide font: the Apple system stack (San Francisco on Apple
+// devices, Inter as the cross-platform fallback loaded in layout.tsx).
+// Both the display (fd) and data (fm) constants resolve to it so the
+// whole app reads in one consistent sans face. If a spot genuinely
+// needs monospace digit alignment, use "'SF Mono', ui-monospace,
+// monospace" inline rather than reaching for fm.
+const appleStack = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif";
+export const fm = appleStack;
+export const fd = appleStack;
 export const teal = "#00d4a0";
 
 // ─── Deterministic linear regression ─────────────────────────

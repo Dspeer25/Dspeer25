@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useRef } from "react"
-import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR, PositionType } from "./shared"
+import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR, PositionType, fm, fd } from "./shared"
 import StrategyPicker from "./StrategyPicker"
 
 // Returns the current local time as "HH:MM" — the native format
@@ -205,7 +205,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       borderRadius: 8,
       padding: '12px 14px',
       color: '#ffffff',
-      fontFamily: "'DM Mono', monospace",
+      fontFamily: fm,
       fontSize: 14,
       width: '100%',
       outline: 'none',
@@ -214,7 +214,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
 
     const labelStyle = {
       color: '#c9cdd4',
-      fontFamily: "'DM Mono', monospace",
+      fontFamily: fm,
       fontSize: 14,
       marginBottom: 6,
       display: 'block' as const,
@@ -222,7 +222,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
 
     const sectionLabelStyle = {
       color: '#00d4a0',
-      fontFamily: "'DM Mono', monospace",
+      fontFamily: fm,
       fontSize: 18,
       fontWeight: 700,
       textTransform: 'uppercase' as const,
@@ -255,15 +255,15 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           <div style={{ fontSize: 48, marginBottom: 16, color: '#00d4a0' }}>{"\u2713"}</div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.2)', borderRadius: 20, padding: '8px 20px', marginBottom: 20 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00d4a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, color: '#00d4a0', fontWeight: 700 }}>Logged in {formatTime(finalTime)}</span>
+            <span style={{ fontFamily: fm, fontSize: 14, color: '#00d4a0', fontWeight: 700 }}>Logged in {formatTime(finalTime)}</span>
           </div>
-          <h2 style={{ fontFamily: "'Chakra Petch', sans-serif", color: '#ffffff', fontSize: 28, fontWeight: 700, marginBottom: 12 }}>Trade Logged</h2>
-          <p style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 14, lineHeight: '1.6', marginBottom: 32 }}>Your trade has been saved and is ready for AI analysis.</p>
+          <h2 style={{ fontFamily: fd, color: '#ffffff', fontSize: 28, fontWeight: 700, marginBottom: 12 }}>Trade Logged</h2>
+          <p style={{ color: '#6b7280', fontFamily: fm, fontSize: 14, lineHeight: '1.6', marginBottom: 32 }}>Your trade has been saved and is ready for AI analysis.</p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button onClick={() => setTab('Past Trades')} style={{ background: '#141822', border: '1px solid #00d4a0', borderRadius: 8, padding: '12px 24px', color: '#00d4a0', fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>View in Past Trades</button>
-            <button onClick={() => setTab('Analysis')} style={{ background: '#141822', border: '1px solid #00d4a0', borderRadius: 8, padding: '12px 24px', color: '#00d4a0', fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>View in Analysis</button>
+            <button onClick={() => setTab('Past Trades')} style={{ background: '#141822', border: '1px solid #00d4a0', borderRadius: 8, padding: '12px 24px', color: '#00d4a0', fontFamily: fm, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>View in Past Trades</button>
+            <button onClick={() => setTab('Analysis')} style={{ background: '#141822', border: '1px solid #00d4a0', borderRadius: 8, padding: '12px 24px', color: '#00d4a0', fontFamily: fm, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>View in Analysis</button>
           </div>
-          <p onClick={resetForm} style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 13, marginTop: 24, cursor: 'pointer' }}>+ Log another trade</p>
+          <p onClick={resetForm} style={{ color: '#6b7280', fontFamily: fm, fontSize: 13, marginTop: 24, cursor: 'pointer' }}>+ Log another trade</p>
         </div>
       );
     }
@@ -277,7 +277,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
             background: 'rgba(0,212,160,0.08)',
             border: '1px solid #00d4a0',
             borderRadius: 6,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: fm,
             fontSize: 12,
             color: '#00d4a0',
             display: 'flex',
@@ -335,7 +335,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         <label style={labelStyle}>Position Type</label>
         <div style={{ display: 'flex', gap: 10 }}>
           {(['SHARES', 'OPTIONS', 'FUTURES'] as const).map(pt => (
-            <button key={pt} onClick={() => setPositionType(pt)} style={{ flex: 1, background: positionType === pt ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: positionType === pt ? '1px solid #00d4a0' : '1px solid #2A3143', color: positionType === pt ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{pt}</button>
+            <button key={pt} onClick={() => setPositionType(pt)} style={{ flex: 1, background: positionType === pt ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: positionType === pt ? '1px solid #00d4a0' : '1px solid #2A3143', color: positionType === pt ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: fm, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{pt}</button>
           ))}
         </div>
         <div style={{ height: 16 }} />
@@ -356,7 +356,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         <label style={labelStyle}>Direction</label>
         <div style={{ display: 'flex', gap: 10 }}>
           {['LONG', 'SHORT'].map(dir => (
-            <button key={dir} onClick={() => setDirection(dir)} style={{ flex: 1, background: direction === dir ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: direction === dir ? '1px solid #00d4a0' : '1px solid #2A3143', color: direction === dir ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{dir}</button>
+            <button key={dir} onClick={() => setDirection(dir)} style={{ flex: 1, background: direction === dir ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: direction === dir ? '1px solid #00d4a0' : '1px solid #2A3143', color: direction === dir ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: fm, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{dir}</button>
           ))}
         </div>
         <div style={{ height: 16 }} />
@@ -391,7 +391,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
                   border: `1px solid ${markBreakeven ? '#f59e0b' : '#2A3143'}`,
                   borderRadius: 8,
                   padding: '0 16px',
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: fm,
                   fontSize: 13,
                   fontWeight: 700,
                   letterSpacing: 1,
@@ -431,7 +431,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
               onChange={(e) => setRisk(e.target.value)}
             />
             {validationErrors.risk && (
-              <div style={{ color: '#ff4444', fontSize: 11, fontFamily: "'DM Mono', monospace", marginTop: 4 }}>
+              <div style={{ color: '#ff4444', fontSize: 11, fontFamily: fm, marginTop: 4 }}>
                 {validationErrors.risk}
               </div>
             )}
@@ -453,7 +453,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
                 background: '#13141a',
                 borderLeft: '2px solid #00d4a0',
                 borderRadius: '0 4px 4px 0',
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: fm,
                 fontSize: 11,
                 color: '#7a7d85',
                 lineHeight: 1.4,
@@ -471,8 +471,8 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
             {!screenshot ? (
               <div onClick={() => fileInputRef.current?.click()} onMouseEnter={() => setUploadHover(true)} onMouseLeave={() => setUploadHover(false)} style={{ width: '100%', minHeight: 200, border: `2px dashed ${uploadHover ? '#00d4a0' : '#2A3143'}`, borderRadius: 12, background: '#1A1F2B', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', transition: 'border-color 0.2s' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                <span style={{ color: '#6b7280', fontFamily: "'DM Mono', monospace", fontSize: 13 }}>Drop an image here</span>
-                <span style={{ color: '#00d4a0', fontFamily: "'DM Mono', monospace", fontSize: 12, cursor: 'pointer' }}>or click to browse</span>
+                <span style={{ color: '#6b7280', fontFamily: fm, fontSize: 13 }}>Drop an image here</span>
+                <span style={{ color: '#00d4a0', fontFamily: fm, fontSize: 12, cursor: 'pointer' }}>or click to browse</span>
               </div>
             ) : (
               <div style={{ position: 'relative', width: '100%', minHeight: 200, borderRadius: 12, overflow: 'hidden', border: '1px solid #2A3143' }}>
@@ -551,9 +551,9 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           try { localStorage.setItem('wickcoach_trades', JSON.stringify(updated)); } catch {}
           if (editingTrade && onFinishEdit) onFinishEdit();
           setSubmitted(true);
-        }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0A0D14', fontFamily: "'Chakra Petch', sans-serif", fontSize: 16, fontWeight: 700, padding: '16px 0', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>{editingTrade ? 'Save Changes' : 'Log Trade'}</button>
+        }} onMouseEnter={() => setSubmitHover(true)} onMouseLeave={() => setSubmitHover(false)} style={{ marginTop: 32, background: '#00d4a0', color: '#0A0D14', fontFamily: fd, fontSize: 16, fontWeight: 700, padding: '16px 0', borderRadius: 12, border: 'none', cursor: 'pointer', width: '100%', letterSpacing: 1, filter: submitHover ? 'brightness(1.1)' : 'none' }}>{editingTrade ? 'Save Changes' : 'Log Trade'}</button>
 
-        <p style={{ color: '#4b5563', fontFamily: "'DM Mono', monospace", fontSize: 12, textAlign: 'center', marginTop: 12 }}>Your data stays on your device. Always.</p>
+        <p style={{ color: '#4b5563', fontFamily: fm, fontSize: 12, textAlign: 'center', marginTop: 12 }}>Your data stays on your device. Always.</p>
       </>
     );
   }
