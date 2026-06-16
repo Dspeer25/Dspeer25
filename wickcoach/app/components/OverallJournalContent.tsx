@@ -1278,9 +1278,8 @@ const passcodeBtnStyle: React.CSSProperties = {
 // ─── Editor toolbar ──────────────────────────────────────────────────
 
 const FONT_OPTIONS: { label: string; value: string }[] = [
-  { label: 'Serif',   value: FONT_SERIF },
-  { label: 'Mono',    value: fm },
-  { label: 'Display', value: fd },
+  { label: 'Serif', value: FONT_SERIF },
+  { label: 'Sans',  value: fm },
 ];
 
 const SIZE_OPTIONS: { label: string; value: string }[] = [
@@ -1516,7 +1515,7 @@ function Toolbar({
         }}
       >
         {FONT_OPTIONS.map(opt => (
-          <option key={opt.value} value={opt.value} style={{ background: '#0e0f14' }}>
+          <option key={opt.label} value={opt.value} style={{ background: '#0e0f14' }}>
             {opt.label}
           </option>
         ))}
