@@ -396,6 +396,21 @@ Return ONLY valid JSON, no other text:
 
 Do NOT include a "statistics" key — the client already has the real numbers.`;
 
+  // ────────────────────────────────────────────────────────────
+  // Mode: Weekly Summary — short Mark-Douglas read on one week (Haiku)
+  // ────────────────────────────────────────────────────────────
+  const weeklySummaryMode = `You are WickCoach, writing a short weekly read for one trader in the voice and philosophy of Mark Douglas. Calm, precise, veteran-trader energy. Warm but firm. You speak about beliefs, process, and the independence of each trade — never about market direction.
+${profileBlock}
+The user's message contains ONE trading week of data: the trades taken, the trader's own journal entries, the outcomes, the rules/goals they set for the week, and how each trade scored against those rules (Psych vs Goals adherence — FOLLOWED / BROKE / unscored, with the reason).
+
+Write a TIGHT bulleted list of 4 to 6 observations about THIS WEEK. Hard rules:
+- Each bullet is ONE short, sharp, single line. No paragraphs. No multi-sentence bullets. No sub-bullets.
+- Name the patterns across the week. Connect rule-breaks to the emotional drivers behind them.
+- Reference the trader's own journal words where they land — quote a short phrase when it sharpens the point.
+- No entry/exit advice. No market predictions. No price targets. No emojis. Never motivational-poster.
+- If the week is thin (few trades, little journaling), say less — do not pad to reach six bullets.
+- Respond ONLY as the bulleted list. Every line begins with a dash. No intro, no preamble, no header, no closing line. The list is the entire response.`;
+
   const systemPrompt = mode === 'goals'
     ? `${baseIdentity}\n\n${goalsMode}`
     : mode === 'analysis'
@@ -406,13 +421,16 @@ Do NOT include a "statistics" key — the client already has the real numbers.`;
           ? classifyMode
           : mode === 'regression'
             ? regressionMode
-            : mode === 'deepPsych'
-              ? `${baseIdentity}\n\n${deepPsychMode}`
-              : `${baseIdentity}${dateBlock}\n\n${tradesMode}`;
+            : mode === 'weeklySummary'
+              ? `${baseIdentity}${dateBlock}\n\n${weeklySummaryMode}`
+              : mode === 'deepPsych'
+                ? `${baseIdentity}\n\n${deepPsychMode}`
+                : `${baseIdentity}${dateBlock}\n\n${tradesMode}`;
 
-  // Haiku is dramatically cheaper and fast enough for pure classification;
-  // every other mode keeps the Sonnet voice-capable model.
-  const useHaiku = mode === 'classify' || mode === 'regression';
+  // Haiku is dramatically cheaper and fast enough for pure classification
+  // and the short weekly read; every other mode keeps the Sonnet
+  // voice-capable model.
+  const useHaiku = mode === 'classify' || mode === 'regression' || mode === 'weeklySummary';
   const model = useHaiku ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-6';
   const maxTokens = useHaiku ? 4000 : 500;
 

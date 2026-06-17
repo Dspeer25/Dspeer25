@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { fm, fd, Trade, Goal, NumberGoalRule, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, buildDateContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, computeDisciplineAdherence, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
+import { fm, fd, Trade, Goal, NumberGoalRule, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, buildDateContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, computeDisciplineAdherence, timeToMinutes, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -18,6 +18,45 @@ const tickerDomains: Record<string, string> = {
 
 // Blue used by "Trades vs. Goals" sliders — complementary to teal.
 const blue = '#4a9eff';
+
+// Adherence color bands for the Psychology view — a bad week should
+// read red at a glance and a strong week green, instead of everything
+// rendering in the same flat teal. Applied to the bar fill and the
+// percentage readout, not the structural accent.
+function adherenceColor(pct: number): string {
+  if (pct < 50) return '#ff4444';   // red
+  if (pct < 60) return '#ff7a2f';   // orange
+  if (pct < 75) return '#ffb347';   // lighter orange
+  if (pct < 90) return '#b6e34d';   // green-yellow
+  return '#00d4a0';                 // green
+}
+
+// Pulls the decisive evidence out of a citation reason — quoted
+// journal phrases or numeric values (R-multiple, %, $) — so a citation
+// can show just the incriminating/affirming words instead of the full
+// explanatory sentence. The single-quote branch uses look-arounds so
+// contractions (can't, doesn't) aren't mistaken for quote delimiters.
+// Returns [] when the reason carries no quotable evidence (e.g. a pass
+// with no violation language).
+const EVIDENCE_RE = /("[^"]+"|“[^”]+”|‘[^’]+’|(?<![A-Za-z])'[^']+'(?![A-Za-z])|\$[\d,]+(?:\.\d+)?|\d+(?:\.\d+)?R\b|\d+(?:\.\d+)?%)/g;
+function extractEvidence(text: string): string[] {
+  const out: string[] = [];
+  EVIDENCE_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = EVIDENCE_RE.exec(text)) !== null) out.push(m[0]);
+  return out;
+}
+
+// djb2 string hash → base36. Used to key the cached Weekly Summary on
+// the selected week's trade/journal/adherence content so the panel only
+// re-hits Haiku when that data actually changes, not on every page load.
+function hashStr(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+const WEEK_SUMMARY_CACHE_KEY = 'wickcoach_week_summaries';
+const WEEK_SUMMARY_VERSION = 'ws-v1';
 
 // ── Number-goal labeling ───────────────────────────────────────────
 // Number goals are often saved with an empty title (the builder lets
@@ -272,7 +311,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   // Rule-adherence toggle: 'numerical' = trade-data view (hero candles +
   // Trades-vs-Goals), 'psych' = journal-language view (Psych-vs-Goals).
   const [analysisView, setAnalysisView] = useState<'numerical' | 'psych'>('numerical');
-  const [chartZoom, setChartZoom] = useState(1);
   const [sizeZoom, setSizeZoom] = useState(1);
   const [sizeResizeDrag, setSizeResizeDrag] = useState<{ startY: number; startZoom: number } | null>(null);
 
@@ -296,7 +334,11 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
   }, [sizeResizeDrag]);
-  const [section5Tab, setSection5Tab] = useState<'timeOfDay' | 'sizeEfficiency'>('timeOfDay');
+  // Weekly Summary (Haiku) — short Mark-Douglas read on the selected
+  // week. Cached per week + data-hash so it only regenerates on change.
+  const [weekSummary, setWeekSummary] = useState('');
+  const [weekSummaryLoading, setWeekSummaryLoading] = useState(false);
+  const [weekSummaryError, setWeekSummaryError] = useState<string | null>(null);
 
   // Regression Lab state
   const [regVar1, setRegVar1] = useState('');
@@ -447,7 +489,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   // ticker instead of net-negative tickers. The old field filtered out
   // tickers whose winners outweighed their losers (e.g. NVDA), which
   // hid loss-worth-reviewing dollars.
-  const { totals, strategies, tickers, hours, processSplit, patterns } = a;
+  const { totals, strategies, tickers, processSplit } = a;
 
   // Top-4 tickers contribution for the welcome message
   const top4Tickers = tickers.slice(0, 4);
@@ -503,9 +545,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   // them was removed when the KPI header row replaced the Outcome
   // Candles section. Win rate is now derived from computeExpectancy.)
   const circ = 2 * Math.PI * 40; // r=40
-
-  const bestHour = [...hours].sort((a, b) => b.pl - a.pl)[0] || { h: '—', pl: 0, count: 0 };
-  const worstHour = [...hours].sort((a, b) => a.pl - b.pl)[0] || { h: '—', pl: 0, count: 0 };
 
   // Load real goals from localStorage so Rules vs Execution reflects
   // whatever the trader has actually set, not mock text.
@@ -831,11 +870,136 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
       });
   };
 
-  const selectedWeekTradeGoals = buildGoalRows('trades');
   const selectedWeekPsychGoals = buildGoalRows('psych');
 
   const selectedWeek = { weekLabel: selectedWeekBucket?.weekLabel || '—' };
   const hasGoalsForSelectedWeek = weekGoals.length > 0;
+
+  // ── Weekly Summary (Haiku) ─────────────────────────────────
+  // Build the data block fed to the summary model for the SELECTED
+  // week: every trade with its outcome + journal, the rules set that
+  // week, and the per-trade Psych-vs-Goals verdicts (mirroring the
+  // drilldown's null+journal=pass fallback). The week itself is already
+  // bucketed Monday-start in the trader's local timezone by
+  // buildWeekBuckets, so no extra date logic is needed here.
+  const goalLabel = (g: Goal): string =>
+    (g.title || '').trim() || (g.numberRule ? describeNumberRule(g.numberRule) : '(untitled rule)');
+  const weekSummaryTrades = selectedWeekBucket?.trades || [];
+  const weekSummaryContext = (() => {
+    const lines: string[] = [];
+    lines.push(`Week: ${selectedWeek.weekLabel}`);
+    lines.push('');
+    if (weekGoals.length > 0) {
+      lines.push('Rules/goals the trader set for this week:');
+      weekGoals.forEach((g, i) => lines.push(`${i + 1}. ${goalLabel(g)} [${g.goalType || 'General'}]`));
+    } else {
+      lines.push('No goals were set for this week.');
+    }
+    lines.push('');
+    lines.push(`Trades this week (${weekSummaryTrades.length}):`);
+    if (weekSummaryTrades.length === 0) lines.push('(none logged)');
+    weekSummaryTrades.forEach(t => {
+      lines.push(`- ${t.ticker} ${t.date} ${t.time} | ${t.result} | ${formatNumber(t.pl, { currency: true, explicitSign: true, decimals: 0 })} | R:R ${t.riskReward || 'n/a'} | ${t.strategy || 'n/a'}`);
+      const j = (t.journal || '').trim();
+      lines.push(`  Journal: ${j ? `"${j}"` : '(no journal)'}`);
+      const psych = classifications[t.id]?.psychScores;
+      if (Array.isArray(psych)) {
+        psych.forEach(s => {
+          const g = weekGoals[s.goalIndex];
+          if (!g) return;
+          const verdict = s.compliance === 1 ? 'FOLLOWED'
+            : s.compliance === 0 ? 'BROKE'
+            : j.length > 0 ? 'FOLLOWED'
+            : 'unscored';
+          lines.push(`  Rule "${goalLabel(g)}": ${verdict}${s.reason ? ` — ${s.reason}` : ''}`);
+        });
+      }
+    });
+    return lines.join('\n');
+  })();
+  const weekSummaryHash = hashStr(WEEK_SUMMARY_VERSION + '\n' + weekSummaryContext);
+  // Don't burn a Haiku call before this week's trades have been scored —
+  // the verdicts are part of the summary's input. Weeks with no goals
+  // have nothing to wait on.
+  const weekClassifiedCount = weekSummaryTrades.filter(t => classifications[t.id]).length;
+  const weekSummaryCanGenerate =
+    weekSummaryTrades.length > 0 && (weekGoals.length === 0 || weekClassifiedCount > 0);
+
+  useEffect(() => {
+    if (!selectedWeekStartISO || !weekSummaryCanGenerate) {
+      setWeekSummary('');
+      setWeekSummaryError(null);
+      setWeekSummaryLoading(false);
+      return;
+    }
+    // Cache hit — same week, same data hash → no network call.
+    let cache: Record<string, { hash: string; text: string }> = {};
+    try { cache = JSON.parse(localStorage.getItem(WEEK_SUMMARY_CACHE_KEY) || '{}'); } catch { cache = {}; }
+    const cached = cache[selectedWeekStartISO];
+    if (cached && cached.hash === weekSummaryHash) {
+      setWeekSummary(cached.text);
+      setWeekSummaryError(null);
+      setWeekSummaryLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setWeekSummaryLoading(true);
+    setWeekSummaryError(null);
+    (async () => {
+      try {
+        const res = await fetch('/api/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'weeklySummary',
+            messages: [{ role: 'user', content: weekSummaryContext }],
+            profileContext: buildProfileContext(),
+            dateContext: buildDateContext(),
+          }),
+        });
+        if (!res.ok) throw new Error(`status ${res.status}`);
+        const data = await res.json();
+        const text = (data.reply || '').trim();
+        if (!text) throw new Error('empty response');
+        if (cancelled) return;
+        setWeekSummary(text);
+        setWeekSummaryLoading(false);
+        try {
+          cache[selectedWeekStartISO] = { hash: weekSummaryHash, text };
+          localStorage.setItem(WEEK_SUMMARY_CACHE_KEY, JSON.stringify(cache));
+        } catch { /* ignore quota */ }
+      } catch {
+        if (cancelled) return;
+        setWeekSummary('');
+        setWeekSummaryError("Couldn't generate this week's summary. Try again in a moment.");
+        setWeekSummaryLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWeekStartISO, weekSummaryHash, weekSummaryCanGenerate]);
+
+  // Render the Haiku bullets as clean teal dash-bullets, mirroring the
+  // AI chat widget's formatAiText bullet styling. Inline **bold** spans
+  // are lifted to white the same way the chat does.
+  const renderInlineBold = (text: string, keyPrefix: string): React.ReactNode[] =>
+    text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => {
+      const m = part.match(/^\*\*([^*]+)\*\*$/);
+      return m
+        ? <strong key={`${keyPrefix}-b${i}`} style={{ color: '#fff', fontWeight: 700 }}>{m[1]}</strong>
+        : <React.Fragment key={`${keyPrefix}-t${i}`}>{part}</React.Fragment>;
+    });
+  const renderSummaryBullets = (text: string): React.ReactNode[] =>
+    text.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0)
+      .map(l => l.replace(/^\s*(?:[-•*])\s+/, ''))
+      .map((content, i) => (
+        <div key={`ws-${i}`} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <span style={{ color: teal, flexShrink: 0, fontFamily: fm, fontSize: 15, lineHeight: 1.6 }}>•</span>
+          <span style={{ color: '#d0d4dc', fontFamily: fm, fontSize: 15, lineHeight: 1.6 }}>{renderInlineBold(content, `ws-${i}`)}</span>
+        </div>
+      ));
 
   // ── Drilldown renderer ─────────────────────────────────────
   // Renders the inline detail panel shown beneath an expanded
@@ -865,10 +1029,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
       // previous day in timezones west of UTC.
       const d = parseLocalDate(iso);
       return `${d.getMonth() + 1}/${d.getDate()}`;
-    };
-    const truncJournal = (j: string | undefined) => {
-      const s = (j || '').trim();
-      return s.length > 80 ? s.slice(0, 80).trimEnd() + '…' : s;
     };
 
     return (
@@ -994,7 +1154,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
                   <div style={{ flex: 1, padding: '8px 14px', minWidth: 0 }}>
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: '32px 22px 70px 60px 90px 1fr',
+                      gridTemplateColumns: '32px 22px 70px 60px 1fr',
                       gap: 12,
                       alignItems: 'center',
                     }}>
@@ -1026,53 +1186,35 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
                       <span style={{ fontFamily: fm, fontSize: 14, color: plColor, fontWeight: 700, textAlign: 'right' }}>
                         {formatNumber(t.pl, { currency: true, explicitSign: true, decimals: 0 })}
                       </span>
-                      <span title={t.journal || ''} style={{
-                        fontFamily: fm,
-                        fontSize: 14,
-                        color: '#a0a3ab',
-                        fontStyle: 'italic',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        cursor: t.journal ? 'help' : 'default',
-                      }}>
-                        “{truncJournal(t.journal)}”
-                      </span>
                     </div>
-                    {showReason && (
-                      status === 'violated' ? (
-                        // Violations get high-contrast treatment: red
-                        // label, white reason text at 15px, no italic.
-                        // Indented to clear the ticker logo + status
-                        // icon columns above.
-                        <div style={{
-                          fontFamily: fm,
-                          fontSize: 15,
-                          marginLeft: 66,
-                          lineHeight: 1.5,
-                          maxWidth: 720,
-                          marginTop: 6,
-                        }}>
-                          <span style={{ color: red, fontWeight: 700 }}>Reason:</span>{' '}
-                          <span style={{ color: '#fff' }}>{reason}</span>
+                    {showReason && (() => {
+                      // Strip the citation to just the decisive evidence:
+                      // the quoted phrase(s) or numeric token(s) the scorer
+                      // keyed on. Green when the trade complied, red when it
+                      // violated. The explanatory prose is dropped entirely.
+                      const evidence = extractEvidence(reason);
+                      if (evidence.length > 0) {
+                        const color = status === 'violated' ? red : teal;
+                        return (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginLeft: 66, marginTop: 6 }}>
+                            {evidence.map((q, qi) => (
+                              <span key={qi} style={{ fontFamily: fm, fontSize: 15, fontWeight: 700, color, lineHeight: 1.4 }}>{q}</span>
+                            ))}
+                          </div>
+                        );
+                      }
+                      // No quotable evidence (e.g. a clean winner that passed
+                      // because the journal carried no violation language) —
+                      // show a short muted tag instead of a blank row.
+                      const tag = status === 'violated' ? 'flagged off-plan'
+                        : status === 'passed' ? 'no violation language'
+                        : 'not evaluated';
+                      return (
+                        <div style={{ fontFamily: fm, fontSize: 13, color: '#a0a3ab', fontStyle: 'italic', marginLeft: 66, marginTop: 6 }}>
+                          {tag}
                         </div>
-                      ) : (
-                        // Passed / surviving-null rows stay italic muted
-                        // — supportive context — but at 15px so they read.
-                        <div style={{
-                          fontFamily: fm,
-                          fontSize: 15,
-                          color: '#d0d4dc',
-                          fontStyle: 'italic',
-                          marginLeft: 66,
-                          lineHeight: 1.5,
-                          maxWidth: 720,
-                          marginTop: 6,
-                        }}>
-                          Reason: {reason}
-                        </div>
-                      )
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               );
@@ -1094,6 +1236,8 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
     const isExpanded = expandedRow?.section === section && expandedRow.goalIdx === row.goalIdx;
     const isHovered = hoveredRow?.section === section && hoveredRow.goalIdx === row.goalIdx;
     const accent = section === 'trades' ? blue : teal;
+    // Psych adherence drives a red→green band; trades keep the flat accent.
+    const bandColor = section === 'psych' && !allNull ? adherenceColor(pct) : accent;
     return (
       <div key={`${section}-bar-${row.goalIdx}`} style={{ marginBottom: 10 }}>
         <div
@@ -1113,20 +1257,20 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
             <div style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#e8e8f0', lineHeight: 1.35, minWidth: 0 }}>
               <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{row.title}
             </div>
-            <div style={{ flexShrink: 0, fontFamily: fm, fontSize: 14, fontWeight: 700, color: allNull ? '#a0a3ab' : accent, whiteSpace: 'nowrap' }}>
+            <div style={{ flexShrink: 0, fontFamily: fm, fontSize: 14, fontWeight: 700, color: allNull ? '#a0a3ab' : bandColor, whiteSpace: 'nowrap' }}>
               {allNull ? 'Not yet scored' : `${row.actual} / ${evaluable} trades · ${pct}%`}
             </div>
           </div>
           <div style={{ width: '100%', height: 12, background: 'rgba(255,255,255,0.06)', borderRadius: 6, overflow: 'hidden', border: allNull ? '1px dashed #2A3143' : 'none', boxSizing: 'border-box' }}>
             {!allNull && (
-              <div style={{ width: `${pct}%`, height: '100%', background: accent, borderRadius: 6, transition: 'width 0.3s ease' }} />
+              <div style={{ width: `${pct}%`, height: '100%', background: bandColor, borderRadius: 6, transition: 'width 0.3s ease' }} />
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <span style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab' }}>
               {row.nullCount > 0 && !allNull ? `${row.nullCount} not evaluated` : ' '}
             </span>
-            <span style={{ fontFamily: fm, fontSize: 12, color: accent }}>{isExpanded ? '▴ hide details' : '▾ details'}</span>
+            <span style={{ fontFamily: fm, fontSize: 12, color: accent }}>{isExpanded ? '▴ hide trades cited' : '▾ Trades Cited'}</span>
           </div>
         </div>
         {isExpanded && renderDrilldown(section, row.goalIdx)}
@@ -1885,7 +2029,9 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               );
             })}
           </div>
-          {/* Shared week selector — drives both views off selectedWeekIdx. */}
+          {/* Week selector — Psychology only. Numerical is all-time and
+              has no week concept, so the dropdown is hidden there. */}
+          {analysisView === 'psych' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase' }}>Week</span>
             <div style={{ position: 'relative' }}>
@@ -1899,6 +2045,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: teal, pointerEvents: 'none', fontSize: 13 }}>▼</span>
             </div>
           </div>
+          )}
         </div>
 
       {/* ═══════════════ NUMERICAL VIEW ═══════════════ */}
@@ -2001,69 +2148,140 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         );
       })()}
 
-        {/* Trades vs. Goals — per-goal compliance bars (the readable
-            replacement for the old candlesticks). Same deterministic
-            scoring and click-to-expand drilldown; only the visual changed. */}
+        {/* Time of Day — bucket ALL timestamped trades by entry-time
+            window and surface count / win rate / net P/L / per-trade
+            expectancy across the full track record. Uses timeToMinutes
+            (AM/PM-safe). A window losing money over a meaningful sample
+            is flagged red. */}
         {(() => {
-          const emptyStyle: React.CSSProperties = { padding: '32px 20px', textAlign: 'center', color: '#a0a3ab', fontFamily: fm, fontSize: 13 };
+          const tradesAll = trades;
+          // Session windows are US market hours (Eastern). Trade times
+          // are stored in the user's local wall clock, so we shift the
+          // Eastern boundaries into the browser's local timezone before
+          // bucketing — otherwise a Denver 7:36 AM open trade (9:36 ET)
+          // misses the Open window entirely. The ET→local offset is the
+          // same year-round for DST-observing zones (Mountain is always
+          // 2h behind Eastern), so today's date gives an exact shift for
+          // the full all-time history.
+          const zoneOffset = (tz: string, d: Date) => {
+            const parts = new Intl.DateTimeFormat('en-US', {
+              timeZone: tz, hour12: false,
+              year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit', second: '2-digit',
+            }).formatToParts(d);
+            const m: Record<string, string> = {};
+            parts.forEach(p => { m[p.type] = p.value; });
+            const asUTC = Date.UTC(+m.year, +m.month - 1, +m.day, +m.hour % 24, +m.minute, +m.second);
+            return (asUTC - d.getTime()) / 60000;
+          };
+          const refDate = new Date();
+          // Round to whole minutes: zoneOffset carries the sub-second
+          // remainder of Date.now() (asUTC is second-precision, getTime()
+          // is ms), which would otherwise leak a float like 450.0007 into
+          // the boundary labels. Timezone offsets are always whole minutes.
+          const tzShift = Math.round((-refDate.getTimezoneOffset()) - zoneOffset('America/New_York', refDate));
+          const clockParts = (min: number) => {
+            const norm = ((Math.round(min) % 1440) + 1440) % 1440;
+            const h = Math.floor(norm / 60);
+            const mm = norm % 60;
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return { label: `${h12}:${String(mm).padStart(2, '0')}`, mer: h >= 12 ? 'PM' : 'AM' };
+          };
+          // "7:30 – 8:30 AM" when both sides share a meridiem, else
+          // "11:30 AM – 12:30 PM" across the noon boundary.
+          const rangeLabel = (startMin: number, endMin: number) => {
+            const a = clockParts(startMin);
+            const b = clockParts(endMin);
+            return a.mer === b.mer
+              ? `${a.label} – ${b.label} ${b.mer}`
+              : `${a.label} ${a.mer} – ${b.label} ${b.mer}`;
+          };
+          const WINDOWS = [
+            { name: 'Open',            start: 570, end: 630 },
+            { name: 'Late Morning',    start: 630, end: 690 },
+            { name: 'Midday',          start: 690, end: 810 },
+            { name: 'Early Afternoon', start: 810, end: 870 },
+            { name: 'Power Hour',      start: 870, end: 960 },
+          ].map(w => {
+            const start = w.start + tzShift;
+            const end = w.end + tzShift;
+            return { name: w.name, range: rangeLabel(start, end), start, end };
+          });
+          const FLAG_MIN = 3;
+
+          const rows = WINDOWS.map(w => {
+            const inWin = tradesAll.filter(t => {
+              const m = timeToMinutes(t.time);
+              return m >= w.start && m < w.end;
+            });
+            const exp = computeExpectancy(inWin);
+            const netPL = inWin.reduce((s, t) => s + t.pl, 0);
+            return {
+              ...w,
+              n: inWin.length,
+              winRate: exp.decisive ? exp.winRate * 100 : null,
+              netPL,
+              expectancy: inWin.length ? exp.expectancy : null,
+              flagged: inWin.length >= FLAG_MIN && exp.expectancy < 0,
+            };
+          });
+
+          const bucketed = rows.reduce((s, r) => s + r.n, 0);
+          const maxAbsPL = Math.max(...rows.map(r => Math.abs(r.netPL)), 1);
+
+          const Stat = ({ label, value, color }: { label: string; value: string; color?: string }) => (
+            <div style={{ minWidth: 72, textAlign: 'right' }}>
+              <div style={{ fontFamily: fm, fontSize: 10.5, letterSpacing: '0.5px', textTransform: 'uppercase' as const, color: '#a0a3ab' }}>{label}</div>
+              <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: color || '#e8e8f0', marginTop: 3 }}>{value}</div>
+            </div>
+          );
+
           return (
-            <div style={{ background: '#12151d', border: '1px solid #2A3143', borderLeft: `3px solid ${blue}`, borderRadius: 12, padding: '22px 24px' }}>
+            <div style={{ background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${teal}`, borderRadius: 12, padding: '22px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                <span style={{ width: 10, height: 10, background: blue, borderRadius: 2, display: 'inline-block' }} />
-                <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
+                <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
+                <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Time of Day</h4>
               </div>
               <p style={{ color: '#a0a3ab', fontSize: 14, margin: '0 0 18px', lineHeight: 1.5 }}>
-                Did each trade&apos;s execution match the rule? Measured from the trade data itself — entry/exit, R:R, sizing.
+                When you trade across your full history, and what each session earns. The bar scales net P/L across windows; a window losing money over {FLAG_MIN}+ trades is flagged.
               </p>
-              {!hasGoalsForSelectedWeek ? (
-                <div style={emptyStyle}>No goals were set for this week.</div>
-              ) : selectedWeekTradeGoals.length === 0 ? (
-                <div style={emptyStyle}>No trade-measurable goals this week.</div>
-              ) : selectedWeekTradeGoals.some(g => g.empty) ? (
-                <div style={emptyStyle}>No trades logged this week yet.</div>
+              {bucketed === 0 ? (
+                <div style={{ padding: '28px 20px', textAlign: 'center', color: '#a0a3ab', fontFamily: fm, fontSize: 13 }}>
+                  No timestamped trades logged yet.
+                </div>
               ) : (
-                <div>{selectedWeekTradeGoals.map((row, i) => renderGoalBar('trades', i, row))}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {rows.map(r => {
+                    const empty = r.n === 0;
+                    const plColor = r.netPL > 0 ? teal : r.netPL < 0 ? red : '#7e818a';
+                    const barW = empty ? 0 : Math.max(4, (Math.abs(r.netPL) / maxAbsPL) * 100);
+                    return (
+                      <div key={r.name} style={{ opacity: empty ? 0.5 : 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                          <div style={{ minWidth: 150 }}>
+                            <div style={{ fontFamily: fd, fontSize: 14.5, fontWeight: 600, color: '#e8e8f0' }}>{r.name}</div>
+                            <div style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', marginTop: 2 }}>{r.range}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 18, alignItems: 'flex-end' }}>
+                            <Stat label="Trades" value={empty ? '—' : String(r.n)} />
+                            <Stat label="Win" value={r.winRate === null ? '—' : `${r.winRate.toFixed(0)}%`} />
+                            <Stat label="Net P/L" value={empty ? '—' : formatNumber(r.netPL, { currency: true, explicitSign: true, decimals: 0 })} color={empty ? undefined : plColor} />
+                            <Stat label="Exp/Trade" value={r.expectancy === null ? '—' : formatNumber(r.expectancy, { currency: true, explicitSign: true, decimals: 0 })} color={r.expectancy === null ? undefined : (r.expectancy > 0 ? teal : r.expectancy < 0 ? red : '#7e818a')} />
+                          </div>
+                        </div>
+                        <div style={{ height: 6, background: 'rgba(255,255,255,0.04)', borderRadius: 999, marginTop: 8, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${barW}%`, background: plColor, borderRadius: 999, transition: 'width 240ms ease' }} />
+                        </div>
+                        {r.flagged && (
+                          <div style={{ fontFamily: fm, fontSize: 12, color: red, marginTop: 6 }}>
+                            Negative expectancy over {r.n} trades — review this window.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-            </div>
-          );
-        })()}
-
-        {/* Strengths / Watch-outs — compressed to a single tight row of
-            the top patterns each, so they support the view without
-            dominating it. The old "gap that matters" block was removed. */}
-        {(() => {
-          const strengthDefs = [
-            { name: 'Patience', count: patterns.patience },
-            { name: 'Clean Execution', count: patterns.cleanExecution },
-            { name: 'Stop Discipline', count: patterns.stopDiscipline },
-            { name: 'Trusting Process', count: patterns.trustingProcess },
-          ];
-          const watchDefs = [
-            { name: 'Ignoring Rules', count: patterns.ignoringRules },
-            { name: 'Impulse Entries', count: patterns.impulseEntries },
-            { name: 'Revenge Trading', count: patterns.revengeTrading },
-            { name: 'FOMO / Chasing', count: patterns.fomoChasing },
-          ];
-          const top = (rows: { name: string; count: number }[]) =>
-            rows.filter(r => r.count > 0).sort((a, b) => b.count - a.count).slice(0, 3);
-          const strengths = top(strengthDefs);
-          const watchouts = top(watchDefs);
-          if (strengths.length === 0 && watchouts.length === 0) return null;
-          const chip = (name: string, count: number, accent: string) => (
-            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.03)', border: `1px solid ${accent}33`, borderRadius: 999, padding: '5px 12px', fontFamily: fm, fontSize: 13, color: '#e8e8f0', whiteSpace: 'nowrap' }}>
-              {name}<span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: accent }}>{count}</span>
-            </span>
-          );
-          const group = (label: string, accent: string, items: { name: string; count: number }[]) => (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' as const, color: accent }}>{label}</span>
-              {items.length ? items.map(r => chip(r.name, r.count, accent)) : <span style={{ fontFamily: fm, fontSize: 13, color: '#a0a3ab' }}>none yet</span>}
-            </div>
-          );
-          return (
-            <div style={{ display: 'flex', gap: 28, rowGap: 12, flexWrap: 'wrap', alignItems: 'center', background: '#141822', border: '1px solid #2A3143', borderRadius: 10, padding: '14px 18px' }}>
-              {group('Strengths', teal, strengths)}
-              {group('Watch-outs', red, watchouts)}
             </div>
           );
         })()}
@@ -2100,19 +2318,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
             </div>
           );
         })()}
-
-        {/* WickCoach weekly summary — labeled placeholder for the
-            coming panel. */}
-        <div style={{ background: '#12151d', border: '1px dashed #2A3143', borderRadius: 12, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block', opacity: 0.5 }} />
-            <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#e8e8f0', margin: 0, letterSpacing: 0.5 }}>WickCoach Weekly Summary</h4>
-            <span style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase' as const, border: '1px solid #2A3143', borderRadius: 999, padding: '3px 10px' }}>Coming soon</span>
-          </div>
-          <p style={{ fontFamily: fm, fontSize: 14, color: '#a0a3ab', margin: 0, lineHeight: 1.6, maxWidth: 640 }}>
-            A short weekly read on your psychology — the patterns in how you followed, or fought, your own rules, in WickCoach&apos;s voice. It lands here once the summary engine ships.
-          </p>
-        </div>
       </div>
       )}
 
@@ -2483,138 +2688,41 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>Advanced Analysis Tools</div>
         </div>
 
-        {/* Browser-style tabs */}
-        <div style={{ display: 'flex', gap: 0, paddingLeft: 0 }}>
-          {([
-            { key: 'timeOfDay' as const, label: 'Time of Day' },
-            { key: 'sizeEfficiency' as const, label: 'Size Efficiency' },
-          ]).map(tab => {
-            const active = section5Tab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setSection5Tab(tab.key)}
-                style={{
-                  padding: '14px 28px',
-                  cursor: 'pointer',
-                  fontFamily: fd,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  letterSpacing: 0.5,
-                  border: active ? '1px solid #2A3143' : '1px solid transparent',
-                  borderBottom: active ? '1px solid #141822' : '1px solid #2A3143',
-                  borderRadius: active ? '10px 10px 0 0' : '10px 10px 0 0',
-                  background: active ? '#141822' : 'transparent',
-                  color: active ? '#fff' : '#7db8e0',
-                  transition: 'all 0.2s',
-                  position: 'relative',
-                  zIndex: active ? 2 : 1,
-                  marginBottom: -1,
-                }}
-              >{tab.label}</button>
-            );
-          })}
+        {/* WickCoach Weekly Summary — always visible, regardless of the
+            Numerical/Psychology toggle. Sits where the old Time of Day
+            line graph used to (that breakdown now lives in the Numerical
+            toggle). Reads the selected week's trades, journals, outcomes,
+            and Psych-vs-Goals verdicts; cached per week + data hash. */}
+        <div style={{ background: '#12151d', border: '1px solid #2A3143', borderLeft: `3px solid ${teal}`, borderRadius: 12, padding: '22px 24px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+            <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
+            <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>WickCoach Weekly Summary</h4>
+            <span style={{ fontFamily: fm, fontSize: 13, color: '#a0a3ab', marginLeft: 'auto' }}>{selectedWeek.weekLabel}</span>
+          </div>
+          <p style={{ color: '#a0a3ab', fontSize: 14, margin: '0 0 16px', lineHeight: 1.5 }}>
+            A short read on how you followed — or fought — your own rules this week.
+          </p>
+          {weekSummaryLoading ? (
+            <div style={{ fontFamily: fm, fontSize: 14, color: '#a0a3ab' }}>Reading your week&hellip;</div>
+          ) : weekSummaryError ? (
+            <div style={{ fontFamily: fm, fontSize: 14, color: red }}>{weekSummaryError}</div>
+          ) : weekSummary ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{renderSummaryBullets(weekSummary)}</div>
+          ) : (
+            <div style={{ fontFamily: fm, fontSize: 14, color: '#a0a3ab' }}>
+              {weekSummaryTrades.length === 0
+                ? 'No trades logged this week yet.'
+                : 'Waiting for this week to be scored…'}
+            </div>
+          )}
         </div>
 
-        {/* Tab content panel */}
-        <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: '0 12px 12px 12px', padding: '24px 28px' }}>
+        {/* Size Efficiency — the surviving Advanced tool. The Time of Day
+            line graph was removed; its breakdown lives in the Numerical
+            toggle now. */}
+        <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px' }}>
 
-        {/* ── TIME OF DAY TAB ── */}
-        {section5Tab === 'timeOfDay' && (() => {
-          const hourWinPL = hours.map(h => {
-            const label = h.h;
-            const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
-            const bucket = trades.filter(t => {
-              const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-              if (!m) return false;
-              let hr = parseInt(m[1]);
-              const ap = (m[3] || '').toUpperCase();
-              if (ap === 'PM' && hr !== 12) hr += 12;
-              if (ap === 'AM' && hr === 12) hr = 0;
-              return hr === startH;
-            });
-            return bucket.filter(t => t.pl > 0).reduce((s, t) => s + t.pl, 0);
-          });
-          const hourLossPL = hours.map(h => {
-            const label = h.h;
-            const startH = parseInt(label) + (label.includes('PM') && !label.startsWith('12') ? 12 : 0);
-            const bucket = trades.filter(t => {
-              const m = (t.time || '').match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-              if (!m) return false;
-              let hr = parseInt(m[1]);
-              const ap = (m[3] || '').toUpperCase();
-              if (ap === 'PM' && hr !== 12) hr += 12;
-              if (ap === 'AM' && hr === 12) hr = 0;
-              return hr === startH;
-            });
-            return bucket.filter(t => t.pl < 0).reduce((s, t) => s + t.pl, 0);
-          });
-
-          const allVals = [...hourWinPL, ...hourLossPL];
-          const yMax = Math.max(1, ...allVals.map(Math.abs));
-          const W = 700;
-          const H = Math.round(200 * chartZoom);
-          const pad = { top: 20, bottom: 30, left: 60, right: 20 };
-          const plotW = W - pad.left - pad.right;
-          const plotH = H - pad.top - pad.bottom;
-          const numH = hours.length;
-          const xStep = numH > 1 ? plotW / (numH - 1) : 0;
-
-          const toPath = (vals: number[]) =>
-            vals.map((v, i) => {
-              const x = pad.left + i * xStep;
-              const y = pad.top + plotH / 2 - (v / yMax) * (plotH / 2);
-              return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-            }).join(' ');
-
-          const winPath = toPath(hourWinPL);
-          const lossPath = toPath(hourLossPL);
-          const zeroY = pad.top + plotH / 2;
-
-          return (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontFamily: fm, fontSize: 14, color: '#aab0bd' }}>P/L by hour — green is winning trades, red is losing trades</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <button onClick={() => setChartZoom(z => Math.max(0.6, z - 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                  <span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', minWidth: 36, textAlign: 'center' }}>{Math.round(chartZoom * 100)}%</span>
-                  <button onClick={() => setChartZoom(z => Math.min(2, z + 0.2))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #2A3143', background: '#0f1318', color: '#aab0bd', fontFamily: fm, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
-                </div>
-              </div>
-
-              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }}>
-                {[-1, -0.5, 0, 0.5, 1].map(frac => {
-                  const y = pad.top + plotH / 2 - frac * (plotH / 2);
-                  return (
-                    <g key={frac}>
-                      <line x1={pad.left} x2={W - pad.right} y1={y} y2={y} stroke="rgba(42,49,67,0.4)" strokeWidth="1" />
-                      <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="#888" fontSize="10" fontFamily="DM Mono, monospace">{frac === 0 ? '$0' : fmtDollar(Math.round(frac * yMax))}</text>
-                    </g>
-                  );
-                })}
-                <path d={winPath} fill="none" stroke={teal} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {hourWinPL.map((v, i) => (<circle key={`w${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="3.5" fill={teal} />))}
-                <path d={lossPath} fill="none" stroke={red} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {hourLossPL.map((v, i) => (<circle key={`l${i}`} cx={pad.left + i * xStep} cy={pad.top + plotH / 2 - (v / yMax) * (plotH / 2)} r="3.5" fill={red} />))}
-                <line x1={pad.left} x2={W - pad.right} y1={zeroY} y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4,4" />
-                {hours.map((h, i) => (<text key={h.h} x={pad.left + i * xStep} y={H - 6} textAnchor="middle" fill="#888" fontSize="10" fontFamily="DM Mono, monospace">{h.h}</text>))}
-              </svg>
-
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: teal, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Winning trades</span></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 14, height: 3, background: red, borderRadius: 2, display: 'inline-block' }} /><span style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd' }}>Losing trades</span></div>
-              </div>
-              <div style={{ fontFamily: fm, fontSize: 13, color: '#aab0bd', marginTop: 10, textAlign: 'center' }}>
-                Best hour: <span style={{ color: teal }}>{bestHour.h} ({fmtDollar(bestHour.pl)})</span>
-                {' · '}
-                Worst hour: <span style={{ color: red }}>{worstHour.h} ({fmtDollar(worstHour.pl)})</span>
-              </div>
-            </>
-          );
-        })()}
-
-        {/* ── SIZE EFFICIENCY TAB ── */}
-        {section5Tab === 'sizeEfficiency' && (() => {
+        {(() => {
           // Grouped bar chart: trades bucketed by how much was risked
           const bucketDefs = [
             { label: 'Under $300', desc: 'Small risk trades', min: 0, max: 300 },
