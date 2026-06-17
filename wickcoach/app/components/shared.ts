@@ -1209,6 +1209,118 @@ export function scoreDiscipline(trades: Trade[]): number {
   return scoreDisciplineDetail(trades).score ?? 0;
 }
 
+/** Goal types that count toward the Discipline axis: entry / process /
+ *  setup rules — "did you follow your entry rules." Explicitly excludes
+ *  risk goals (the Risk Control axis owns those) and mindset / psychology
+ *  goals like "stay calm" (their own thing — they must not fold into
+ *  whether you followed your entry rules). */
+export function isDisciplineGoal(g: Goal): boolean {
+  const t = (g.goalType || '').toLowerCase();
+  if (!t) return false;
+  if (t.includes('risk')) return false;
+  if (t.includes('psych') || t.includes('mindset') || t.includes('emotion')) return false;
+  return (
+    t.includes('entry') ||
+    t.includes('setup') ||
+    t.includes('patience') ||
+    t.includes('process') ||
+    t.includes('discipline') ||
+    t.includes('management')
+  );
+}
+
+export interface DisciplineAdherenceResult {
+  /** Final Discipline score: goal-adherence %, capped by the keyword
+   *  process-vs-impulse proxy via min() so it can never read higher than
+   *  the rule-adherence shown in the Psych-vs-Goals section. */
+  score: number;
+  /** Raw goal-adherence % before the keyword cap (diagnostics). */
+  adherence: number;
+  complied: number;
+  evaluable: number;
+  contributors: AxisContributor[];
+}
+
+/** Discipline = adherence to your entry/process (discipline-type) PSYCH
+ *  goals, scored from Haiku's psychScores with the SAME complied/evaluable
+ *  resolution the Analysis "Psych vs Goals" section renders (null + journal
+ *  text → PASS). The result is capped by the keyword process-vs-impulse
+ *  proxy via min(), so Discipline can never read higher than the
+ *  rule-adherence shown below it.
+ *
+ *  `goals` MUST be the week-filtered goal list (the same array the psych
+ *  section iterates) so each goal's position matches the goalIndex Haiku
+ *  stamped onto psychScores. Returns null for cold-start — no
+ *  discipline-type psych goals, or no scored trades yet — so the caller
+ *  falls back to the keyword proxy alone. */
+export function computeDisciplineAdherence(
+  trades: Trade[],
+  goals: Goal[],
+  classifications: Record<string, TradeClassification>
+): DisciplineAdherenceResult | null {
+  const disciplineGoals = goals
+    .map((g, idx) => ({ g, idx }))
+    .filter(({ g }) => getEffectiveKind(g) === 'psych' && isDisciplineGoal(g));
+  if (disciplineGoals.length === 0) return null;
+
+  const scored = trades.filter(t => classifications[t.id]);
+  if (scored.length === 0) return null;
+
+  let complied = 0;
+  let evaluable = 0;
+  const negatives: AxisContributor[] = [];
+  const positives: AxisContributor[] = [];
+
+  for (const { g, idx } of disciplineGoals) {
+    const ruleLabel = (g.title || 'rule').trim();
+    for (const t of scored) {
+      const arr = classifications[t.id].psychScores;
+      const gs = Array.isArray(arr) ? arr.find(s => s.goalIndex === idx) : undefined;
+      let compliance: 0 | 1 | null = gs ? gs.compliance : null;
+      // Render-time fallback mirrors buildGoalRows: a null verdict on a
+      // journaled trade resolves to PASS (absence of a confession is not
+      // a violation). Empty journal stays null → not evaluable.
+      if (compliance === null && (t.journal || '').trim().length > 0) compliance = 1;
+      if (compliance !== 0 && compliance !== 1) continue;
+      evaluable++;
+      const why = (gs?.reason || '').trim();
+      if (compliance === 1) {
+        complied++;
+        positives.push({
+          tradeId: t.id,
+          reason: why ? `${ruleLabel}: ${why}` : `followed "${ruleLabel}"`,
+          kind: 'positive',
+        });
+      } else {
+        negatives.push({
+          tradeId: t.id,
+          reason: why ? `${ruleLabel}: ${why}` : `broke "${ruleLabel}"`,
+          kind: 'negative',
+        });
+      }
+    }
+  }
+
+  if (evaluable === 0) return null;
+  const adherence = (complied / evaluable) * 100;
+
+  // Keyword process-vs-impulse proxy on the SAME trades — a downward cap
+  // only, so a journal full of impulse language can't sit behind a green
+  // adherence number. Computed in-window so it never disagrees with the
+  // week the adherence came from.
+  let process = 0;
+  let impulse = 0;
+  for (const t of scored) {
+    const kind = classifyTrade(t);
+    if (kind === 'process') process++;
+    else if (kind === 'impulse') impulse++;
+  }
+  const kwDenom = process + impulse;
+  const score = kwDenom > 0 ? Math.min((process / kwDenom) * 100, adherence) : adherence;
+
+  return { score, adherence, complied, evaluable, contributors: [...negatives, ...positives] };
+}
+
 function scorePatienceDetail(trades: Trade[]): AxisScoreDetail {
   let withJournal = 0;
   let impatient = 0;
@@ -1771,9 +1883,21 @@ export function computeBehavioralRadar(
     goals?: Goal[];
     accountSize?: number | null;
     classifications?: Record<string, TradeClassification>;
+    /** Pre-computed Discipline result from the selected-week psych goals
+     *  (see computeDisciplineAdherence). When present it drives the
+     *  Discipline axis so the radar always agrees with the Psych-vs-Goals
+     *  section. When null/undefined, Discipline falls back to the keyword
+     *  process-vs-impulse proxy (cold-start). */
+    disciplineOverride?: DisciplineAdherenceResult | null;
   } = {}
 ): BehavioralRadarSnapshot {
-  const disciplineDetail     = scoreDisciplineDetail(trades);
+  const disciplineDetail: AxisScoreDetail = opts.disciplineOverride
+    ? {
+        score: opts.disciplineOverride.score,
+        applicable: opts.disciplineOverride.evaluable,
+        contributors: opts.disciplineOverride.contributors,
+      }
+    : scoreDisciplineDetail(trades);
   const patienceDetail       = scorePatienceDetail(trades);
   const riskControlDetail    = scoreRiskControl(trades, opts);
   const riskControlAxisDetail = scoreRiskControlDetail(trades, opts);
@@ -2625,6 +2749,28 @@ export function getCurrentTradingWeekStart(): string {
   monday.setHours(0, 0, 0, 0);
   monday.setDate(monday.getDate() + diff);
   return toISODate(monday);
+}
+
+/** Authoritative current-date block for the AI coach, computed client-side
+ *  so it reflects the trader's local timezone — the API route has no reliable
+ *  "today". States today, the weekday, and the Monday-start week range so the
+ *  coach never has to infer the date from trade rows. */
+export function buildDateContext(): string {
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const now = new Date();
+  const todayISO = toISODate(now);
+  const dayName = weekdays[now.getDay()];
+  const weekStartISO = getCurrentWeekStart();
+  const weekEnd = new Date(weekStartISO + 'T00:00:00');
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekEndISO = toISODate(weekEnd);
+  return [
+    'CURRENT DATE (authoritative — always read the date from here; never infer "today" or "this week" from trade dates or your own assumptions):',
+    `- Today is ${dayName}, ${todayISO}.`,
+    `- The current week starts Monday ${weekStartISO} and ends Sunday ${weekEndISO}.`,
+    `- "This week" means trades dated from Monday ${weekStartISO} through today, ${todayISO}.`,
+    `- ${todayISO} is the present. Treat any later date as the future and do not invent trades there.`,
+  ].join('\n');
 }
 
 /** Human label for a week starting on the given ISO date, e.g. "Apr 20 - 26" or "Apr 28 - May 4". */

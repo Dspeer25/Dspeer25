@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { fm, fd, Trade, Goal, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
+import { fm, fd, Trade, Goal, NumberGoalRule, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, buildDateContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, computeDisciplineAdherence, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -18,6 +18,44 @@ const tickerDomains: Record<string, string> = {
 
 // Blue used by "Trades vs. Goals" sliders — complementary to teal.
 const blue = '#4a9eff';
+
+// ── Number-goal labeling ───────────────────────────────────────────
+// Number goals are often saved with an empty title (the builder lets
+// the rule stand on its own), which used to render as "(untitled)".
+// describeNumberRule turns the rule into a short human label so every
+// goal row shows what it actually measures.
+const NUMBER_FIELD_LABEL: Record<NumberGoalRule['field'], string> = {
+  riskAmount:       'Risk',
+  riskReward:       'R:R',
+  riskPctOfAccount: 'Risk % of account',
+  time:             'Entry time',
+  direction:        'Direction',
+  contracts:        'Size',
+  strategy:         'Strategy',
+  result:           'Result',
+  tradesPerDay:     'Trades/day',
+  dailyLoss:        'Daily loss',
+};
+const NUMBER_OP_SYMBOL: Record<NumberGoalRule['operator'], string> = {
+  '<=': '≤', '>=': '≥', '==': '=', '<': '<', '>': '>', '!=': '≠',
+};
+const describeNumberRule = (rule: NumberGoalRule): string => {
+  const label = NUMBER_FIELD_LABEL[rule.field] || rule.field;
+  const op = NUMBER_OP_SYMBOL[rule.operator] || rule.operator;
+  let value = String(rule.value);
+  if (typeof rule.value === 'number') {
+    if (rule.field === 'riskPctOfAccount') value = `${rule.value}%`;
+    else if (rule.field === 'riskAmount' || rule.field === 'dailyLoss') value = `$${rule.value}`;
+  }
+  return `${label} ${op} ${value}`;
+};
+// Title shown on goal-compliance rows. Falls back to the rule itself
+// for number goals so they never read "(untitled)".
+const goalDisplayTitle = (g: Goal): string => {
+  if (g.title && g.title.trim()) return g.title.trim();
+  if (g.numberRule) return describeNumberRule(g.numberRule);
+  return '(untitled)';
+};
 
 // One-line plain-English description per behavioral-radar axis. Used
 // by the hover tooltip + the expanded citation panel header.
@@ -231,6 +269,9 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   // Only one row at a time expands. null = everything collapsed.
   const [expandedRow, setExpandedRow] = useState<{ section: 'trades' | 'psych'; goalIdx: number } | null>(null);
   const [hoveredRow, setHoveredRow] = useState<{ section: 'trades' | 'psych'; goalIdx: number } | null>(null);
+  // Rule-adherence toggle: 'numerical' = trade-data view (hero candles +
+  // Trades-vs-Goals), 'psych' = journal-language view (Psych-vs-Goals).
+  const [analysisView, setAnalysisView] = useState<'numerical' | 'psych'>('numerical');
   const [chartZoom, setChartZoom] = useState(1);
   const [sizeZoom, setSizeZoom] = useState(1);
   const [sizeResizeDrag, setSizeResizeDrag] = useState<{ startY: number; startZoom: number } | null>(null);
@@ -441,6 +482,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           tradesContext: analysisContext,
           goalsContext: buildGoalsContext(),
           profileContext: buildProfileContext(),
+          dateContext: buildDateContext(),
           mode: 'analysis',
         }),
       });
@@ -712,7 +754,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
       .slice(0, 3)
       .map(({ g, goalIdx }) => {
         const base = {
-          title: g.title || '(untitled)',
+          title: goalDisplayTitle(g),
           type: (g.goalType || 'General').toUpperCase().split(' ')[0],
           goalIdx,
         };
@@ -1041,6 +1083,57 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
     );
   };
 
+  // Horizontal compliance bar — the readable replacement for the old
+  // per-goal candlesticks. Same row data (actual / target / nullCount)
+  // and the same click-to-expand drilldown; only the visual changed.
+  // Shared by the Numerical (trades) and Psychology (psych) sections.
+  const renderGoalBar = (section: 'trades' | 'psych', i: number, row: GoalComplianceRow) => {
+    const evaluable = row.target;
+    const allNull = evaluable === 0;
+    const pct = allNull ? 0 : Math.min(100, Math.round((row.actual / evaluable) * 100));
+    const isExpanded = expandedRow?.section === section && expandedRow.goalIdx === row.goalIdx;
+    const isHovered = hoveredRow?.section === section && hoveredRow.goalIdx === row.goalIdx;
+    const accent = section === 'trades' ? blue : teal;
+    return (
+      <div key={`${section}-bar-${row.goalIdx}`} style={{ marginBottom: 10 }}>
+        <div
+          onClick={() => setExpandedRow(prev => prev && prev.section === section && prev.goalIdx === row.goalIdx ? null : { section, goalIdx: row.goalIdx })}
+          onMouseEnter={() => setHoveredRow({ section, goalIdx: row.goalIdx })}
+          onMouseLeave={() => setHoveredRow(null)}
+          style={{
+            cursor: 'pointer',
+            padding: '14px 16px',
+            borderRadius: 10,
+            background: isHovered || isExpanded ? '#161a24' : '#12151d',
+            border: `1px solid ${isExpanded ? accent : '#2A3143'}`,
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 14, marginBottom: 10 }}>
+            <div style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#e8e8f0', lineHeight: 1.35, minWidth: 0 }}>
+              <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{row.title}
+            </div>
+            <div style={{ flexShrink: 0, fontFamily: fm, fontSize: 14, fontWeight: 700, color: allNull ? '#a0a3ab' : accent, whiteSpace: 'nowrap' }}>
+              {allNull ? 'Not yet scored' : `${row.actual} / ${evaluable} trades · ${pct}%`}
+            </div>
+          </div>
+          <div style={{ width: '100%', height: 12, background: 'rgba(255,255,255,0.06)', borderRadius: 6, overflow: 'hidden', border: allNull ? '1px dashed #2A3143' : 'none', boxSizing: 'border-box' }}>
+            {!allNull && (
+              <div style={{ width: `${pct}%`, height: '100%', background: accent, borderRadius: 6, transition: 'width 0.3s ease' }} />
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+            <span style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab' }}>
+              {row.nullCount > 0 && !allNull ? `${row.nullCount} not evaluated` : ' '}
+            </span>
+            <span style={{ fontFamily: fm, fontSize: 12, color: accent }}>{isExpanded ? '▴ hide details' : '▾ details'}</span>
+          </div>
+        </div>
+        {isExpanded && renderDrilldown(section, row.goalIdx)}
+      </div>
+    );
+  };
+
   return (
     <div style={{ background: 'transparent', padding: '32px 40px', minHeight: '100vh', fontFamily: fm, display: 'flex', flexDirection: 'column', gap: 32, overflowX: 'hidden' }}>
 
@@ -1096,6 +1189,9 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         const exp = computeExpectancy(trades);
         const pf  = computeProfitFactor(trades);
         const r   = computeAvgR(trades);
+        // Target Risk:Reward (R-multiple) — the anchor the avg-win-R card
+        // grades against. null when the trader hasn't set one.
+        const rrTarget = readQuantTargets().quantitativeTargets.find(t => t.id === 'target-rr')?.value ?? null;
 
         // ── Formatters scoped to this block ────────────────────────
         const fmtMoney2 = (v: number) => {
@@ -1192,19 +1288,30 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               <div style={kpiSupport}>{exp.wins}W / {exp.losses}L · {exp.breakeven}BE</div>
             </div>
 
-            {/* ── 4. Avg Win / Avg Loss (R) ────────────────────────── */}
-            <div style={kpiCard}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={kpiLabel}>Avg Win / Loss (R)</div>
-                <InfoTip text="Average R-multiple of winning trades next to the average R-multiple of losing trades (the loss side is always shown negative). Trades without an R:R logged are excluded from both averages." />
-              </div>
-              <div style={{ ...kpiHero, fontSize: 36 }}>
-                <span style={{ color: r.avgWinR > 0 ? teal : '#fff' }}>{fmtRSigned(r.avgWinR)}</span>
-                <span style={{ color: '#6b7280', margin: '0 6px' }}>/</span>
-                <span style={{ color: r.avgLossR < 0 ? red : '#fff' }}>{fmtRSigned(r.avgLossR)}</span>
-              </div>
-              <div style={kpiSupport}>avg winner vs avg loser</div>
-            </div>
+            {/* ── 4. Avg Win (R) — graded against Target R:R ───────────
+                  Loss side intentionally dropped: stopped-out losses are
+                  ~−1R by definition, so avg-loss-R carries no signal. The
+                  win side vs the trader's target is the actionable read. */}
+            {(() => {
+              const hitTarget = rrTarget !== null && r.avgWinR >= rrTarget;
+              const heroColor = rrTarget !== null
+                ? (hitTarget ? teal : '#9a9da5')
+                : (r.avgWinR > 0 ? teal : '#fff');
+              return (
+                <div style={kpiCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={kpiLabel}>Avg Win (R)</div>
+                    <InfoTip text="Average R-multiple of your winning trades. With a Target Risk:Reward set, this turns teal once your average winner meets or beats it and dims when it falls short. Trades without an R:R logged are excluded. The loss side is intentionally omitted — stopped-out losses sit at ~−1R by definition and carry no signal." />
+                  </div>
+                  <div style={{ ...kpiHero, color: heroColor }}>{fmtRSigned(r.avgWinR)}</div>
+                  <div style={kpiSupport}>
+                    {rrTarget !== null
+                      ? `avg winner · target ${rrTarget.toFixed(1)}R`
+                      : 'avg winner · set a target R:R'}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
@@ -1223,10 +1330,21 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         // Pass goals + account size + cached classifications so the
         // Risk Control axis can blend all three subscores (goal
         // adherence + data sizing + Haiku risk-language verdict).
+        // Discipline is computed off the SAME week + goals + psychScores
+        // the Psych-vs-Goals section renders below, so the two can never
+        // disagree (it can't read 100 while that section is red). Returns
+        // null on cold-start — no entry/process psych goals or no scored
+        // trades yet — in which case the radar falls back to the keyword
+        // process-vs-impulse proxy.
         const radar = computeBehavioralRadar(tradesInWindow, {
           goals: realGoals,
           accountSize: readAccountSize(),
           classifications,
+          disciplineOverride: computeDisciplineAdherence(
+            selectedWeekBucket?.trades || [],
+            weekGoals,
+            classifications,
+          ),
         });
 
         // Geometry — wider than tall so the five labels fan out without
@@ -1577,13 +1695,19 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               const posCount = positives.length;
               const hurting   = negatives.slice(0, 5);
               const lifting   = positives.slice(0, 5);
-              const tradeIndex = new Map(tradesInWindow.map(t => [t.id, t]));
+              // Index over ALL trades, not just the radar window: the
+              // Discipline axis cites selected-week trades that may sit
+              // outside the radar's timeframe, and every contributor is
+              // already window-scoped at source, so a broader index only
+              // lets those rows resolve — it can't introduce off-window
+              // citations.
+              const tradeIndex = new Map(trades.map(t => [t.id, t]));
               const verdict = getRadarVerdict(score);
               // Plain-English breakdown line per axis. Counts come from
               // the contributor split (never recomputed from scratch).
               let breakdown = '';
               if (axis.key === 'discipline') {
-                breakdown = `${posCount} of ${axis.applicable} journaled trades followed plan. ${negCount} flagged for impulse.`;
+                breakdown = `${posCount} of ${axis.applicable} rule-checks followed plan. ${negCount} flagged off-plan.`;
               } else if (axis.key === 'patience') {
                 breakdown = `${posCount} of ${axis.applicable} journaled trades showed patience. ${negCount} flagged for rushing / FOMO / revenge.`;
               } else if (axis.key === 'riskControl') {
@@ -1720,303 +1844,280 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         );
       })()}
 
-      {/* ═══ STRENGTHS / IMPROVE / GAP — absorbed from Trader Profile ═══
-          Reads from computeAnalytics().patterns and .processSplit, both
-          deterministic. The old standalone Trader Profile tab is being
-          retired; the radar above covers the headline behavioral
-          summary, and this block keeps the per-pattern counts and the
-          plan-vs-rule-break R gap visible inside Analysis. */}
-      {(() => {
-        const procR = processSplit.process.n ? processSplit.process.rTotal / processSplit.process.n : 0;
-        const impR  = processSplit.impulse.n ? processSplit.impulse.rTotal / processSplit.impulse.n : 0;
-        const strengthRows = [
-          { name: 'Patience',         count: patterns.patience,        desc: 'Waited for the setup' },
-          { name: 'Clean Execution',  count: patterns.cleanExecution,  desc: 'Followed the plan' },
-          { name: 'Stop Discipline',  count: patterns.stopDiscipline,  desc: 'Honored your stop' },
-          { name: 'Trusting Process', count: patterns.trustingProcess, desc: 'Stuck to your rules' },
-        ];
-        const improveRows = [
-          { name: 'Ignoring Rules',  count: patterns.ignoringRules,  desc: 'Traded against your own plan' },
-          { name: 'Impulse Entries', count: patterns.impulseEntries, desc: 'Entered without a setup' },
-          { name: 'Revenge Trading', count: patterns.revengeTrading, desc: 'Traded to recover a loss' },
-          { name: 'FOMO / Chasing',  count: patterns.fomoChasing,    desc: 'Chased price instead of waiting' },
-        ];
-        const anyStrength = strengthRows.some(r => r.count > 0);
-        const anyImprove  = improveRows.some(r => r.count > 0);
-
-        return (
-          <>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-              {/* Your strengths */}
-              <div style={{ flex: 1, minWidth: 280, background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${teal}`, borderRadius: 12, padding: '24px 28px' }}>
-                <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: teal, marginBottom: 4, letterSpacing: 0.5 }}>Your strengths</div>
-                <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginBottom: 16 }}>Patterns from your journal entries that show discipline</div>
-                {anyStrength ? strengthRows.filter(p => p.count > 0).map(p => (
-                  <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(42,49,67,0.4)' }}>
-                    <div>
-                      <div style={{ fontFamily: fm, fontSize: 14, color: '#e8e8f0', fontWeight: 500 }}>{p.name}</div>
-                      <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginTop: 2 }}>{p.desc}</div>
-                    </div>
-                    <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: teal, flexShrink: 0, marginLeft: 16 }}>{p.count}</div>
-                  </div>
-                )) : (
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', padding: '20px 0', textAlign: 'center' }}>
-                    No strength patterns detected yet. Write more about why you took each trade.
-                  </div>
-                )}
-              </div>
-
-              {/* Areas to improve */}
-              <div style={{ flex: 1, minWidth: 280, background: '#141822', border: '1px solid #2A3143', borderLeft: `3px solid ${red}`, borderRadius: 12, padding: '24px 28px' }}>
-                <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: red, marginBottom: 4, letterSpacing: 0.5 }}>Areas to improve</div>
-                <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginBottom: 16 }}>Patterns from your journal entries that show rule-breaking</div>
-                {anyImprove ? improveRows.filter(p => p.count > 0).map(p => (
-                  <div key={p.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(42,49,67,0.4)' }}>
-                    <div>
-                      <div style={{ fontFamily: fm, fontSize: 14, color: '#e8e8f0', fontWeight: 500 }}>{p.name}</div>
-                      <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginTop: 2 }}>{p.desc}</div>
-                    </div>
-                    <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: red, flexShrink: 0, marginLeft: 16 }}>{p.count}</div>
-                  </div>
-                )) : (
-                  <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', padding: '20px 0', textAlign: 'center' }}>
-                    No weakness patterns detected yet. Write more about why you took each trade.
-                  </div>
-                )}
-              </div>
+      {/* ═══════════════════════════════════════════════════════════
+          RULE ADHERENCE · toggle (Numerical / Psychology)
+          Two tab buttons swap one clean view at a time. Numerical =
+          trade-data view (three hero candles + Trades-vs-Goals bars).
+          Psychology = journal-language view (Psych-vs-Goals bars +
+          weekly-summary placeholder). The week selector is shared
+          across both views via selectedWeekIdx. Behavioral Radar stays
+          above, outside this block. All scoring/bot logic unchanged —
+          this is layout only.
+          ═══════════════════════════════════════════════════════════ */}
+      <div style={{
+        background: '#0d1017',
+        border: '1px solid #1c2330',
+        borderRadius: 16,
+        padding: '28px 28px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 24,
+      }}>
+        {/* Toggle buttons + shared week selector */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, borderBottom: '1px solid #1c2330', paddingBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 6, background: '#12151d', border: '1px solid #2A3143', borderRadius: 12, padding: 5 }}>
+            {([['numerical', 'Numerical'], ['psych', 'Psychology']] as const).map(([key, label]) => {
+              const active = analysisView === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setAnalysisView(key)}
+                  style={{
+                    fontFamily: fd, fontSize: 15, fontWeight: 700, letterSpacing: 0.5,
+                    padding: '10px 28px', borderRadius: 9, cursor: 'pointer',
+                    border: 'none', transition: 'background 0.15s ease, color 0.15s ease',
+                    background: active ? teal : 'transparent',
+                    color: active ? '#0A0D14' : '#a0a3ab',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Shared week selector — drives both views off selectedWeekIdx. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase' }}>Week</span>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={selectedWeekIdx}
+                onChange={e => setSelectedWeekIdx(parseInt(e.target.value))}
+                style={{ appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none', background: '#1f2430', border: '1px solid #2A3143', color: '#e8e8f0', fontFamily: fm, fontSize: 14, fontWeight: 600, padding: '10px 40px 10px 18px', borderRadius: 8, cursor: 'pointer', letterSpacing: 0.5, outline: 'none' }}
+              >
+                {weekBuckets.map((w, i) => (<option key={i} value={i} style={{ background: '#1f2430', color: '#e8e8f0' }}>{w.weekLabel}</option>))}
+              </select>
+              <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: teal, pointerEvents: 'none', fontSize: 13 }}>▼</span>
             </div>
+          </div>
+        </div>
 
-            {/* The gap that matters — plan-following R vs rule-breaking R */}
-            {processSplit.process.n > 0 && processSplit.impulse.n > 0 && (
-              <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '24px 28px', marginBottom: 16 }}>
-                <div style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 10 }}>The gap that matters</div>
-                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>When you follow the plan</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: teal }}>R {procR.toFixed(1)}</span>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: teal }}>avg · {processSplit.process.wr.toFixed(0)}% WR · {processSplit.process.n} trades</span>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>When you break the rules</div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: red }}>R {impR.toFixed(1)}</span>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: red }}>avg · {processSplit.impulse.wr.toFixed(0)}% WR · {processSplit.impulse.n} trades</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        );
-      })()}
+      {/* ═══════════════ NUMERICAL VIEW ═══════════════ */}
+      {analysisView === 'numerical' && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
 
-      {/* ═══ FOUR STAT CARDS — full rewrite ═══
-          Hierarchy flipped: the metric is the hero (huge), labels and
-          support metrics are small. Descriptive copy moved to hover
-          tooltips on the info icon. Each card carries a single visual
-          element so the row reads at a glance. */}
+      {/* ═══ HERO · three candlesticks (In Plan / Broke Rules / R Gap) ═══
+          The one place candlesticks survive. In Plan = teal, Broke =
+          red, R Gap = the differential between their R/trade (red when
+          breaking rules costs you edge). Body height encodes the value;
+          the number + a clean label sit beneath each. Same deterministic
+          processSplit data as before — only the visual changed. */}
       {(() => {
-        // ── Local helpers, scoped to this card block ───────────────
         const plan  = processSplit.process;
         const broke = processSplit.impulse;
         const MIN_SAMPLE = 5;
 
-        const planShare  = totals.n > 0 ? plan.n  / totals.n : 0;
-        const brokeShare = totals.n > 0 ? broke.n / totals.n : 0;
-
-        // Format a per-trade R value with explicit sign and 2 decimals.
         const fmtRpt = (v: number) => {
           const sign = v > 0 ? '+' : v < 0 ? '−' : '';
           return `${sign}${Math.abs(v).toFixed(2)}R`;
         };
 
-        // Reusable card chrome and hero-number style — keeps the four
-        // cards visually identical except for accent color.
-        const cardBase: React.CSSProperties = {
-          flex: 1,
-          minWidth: 210,
-          background: '#141822',
-          border: '1px solid #2A3143',
-          borderRadius: 12,
-          padding: '20px 22px 18px',
-          position: 'relative',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 200,
+        const planRpt  = plan.n  ? plan.rTotal  / plan.n  : 0;
+        const brokeRpt = broke.n ? broke.rTotal / broke.n : 0;
+        const gap = planRpt - brokeRpt;
+        const haveSample = plan.n >= MIN_SAMPLE && broke.n >= MIN_SAMPLE;
+        // gap > 0 → in-plan trades earn more R, so breaking rules costs
+        // you edge. That's the warning case → red.
+        const gapCostly = gap > 0;
+
+        const maxCount = Math.max(plan.n, broke.n, 1);
+        const gapRef = Math.max(Math.abs(planRpt), Math.abs(brokeRpt), Math.abs(gap), 0.5);
+
+        const PLOT_H = 148;
+        const BODY_W = 54;
+        const MIN_FRAC = 0.07; // never collapse a candle to nothing
+
+        // One candlestick: short wick, gradient body sized by `frac`.
+        const Candle = ({ frac, color, dim }: { frac: number; color: string; dim?: boolean }) => {
+          const bodyH = Math.max(MIN_FRAC, Math.min(1, frac)) * (PLOT_H - 26);
+          return (
+            <div style={{ height: PLOT_H, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <div style={{ width: 2, height: 13, background: color, opacity: dim ? 0.25 : 0.5 }} />
+              <div style={{
+                width: BODY_W, height: bodyH, borderRadius: 3,
+                background: dim ? 'rgba(255,255,255,0.05)' : `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)`,
+                border: dim ? '1px dashed #2A3143' : 'none',
+                boxShadow: dim ? 'none' : `0 0 16px ${color}44, inset 0 1px 0 rgba(255,255,255,0.18)`,
+              }} />
+              <div style={{ width: 2, height: 9, background: color, opacity: dim ? 0.25 : 0.5 }} />
+            </div>
+          );
         };
-        const labelStyle: React.CSSProperties = {
-          fontFamily: fd,
-          fontSize: 12,
-          letterSpacing: '1.5px',
-          textTransform: 'uppercase' as const,
-        };
-        const heroStyle: React.CSSProperties = {
-          fontFamily: fd,
-          fontSize: 60,
-          fontWeight: 700,
-          lineHeight: 1,
-          letterSpacing: '-1px',
-        };
-        const supportStyle: React.CSSProperties = {
-          fontFamily: fm,
-          fontSize: 13,
-          color: '#9a9da5',
-        };
-        const trackBase: React.CSSProperties = {
-          width: '100%',
-          height: 8,
-          background: 'rgba(255,255,255,0.06)',
-          borderRadius: 4,
-          overflow: 'hidden',
-        };
+
+        // Shared column chrome — title + candle + big number + sublabel.
+        const Col = ({ label, color, info, candle, value, valueColor, sub }: {
+          label: string; color: string; info: string; candle: React.ReactNode;
+          value: string; valueColor?: string; sub: string;
+        }) => (
+          <div style={{ flex: 1, minWidth: 200, background: '#141822', border: '1px solid #2A3143', borderTop: `3px solid ${color}`, borderRadius: 12, padding: '18px 20px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', alignSelf: 'stretch', marginBottom: 6 }}>
+              <span style={{ fontFamily: fd, fontSize: 13, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase' as const, color }}>{label}</span>
+              <InfoTip text={info} />
+            </div>
+            {candle}
+            <div style={{ fontFamily: fd, fontSize: 46, fontWeight: 700, lineHeight: 1, letterSpacing: '-1px', color: valueColor || '#fff', marginTop: 14 }}>{value}</div>
+            <div style={{ fontFamily: fm, fontSize: 13, color: '#a0a3ab', marginTop: 8, textAlign: 'center' }}>{sub}</div>
+          </div>
+        );
 
         return (
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-
-            {/* ── 2. In Plan ──────────────────────────────────────── */}
-            <div style={{ ...cardBase, borderLeft: `3px solid ${teal}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ ...labelStyle, color: teal }}>In Plan</div>
-                <InfoTip text="Trades where your journal shows patience, a clean setup, or following your rules." />
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <div style={{ ...heroStyle, color: '#fff' }}>{plan.n.toLocaleString()}</div>
-              </div>
-              <div style={{ ...supportStyle, marginTop: 10, marginBottom: 12 }}>
-                {fmtPct(plan.wr)} win rate · {fmtR(plan.rTotal)} total
-              </div>
-              {/* Share-of-total bar — teal fill = in-plan share */}
-              <div style={trackBase}>
-                <div style={{ width: `${(planShare * 100).toFixed(2)}%`, height: '100%', background: teal, transition: 'width 0.3s ease' }} />
-              </div>
-            </div>
-
-            {/* ── 3. Broke Rules ──────────────────────────────────── */}
-            <div style={{ ...cardBase, borderLeft: `3px solid ${red}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ ...labelStyle, color: red }}>Broke Rules</div>
-                <InfoTip text="Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup." />
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <div style={{ ...heroStyle, color: '#fff' }}>{broke.n.toLocaleString()}</div>
-              </div>
-              <div style={{ ...supportStyle, marginTop: 10, marginBottom: 12 }}>
-                {fmtPct(broke.wr)} win rate · {fmtR(broke.rTotal)} total
-              </div>
-              {/* Share-of-total bar — red fill = broke share */}
-              <div style={trackBase}>
-                <div style={{ width: `${(brokeShare * 100).toFixed(2)}%`, height: '100%', background: red, transition: 'width 0.3s ease' }} />
-              </div>
-            </div>
-
-            {/* ── 4. R Gap ────────────────────────────────────────── */}
-            {(() => {
-              // Sample size guard — small buckets give noisy R/trade.
-              if (plan.n < MIN_SAMPLE || broke.n < MIN_SAMPLE) {
-                return (
-                  <div style={cardBase}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                      <div style={{ ...labelStyle, color: teal }}>R Gap</div>
-                      <InfoTip text="Difference in R per trade between in-plan trades and rule-breakers. Needs at least 5 in each bucket." />
-                    </div>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                      <div style={{ ...heroStyle, color: '#7e818a', fontSize: 30, lineHeight: 1.25 }}>
-                        Need more<br />trades
-                      </div>
-                    </div>
-                    <div style={{ ...supportStyle, marginTop: 10 }}>
-                      In Plan: {plan.n} · Broke: {broke.n} (5+ each)
-                    </div>
-                  </div>
-                );
-              }
-
-              const planRpt  = plan.rTotal  / plan.n;
-              const brokeRpt = broke.rTotal / broke.n;
-              const gap = planRpt - brokeRpt;
-              // Unfavorable = rule-breakers underperform in-plan. Color
-              // the gap red because it represents lost edge.
-              const unfavorable = gap > 0;
-              const gapColor = unfavorable ? red : '#fff';
-
-              // Project lost dollars on the rule-breaker bucket. Hide
-              // the line entirely if it's a trivial amount — per the
-              // spec, anything under $100 is too noisy to show.
-              const dollarPerR = broke.rTotal !== 0 ? broke.plSum / broke.rTotal : 0;
-              const projectedGain = unfavorable ? gap * broke.n * dollarPerR : 0;
-              const showDollar = unfavorable && Math.abs(projectedGain) >= 100;
-
-              // Bar widths normalized to the larger magnitude so the
-              // comparison reads visually.
-              const maxAbs = Math.max(Math.abs(planRpt), Math.abs(brokeRpt), 0.01);
-              const planBarPct  = (Math.abs(planRpt)  / maxAbs) * 100;
-              const brokeBarPct = (Math.abs(brokeRpt) / maxAbs) * 100;
-
-              return (
-                <div style={{
-                  ...cardBase,
-                  border: `1px solid ${unfavorable ? 'rgba(255,68,68,0.3)' : '#2A3143'}`,
-                  boxShadow: unfavorable ? '0 0 18px rgba(255,68,68,0.08)' : 'none',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div style={{ ...labelStyle, color: teal }}>R Gap</div>
-                    <InfoTip text="Your in-plan R per trade minus your rule-breakers' R per trade. Red when in-plan trades earn more R per trade than rule-breakers." />
-                  </div>
-
-                  {/* Hero: the gap value. Sign forced negative when
-                      unfavorable — visualizes lost edge. */}
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ ...heroStyle, color: gapColor }}>
-                      {fmtRpt(unfavorable ? -Math.abs(gap) : Math.abs(gap))}
-                    </div>
-                    <div style={{ fontFamily: fm, fontSize: 13, color: '#9a9da5', alignSelf: 'flex-end', paddingBottom: 8 }}>
-                      / trade
-                    </div>
-                  </div>
-
-                  <div style={{ ...supportStyle, marginTop: 10, marginBottom: 14 }}>
-                    In Plan {fmtRpt(planRpt)} vs Broke {fmtRpt(brokeRpt)}
-                  </div>
-
-                  {/* Two-bar comparison visual */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fm, fontSize: 11, color: '#9a9da5', marginBottom: 4 }}>
-                        <span>IN PLAN</span>
-                        <span style={{ color: teal, fontWeight: 600 }}>{fmtRpt(planRpt)}</span>
-                      </div>
-                      <div style={trackBase}>
-                        <div style={{ width: `${planBarPct.toFixed(2)}%`, height: '100%', background: teal, transition: 'width 0.3s ease' }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: fm, fontSize: 11, color: '#9a9da5', marginBottom: 4 }}>
-                        <span>BROKE RULES</span>
-                        <span style={{ color: unfavorable ? red : '#fff', fontWeight: 600 }}>{fmtRpt(brokeRpt)}</span>
-                      </div>
-                      <div style={trackBase}>
-                        <div style={{ width: `${brokeBarPct.toFixed(2)}%`, height: '100%', background: unfavorable ? red : '#4b5563', transition: 'width 0.3s ease' }} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dollar context — only when it's a meaningful amount.
-                      Per spec: hide below $100 since the visual already
-                      tells the story. */}
-                  {showDollar && (
-                    <div style={{ fontFamily: fm, fontSize: 12, color: red, marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,68,68,0.15)', lineHeight: 1.4 }}>
-                      ~{formatNumber(projectedGain, { currency: true, decimals: 0 })} lost vs in-plan rate
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'stretch' }}>
+            <Col
+              label="In Plan" color={teal}
+              info="Trades where your journal shows patience, a clean setup, or following your rules."
+              candle={<Candle frac={plan.n / maxCount} color={teal} />}
+              value={plan.n.toLocaleString()}
+              sub={`${fmtPct(plan.wr)} win rate`}
+            />
+            <Col
+              label="Broke Rules" color={red}
+              info="Trades where your journal mentions FOMO, revenge, impulse, or skipping your setup."
+              candle={<Candle frac={broke.n / maxCount} color={red} />}
+              value={broke.n.toLocaleString()}
+              sub={`${fmtPct(broke.wr)} win rate`}
+            />
+            <Col
+              label="R Gap" color={gapCostly ? red : teal}
+              info="Your in-plan R per trade minus your rule-breakers'. Red when in-plan trades earn more R per trade — the edge you give up by breaking rules. Needs 5+ trades in each bucket."
+              candle={haveSample
+                ? <Candle frac={Math.abs(gap) / gapRef} color={gapCostly ? red : teal} />
+                : <Candle frac={0.2} color={teal} dim />}
+              value={haveSample ? fmtRpt(gapCostly ? -Math.abs(gap) : Math.abs(gap)) : '—'}
+              valueColor={haveSample ? (gapCostly ? red : teal) : '#7e818a'}
+              sub={haveSample
+                ? `In plan ${fmtRpt(planRpt)} · broke ${fmtRpt(brokeRpt)}`
+                : `Need 5+ each · plan ${plan.n}, broke ${broke.n}`}
+            />
           </div>
         );
       })()}
+
+        {/* Trades vs. Goals — per-goal compliance bars (the readable
+            replacement for the old candlesticks). Same deterministic
+            scoring and click-to-expand drilldown; only the visual changed. */}
+        {(() => {
+          const emptyStyle: React.CSSProperties = { padding: '32px 20px', textAlign: 'center', color: '#a0a3ab', fontFamily: fm, fontSize: 13 };
+          return (
+            <div style={{ background: '#12151d', border: '1px solid #2A3143', borderLeft: `3px solid ${blue}`, borderRadius: 12, padding: '22px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ width: 10, height: 10, background: blue, borderRadius: 2, display: 'inline-block' }} />
+                <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
+              </div>
+              <p style={{ color: '#a0a3ab', fontSize: 14, margin: '0 0 18px', lineHeight: 1.5 }}>
+                Did each trade&apos;s execution match the rule? Measured from the trade data itself — entry/exit, R:R, sizing.
+              </p>
+              {!hasGoalsForSelectedWeek ? (
+                <div style={emptyStyle}>No goals were set for this week.</div>
+              ) : selectedWeekTradeGoals.length === 0 ? (
+                <div style={emptyStyle}>No trade-measurable goals this week.</div>
+              ) : selectedWeekTradeGoals.some(g => g.empty) ? (
+                <div style={emptyStyle}>No trades logged this week yet.</div>
+              ) : (
+                <div>{selectedWeekTradeGoals.map((row, i) => renderGoalBar('trades', i, row))}</div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Strengths / Watch-outs — compressed to a single tight row of
+            the top patterns each, so they support the view without
+            dominating it. The old "gap that matters" block was removed. */}
+        {(() => {
+          const strengthDefs = [
+            { name: 'Patience', count: patterns.patience },
+            { name: 'Clean Execution', count: patterns.cleanExecution },
+            { name: 'Stop Discipline', count: patterns.stopDiscipline },
+            { name: 'Trusting Process', count: patterns.trustingProcess },
+          ];
+          const watchDefs = [
+            { name: 'Ignoring Rules', count: patterns.ignoringRules },
+            { name: 'Impulse Entries', count: patterns.impulseEntries },
+            { name: 'Revenge Trading', count: patterns.revengeTrading },
+            { name: 'FOMO / Chasing', count: patterns.fomoChasing },
+          ];
+          const top = (rows: { name: string; count: number }[]) =>
+            rows.filter(r => r.count > 0).sort((a, b) => b.count - a.count).slice(0, 3);
+          const strengths = top(strengthDefs);
+          const watchouts = top(watchDefs);
+          if (strengths.length === 0 && watchouts.length === 0) return null;
+          const chip = (name: string, count: number, accent: string) => (
+            <span key={name} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.03)', border: `1px solid ${accent}33`, borderRadius: 999, padding: '5px 12px', fontFamily: fm, fontSize: 13, color: '#e8e8f0', whiteSpace: 'nowrap' }}>
+              {name}<span style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: accent }}>{count}</span>
+            </span>
+          );
+          const group = (label: string, accent: string, items: { name: string; count: number }[]) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: fd, fontSize: 12, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' as const, color: accent }}>{label}</span>
+              {items.length ? items.map(r => chip(r.name, r.count, accent)) : <span style={{ fontFamily: fm, fontSize: 13, color: '#a0a3ab' }}>none yet</span>}
+            </div>
+          );
+          return (
+            <div style={{ display: 'flex', gap: 28, rowGap: 12, flexWrap: 'wrap', alignItems: 'center', background: '#141822', border: '1px solid #2A3143', borderRadius: 10, padding: '14px 18px' }}>
+              {group('Strengths', teal, strengths)}
+              {group('Watch-outs', red, watchouts)}
+            </div>
+          );
+        })()}
+
+      </div>
+      )}
+
+      {/* ═══════════════ PSYCHOLOGY VIEW ═══════════════ */}
+      {analysisView === 'psych' && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {/* Psych vs. Goals — journal-language adherence per goal. Same
+            Haiku scoring + drilldown as before; the candlesticks are
+            replaced by the readable compliance bars. */}
+        {(() => {
+          const emptyStyle: React.CSSProperties = { padding: '32px 20px', textAlign: 'center', color: '#a0a3ab', fontFamily: fm, fontSize: 13 };
+          return (
+            <div style={{ background: '#12151d', border: '1px solid #2A3143', borderLeft: `3px solid ${teal}`, borderRadius: 12, padding: '22px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
+                <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Psych vs. Goals</h4>
+              </div>
+              <p style={{ color: '#a0a3ab', fontSize: 14, margin: '0 0 18px', lineHeight: 1.5 }}>
+                Did what you wrote in each journal match the rule? Read and scored from your own words.
+              </p>
+              {!hasGoalsForSelectedWeek ? (
+                <div style={emptyStyle}>No goals were set for this week.</div>
+              ) : selectedWeekPsychGoals.length === 0 ? (
+                <div style={emptyStyle}>No psychology goals this week.</div>
+              ) : selectedWeekPsychGoals.some(g => g.empty) ? (
+                <div style={emptyStyle}>No trades logged this week yet.</div>
+              ) : (
+                <div>{selectedWeekPsychGoals.map((row, i) => renderGoalBar('psych', i, row))}</div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* WickCoach weekly summary — labeled placeholder for the
+            coming panel. */}
+        <div style={{ background: '#12151d', border: '1px dashed #2A3143', borderRadius: 12, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block', opacity: 0.5 }} />
+            <h4 style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#e8e8f0', margin: 0, letterSpacing: 0.5 }}>WickCoach Weekly Summary</h4>
+            <span style={{ fontFamily: fm, fontSize: 11, color: '#a0a3ab', letterSpacing: 1, textTransform: 'uppercase' as const, border: '1px solid #2A3143', borderRadius: 999, padding: '3px 10px' }}>Coming soon</span>
+          </div>
+          <p style={{ fontFamily: fm, fontSize: 14, color: '#a0a3ab', margin: 0, lineHeight: 1.6, maxWidth: 640 }}>
+            A short weekly read on your psychology — the patterns in how you followed, or fought, your own rules, in WickCoach&apos;s voice. It lands here once the summary engine ships.
+          </p>
+        </div>
+      </div>
+      )}
+
+      </div>
+      {/* end RULE ADHERENCE · toggle */}
 
       {/* ═══ 2 · STRATEGY BREAKDOWN + TICKER PERFORMANCE ═══ */}
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', position: 'relative' }}>
@@ -2267,551 +2368,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         })()}
       </div>
 
-      {/* ═══ 3 · RULES vs EXECUTION ═══ */}
-      <div style={{ background: '#141822', border: '1px solid #2A3143', borderRadius: 12, padding: '56px 32px 32px', position: 'relative', marginTop: 22 }}>
-        <SectionNum n={3} />
-
-        {/* Header + week dropdown (centered) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, gap: 10 }}>
-          <h3 style={{ fontFamily: fd, fontSize: 30, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: '0.5px' }}>Rules vs. Execution</h3>
-          <p style={{ color: '#aab0bd', fontSize: 16, margin: '4px 0 0', textAlign: 'center', maxWidth: 620, lineHeight: 1.4 }}>How your trading and psychology compared to the rules you set</p>
-          <div style={{ position: 'relative', marginTop: 10 }}>
-            <select
-              value={selectedWeekIdx}
-              onChange={e => setSelectedWeekIdx(parseInt(e.target.value))}
-              style={{
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                background: '#1f2430',
-                border: '1px solid #2A3143',
-                color: '#e8e8f0',
-                fontFamily: fm,
-                fontSize: 14,
-                fontWeight: 600,
-                padding: '10px 40px 10px 18px',
-                borderRadius: 8,
-                cursor: 'pointer',
-                letterSpacing: 0.5,
-                outline: 'none',
-              }}
-            >
-              {weekBuckets.map((w, i) => (
-                <option key={i} value={i} style={{ background: '#1f2430', color: '#e8e8f0' }}>{w.weekLabel}</option>
-              ))}
-            </select>
-            <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: teal, pointerEvents: 'none', fontSize: 13 }}>▼</span>
-          </div>
-        </div>
-
-        {/* Empty state — shown when the selected past week had no goals set. */}
-        {!hasGoalsForSelectedWeek && (
-          <div style={{
-            padding: '40px 20px',
-            textAlign: 'center',
-            color: '#7a7d85',
-            fontFamily: fm,
-            fontSize: '12px',
-            border: '1px dashed #1a1b22',
-            borderRadius: '8px',
-            backgroundColor: '#13141a'
-          }}>
-            No goals were set for this week.
-          </div>
-        )}
-
-        {/* Goal cards (up to 3) — sit cleanly beneath the week dropdown
-            row (the old `marginTop: -40` lift was causing the dropdown
-            to overlap card #2). All 3 cards share a minHeight so they
-            stay flush even when one title wraps to 2 lines. Titles
-            line-clamp at 2 lines with ellipsis. Shows ALL of this
-            week's goals regardless of measurability; the per-column
-            panels below filter to trade-/journal-measurable subsets. */}
-        {hasGoalsForSelectedWeek && (
-        <div style={{ display: 'flex', gap: 14, marginBottom: 32, flexWrap: 'wrap', alignItems: 'stretch' }}>
-          {weekGoals.slice(0, 3).map((g, idx) => (
-            <div key={g.id} style={{
-              flex: '1 1 260px',
-              minHeight: 96,
-              background: '#1f2430',
-              border: `1px solid ${teal}`,
-              borderRadius: 12,
-              padding: '14px 18px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              boxShadow: '0 6px 18px rgba(0,212,160,0.15), 0 0 0 1px rgba(0,212,160,0.08)',
-            }}>
-              <div style={{
-                width: 34, height: 34, borderRadius: '50%',
-                background: 'rgba(0,212,160,0.15)',
-                border: `1.5px solid ${teal}`,
-                color: teal,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: fd, fontSize: 16, fontWeight: 700,
-                flexShrink: 0,
-              }}>{idx + 1}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div title={g.title || '(untitled)'} style={{
-                  fontSize: 15,
-                  color: '#ffffff',
-                  fontFamily: fm,
-                  fontWeight: 600,
-                  lineHeight: 1.35,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical' as const,
-                  overflow: 'hidden',
-                  wordBreak: 'break-word',
-                }}>{g.title || '(untitled)'}</div>
-              </div>
-              <span style={{
-                background: 'rgba(0,212,160,0.15)', color: teal,
-                fontSize: 10.5, letterSpacing: 1.5, fontWeight: 700,
-                padding: '4px 10px', borderRadius: 999, fontFamily: fm, flexShrink: 0,
-              }}>{(g.goalType || 'General').toUpperCase().split(' ')[0]}</span>
-            </div>
-          ))}
-        </div>
-        )}
-
-        {/* Split panel: Trades vs. Goals (blue) | Psych vs. Goals (green)
-            — each goal now renders as its own candlestick. Body fills from
-            the bottom up to the compliance/alignment percentage. Hollow
-            grey outline when no evidence exists. Click a candle to expand
-            the per-trade drilldown beneath the row. Hidden when the week
-            has no goals. */}
-        {hasGoalsForSelectedWeek && (() => {
-          // Candle geometry — shared by both panels.
-          const CANDLE_H = 170;           // body height
-          const CANDLE_W = 46;            // body width
-          const WICK_EXT = 14;            // wick length above + below body
-          const SVG_W = 90;
-          const SVG_H = CANDLE_H + WICK_EXT * 2 + 20; // +room for pct label on top
-
-          const renderGoalCandle = (
-            section: 'trades' | 'psych',
-            i: number,
-            row: GoalComplianceRow,
-          ) => {
-            const evaluable = row.target;
-            const nullCount = row.nullCount;
-            const allNull = evaluable === 0;
-            const pct = allNull ? 0 : Math.min(100, Math.round((row.actual / evaluable) * 100));
-            // expanded/hovered state keys off the goal's original
-            // index in weekGoals — so clicking a candle in the trade
-            // column and the same goal in the psych column stay
-            // independently expandable.
-            const isExpanded = expandedRow?.section === section && expandedRow.goalIdx === row.goalIdx;
-            const isHovered = hoveredRow?.section === section && hoveredRow.goalIdx === row.goalIdx;
-
-            const accent = section === 'trades' ? blue : teal;
-            const borderColor = allNull ? '#7a7d85' : accent;
-            const fillRgba = section === 'trades' ? 'rgba(74,158,255,0.75)' : 'rgba(0,212,160,0.8)';
-
-            const bodyX = (SVG_W - CANDLE_W) / 2;
-            const bodyTop = WICK_EXT + 20;
-            const filled = (pct / 100) * CANDLE_H;
-            const fillY = bodyTop + (CANDLE_H - filled);
-
-            return (
-              <div
-                key={`${section}-${row.goalIdx}`}
-                onClick={() => setExpandedRow(prev => prev && prev.section === section && prev.goalIdx === row.goalIdx ? null : { section, goalIdx: row.goalIdx })}
-                onMouseEnter={() => setHoveredRow({ section, goalIdx: row.goalIdx })}
-                onMouseLeave={() => setHoveredRow(null)}
-                style={{
-                  flex: '1 1 0',
-                  cursor: 'pointer',
-                  padding: '10px 4px 14px',
-                  borderRadius: 8,
-                  background: isHovered || isExpanded ? '#141620' : 'transparent',
-                  transition: 'background 0.15s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 6,
-                  minWidth: 0,
-                }}
-              >
-                <svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ display: 'block' }}>
-                  {/* Percentage / fraction label above the candle */}
-                  <text
-                    x={SVG_W / 2}
-                    y={14}
-                    textAnchor="middle"
-                    fontFamily="Chakra Petch, sans-serif"
-                    fontSize="15"
-                    fontWeight="700"
-                    fill={allNull ? '#7a7d85' : accent}
-                  >
-                    {allNull ? '—' : `${pct}%`}
-                  </text>
-                  {/* Upper wick */}
-                  <line
-                    x1={SVG_W / 2} y1={bodyTop - WICK_EXT}
-                    x2={SVG_W / 2} y2={bodyTop}
-                    stroke={borderColor} strokeWidth="2" strokeLinecap="round"
-                  />
-                  {/* Body outline (always visible) */}
-                  <rect
-                    x={bodyX} y={bodyTop}
-                    width={CANDLE_W} height={CANDLE_H}
-                    rx={3}
-                    fill={allNull ? 'transparent' : 'rgba(255,255,255,0.02)'}
-                    stroke={borderColor} strokeWidth="2"
-                    strokeDasharray={allNull ? '4 4' : undefined}
-                  />
-                  {/* Fill — teal/blue liquid growing from the bottom up */}
-                  {!allNull && filled > 0 && (
-                    <rect
-                      x={bodyX} y={fillY}
-                      width={CANDLE_W} height={filled}
-                      rx={3}
-                      fill={fillRgba}
-                    />
-                  )}
-                  {/* Lower wick */}
-                  <line
-                    x1={SVG_W / 2} y1={bodyTop + CANDLE_H}
-                    x2={SVG_W / 2} y2={bodyTop + CANDLE_H + WICK_EXT}
-                    stroke={borderColor} strokeWidth="2" strokeLinecap="round"
-                  />
-                </svg>
-                <div style={{ fontFamily: fm, fontSize: 13, fontWeight: 600, color: allNull ? '#7a7d85' : '#e8e8f0', textAlign: 'center' }}>
-                  {allNull ? 'Not yet scored' : `${row.actual} / ${evaluable} trades`}
-                </div>
-                {nullCount > 0 && !allNull && (
-                  <div style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', textAlign: 'center' }}>
-                    {nullCount} not evaluated
-                  </div>
-                )}
-                <div style={{
-                  fontFamily: fm,
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  textAlign: 'center',
-                  lineHeight: 1.4,
-                  marginTop: 6,
-                  maxWidth: 200,
-                  // Full wrap — no line clamp, no truncation. Goal
-                  // titles are the rule being scored; they need to
-                  // read in full. The candle row gets enough vertical
-                  // space below via marginBottom on the panel grid.
-                  wordBreak: 'break-word',
-                }}>
-                  <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{row.title}
-                </div>
-                <span style={{ fontFamily: fm, fontSize: 11, color: '#7a7d85', marginTop: 2 }}>{isExpanded ? '▴ hide' : '▾ details'}</span>
-              </div>
-            );
-          };
-
-          return (
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              {/* LEFT — Trades vs. Goals (BLUE) */}
-              <div style={{
-                flex: '1 1 340px',
-                background: '#12151d',
-                border: '1px solid #2A3143',
-                borderLeft: `3px solid ${blue}`,
-                borderRadius: 10,
-                padding: '24px 26px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <span style={{ width: 10, height: 10, background: blue, borderRadius: 2, display: 'inline-block' }} />
-                  <h4 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Trades vs. Goals</h4>
-                </div>
-                <p style={{ color: '#aab0bd', fontSize: 14, margin: '0 0 20px', letterSpacing: 0.3, lineHeight: 1.5 }}>
-                  Did each trade&apos;s execution match the rule? Measured from the trade data itself — entry/exit prices, R:R, sizing.
-                </p>
-                {selectedWeekTradeGoals.length === 0 ? (
-                  <div style={{
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    color: '#7a7d85',
-                    fontFamily: fm,
-                    fontSize: 12,
-                    fontStyle: 'italic',
-                  }}>
-                    No trade-measurable goals this week.
-                  </div>
-                ) : selectedWeekTradeGoals.some(g => g.empty) ? (
-                  <div style={{
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    color: '#7a7d85',
-                    fontFamily: fm,
-                    fontSize: 12,
-                    fontStyle: 'italic',
-                  }}>
-                    No trades logged this week yet.
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                      {selectedWeekTradeGoals.map((row, i) => renderGoalCandle('trades', i, row))}
-                    </div>
-                    {expandedRow?.section === 'trades' && (
-                      <div style={{ marginTop: 14 }}>{renderDrilldown('trades', expandedRow.goalIdx)}</div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* RIGHT — Psych vs. Goals (GREEN) */}
-              <div style={{
-                flex: '1 1 340px',
-                background: '#12151d',
-                border: '1px solid #2A3143',
-                borderLeft: `3px solid ${teal}`,
-                borderRadius: 10,
-                padding: '24px 26px',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <span style={{ width: 10, height: 10, background: teal, borderRadius: 2, display: 'inline-block' }} />
-                  <h4 style={{ fontFamily: fd, fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Psych vs. Goals</h4>
-                </div>
-                <p style={{ color: '#aab0bd', fontSize: 14, margin: '0 0 20px', letterSpacing: 0.3, lineHeight: 1.5 }}>
-                  Did the mindset and process behind each trade match the rule? Measured from your journal language — patience, discipline, impulse tells.
-                </p>
-                {selectedWeekPsychGoals.length === 0 ? (
-                  <div style={{
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    color: '#7a7d85',
-                    fontFamily: fm,
-                    fontSize: 12,
-                    fontStyle: 'italic',
-                  }}>
-                    No journal-measurable goals this week.
-                  </div>
-                ) : selectedWeekPsychGoals.some(g => g.empty) ? (
-                  <div style={{
-                    padding: '40px 20px',
-                    textAlign: 'center',
-                    color: '#7a7d85',
-                    fontFamily: fm,
-                    fontSize: 12,
-                    fontStyle: 'italic',
-                  }}>
-                    No trades logged this week yet.
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                      {selectedWeekPsychGoals.map((row, i) => renderGoalCandle('psych', i, row))}
-                    </div>
-                    {expandedRow?.section === 'psych' && (
-                      <div style={{ marginTop: 14 }}>{renderDrilldown('psych', expandedRow.goalIdx)}</div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* ═══ QUANTITATIVE TARGETS — glass candlestick indicators ═══ */}
-        {(() => {
-          // Per-week targets. If the selected week has never been viewed
-          // before, getQuantTargetsForWeek lazy-stamps the current live
-          // profile targets into that slot. Past-week slots stay frozen.
-          const weekTargets = selectedWeekBucket
-            ? getQuantTargetsForWeek(toISODate(selectedWeekBucket.start))
-            : { quantitativeTargets: quantTargetsSnapshot.quantitativeTargets, customQuantTargets: quantTargetsSnapshot.customQuantTargets };
-          const allTargets = [...weekTargets.quantitativeTargets, ...weekTargets.customQuantTargets];
-          if (allTargets.length === 0) return null;
-
-          const CANDLE_H = 130;
-          const CANDLE_W = 36;
-          const WICK_W = 2;
-          const WICK_EXT = 14;
-
-          // Actuals now come from the SELECTED week's bucket, not the
-          // current week's. Switching the Rules vs Execution dropdown
-          // moves this entire block along with it.
-          const weekTrades = selectedWeekBucket?.trades || [];
-          // Classification by t.result, denominator excludes BE-intent
-          // trades — keeps in sync with the headline winRate formula
-          // in shared.ts.
-          const weekWins = weekTrades.filter(t => t.result === 'WIN');
-          const weekDecisive = weekTrades.filter(t => t.result === 'WIN' || t.result === 'LOSS').length;
-          const weekWR = weekDecisive > 0 ? (weekWins.length / weekDecisive) * 100 : 0;
-          const weekRRValues = weekWins.map(t => parseRr(t.riskReward));
-          const weekAvgR = weekRRValues.length > 0 ? weekRRValues.reduce((a, b) => a + b, 0) / weekRRValues.length : 0;
-          const weekTradeCount = weekTrades.length;
-
-          const subtitleLabel = selectedWeekIdx === 0
-            ? 'This week'
-            : (selectedWeekBucket?.weekLabel || 'This week');
-
-          return (
-            <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid #2A3143' }}>
-              <h4 style={{ fontFamily: fd, fontSize: 16, fontWeight: 700, color: '#fff', margin: 0, letterSpacing: 0.5 }}>Quantitative Targets</h4>
-              <p style={{ fontSize: 14, margin: '6px 0 22px', letterSpacing: 0.3, fontFamily: fm }}>
-                <strong style={{ color: teal }}>{subtitleLabel}</strong>
-                <span style={{ color: '#aab0bd' }}> vs your </span>
-                <span style={{ color: teal }}>weekly targets</span>
-              </p>
-              <div style={{ display: 'flex', gap: 40, justifyContent: 'center', flexWrap: 'wrap' }}>
-                {allTargets.map(t => {
-                  // Compute actual from THIS WEEK's trades, not all-time.
-                  let actual: number | null = null;
-                  if (t.id === 'target-rr') actual = weekAvgR;
-                  else if (t.id === 'target-wr') actual = weekWR;
-                  else {
-                    // Custom targets: infer actual from trade data when possible.
-                    const lbl = (t.label || '').toLowerCase();
-                    if (lbl.includes('trade') || lbl.includes('execution') || lbl.includes('entry') || lbl.includes('entries')) {
-                      actual = weekTradeCount;
-                    } else if (lbl.includes('win') && t.type === 'percent') {
-                      actual = weekWR;
-                    } else if (lbl.includes('p/l') || lbl.includes('profit') || lbl.includes('pnl')) {
-                      actual = weekTrades.reduce((s, tr) => s + tr.pl, 0);
-                    }
-                    // If none of those match, actual stays null (grey candle).
-                  }
-
-                  // Empty week → no actual to show. Otherwise Win Rate
-                  // would render 0.0% and Avg R would render R 0.00,
-                  // which look like real-but-terrible results instead of
-                  // "no data yet".
-                  if (weekTradeCount === 0) actual = null;
-
-                  const target = t.value;
-                  const hasTarget = target !== null && target !== undefined;
-                  const hasActual = actual !== null;
-
-                  // Detect "max" / "cap" / "limit" targets where LOWER is better.
-                  const lbl = (t.label || '').toLowerCase();
-                  const isMaxType = lbl.includes('max') || lbl.includes('cap') || lbl.includes('limit') || lbl.includes('no more');
-
-                  let fillPct = 0;
-                  if (hasTarget && hasActual) {
-                    fillPct = Math.max(0, Math.min(100, (actual! / target!) * 100));
-                  }
-
-                  // Color logic depends on whether this is a "max" (ceiling) or normal (floor) target.
-                  // Floor (higher = better): green at target, red when far below.
-                  // Ceiling (lower = better): green when under, red when at/over.
-                  let candleColor = '#6b7280';
-                  if (hasTarget && hasActual) {
-                    if (isMaxType) {
-                      if (fillPct <= 60) candleColor = teal;
-                      else if (fillPct <= 80) candleColor = '#8dd47e';
-                      else if (fillPct <= 100) candleColor = '#f59e0b';
-                      else candleColor = '#ff4444';
-                    } else {
-                      if (fillPct >= 100) candleColor = teal;
-                      else if (fillPct >= 90) candleColor = '#8dd47e';
-                      else if (fillPct >= 75) candleColor = '#f59e0b';
-                      else candleColor = '#ff4444';
-                    }
-                  } else if (hasActual) {
-                    candleColor = teal;
-                  }
-
-                  const fmtVal = (n: number | null | undefined) => {
-                    if (n === null || n === undefined) return '—';
-                    const prefix = t.id === 'target-rr' ? 'R ' : t.type === 'dollar' ? '$' : '';
-                    const suffix = t.type === 'percent' ? '%' : '';
-                    return `${prefix}${Number(n).toFixed(t.type === 'percent' ? 1 : 2)}${suffix}`;
-                  };
-                  const shortLabel = t.id === 'target-rr' ? 'Avg R' : t.id === 'target-wr' ? 'Win Rate' : t.label;
-
-                  return (
-                    <div key={t.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 70 }}>
-                      {/* Actual value above */}
-                      <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: hasActual ? candleColor : '#555' }}>
-                        {fmtVal(actual)}
-                      </div>
-
-                      {/* Candle assembly: wick + body + wick */}
-                      <div style={{ position: 'relative', width: CANDLE_W, height: CANDLE_H + WICK_EXT * 2 }}>
-                        {/* Top wick */}
-                        <div style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: '50%',
-                          width: WICK_W,
-                          height: WICK_EXT,
-                          background: candleColor,
-                          opacity: 0.5,
-                          transform: 'translateX(-50%)',
-                          borderRadius: 1,
-                        }} />
-                        {/* Candle body — glass look */}
-                        <div style={{
-                          position: 'absolute',
-                          top: WICK_EXT,
-                          left: 0,
-                          width: CANDLE_W,
-                          height: CANDLE_H,
-                          border: `2px solid ${candleColor}`,
-                          borderRadius: 4,
-                          background: `${candleColor}0A`,
-                          overflow: 'hidden',
-                        }}>
-                          {/* Glass fill from bottom */}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: `${fillPct}%`,
-                            background: `linear-gradient(to top, ${candleColor}40, ${candleColor}1A)`,
-                            backdropFilter: 'blur(4px)',
-                            WebkitBackdropFilter: 'blur(4px)',
-                            transition: 'height 0.6s ease, background 0.4s ease',
-                          }} />
-                          {/* Subtle inner glow at the top of the fill */}
-                          {fillPct > 0 && (
-                            <div style={{
-                              position: 'absolute',
-                              bottom: `${fillPct}%`,
-                              left: 0,
-                              right: 0,
-                              height: 1,
-                              background: candleColor,
-                              opacity: 0.4,
-                              transform: 'translateY(0.5px)',
-                            }} />
-                          )}
-                        </div>
-                        {/* Bottom wick */}
-                        <div style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: '50%',
-                          width: WICK_W,
-                          height: WICK_EXT,
-                          background: candleColor,
-                          opacity: 0.5,
-                          transform: 'translateX(-50%)',
-                          borderRadius: 1,
-                        }} />
-                      </div>
-
-                      {/* Target value */}
-                      <div style={{ fontFamily: fm, fontSize: 13, color: candleColor }}>
-                        {hasTarget ? `target ${fmtVal(target)}` : 'no target'}
-                      </div>
-                      {/* Label */}
-                      <div style={{ fontFamily: fd, fontSize: 14, fontWeight: 700, color: candleColor, letterSpacing: 0.5, textAlign: 'center' }}>
-                        {shortLabel}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-      </div>
-
-      {/* ═══ 4 · REGRESSION LAB ═══ */}
+      {/* ═══ 3 · REGRESSION LAB ═══ */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(0,212,160,0.05) 0%, rgba(0,212,160,0.02) 50%, #141822 100%)',
         border: '1px solid rgba(0,212,160,0.2)',
@@ -2819,7 +2376,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         padding: '28px 32px 32px',
         position: 'relative',
       }}>
-        <SectionNum n={4} />
+        <SectionNum n={3} />
         <div style={{ fontFamily: fd, fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4, paddingLeft: 24 }}>Regression Lab</div>
         <div style={{ fontSize: 13, color: '#aab0bd', marginBottom: 20, paddingLeft: 24 }}>Test relationships in your trading data. Plain English in, statistics out.</div>
 
@@ -2917,9 +2474,9 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         )}
       </div>
 
-      {/* ═══ 5 · ADVANCED ANALYSIS TOOLS ═══ */}
+      {/* ═══ 4 · ADVANCED ANALYSIS TOOLS ═══ */}
       <div style={{ position: 'relative' }}>
-        <SectionNum n={5} />
+        <SectionNum n={4} />
 
         {/* Section title */}
         <div style={{ paddingLeft: 40, marginBottom: 16 }}>
