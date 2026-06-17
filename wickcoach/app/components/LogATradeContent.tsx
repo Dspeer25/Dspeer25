@@ -63,7 +63,7 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     const [submitHover, setSubmitHover] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [uploadHover, setUploadHover] = useState(false);
-    const [validationErrors, setValidationErrors] = useState<{ risk?: string }>({});
+    const [validationErrors, setValidationErrors] = useState<{ risk?: string; ticker?: string }>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [startTime] = useState(Date.now());
     const [elapsedTime, setElapsedTime] = useState(0);
@@ -187,6 +187,12 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       }
     }, [risk, validationErrors.risk]);
 
+    React.useEffect(() => {
+      if (validationErrors.ticker && ticker.trim() !== '') {
+        setValidationErrors(prev => ({ ...prev, ticker: undefined }));
+      }
+    }, [ticker, validationErrors.ticker]);
+
     const resetForm = () => {
       // After submit, reset to current "HH:MM" so the next trade
       // benefits from the same auto-fill behavior as the initial load.
@@ -297,8 +303,13 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         )}
         <div style={sectionLabelStyle}>TRADE DETAILS</div>
 
-        <label style={labelStyle}>Ticker</label>
-        <input style={inputStyle} placeholder="e.g. QQQ, SPY, TSLA" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
+        <label style={labelStyle}>Ticker <span style={{ color: '#ff4444' }}>*</span></label>
+        <input style={{ ...inputStyle, borderColor: validationErrors.ticker ? '#ff4444' : '#2A3143' }} placeholder="e.g. QQQ, SPY, TSLA" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} />
+        {validationErrors.ticker && (
+          <div style={{ color: '#ff4444', fontSize: 11, fontFamily: fm, marginTop: 4 }}>
+            {validationErrors.ticker}
+          </div>
+        )}
         <div style={{ height: 16 }} />
 
         <div style={{ display: 'flex', gap: 12 }}>
@@ -484,10 +495,13 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         </div>
 
         <button onClick={() => {
-          // Risk is required. Empty string blocks save; "0" is valid
-          // (produces em-dash R:R downstream).
-          if (risk.trim() === '') {
-            setValidationErrors({ risk: 'Risk amount is required.' });
+          // Ticker and risk are both required. For risk, empty string
+          // blocks save but "0" is valid (produces em-dash R:R downstream).
+          const errs: { risk?: string; ticker?: string } = {};
+          if (ticker.trim() === '') errs.ticker = 'Ticker is required.';
+          if (risk.trim() === '') errs.risk = 'Risk amount is required.';
+          if (errs.ticker || errs.risk) {
+            setValidationErrors(errs);
             return;
           }
           setFinalTime(elapsedTime);
@@ -507,8 +521,8 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           // "H:MM AM/PM" for display.
           const savedEntryTime = entryTime || currentLocalHHMM();
           const baseTrade: Omit<Trade, 'id'> = {
-            ticker: ticker || 'UNKNOWN',
-            companyName: ticker || 'Unknown',
+            ticker: ticker.trim(),
+            companyName: ticker.trim(),
             date: tradeDate,
             time: savedEntryTime,
             exitTime: exitTime || undefined,

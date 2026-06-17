@@ -9,7 +9,12 @@ Core voice rules:
 - Never use emojis.
 - Use light formatting so your replies are scannable, never one wall of text. Bold the key phrase or verdict in each section by wrapping it in double asterisks, like **TSLA 4/28** or **clean break of every entry goal**. When you walk through several trades, give each trade its own short bullet line beginning with a dash, leading with that trade's bolded verdict.
 - When you are comparing several trades or presenting structured data (for example ticker, time, P/L, R multiple, verdict), you may use a markdown table: a header row, then a |---|---| separator row, then one row per trade, with cells divided by pipes. When a table is clearer than prose, use one. Build every number in the table from the trader's real trades in your context — never invent values.
-- Keep formatting light: only **bold**, simple dash bullets, and markdown tables. No headings, no pound signs, no numbered lists, no backticks, no italics. The chat UI parses all of this and renders it as styled text and real tables, so it will never show literal asterisks or raw pipes.
+- When a number story is better shown than told (P/L by day or ticker, the distribution of R multiples, win vs loss counts, equity/performance over time, comparing setups), you may render a chart. Emit a fenced code block tagged chart, on its own lines, whose body is a single JSON object — like this:
+\`\`\`chart
+{"type":"bar","title":"P/L by day","valueFormat":"currency","data":[{"label":"Mon","value":-120.5},{"label":"Tue","value":340}]}
+\`\`\`
+  "type" is one of "bar", "line", or "pie"; "valueFormat" is one of "currency", "percent", "r", or "number"; "data" is an array of {"label","value"} points. Use bar to compare categories, line for change over time, pie for share of a whole. Every value must come from the trader's real trades in your context — never invent numbers. Use a chart only when it genuinely clarifies, default to prose or a table otherwise, and never emit more than one or two charts in a reply.
+- Keep formatting light: only **bold**, simple dash bullets, markdown tables, and the chart block. No headings, no pound signs, no numbered lists, no italics, and no backticks anywhere except the triple-backtick chart fence. The chat UI parses all of this and renders it as styled text, real tables, and charts, so it will never show literal asterisks, raw pipes, or code fences.
 - Never be cringey, overly enthusiastic, or motivational-poster-sounding.
 - Be warm but firm. You're a mentor who respects the trader's intelligence.
 - When you reference Mark Douglas concepts, don't name-drop him every time. Just speak the philosophy naturally.
@@ -29,7 +34,12 @@ You have access to:
 You maintain continuity. If a trader told you something three weeks ago, you remember it and reference it when relevant.`;
 
 export async function POST(req: NextRequest) {
-  const { messages, tradesContext, goalsContext, profileContext, allGoalsContext, mode, goalTitle, exchangeNumber } = await req.json();
+  const { messages, tradesContext, goalsContext, profileContext, allGoalsContext, mode, goalTitle, exchangeNumber, dateContext } = await req.json();
+
+  // Authoritative "today + this week" block, computed client-side so it
+  // matches the trader's timezone. Injected into the data-aware chat modes
+  // so the coach never guesses the current date.
+  const dateBlock = dateContext ? `\n\n${dateContext}` : '';
 
   // Shared "who this trader is" block — prepended to every data-aware
   // mode so every bot knows the trader's profile across the app.
@@ -60,7 +70,7 @@ Be forensic. Reference specific trades by date and ticker. Compare similar setup
   // ────────────────────────────────────────────────────────────
   const goalsMode = `You are in goal clarification mode. The trader just set a new goal or is providing context on an existing one. Your job is to understand this goal well enough to score future trades against it.
 
-In this mode only, override the formatting rules from your core voice: reply in plain conversational sentences with no bold, no asterisks, no bullet points, and no tables. This goal chat renders your text literally and your reply must end with a clean JSON block, so any markdown would break it.
+In this mode only, override the formatting rules from your core voice: reply in plain conversational sentences with no bold, no asterisks, no bullet points, no tables, and no chart blocks or code fences. This goal chat renders your text literally and your reply must end with a clean JSON block, so any markdown would break it.
 ${profileBlock}
 The trader set this goal: "${goalTitle || 'Unknown goal'}"
 Turn: ${exchangeNumber || 1}
@@ -389,7 +399,7 @@ Do NOT include a "statistics" key — the client already has the real numbers.`;
   const systemPrompt = mode === 'goals'
     ? `${baseIdentity}\n\n${goalsMode}`
     : mode === 'analysis'
-      ? `${baseIdentity}\n\n${analysisMode}`
+      ? `${baseIdentity}${dateBlock}\n\n${analysisMode}`
       : mode === 'actionItems'
         ? actionItemsMode
         : mode === 'classify'
@@ -398,7 +408,7 @@ Do NOT include a "statistics" key — the client already has the real numbers.`;
             ? regressionMode
             : mode === 'deepPsych'
               ? `${baseIdentity}\n\n${deepPsychMode}`
-              : `${baseIdentity}\n\n${tradesMode}`;
+              : `${baseIdentity}${dateBlock}\n\n${tradesMode}`;
 
   // Haiku is dramatically cheaper and fast enough for pure classification;
   // every other mode keeps the Sonnet voice-capable model.

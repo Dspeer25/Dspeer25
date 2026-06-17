@@ -1,9 +1,14 @@
 'use client';
 import React, { useRef, useEffect, useState } from 'react';
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
 import { fm, fd } from './shared';
 import Logo from './Logo';
 
 const teal = '#00d4a0';
+const red = '#ff4444';
 
 interface ChatMessage { role: 'user' | 'assistant'; content: string }
 
@@ -92,6 +97,146 @@ function renderTable(header: string[], rows: string[][], key: number): React.Rea
   );
 }
 
+// ── Chart blocks for the coach renderer ──────────────────────────
+// The coach may emit a fenced ```chart block whose body is JSON:
+//   { "type": "bar"|"line"|"pie", "title": str, "valueFormat":
+//     "currency"|"percent"|"r"|"number", "data": [{label, value}] }
+// We parse it out and render with recharts. Malformed JSON or a bad
+// shape yields null so the surrounding message still renders.
+type ChartType = 'bar' | 'line' | 'pie';
+type ChartValueFormat = 'currency' | 'percent' | 'r' | 'number';
+interface ChartSpec {
+  type: ChartType;
+  title?: string;
+  valueFormat: ChartValueFormat;
+  data: { label: string; value: number }[];
+}
+
+function parseChartSpec(raw: string): ChartSpec | null {
+  let obj: unknown;
+  try {
+    obj = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!obj || typeof obj !== 'object') return null;
+  const o = obj as Record<string, unknown>;
+  const type = o.type;
+  if (type !== 'bar' && type !== 'line' && type !== 'pie') return null;
+  if (!Array.isArray(o.data)) return null;
+  const data = (o.data as unknown[])
+    .map(d => (d && typeof d === 'object' ? (d as Record<string, unknown>) : null))
+    .filter((d): d is Record<string, unknown> => d !== null)
+    .filter(d => typeof d.label === 'string' && typeof d.value === 'number' && Number.isFinite(d.value))
+    .map(d => ({ label: d.label as string, value: d.value as number }));
+  if (data.length === 0) return null;
+  const vf = o.valueFormat;
+  const valueFormat: ChartValueFormat =
+    vf === 'currency' || vf === 'percent' || vf === 'r' || vf === 'number' ? vf : 'number';
+  return { type, title: typeof o.title === 'string' ? o.title : undefined, valueFormat, data };
+}
+
+function fmtChartValue(v: number, valueFormat: ChartValueFormat): string {
+  switch (valueFormat) {
+    case 'currency':
+      return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    case 'percent':
+      return v.toFixed(1) + '%';
+    case 'r':
+      return v.toFixed(2) + 'R';
+    default:
+      return v.toLocaleString('en-US');
+  }
+}
+
+// Pie slices: teal for positive, red for negative, stepped opacity so
+// adjacent same-sign slices stay distinguishable.
+function sliceColor(value: number, i: number): string {
+  const base = value < 0 ? '255,68,68' : '0,212,160';
+  const op = Math.max(0.4, 1 - i * 0.13);
+  return `rgba(${base},${op})`;
+}
+
+const TICK = '#a0a3ab';
+
+function ChartTooltip(props: { active?: boolean; payload?: { value: number }[]; label?: string; valueFormat?: ChartValueFormat }) {
+  const { active, payload, label, valueFormat = 'number' } = props;
+  if (!active || !payload || payload.length === 0) return null;
+  const v = payload[0].value;
+  return (
+    <div style={{ background: '#0A0E0C', border: '1px solid #1F2E25', borderRadius: 8, padding: '6px 10px', fontFamily: MONO, fontSize: 12 }}>
+      {label != null && <div style={{ color: TICK, marginBottom: 2 }}>{label}</div>}
+      <div style={{ color: v < 0 ? red : teal, fontWeight: 700 }}>{fmtChartValue(v, valueFormat)}</div>
+    </div>
+  );
+}
+
+const lineDot = (props: { cx?: number; cy?: number; payload?: { value: number }; index?: number }): React.ReactElement<SVGElement> => {
+  const { cx, cy, payload, index } = props;
+  if (cx == null || cy == null || !payload) return <g key={index} />;
+  const c = payload.value < 0 ? red : teal;
+  return <circle key={index} cx={cx} cy={cy} r={3} fill={c} stroke={c} />;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const renderPieLabel = (p: any): React.ReactElement => {
+  const RAD = Math.PI / 180;
+  const r = p.outerRadius + 16;
+  const x = p.cx + r * Math.cos(-p.midAngle * RAD);
+  const y = p.cy + r * Math.sin(-p.midAngle * RAD);
+  return (
+    <text x={x} y={y} fill={TICK} fontSize={11} fontFamily={MONO} textAnchor={x > p.cx ? 'start' : 'end'} dominantBaseline="central">
+      {p.name}
+    </text>
+  );
+};
+
+function renderChart(spec: ChartSpec, key: number): React.ReactNode {
+  const { type, title, valueFormat, data } = spec;
+  const tickStyle = { fill: TICK, fontSize: 11, fontFamily: MONO };
+  let chart: React.ReactElement;
+  if (type === 'pie') {
+    chart = (
+      <PieChart>
+        <Pie data={data} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={78} label={renderPieLabel} labelLine={{ stroke: '#1F2E25' }}>
+          {data.map((d, i) => <Cell key={i} fill={sliceColor(d.value, i)} stroke="#0A0E0C" />)}
+        </Pie>
+        <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} />
+      </PieChart>
+    );
+  } else if (type === 'line') {
+    chart = (
+      <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="label" tick={tickStyle} tickLine={false} axisLine={{ stroke: '#1F2E25' }} />
+        <YAxis tick={tickStyle} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => fmtChartValue(v, valueFormat)} />
+        <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} cursor={{ stroke: 'rgba(0,212,160,0.2)' }} />
+        <Line type="monotone" dataKey="value" stroke={teal} strokeWidth={2} dot={lineDot} activeDot={{ r: 4, fill: teal }} />
+      </LineChart>
+    );
+  } else {
+    chart = (
+      <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis dataKey="label" tick={tickStyle} tickLine={false} axisLine={{ stroke: '#1F2E25' }} />
+        <YAxis tick={tickStyle} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => fmtChartValue(v, valueFormat)} />
+        <Tooltip content={<ChartTooltip valueFormat={valueFormat} />} cursor={{ fill: 'rgba(0,212,160,0.06)' }} />
+        <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+          {data.map((d, i) => <Cell key={i} fill={d.value < 0 ? red : teal} />)}
+        </Bar>
+      </BarChart>
+    );
+  }
+  return (
+    <div key={`chart-${key}`} style={{ margin: '12px 0', borderRadius: 10, border: '1px solid #1F2E25', background: '#101512', padding: '14px 14px 10px' }}>
+      {title && <div style={{ fontFamily: fd, fontSize: 13, fontWeight: 600, color: '#e0e0e0', marginBottom: 10, letterSpacing: 0.3 }}>{title}</div>}
+      <ResponsiveContainer width="100%" height={220}>
+        {chart}
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export default function AIChatWidget({ isOpen, onClose, messages, input, setInput, onSend, loading, welcomeMsg }: AIChatWidgetProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,6 +275,41 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
     let key = 0;
     while (i < lines.length) {
       const line = lines[i];
+
+      // Fenced code block. ```chart bodies parse to a recharts chart;
+      // any other fence renders its inner lines as plain text. The
+      // fence markers themselves are never shown. Handles both the
+      // conventional multi-line fence and a fully inline one-liner
+      // (```chart {json} ```) in case the model emits it that way.
+      const trimmed = line.trim();
+      if (trimmed.startsWith('```')) {
+        const afterTicks = trimmed.slice(3);
+        const lang = (afterTicks.match(/^(\w*)/)?.[1] ?? '').toLowerCase();
+        const rest = afterTicks.slice(lang.length);
+        const body: string[] = [];
+        const inlineClose = rest.indexOf('```');
+        if (inlineClose !== -1) {
+          body.push(rest.slice(0, inlineClose));
+          i++;
+        } else {
+          if (rest.trim() !== '') body.push(rest);
+          i++;
+          while (i < lines.length && !lines[i].trim().startsWith('```')) {
+            body.push(lines[i]);
+            i++;
+          }
+          if (i < lines.length) i++; // consume closing fence
+        }
+        if (lang === 'chart') {
+          const spec = parseChartSpec(body.join('\n'));
+          if (spec) nodes.push(renderChart(spec, key++));
+          // Malformed → render nothing for this block.
+        } else {
+          // Non-chart fence: show its contents as plain lines.
+          body.forEach((b, bi) => nodes.push(<div key={`fc-${key++}-${bi}`}>{renderInline(b, `fc-${i}-${bi}`)}</div>));
+        }
+        continue;
+      }
 
       // Table: a row immediately followed by a |---|---| delimiter
       if (mdLooksLikeRow(line) && i + 1 < lines.length && mdIsDelimiterRow(lines[i + 1])) {
@@ -226,6 +406,42 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
         {/* Ambient glow */}
           <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '80%', height: 128, background: teal, borderRadius: '50%', filter: 'blur(100px)', opacity: 0.15, pointerEvents: 'none' }} />
 
+          {/* Expand/collapse handle — vertically centered on the left border
+              (the edge facing the app), so it's an obvious click target. */}
+          <button
+            onClick={() => setExpanded(e => !e)}
+            aria-label={expanded ? 'Collapse to sidebar' : 'Expand to half screen'}
+            title={expanded ? 'Collapse to sidebar' : 'Expand to half screen'}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 30,
+              width: 30,
+              height: 72,
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(10,14,12,0.92)',
+              border: '1px solid #1F2E25',
+              borderLeft: 'none',
+              borderRadius: '0 14px 14px 0',
+              color: teal,
+              cursor: 'pointer',
+              boxShadow: '2px 0 10px rgba(0,0,0,0.35)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(0,212,160,0.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = teal; e.currentTarget.style.background = 'rgba(10,14,12,0.92)'; }}
+          >
+            {expanded ? (
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" /></svg>
+            ) : (
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 17 6 12 11 7" /><polyline points="18 17 13 12 18 7" /></svg>
+            )}
+          </button>
+
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #1F2E25', background: 'rgba(10,14,12,0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', zIndex: 20, flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -252,20 +468,6 @@ export default function AIChatWidget({ isOpen, onClose, messages, input, setInpu
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <button
-                onClick={() => setExpanded(e => !e)}
-                aria-label={expanded ? 'Collapse to sidebar' : 'Expand to half screen'}
-                title={expanded ? 'Collapse to sidebar' : 'Expand to half screen'}
-                style={{ padding: 8, color: teal, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = teal; }}
-              >
-                {expanded ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" /></svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 17 6 12 11 7" /><polyline points="18 17 13 12 18 7" /></svg>
-                )}
-              </button>
               <button
                 aria-label="More"
                 style={{ padding: 8, color: 'rgba(129,155,141,1)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }}

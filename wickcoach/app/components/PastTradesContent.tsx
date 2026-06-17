@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
+import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, buildDateContext, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
 import { Calendar, LineChart, ChevronLeft, ChevronRight } from "lucide-react";
 import AIChatWidget from "./AIChatWidget";
 
@@ -288,6 +288,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
           tradesContext,
           goalsContext: buildGoalsContext(),
           profileContext: buildProfileContext(),
+          dateContext: buildDateContext(),
         })
       });
       const data = await response.json();
