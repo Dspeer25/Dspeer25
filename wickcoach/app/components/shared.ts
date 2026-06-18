@@ -2343,6 +2343,12 @@ export interface TradeClassification {
   tradeId: string;
   /** Which prompt version produced this entry — see CLASSIFY_PROMPT_VERSION. */
   promptVersion: string;
+  /** Fingerprint of the week's goal definitions (title + type + context
+   *  + scoring criteria) this entry was scored against. When it no
+   *  longer matches the current goals, the trade was scored under a
+   *  stale understanding and gets re-scored. Optional for backward
+   *  compatibility with entries written before goal-aware invalidation. */
+  goalsHash?: string;
   /**
    * Quantitative compliance — scored from the numeric trade record
    * only (entry/exit price, R:R, contracts, etc.). Populated only for

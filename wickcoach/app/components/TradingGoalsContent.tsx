@@ -1183,6 +1183,26 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                       border: `1px solid ${accent}`,
                       userSelect: 'none',
                     }}>{kind === 'number' ? 'NUMBER' : 'PSYCH'}</span>
+
+                    {/* No-context warning — a PSYCH goal with no context
+                        or scoring criteria is graded by Haiku off the
+                        bare title (generic vibes). Number goals score in
+                        JS and need no context, so they're never flagged. */}
+                    {kind !== 'number' && (g.context?.length ?? 0) === 0 && !g.scoringCriteria && (
+                      <span style={{
+                        fontFamily: fm,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: 0.5,
+                        padding: '2px 10px',
+                        borderRadius: 4,
+                        marginLeft: 4,
+                        background: 'rgba(245,158,11,0.12)',
+                        color: '#f5d27c',
+                        border: '1px solid rgba(245,158,11,0.35)',
+                        userSelect: 'none',
+                      }}>NO CONTEXT · SCORING MAY BE INACCURATE</span>
+                    )}
                   </div>
 
                   {/* Action items below type tag */}

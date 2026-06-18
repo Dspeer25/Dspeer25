@@ -591,6 +591,30 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
     if (!trades || trades.length === 0 || realGoals.length === 0) return;
     const cache = readClassifications();
 
+    // Build the current-week goal list exactly as Haiku will see it.
+    // Number goals never reach Haiku (scored in JS) so they collapse to
+    // an index-preserving sentinel. This string doubles as the
+    // scoring-basis fingerprint below: title, type, context, and
+    // scoring criteria all feed into it, so if the MEANING of any goal
+    // changes, the string — and the hash — change with it.
+    const currentWeekGoals = getGoalsForWeek(getCurrentWeekStart());
+    const goalsList = currentWeekGoals.slice(0, 10).map((g, i) => {
+      const ctx = g.context && g.context.length > 0 ? ` — context: ${g.context.join(' | ')}` : '';
+      const crit = g.scoringCriteria
+        ? ` — compliance: ${g.scoringCriteria.compliance}; violation: ${g.scoringCriteria.violation}; scope: ${g.scoringCriteria.scope}`
+        : '';
+      const k = getEffectiveKind(g);
+      if (k === 'number') {
+        return `${i}. (number goal — not scored by Haiku) measurability=skip`;
+      }
+      return `${i}. "${g.title || '(untitled)'}" [${g.goalType}] measurability=journal${ctx}${crit}`;
+    }).join('\n');
+    // Fingerprint of what the AI knows about this week's goals. Stamped
+    // onto every cached score; a mismatch forces a re-score so adding or
+    // editing a goal's context/criteria can't leave a stale verdict
+    // frozen (the bug where goal #15 kept its pre-context citations).
+    const goalsHash = hashStr(CLASSIFY_PROMPT_VERSION + '\n' + goalsList);
+
     // Only re-score trades from the current calendar week that aren't cached.
     const today = new Date();
     const day = today.getDay();
@@ -608,6 +632,10 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
       // they get re-scored under the current rules (e.g. null
       // compliance for goals the journal doesn't address).
       if (cached.promptVersion !== CLASSIFY_PROMPT_VERSION) return true;
+      // Goal MEANING changed since this trade was scored (new/edited
+      // context or criteria, a retitle, or reordering) — the cached
+      // verdicts reflect a stale understanding, so re-score.
+      if (cached.goalsHash !== goalsHash) return true;
       return false;
     });
     if (unscored.length === 0) return;
@@ -615,32 +643,10 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
     let cancelled = false;
     (async () => {
       try {
-        // Scope to current week's PSYCH goals only — number goals are
-        // scored deterministically in JS and never round-trip through
-        // Haiku. Keeping the goalIndex aligned to the full week list
-        // matters for the rendered candle's goalIdx mapping, so we
-        // keep that index but tag non-psych entries as "skip" so
-        // Haiku still emits a per-goal entry shape that the renderer
-        // can ignore.
-        const currentWeekGoals = getGoalsForWeek(getCurrentWeekStart());
-        const goalsList = currentWeekGoals.slice(0, 10).map((g, i) => {
-          const ctx = g.context && g.context.length > 0 ? ` — context: ${g.context.join(' | ')}` : '';
-          const crit = g.scoringCriteria
-            ? ` — compliance: ${g.scoringCriteria.compliance}; violation: ${g.scoringCriteria.violation}; scope: ${g.scoringCriteria.scope}`
-            : '';
-          // Force measurability=journal for every goal we send.
-          // Number goals never reach Haiku — they're scored in JS —
-          // so we don't ask Haiku for a tradeScores entry on any
-          // goal. Keeps the goalIndex contract intact for psych
-          // goals while preventing stray cross-side emissions.
-          const k = getEffectiveKind(g);
-          // Skip number goals entirely — Haiku doesn't see them.
-          // (Use a sentinel that the renderer can filter on.)
-          if (k === 'number') {
-            return `${i}. (number goal — not scored by Haiku) measurability=skip`;
-          }
-          return `${i}. "${g.title || '(untitled)'}" [${g.goalType}] measurability=journal${ctx}${crit}`;
-        }).join('\n');
+        // goalsList + goalsHash + currentWeekGoals were built above and
+        // hoisted out of the async block so the hash can gate the
+        // unscored filter. Reuse the same goalsList here — it's the
+        // exact goal text the fingerprint was taken over.
 
         // Quantitative targets — sent so Haiku can score each trade against
         // target-rr and produce a batch winRateActual/winRateTarget summary.
@@ -681,7 +687,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         // Stamp each fresh result with the current prompt version so
         // we can tell if the prompt changes under us later.
         meta.results.forEach(r => {
-          if (r && r.tradeId) next[r.tradeId] = { ...r, promptVersion: CLASSIFY_PROMPT_VERSION };
+          if (r && r.tradeId) next[r.tradeId] = { ...r, promptVersion: CLASSIFY_PROMPT_VERSION, goalsHash };
         });
         writeClassifications(next);
         setClassifications(next);
@@ -692,7 +698,7 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         // nulls indicates the prompt is still bailing for that
         // category and needs further tightening.
         try {
-          const currentWeekGoals = getGoalsForWeek(getCurrentWeekStart());
+          // currentWeekGoals is in scope from the effect body above.
           type Counts = { pass: number; fail: number; nul: number };
           const tradeStats = new Map<number, Counts>();
           const psychStats = new Map<number, Counts>();
@@ -1238,6 +1244,13 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
     const accent = section === 'trades' ? blue : teal;
     // Psych adherence drives a red→green band; trades keep the flat accent.
     const bandColor = section === 'psych' && !allNull ? adherenceColor(pct) : accent;
+    // Psych goals are graded by Haiku from journal text; with no context
+    // or scoring criteria set, it's working from the bare title and
+    // grading on generic vibes — the root cause of mismatched citations.
+    // Number goals score deterministically in JS and need no context, so
+    // they're never flagged.
+    const goalForRow = section === 'psych' ? weekGoals[row.goalIdx] : undefined;
+    const noContext = !!goalForRow && (goalForRow.context?.length ?? 0) === 0 && !goalForRow.scoringCriteria;
     return (
       <div key={`${section}-bar-${row.goalIdx}`} style={{ marginBottom: 10 }}>
         <div
@@ -1256,6 +1269,9 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 14, marginBottom: 10 }}>
             <div style={{ fontFamily: fm, fontSize: 15, fontWeight: 600, color: '#e8e8f0', lineHeight: 1.35, minWidth: 0 }}>
               <span style={{ color: accent, fontWeight: 700 }}>{i + 1}. </span>{row.title}
+              {noContext && (
+                <span style={{ display: 'inline-block', marginLeft: 10, fontFamily: fm, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, padding: '2px 8px', borderRadius: 4, background: 'rgba(245,158,11,0.12)', color: '#f5d27c', border: '1px solid rgba(245,158,11,0.35)', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>NO CONTEXT</span>
+              )}
             </div>
             <div style={{ flexShrink: 0, fontFamily: fm, fontSize: 14, fontWeight: 700, color: allNull ? '#a0a3ab' : bandColor, whiteSpace: 'nowrap' }}>
               {allNull ? 'Not yet scored' : `${row.actual} / ${evaluable} trades · ${pct}%`}
@@ -1266,6 +1282,11 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               <div style={{ width: `${pct}%`, height: '100%', background: bandColor, borderRadius: 6, transition: 'width 0.3s ease' }} />
             )}
           </div>
+          {noContext && (
+            <div style={{ fontFamily: fm, fontSize: 12, color: '#f5d27c', marginTop: 8, lineHeight: 1.4 }}>
+              No context set for this goal — scoring may be inaccurate. Add context on the Weekly Goals tab so WickCoach grades against what the rule actually means.
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
             <span style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab' }}>
               {row.nullCount > 0 && !allNull ? `${row.nullCount} not evaluated` : ' '}
