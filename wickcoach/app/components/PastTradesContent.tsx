@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, buildDateContext, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
+import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, buildDateContext, buildTraderStats, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
 import { Calendar, LineChart, ChevronLeft, ChevronRight } from "lucide-react";
 import AIChatWidget from "./AIChatWidget";
 
@@ -285,18 +285,15 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
     setAiMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setAiLoading(true);
     try {
-      // Mirror every column visible in the Past Trades table so the AI can
-      // reason about any field the trader can see on screen. Order follows the
-      // table header: Asset, Date, Time, Strategy, Direction, Qty, Entry/Exit,
-      // Net P/L, R:R, Analyst Notes. Result is included so wins/losses are
-      // unambiguous in prose (the table shows it via P/L sign + row color).
-      const tradesContext = trades.map(t => (
-        `Date:${t.date} Time:${t.time} ` +
-        `Asset:${t.ticker} Strategy:${t.strategy} Direction:${t.direction} Qty:${t.contracts} ` +
-        `Entry:$${t.entryPrice} Exit:$${t.exitPrice} ` +
-        `NetPL:$${t.pl} Result:${t.result} R:R:${t.riskReward} ` +
-        `Notes:"${t.journal}"`
-      )).join('\n');
+      // Use the shared deterministic stats builder — same as every other
+      // coach surface — so the AI receives PRE-COMPUTED totals (net P/L,
+      // win rate, trade count, per-strategy/ticker/day/hour aggregates)
+      // plus the full per-trade log. Previously this surface shipped raw
+      // rows only and let the model sum P/L by hand, which dropped
+      // break-even slippage and disagreed with the table header. The
+      // TOTALS line here is computed with the identical reduce the header
+      // uses, so both report the same net P/L.
+      const tradesContext = buildTraderStats(trades);
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
