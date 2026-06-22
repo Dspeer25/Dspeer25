@@ -101,7 +101,27 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
   const didResizeRef = React.useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [eqHover, setEqHover] = useState<{ x: number; y: number; date: string; value: number } | null>(null);
-  const [eqRange, setEqRange] = useState('YTD');
+  // Time-window chip for the equity curve + trades table. Persisted in
+  // localStorage so the selected window survives PastTradesContent
+  // unmounting — e.g. when the trader clicks into a trade to edit and
+  // returns — instead of snapping back to the default. Same pattern as
+  // eqMode / chartView below.
+  const EQ_RANGE_STORAGE_KEY = 'wickcoach_pasttrades_eq_range';
+  const [eqRange, setEqRange] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'YTD';
+    try {
+      const raw = localStorage.getItem(EQ_RANGE_STORAGE_KEY);
+      return raw === '1D' || raw === '1W' || raw === '1M' || raw === '3M' || raw === 'YTD' ? raw : 'YTD';
+    } catch {
+      return 'YTD';
+    }
+  });
+  const setEqRangePersisted = (v: string) => {
+    setEqRange(v);
+    if (typeof window !== 'undefined') {
+      try { localStorage.setItem(EQ_RANGE_STORAGE_KEY, v); } catch { /* ignore */ }
+    }
+  };
   const [notesTooltip, setNotesTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [aiBtnHover, setAiBtnHover] = useState(false);
   const [chartHeight, setChartHeight] = useState(180);
@@ -832,7 +852,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
                 {['1D', '1W', '1M', '3M', 'YTD'].map(p => {
                   const active = eqRange === p;
                   return (
-                    <span key={p} onClick={() => setEqRange(p)} style={{
+                    <span key={p} onClick={() => setEqRangePersisted(p)} style={{
                       fontFamily: fm, fontSize: 11, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
                       background: active ? '#00d4a0' : 'transparent',
                       color: active ? '#000' : 'rgba(255,255,255,0.4)',
