@@ -162,10 +162,6 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     }, [entryPrice, exitPrice, contracts, plManualOverride, positionType, direction]);
 
     React.useEffect(() => {
-      setPlManualOverride(false);
-    }, [entryPrice, exitPrice, contracts]);
-
-    React.useEffect(() => {
       const plNum = parseFloat(pl);
       const riskNum = parseFloat(risk);
       if (plNum > 0 && riskNum > 0) {
@@ -420,11 +416,11 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Entry Price</label>
-            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
+            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={entryPrice} onChange={(e) => { setEntryPrice(e.target.value); setPlManualOverride(false); }} />
           </div>
           <div style={{ flex: 1 }}>
             <label style={labelStyle}>Exit Price</label>
-            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} />
+            <input type="number" step={0.01} style={inputStyle} placeholder="$0.00" value={exitPrice} onChange={(e) => { setExitPrice(e.target.value); setPlManualOverride(false); }} />
           </div>
         </div>
 
