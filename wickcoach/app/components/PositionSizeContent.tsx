@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle } from 'lucide-react';
+import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle, Plus } from 'lucide-react';
 import { fd, fm, teal } from './shared';
 import { ToolPageShell } from './ToolsContent';
 
@@ -20,6 +20,19 @@ const SURFACE_BOT = '#181c26';
 type Instrument = 'shares' | 'options';
 
 const RTARGETS = [0.5, 1, 1.5, 2, 2.5, 3] as const;
+
+// Persisted default mode (Shares/Options) for the calculator. Mirrors the
+// Log a Trade default-position-type pattern: read once via a lazy useState
+// initializer on mount, written when the trader clicks "Set as default".
+const PSC_DEFAULT_MODE_KEY = 'wickcoach_psc_default_mode';
+function readDefaultMode(): Instrument | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem(PSC_DEFAULT_MODE_KEY);
+    if (saved === 'shares' || saved === 'options') return saved;
+  } catch { /* ignore */ }
+  return null;
+}
 
 function fmtD2(v: number): string {
   return '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?=\.))/g, ',');
@@ -46,6 +59,30 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
 };
 
+// Leg line items in the averaged-position summary — a small teal tag
+// ("Original" / "Add 1") followed by that leg's size @ price.
+const legLineStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  fontFamily: fm,
+  fontSize: 14,
+  color: TEXT_BASE,
+};
+const legTagStyle: React.CSSProperties = {
+  fontFamily: fd,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: 1,
+  textTransform: 'uppercase',
+  color: teal,
+  background: 'rgba(0,212,160,0.1)',
+  padding: '3px 9px',
+  borderRadius: 4,
+  minWidth: 70,
+  textAlign: 'center',
+};
+
 // Tiny keyboard-key chip used in the "Tab / Enter" hint above the cards.
 const kbdStyle: React.CSSProperties = {
   display: 'inline-block',
@@ -63,7 +100,7 @@ const kbdStyle: React.CSSProperties = {
 
 // ─── Inputs ──────────────────────────────────────────────────────────
 
-function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inputRef, onEnter }: {
+function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inputRef, onEnter, allowEmpty = false }: {
   value: number;
   onChange: (v: number) => void;
   prefix?: string;
@@ -72,14 +109,19 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inpu
   min?: number;
   inputRef?: React.Ref<HTMLInputElement>;
   onEnter?: () => void;
+  // When true, a value of 0 renders as a blank field (and focus starts
+  // empty) instead of showing "0" — used for the add-a-leg drafts so the
+  // trader can just start typing. Left off for the always-populated inputs.
+  allowEmpty?: boolean;
 }) {
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState('');
 
+  const isEmpty = allowEmpty && value === 0;
   const formatted = decimals > 0
     ? value.toFixed(decimals).replace(/\B(?=(\d{3})+(?=\.))/g, ',')
     : value.toLocaleString();
-  const display = focused ? draft : formatted;
+  const display = focused ? draft : (isEmpty ? '' : formatted);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -100,7 +142,7 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inpu
         type="text"
         inputMode={decimals > 0 ? 'decimal' : 'numeric'}
         value={display}
-        onFocus={() => { setFocused(true); setDraft(String(value)); }}
+        onFocus={() => { setFocused(true); setDraft(isEmpty ? '' : String(value)); }}
         onBlur={() => {
           setFocused(false);
           const stripped = draft.replace(/[^0-9.\-]/g, '');
@@ -255,11 +297,32 @@ function InstrumentToggle({ value, onChange }: {
 export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   const [accountSize, setAccountSize] = useState(50000);
   const [riskPct, setRiskPct]         = useState(1);
-  const [instrument, setInstrument]   = useState<Instrument>('shares');
+  // Lazy initializer (not a useEffect) so the saved default mode is the
+  // value on the very first render — no flash of the wrong toggle state.
+  const [instrument, setInstrument]   = useState<Instrument>(() => readDefaultMode() ?? 'shares');
+  // Mirror of the persisted default so the "Set as default" pill can show
+  // its active ("Default ✓") state and re-render when it changes.
+  const [defaultMode, setDefaultMode] = useState<Instrument | null>(() => readDefaultMode());
   const [entry, setEntry]             = useState(50);
   const [stop, setStop]               = useState(48);
   const [size, setSize]               = useState(250);
   const [hydrated, setHydrated]       = useState(false);
+
+  // ─── Averaging-in ("Add") state ──────────────────────────────────
+  // Each add is a leg { contracts, price }. The running position is just
+  // totalCost / totalContracts, re-averaged on every add. Not persisted —
+  // adds are per-trade scratch, exactly like entry/stop/size.
+  const [adds, setAdds]           = useState<{ contracts: number; price: number }[]>([]);
+  const [showAddRow, setShowAddRow] = useState(false);
+  const [addQty, setAddQty]       = useState(0);
+  const [addPrice, setAddPrice]   = useState(0);
+  // Refs mirror the add drafts so confirmAdd — fired synchronously by
+  // Enter, right after NumInput's blur commits the value via onChange —
+  // reads the just-committed value instead of stale state.
+  const addQtyRef        = useRef(0);
+  const addPriceRef      = useRef(0);
+  const addQtyInputRef   = useRef<HTMLInputElement>(null);
+  const addPriceInputRef = useRef<HTMLInputElement>(null);
 
   // Refs for keyboard-first focus management.
   //   accountInputRef → cursor lands here on first visit
@@ -318,16 +381,57 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
     exitTargetsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Persist the current Shares/Options selection as the default mode.
+  const handleSetDefaultMode = () => {
+    try { localStorage.setItem(PSC_DEFAULT_MODE_KEY, instrument); } catch { /* ignore */ }
+    setDefaultMode(instrument);
+  };
+
+  // Open the inline add row with blank drafts, focus the quantity field.
+  const openAddRow = () => {
+    setAddQty(0);   addQtyRef.current = 0;
+    setAddPrice(0); addPriceRef.current = 0;
+    setShowAddRow(true);
+    requestAnimationFrame(() => addQtyInputRef.current?.focus());
+  };
+  const cancelAdd = () => setShowAddRow(false);
+  // Read the freshly-committed drafts from the refs (see note above) and
+  // push a new leg. Ignore incomplete entries so Enter/Confirm on a blank
+  // row is a no-op rather than adding a zero leg.
+  const confirmAdd = () => {
+    const q = addQtyRef.current;
+    const p = addPriceRef.current;
+    if (q > 0 && p > 0) {
+      setAdds(prev => [...prev, { contracts: q, price: p }]);
+      setShowAddRow(false);
+    }
+  };
+  // Clear all adds — back to a plain single-entry calculator.
+  const resetPosition = () => { setAdds([]); setShowAddRow(false); };
+
   const multiplier      = instrument === 'options' ? 100 : 1;
   const unitsWordPlural = instrument === 'options' ? 'contracts' : 'shares';
 
-  // Math — pure functions of inputs.
+  // Position averaging — fold the original leg (size @ entry) and every
+  // add into one averaged leg. effEntry/effSize then feed ALL downstream
+  // math unchanged, so risk / cost / R-ladder behave identically whether
+  // or not the trader has averaged in.
+  const hasPosition    = adds.length > 0;
+  const addContracts   = adds.reduce((s, a) => s + a.contracts, 0);
+  const totalContracts = size + addContracts;
+  const totalCostUnits = size * entry + adds.reduce((s, a) => s + a.contracts * a.price, 0);
+  const avgCost        = totalContracts > 0 ? totalCostUnits / totalContracts : entry;
+  const effEntry       = hasPosition ? avgCost : entry;
+  const effSize        = hasPosition ? totalContracts : size;
+
+  // Math — pure functions of inputs. Uses the effective (averaged) entry
+  // and size; the stop stays live, so moving it recalcs everything.
   const maxRisk      = accountSize * (riskPct / 100);
-  const priceRisk    = entry - stop;
+  const priceRisk    = effEntry - stop;
   const perUnitLoss  = priceRisk * multiplier;
-  const riskPerTrade = size * perUnitLoss;
+  const riskPerTrade = effSize * perUnitLoss;
   const pctOfAccount = accountSize > 0 ? (riskPerTrade / accountSize) * 100 : 0;
-  const positionCost = size * entry * multiplier;
+  const positionCost = effSize * effEntry * multiplier;
 
   // Two distinct alarm states.
   //   badStop:    stop ≥ entry — R math is undefined, block the readout.
@@ -394,6 +498,32 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
             <InstrumentToggle value={instrument} onChange={setInstrument} />
+
+            {/* "Set as default" pill — mirrors the Log a Trade default
+                position-type control. Saves the live Shares/Options
+                selection to localStorage; flips to "Default ✓" when the
+                current selection already matches the saved default. */}
+            <span
+              onClick={handleSetDefaultMode}
+              title={defaultMode === instrument
+                ? 'This mode loads by default when you open the calculator'
+                : 'Make this the default mode when you open the calculator'}
+              style={{
+                fontFamily: fm,
+                fontSize: 11,
+                letterSpacing: 0.5,
+                cursor: 'pointer',
+                userSelect: 'none',
+                padding: '6px 12px',
+                borderRadius: 999,
+                color: teal,
+                background: defaultMode === instrument ? 'rgba(0,212,160,0.15)' : 'transparent',
+                border: defaultMode === instrument ? `1px solid ${teal}` : '1px solid rgba(0,212,160,0.35)',
+              }}
+            >
+              {defaultMode === instrument ? 'Default ✓' : 'Set as default'}
+            </span>
+
             {instrument === 'options' && (
               <div style={{
                 fontFamily: fm,
@@ -412,10 +542,40 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                 1 contract = 100 shares
               </div>
             )}
+
+            {/* Add (average-in) — opens the inline add-a-leg row. Pushed
+                to the right; hidden while the row is open so there's a
+                single obvious action. */}
+            {!showAddRow && (
+              <button
+                onClick={openAddRow}
+                title="Average into this position: add contracts/shares at a new price to recompute your average cost, risk, and R levels"
+                style={{
+                  marginLeft: 'auto',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontFamily: fd,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                  color: teal,
+                  background: 'rgba(0,212,160,0.1)',
+                  border: '1px solid rgba(0,212,160,0.35)',
+                  borderRadius: 8,
+                  padding: '8px 18px',
+                  cursor: 'pointer',
+                }}
+              >
+                <Plus size={15} strokeWidth={2.2} color={teal} />
+                Add
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-            <FieldGroup label={`Number of ${unitsWordPlural}`}>
+            <FieldGroup label={hasPosition ? `Original ${unitsWordPlural}` : `Number of ${unitsWordPlural}`}>
               <NumInput
                 value={size}
                 onChange={setSize}
@@ -424,7 +584,7 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                 onEnter={scrollToExit}
               />
             </FieldGroup>
-            <FieldGroup label="Entry price">
+            <FieldGroup label={hasPosition ? 'Original entry' : 'Entry price'}>
               <NumInput
                 value={entry}
                 onChange={setEntry}
@@ -441,6 +601,102 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
               />
             </FieldGroup>
           </div>
+
+          {/* Inline "add a leg" row — quantity + price, confirm/cancel.
+              Enter on quantity advances to price; Enter on price confirms.
+              Sits after the main grid so it slots naturally into the
+              existing tab order rather than disrupting it. */}
+          {showAddRow && (
+            <div style={{
+              marginTop: 24,
+              paddingTop: 24,
+              borderTop: `1px solid ${BORDER}`,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr auto auto',
+              gap: 16,
+              alignItems: 'end',
+            }}>
+              <FieldGroup label="Quantity added">
+                <NumInput
+                  value={addQty}
+                  decimals={0}
+                  allowEmpty
+                  onChange={v => { setAddQty(v); addQtyRef.current = v; }}
+                  onEnter={() => addPriceInputRef.current?.focus()}
+                  inputRef={addQtyInputRef}
+                />
+              </FieldGroup>
+              <FieldGroup label="Price added at">
+                <NumInput
+                  value={addPrice}
+                  prefix="$"
+                  allowEmpty
+                  onChange={v => { setAddPrice(v); addPriceRef.current = v; }}
+                  onEnter={confirmAdd}
+                  inputRef={addPriceInputRef}
+                />
+              </FieldGroup>
+              <button
+                onClick={confirmAdd}
+                style={{
+                  fontFamily: fd, fontSize: 13, fontWeight: 700, textTransform: 'uppercase',
+                  letterSpacing: 1, color: '#06120e', background: teal,
+                  border: `1px solid ${teal}`, borderRadius: 8, padding: '15px 22px', cursor: 'pointer',
+                }}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={cancelAdd}
+                style={{
+                  fontFamily: fd, fontSize: 13, fontWeight: 700, textTransform: 'uppercase',
+                  letterSpacing: 1, color: LABEL, background: 'transparent',
+                  border: `1px solid ${BORDER}`, borderRadius: 8, padding: '15px 22px', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* Position view — with at least one add, show the re-averaged
+              cost prominently plus every leg as a line item. Editing the
+              Original size/entry or adding again re-averages live. */}
+          {hasPosition && (
+            <div style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${BORDER}` }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={labelStyle}>Average cost</span>
+                  <span style={{ fontFamily: fd, fontSize: 26, fontWeight: 700, color: teal, letterSpacing: 0.5 }}>
+                    Avg cost {avgCost.toFixed(2)} · {totalContracts.toLocaleString()} {unitsWordPlural}
+                  </span>
+                </div>
+                <button
+                  onClick={resetPosition}
+                  style={{
+                    fontFamily: fm, fontSize: 12, letterSpacing: 0.5, color: LABEL,
+                    background: 'transparent', border: `1px solid ${BORDER}`,
+                    borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
+                  }}
+                >
+                  Reset position
+                </button>
+              </div>
+
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={legLineStyle}>
+                  <span style={legTagStyle}>Original</span>
+                  <span>{size.toLocaleString()} {unitsWordPlural} @ {fmtD2(entry)}</span>
+                </div>
+                {adds.map((a, i) => (
+                  <div key={i} style={legLineStyle}>
+                    <span style={legTagStyle}>Add {i + 1}</span>
+                    <span>{a.contracts.toLocaleString()} {unitsWordPlural} @ {fmtD2(a.price)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {instrument === 'options' && (
             <div style={{
@@ -614,7 +870,7 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
 
           <div>
             {RTARGETS.map((r, i) => {
-              const sellPrice  = badStop ? null : entry + r * priceRisk;
+              const sellPrice  = badStop ? null : effEntry + r * priceRisk;
               const grossProfit = badStop ? null : r * riskPerTrade;
               const isLast = i === RTARGETS.length - 1;
               const isOneR = r === 1;
