@@ -100,7 +100,7 @@ const kbdStyle: React.CSSProperties = {
 
 // ─── Inputs ──────────────────────────────────────────────────────────
 
-function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inputRef, onEnter, allowEmpty = false }: {
+function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inputRef, onEnter, allowEmpty = false, onLiveChange }: {
   value: number;
   onChange: (v: number) => void;
   prefix?: string;
@@ -113,6 +113,10 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inpu
   // empty) instead of showing "0" — used for the add-a-leg drafts so the
   // trader can just start typing. Left off for the always-populated inputs.
   allowEmpty?: boolean;
+  // Fires on every keystroke (not just blur) with the parsed value — used
+  // by the add row so the "new avg cost" preview updates live and the
+  // confirm value can never be stale. Blank parses to 0.
+  onLiveChange?: (v: number) => void;
 }) {
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState('');
@@ -149,7 +153,13 @@ function NumInput({ value, onChange, prefix, suffix, decimals = 2, min = 0, inpu
           const n = parseFloat(stripped);
           if (!isNaN(n) && n >= min) onChange(n);
         }}
-        onChange={e => setDraft(e.target.value)}
+        onChange={e => {
+          setDraft(e.target.value);
+          if (onLiveChange) {
+            const n = parseFloat(e.target.value.replace(/[^0-9.\-]/g, ''));
+            onLiveChange(isNaN(n) ? 0 : n);
+          }
+        }}
         onKeyDown={e => {
           if (e.key === 'Enter') {
             // Blur first so onBlur commits the current draft via onChange,
@@ -433,6 +443,15 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   const pctOfAccount = accountSize > 0 ? (riskPerTrade / accountSize) * 100 : 0;
   const positionCost = effSize * effEntry * multiplier;
 
+  // Live projection for the open add row — the average the position WOULD
+  // have if the currently-typed quantity/price were confirmed on top of
+  // the running position. Lets the trader see the new blended cost before
+  // committing the leg.
+  const previewTotal     = totalContracts + addQty;
+  const previewCostUnits = totalCostUnits + addQty * addPrice;
+  const previewAvg       = previewTotal > 0 ? previewCostUnits / previewTotal : entry;
+  const previewReady     = addQty > 0 && addPrice > 0;
+
   // Two distinct alarm states.
   //   badStop:    stop ≥ entry — R math is undefined, block the readout.
   //   overBudget: size puts more $ at risk than the account allows — warn
@@ -607,21 +626,20 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
               Sits after the main grid so it slots naturally into the
               existing tab order rather than disrupting it. */}
           {showAddRow && (
-            <div style={{
-              marginTop: 24,
-              paddingTop: 24,
-              borderTop: `1px solid ${BORDER}`,
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr auto auto',
-              gap: 16,
-              alignItems: 'end',
-            }}>
+            <div style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${BORDER}` }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr auto auto',
+                gap: 16,
+                alignItems: 'end',
+              }}>
               <FieldGroup label="Quantity added">
                 <NumInput
                   value={addQty}
                   decimals={0}
                   allowEmpty
                   onChange={v => { setAddQty(v); addQtyRef.current = v; }}
+                  onLiveChange={v => { setAddQty(v); addQtyRef.current = v; }}
                   onEnter={() => addPriceInputRef.current?.focus()}
                   inputRef={addQtyInputRef}
                 />
@@ -632,6 +650,7 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                   prefix="$"
                   allowEmpty
                   onChange={v => { setAddPrice(v); addPriceRef.current = v; }}
+                  onLiveChange={v => { setAddPrice(v); addPriceRef.current = v; }}
                   onEnter={confirmAdd}
                   inputRef={addPriceInputRef}
                 />
@@ -656,6 +675,17 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
               >
                 Cancel
               </button>
+              </div>
+
+              {/* Live preview — the blended average this add WOULD produce
+                  once confirmed, computed on top of the running position. */}
+              {previewReady && (
+                <div style={{ marginTop: 16, fontFamily: fm, fontSize: 15, color: LABEL }}>
+                  New avg cost{' '}
+                  <span style={{ color: teal, fontWeight: 700 }}>{previewAvg.toFixed(2)}</span>
+                  {` · ${previewTotal.toLocaleString()} ${unitsWordPlural}`}
+                </div>
+              )}
             </div>
           )}
 
