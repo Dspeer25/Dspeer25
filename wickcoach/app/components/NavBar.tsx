@@ -28,13 +28,18 @@ export default function NavBar({ view, tabs, activeTab, onTabClick, onLogoClick,
       )}
       <nav style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "0 56px", minHeight: 100, borderBottom: "none", overflow: "visible", position: 'relative', background: '#181c26' }}>
         {isLite() ? (
-          // Position Calc Pro branding — same design system, no logo→home nav.
-          <div style={{ marginTop: 14, marginBottom: 8, textAlign: 'center' }}>
-            <div style={{ fontFamily: fd, fontWeight: 700, letterSpacing: '0.12em', fontSize: 30, lineHeight: 1 }}>
-              <span style={{ color: '#d0d0d8' }}>POSITION CALC </span>
-              <span style={{ color: teal }}>PRO</span>
+          // Position Calc Pro branding — WickCoach logo (stick figure +
+          // green candle) left of the product name. Same design system,
+          // no logo→home nav.
+          <div style={{ marginTop: 14, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Logo size={52} />
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontFamily: fd, fontWeight: 700, letterSpacing: '0.10em', fontSize: 46, lineHeight: 1 }}>
+                <span style={{ color: '#d0d0d8' }}>POSITION CALC </span>
+                <span style={{ color: teal }}>PRO</span>
+              </div>
+              <div style={{ fontFamily: fm, fontSize: 16, color: '#a0a3ab', marginTop: 8, letterSpacing: '0.04em' }}>A WickCoach product</div>
             </div>
-            <div style={{ fontFamily: fm, fontSize: 12, color: '#a0a3ab', marginTop: 6, letterSpacing: '0.04em' }}>A WickCoach product</div>
           </div>
         ) : (
           <div onClick={view === 'app' ? onLogoClick : undefined} style={{ marginTop: 14, marginBottom: 8, cursor: view === 'app' ? 'pointer' : 'default' }}>
