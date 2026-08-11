@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef } from "react";
-import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, buildDateContext, buildTraderStats, readQuantTargets, parseLocalDate, readAccountSize } from "./shared";
+import { fm, fd, Trade, formatDollar, formatNumber, formatRR, parseRr, buildGoalsContext, buildProfileContext, buildDateContext, buildTraderStats, readQuantTargets, parseLocalDate, readAccountSize, isLite } from "./shared";
 import { Calendar, LineChart, ChevronLeft, ChevronRight } from "lucide-react";
 import AIChatWidget from "./AIChatWidget";
 
@@ -279,6 +279,9 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
   }, [resizing]);
 
   async function sendToCoach() {
+    // Lite ("Position Calc Pro") ships no AI — hard stop so no /api/coach
+    // call is possible even if an entry point were ever left rendered.
+    if (isLite()) return;
     if (!aiInput.trim() || aiLoading) return;
     const userMsg = aiInput.trim();
     setAiInput('');
@@ -655,6 +658,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
               Export CSV
             </span>
+            {!isLite() && (
             <div
               style={{ position: 'relative' }}
               onMouseEnter={() => setAiBtnHover(true)}
@@ -683,6 +687,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
         {/* ── STAT CARDS — 5 connected cards ── */}
@@ -741,9 +746,10 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
             )}
           </div>
 
-          {/* Card 5 — HIGH-LEVEL ANALYSIS */}
-          <div onClick={() => setAiOpen(!aiOpen)} style={{ flex: 1, padding: '24px 24px', cursor: 'pointer', position: 'relative', textAlign: 'center' }}>
-            {!aiOpen && (
+          {/* Card 5 — EXPECTED VALUE (in full it doubles as the AI entry;
+              lite keeps the stat but strips the AI onClick / hint / icon). */}
+          <div onClick={isLite() ? undefined : () => setAiOpen(!aiOpen)} style={{ flex: 1, padding: '24px 24px', cursor: isLite() ? 'default' : 'pointer', position: 'relative', textAlign: 'center' }}>
+            {!aiOpen && !isLite() && (
               <div style={{ position: 'absolute', top: -70, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' as const, animation: 'hlaArrowBounce 1.5s ease-in-out infinite', pointerEvents: 'none' }}>
                 <span style={{ fontFamily: fm, fontSize: 11, color: '#00d4a0', fontWeight: 600, textShadow: '0 0 12px rgba(0,212,160,0.4)' }}>Click to ask me about your Trading</span>
                 <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
@@ -752,6 +758,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
                 </svg>
               </div>
             )}
+            {!isLite() && (
             <div style={{ position: 'absolute', top: 14, right: 14, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,212,160,0.1)', border: '1px solid rgba(0,212,160,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 12px rgba(0,212,160,0.2)' }}>
               <svg width="14" height="17" viewBox="0 0 20 24" fill="none">
                 <circle cx="8" cy="4" r="2.8" stroke="#00d4a0" strokeWidth="1.2" fill="none" />
@@ -764,6 +771,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
                 <line x1="15.5" y1="2" x2="15.5" y2="12" stroke="#00d4a0" strokeWidth="0.8" />
               </svg>
             </div>
+            )}
             <div style={{ color: 'rgba(255,255,255,0.6)', fontFamily: fm, fontSize: 13, textTransform: 'uppercase' as const, letterSpacing: 1 }}>Expected Value</div>
             <div style={{ color: expectedValue >= 0 ? '#00d4a0' : '#ff4444', fontFamily: fd, fontSize: 32, fontWeight: 700, marginTop: 10, lineHeight: 1.1 }}>
               {formatNumber(expectedValue, { currency: true, explicitSign: true })}
@@ -1279,7 +1287,8 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
         )}
       </div>
 
-      {/* ── FLOATING AI CHAT WIDGET ── */}
+      {/* ── FLOATING AI CHAT WIDGET (full only) ── */}
+      {!isLite() && (
       <AIChatWidget
         isOpen={aiOpen}
         onClose={() => setAiOpen(false)}
@@ -1290,6 +1299,7 @@ export default function PastTradesContent({ trades, setActiveTab, onEditTrade, h
         loading={aiLoading}
         welcomeMsg={welcomeMsg}
       />
+      )}
       <style>{`
         @keyframes livePulse {
           0% { box-shadow: 0 0 0 0 rgba(0,212,160,0.4); }

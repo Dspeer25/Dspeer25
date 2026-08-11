@@ -9,6 +9,31 @@ export const fm = appleStack;
 export const fd = appleStack;
 export const teal = "#00d4a0";
 
+// ─── Product variant flag ────────────────────────────────────
+// "Position Calc Pro" is a lite build of WickCoach sold separately:
+// Position Size Calculator, Log a Trade, Past Trades — no AI, no
+// marketing homepage, no demo seed. Driven by the build-time env var
+// NEXT_PUBLIC_PRODUCT ('full' | 'lite'); unset defaults to 'full', so
+// the existing app is unchanged. NEXT_PUBLIC_* is inlined at build
+// time, so isLite() resolves to a constant in each build.
+export function isLite(): boolean {
+  return process.env.NEXT_PUBLIC_PRODUCT === 'lite';
+}
+
+// External purchase/upgrade link for the lite build. Placeholder until
+// the real checkout URL is ready — swap this ONE constant to update every
+// lock tooltip and the nav "Get WickCoach" CTA at once.
+export const UPGRADE_URL = 'https://wickcoach.com';
+
+// Tabs shown but LOCKED in lite: visible in the nav, inert on click, and
+// gated so their components never mount (AnalysisHub/TradingGoals/Tools).
+// That non-mounting is what keeps lite at zero Anthropic calls — a locked
+// tab can't run AnalysisHub's classification effect.
+const LITE_LOCKED_TABS = ['Weekly Goals', 'Analysis', 'Tools'];
+export function isTabLocked(tab: string): boolean {
+  return isLite() && LITE_LOCKED_TABS.includes(tab);
+}
+
 // ─── Deterministic linear regression ─────────────────────────
 // All math is done here in JavaScript — never by the AI. The AI
 // only gets pre-computed results to explain in plain English.

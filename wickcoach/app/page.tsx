@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from "react";
 import { Lock, Eye, ShieldCheck } from "lucide-react";
-import { fm, fd, teal, Trade } from "./components/shared";
+import { fm, fd, teal, Trade, isLite, isTabLocked } from "./components/shared";
+import { PositionSizeContent } from "./components/PositionSizeContent";
 import Logo from "./components/Logo";
 import FAQ from "./components/FAQ";
 import NavBar from "./components/NavBar";
@@ -27,8 +28,10 @@ import SplashScreen from "./components/SplashScreen";
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState("");
-  const [view, setView] = useState<'home' | 'app'>('home');
+  // Lite ("Position Calc Pro") boots straight into the app on the
+  // Position Size Calc tab — no marketing homepage. Full is unchanged.
+  const [activeTab, setActiveTab] = useState(isLite() ? "Position Size Calc" : "");
+  const [view, setView] = useState<'home' | 'app'>(isLite() ? 'app' : 'home');
   const [activeCategory, setActiveCategory] = useState(0);
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
@@ -58,22 +61,50 @@ export default function WickCoachFull() {
 
   useEffect(() => {
     try {
-      const dataVersion = 'v5';
-      const storedVersion = localStorage.getItem('wickcoach_trades_version');
+      // Seed the demo/sample trades exactly once, on a true first run.
+      // 'wickcoach_seeded' is the durable marker: once set we NEVER seed
+      // again, so a user who clears their trades to [] keeps an empty Past
+      // Trades on reload instead of having the demo data repopulate.
+      const SEEDED_KEY = 'wickcoach_seeded';
+      const seeded = localStorage.getItem(SEEDED_KEY);
       const stored = localStorage.getItem('wickcoach_trades');
       const parsed = stored ? JSON.parse(stored) : [];
-      if (parsed.length < 10 || storedVersion !== dataVersion) {
-        fetch('/fake-trades.json')
-          .then(r => r.json())
-          .then(data => {
-            setTrades(data);
-            localStorage.setItem('wickcoach_trades', JSON.stringify(data));
-            localStorage.setItem('wickcoach_trades_version', dataVersion);
-          })
-          .catch(() => setTrades(parsed));
-      } else {
+
+      if (seeded) {
+        // Already initialized — load whatever is there, empty or not.
         setTrades(parsed);
+        return;
       }
+
+      if (stored !== null) {
+        // Existing user from before this flag existed: they already have a
+        // trades array (real trades, or an empty one they cleared). Respect
+        // it and just mark as seeded — never seed over real data.
+        localStorage.setItem(SEEDED_KEY, 'true');
+        setTrades(parsed);
+        return;
+      }
+
+      // True first run. Lite ("Position Calc Pro") must NOT seed the demo
+      // trades — a buyer opens to a clean, empty Past Trades. Mark seeded
+      // so this never runs again, and bail before the fetch.
+      if (isLite()) {
+        setTrades([]);
+        localStorage.setItem(SEEDED_KEY, 'true');
+        return;
+      }
+
+      // Full: seed the sample set once, then set the flag so it never
+      // repopulates.
+      fetch('/fake-trades.json')
+        .then(r => r.json())
+        .then(data => {
+          setTrades(data);
+          localStorage.setItem('wickcoach_trades', JSON.stringify(data));
+          localStorage.setItem('wickcoach_trades_version', 'v5');
+          localStorage.setItem(SEEDED_KEY, 'true');
+        })
+        .catch(() => setTrades([]));
     } catch {}
   }, []);
 
@@ -123,7 +154,12 @@ export default function WickCoachFull() {
     return () => clearTimeout(t);
   }, [textVisible]);
 
-  const tabs = ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Tools"];
+  // Lite shows every tab (with Position Size Calc promoted to top-level),
+  // but Weekly Goals / Analysis / Tools render LOCKED — see isTabLocked and
+  // the click guard + mount gating below. Full is unchanged.
+  const tabs = isLite()
+    ? ["Position Size Calc", "Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Tools"]
+    : ["Log a Trade", "Past Trades", "Weekly Goals", "Analysis", "Tools"];
 
   const privacyCards = [
     { icon: <Eye size={22} color={teal} />, title: "Your trades stay yours", text: "All data stored locally in your browser. Nothing leaves your machine." },
@@ -146,7 +182,8 @@ export default function WickCoachFull() {
     <div style={{ background: "#0A0D14", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>
       {/* Subtle grid texture overlay — fades out past 80% of viewport */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)', backgroundSize: '60px 60px', pointerEvents: 'none', zIndex: 0, maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)', WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 80%)' }} />
-      <SplashScreen />
+      {/* Lite skips the WickCoach splash and routes straight into the app. */}
+      {!isLite() && <SplashScreen />}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Chakra+Petch:wght@400;500;600;700&display=swap');
         @keyframes fadeUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
@@ -164,19 +201,20 @@ export default function WickCoachFull() {
       {/* ═══ APP VIEW ═══ */}
       {view === 'app' && (<>
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { setActiveTab(t); if (t === 'Weekly Goals') setWeeklyTabResetTick(n => n + 1); }} onLogoClick={() => setView('home')} onLoginClick={() => setShowLogin(true)} />
+          <NavBar view="app" tabs={tabs} activeTab={activeTab} onTabClick={(t) => { if (isTabLocked(t)) return; setActiveTab(t); if (t === 'Weekly Goals') setWeeklyTabResetTick(n => n + 1); }} onLogoClick={() => setView('home')} onLoginClick={() => setShowLogin(true)} />
         </div>
         <div style={{ backgroundImage: 'linear-gradient(to bottom, #181c26 0px, #151923 120px, #12151d 260px, #0A0D14 420px, #0A0D14 100%)', minHeight: 'calc(100vh - 140px)', position: 'relative', zIndex: 1 }}>
+          {activeTab === 'Position Size Calc' && <PositionSizeContent onBack={() => {}} />}
           {activeTab === 'Log a Trade' && (
             <div style={{ maxWidth: 580, margin: '0 auto', padding: '40px 20px' }}>
               <LogATradeContent setActiveTab={setActiveTab} trades={trades} setTrades={setTrades} editingTrade={editingTrade} onFinishEdit={() => { setEditingTrade(null); setActiveTab('Past Trades'); }} />
             </div>
           )}
           {activeTab === 'Past Trades' && <PastTradesContent trades={trades} setActiveTab={setActiveTab} onEditTrade={(t) => { setEditingTrade(t); setActiveTab('Log a Trade'); }} highlightTradeId={highlightTradeId} onClearHighlight={() => setHighlightTradeId(null)} />}
-          {activeTab === 'Weekly Goals' && <TradingGoalsContent trades={trades} weeklyTabResetTick={weeklyTabResetTick} />}
-          {activeTab === 'Analysis' && <AnalysisContent trades={trades} onShowTrade={(id) => { setHighlightTradeId(id); setActiveTab('Past Trades'); }} />}
-          {activeTab === 'Tools' && <ToolsContent />}
-          {activeTab !== '' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Tools' && (
+          {activeTab === 'Weekly Goals' && !isLite() && <TradingGoalsContent trades={trades} weeklyTabResetTick={weeklyTabResetTick} />}
+          {activeTab === 'Analysis' && !isLite() && <AnalysisContent trades={trades} onShowTrade={(id) => { setHighlightTradeId(id); setActiveTab('Past Trades'); }} />}
+          {activeTab === 'Tools' && !isLite() && <ToolsContent />}
+          {activeTab !== '' && activeTab !== 'Position Size Calc' && activeTab !== 'Log a Trade' && activeTab !== 'Past Trades' && activeTab !== 'Weekly Goals' && activeTab !== 'Analysis' && activeTab !== 'Tools' && (
             <div style={{ textAlign: 'center', paddingTop: 80 }}><p style={{ color: '#4b5563', fontFamily: fm, fontSize: 16 }}>Coming soon</p></div>
           )}
         </div>

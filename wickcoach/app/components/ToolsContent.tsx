@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { Calculator, MessageSquare, BookOpen, TrendingUp, Trophy, Eye } from 'lucide-react';
-import { fd, fm, teal } from './shared';
+import { fd, fm, teal, isLite } from './shared';
 import { GrowthSimulatorContent } from './GrowthSimulatorContent';
 import { PositionSizeContent } from './PositionSizeContent';
 import { OverallJournalContent } from './OverallJournalContent';
@@ -200,20 +200,24 @@ export function ToolPageShell({ title, onBack, children }: { title: string; onBa
       margin: '0 auto',
       padding: '40px 40px 0 40px',
     }}>
-      <div
-        onClick={onBack}
-        style={{
-          fontFamily: fm,
-          fontSize: 20,
-          fontWeight: 500,
-          color: teal,
-          cursor: 'pointer',
-          display: 'inline-block',
-          letterSpacing: 0.3,
-        }}
-      >
-        ← Back to Tools
-      </div>
+      {/* In lite there is no Tools grid — Position Size is a top-level
+          tab — so the "back to Tools" affordance is hidden. */}
+      {!isLite() && (
+        <div
+          onClick={onBack}
+          style={{
+            fontFamily: fm,
+            fontSize: 20,
+            fontWeight: 500,
+            color: teal,
+            cursor: 'pointer',
+            display: 'inline-block',
+            letterSpacing: 0.3,
+          }}
+        >
+          ← Back to Tools
+        </div>
+      )}
       <div style={{
         marginTop: 28,
         fontFamily: fd,
