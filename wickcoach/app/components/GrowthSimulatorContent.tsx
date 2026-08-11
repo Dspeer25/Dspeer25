@@ -764,8 +764,8 @@ export function GrowthSimulatorContent({ onBack }: { onBack: () => void }) {
               }}
               labelStyle={{ color: '#9da0a8' }}
               itemStyle={{ color: '#e0e0e0' }}
-              labelFormatter={(m: number) => m === 0 ? 'Start' : `Month ${m}`}
-              formatter={(v: number) => fmtD(v)}
+              labelFormatter={(m: any) => m === 0 ? 'Start' : `Month ${m}`}
+              formatter={(v: any) => fmtD(v)}
             />
             <ReferenceLine
               yAxisId="left"
