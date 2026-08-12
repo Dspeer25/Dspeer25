@@ -24,6 +24,7 @@ import LogATradeContent from "./components/LogATradeContent";
 // remains imported above.)
 import ToolsContent from "./components/ToolsContent";
 import SplashScreen from "./components/SplashScreen";
+import LicenseLockScreen from "./components/LicenseLockScreen";
 
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
@@ -32,6 +33,10 @@ export default function WickCoachFull() {
   // Position Size Calc tab — no marketing homepage. Full is unchanged.
   const [activeTab, setActiveTab] = useState(isLite() ? "Position Size Calc" : "");
   const [view, setView] = useState<'home' | 'app'>(isLite() ? 'app' : 'home');
+  // License gate (lite/"Position Calc Pro" only). null = still checking
+  // localStorage; true = unlocked; false = show lock screen. Full always
+  // starts true so the gate is a no-op and the app is unaffected.
+  const [licensed, setLicensed] = useState<boolean | null>(isLite() ? null : true);
   const [activeCategory, setActiveCategory] = useState(0);
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
@@ -58,6 +63,41 @@ export default function WickCoachFull() {
   // watches this prop and prefills its fields on mount.
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
 
+
+  // Position Calc Pro license gate: decide unlocked/locked from localStorage,
+  // then re-verify in the background. Optimistic + offline-friendly — a stored
+  // key unlocks immediately and only a DEFINITIVE Gumroad rejection (invalid /
+  // refunded / disabled) revokes it; a network failure leaves it working.
+  useEffect(() => {
+    if (!isLite()) return;
+    let stored: { key?: string } | null = null;
+    try {
+      const raw = localStorage.getItem('pcp_license');
+      stored = raw ? JSON.parse(raw) : null;
+    } catch { stored = null; }
+    if (!stored || !stored.key) { setLicensed(false); return; }
+
+    setLicensed(true); // optimistic — don't block a paying user on the network
+    let cancelled = false;
+    const key = stored.key;
+    (async () => {
+      try {
+        const res = await fetch('/api/license/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // increment: false — re-verify must NOT consume an activation.
+          body: JSON.stringify({ license_key: key, increment: false }),
+        });
+        const data = await res.json().catch(() => ({ status: 'error' }));
+        if (cancelled) return;
+        if (data.status === 'invalid' || data.status === 'refunded' || data.status === 'disabled') {
+          try { localStorage.removeItem('pcp_license'); } catch { /* ignore */ }
+          setLicensed(false);
+        }
+      } catch { /* network failure — keep the stored license working offline */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     try {
@@ -177,6 +217,17 @@ export default function WickCoachFull() {
     { q: "Where is my data stored?", a: "Everything stays in your browser\u2019s local storage. We have zero access to it." },
     { q: "What\u2019s the difference between Essential and Complete?", a: "Essential gives you the trade log, journal, and dashboard. Complete adds the AI psychology coach that reads your entries, spots patterns, and holds you accountable." },
   ];
+
+  // Lite license gate: block the app until a license is verified. Placed
+  // after all hooks so hook order stays stable. Full skips this entirely
+  // (licensed is initialized true when !isLite()), so it is unaffected.
+  if (isLite() && licensed !== true) {
+    if (licensed === null) {
+      // Still reading localStorage — neutral dark screen, avoids a flash.
+      return <div style={{ minHeight: '100vh', background: '#0A0D14' }} />;
+    }
+    return <LicenseLockScreen onUnlock={() => setLicensed(true)} />;
+  }
 
   return (
     <div style={{ background: "#0A0D14", color: "#d0d0d8", minHeight: "100vh", fontFamily: fm, position: 'relative' }}>

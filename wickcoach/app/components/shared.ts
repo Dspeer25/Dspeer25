@@ -25,6 +25,16 @@ export function isLite(): boolean {
 // lock tooltip and the nav "Get WickCoach" CTA at once.
 export const UPGRADE_URL = 'https://wickcoach.com';
 
+// Gumroad license gate for the paid lite build (Position Calc Pro).
+//   GUMROAD_PRODUCT_ID — the product id from Gumroad; fill in after
+//     creating the product. Used server-side by /api/license/verify.
+//   PURCHASE_URL — the Gumroad checkout link shown on the lock screen's
+//     "Buy" button. Distinct from UPGRADE_URL (that upsells full WickCoach
+//     from the locked tabs; this sells Position Calc Pro itself).
+// Both are placeholders — swap these two constants once the product exists.
+export const GUMROAD_PRODUCT_ID = 'REPLACE_WITH_GUMROAD_PRODUCT_ID';
+export const PURCHASE_URL = 'https://gumroad.com/l/position-calc-pro';
+
 // Tabs shown but LOCKED in lite: visible in the nav, inert on click, and
 // gated so their components never mount (AnalysisHub/TradingGoals/Tools).
 // That non-mounting is what keeps lite at zero Anthropic calls — a locked
