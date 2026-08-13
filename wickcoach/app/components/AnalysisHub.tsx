@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { fm, fd, Trade, Goal, NumberGoalRule, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, buildDateContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeAvgR, computeBehavioralRadar, computeDisciplineAdherence, timeToMinutes, RadarTimeframe, RADAR_TIMEFRAME_LABEL, filterTradesForTimeframe, AxisContributor } from './shared';
+import { fm, fd, Trade, Goal, NumberGoalRule, buildTraderStats, computeAnalytics, TradeClassification, ClassificationBatchSummary, readClassifications, writeClassifications, readClassificationSummary, writeClassificationSummary, buildGoalsContext, buildProfileContext, buildDateContext, QuantitativeTarget, readQuantTargets, RegressionResult, resolveTradeVariable, resolveTradeFilter, linearRegression, REGRESSION_VARIABLE_ALIASES, startOfWeek, toISODate, readAllGoals, getGoalsForWeek, getCurrentWeekStart, getCurrentTradingWeekStart, getQuantTargetsForWeek, parseLocalDate, CLASSIFICATION_STORE_KEY, CLASSIFY_PROMPT_VERSION, formatNumber, parseRr, getEffectiveKind, scoreNumberGoal, readAccountSize, computeExpectancy, computeProfitFactor, computeExpectancyR, computeLossGrowth, EXPECTANCY_R_MIN, LOSS_GROWTH_MIN, timeToMinutes } from './shared';
 import AIChatWidget from './AIChatWidget';
 import { MiniStickFigure } from './Logo';
 
@@ -95,28 +95,6 @@ const goalDisplayTitle = (g: Goal): string => {
   if (g.numberRule) return describeNumberRule(g.numberRule);
   return '(untitled)';
 };
-
-// One-line plain-English description per behavioral-radar axis. Used
-// by the hover tooltip + the expanded citation panel header.
-const AXIS_EXPLANATIONS: Record<'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline', string> = {
-  discipline:     'How often your trades followed your plan vs traded on impulse.',
-  patience:       'How often you waited for your setup instead of forcing entries.',
-  riskControl:    'How well you stayed within your risk — sizing, revenge-sizing, and what you wrote about it.',
-  edge:           'Edge measures whether you make money over time. Above 50 means your wins outweigh your losses per trade; below 50 means you’re losing your edge.',
-  exitDiscipline: 'Whether your winners run bigger than your losers in R terms.',
-};
-
-// Plain-language verdict bands for every 0–100 axis score. Three
-// bands keep the language honest — "Weak" / "Developing" / "Strong"
-// — with a slightly longer aside so the trader doesn't have to guess
-// what a band means at first glance. Color tracks the existing teal /
-// amber / red bucket so the verdict reinforces the color.
-function getRadarVerdict(score: number | null): { label: string; color: string; band: 'weak' | 'developing' | 'strong' | 'unscored' } {
-  if (score === null) return { label: 'Not scored', color: '#6b7280', band: 'unscored' };
-  if (score >= 67)    return { label: 'Strong',                  color: '#00d4a0', band: 'strong' };
-  if (score >= 34)    return { label: 'Developing · mixed',      color: '#f5d27c', band: 'developing' };
-  return                    { label: 'Weak · needs work',        color: '#ff4444', band: 'weak' };
-}
 
 // ─── Helpers ──────────────────────────────────────────────────
 // Thin wrappers around the site-wide formatter so every caller in
@@ -262,47 +240,6 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
   const [showAllStrategies, setShowAllStrategies] = useState(false);
   const [showAllTickers, setShowAllTickers] = useState(false);
   const [tickerView, setTickerView] = useState<'wins' | 'losses' | 'net'>('net');
-  // Behavioral Radar timeframe — persists across sessions so the
-  // trader's preferred lens (Weekly debrief vs All-time review) stays
-  // selected. Default to All-time on first visit.
-  const RADAR_TIMEFRAME_KEY = 'wickcoach_radar_timeframe';
-  const [radarTimeframe, setRadarTimeframe] = useState<RadarTimeframe>(() => {
-    if (typeof window === 'undefined') return 'all';
-    try {
-      const raw = localStorage.getItem(RADAR_TIMEFRAME_KEY);
-      return raw === 'ytd' || raw === 'month' || raw === 'week' ? raw : 'all';
-    } catch { return 'all'; }
-  });
-  const setRadarTimeframePersisted = (tf: RadarTimeframe) => {
-    setRadarTimeframe(tf);
-    if (typeof window !== 'undefined') {
-      try { localStorage.setItem(RADAR_TIMEFRAME_KEY, tf); } catch { /* ignore */ }
-    }
-  };
-  // Hover state for the per-axis tooltips on the radar; click state for
-  // the citation panel that opens beneath the radar.
-  type RadarAxisKey = 'discipline' | 'patience' | 'riskControl' | 'edge' | 'exitDiscipline';
-  const [hoveredRadarAxis, setHoveredRadarAxis] = useState<RadarAxisKey | null>(null);
-  const [expandedRadarAxis, setExpandedRadarAxis] = useState<RadarAxisKey | null>(null);
-  const toggleExpandedRadarAxis = (key: RadarAxisKey) =>
-    setExpandedRadarAxis(prev => prev === key ? null : key);
-  // 250 ms grace period when the cursor leaves a wedge so the trader
-  // can move onto the tooltip without it vanishing. Tooltip's own
-  // mouseenter cancels the pending close.
-  const radarCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelRadarClose = () => {
-    if (radarCloseTimerRef.current) {
-      clearTimeout(radarCloseTimerRef.current);
-      radarCloseTimerRef.current = null;
-    }
-  };
-  const scheduleRadarClose = () => {
-    cancelRadarClose();
-    radarCloseTimerRef.current = setTimeout(() => {
-      setHoveredRadarAxis(null);
-      radarCloseTimerRef.current = null;
-    }, 250);
-  };
   // (hoveredSlice state retired with the OUTCOME CANDLES section.)
   const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   // Only one row at a time expands. null = everything collapsed.
@@ -1351,12 +1288,10 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           Pure-JS computed from the trade set. No Haiku, same input =
           same output. Test harness: scripts/test-kpi-metrics.mjs. */}
       {(() => {
-        const exp = computeExpectancy(trades);
-        const pf  = computeProfitFactor(trades);
-        const r   = computeAvgR(trades);
-        // Target Risk:Reward (R-multiple) — the anchor the avg-win-R card
-        // grades against. null when the trader hasn't set one.
-        const rrTarget = readQuantTargets().quantitativeTargets.find(t => t.id === 'target-rr')?.value ?? null;
+        const exp  = computeExpectancy(trades);   // dollar expectancy — Expectancy card support line
+        const expR = computeExpectancyR(trades);  // R expectancy (hero) — strict, no −1R fallback
+        const pf   = computeProfitFactor(trades);
+        const lg   = computeLossGrowth(trades);   // loss escalation slope
 
         // ── Formatters scoped to this block ────────────────────────
         const fmtMoney2 = (v: number) => {
@@ -1370,13 +1305,17 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           return `${sign}$${abs.toLocaleString()}`;
         };
         const fmtPF = (ratio: number) => {
-          if (!Number.isFinite(ratio)) return '∞';
+          if (!Number.isFinite(ratio)) return '—';
           return ratio.toFixed(2);
         };
-        const fmtRSigned = (v: number) => {
-          if (v === 0) return '—';
-          const sign = v > 0 ? '+' : '−';
-          return `${sign}${Math.abs(v).toFixed(1)}R`;
+        const fmtExpR = (v: number) => {
+          const sign = v > 0 ? '+' : v < 0 ? '−' : '';
+          return `${sign}${Math.abs(v).toFixed(2)}R`;
+        };
+        const fmtSlope = (v: number) => {
+          const sign = v > 0 ? '+' : v < 0 ? '−' : '';
+          const abs = Math.round(Math.abs(v));
+          return `${sign}$${abs.toLocaleString()}/trade`;
         };
 
         // Card chrome shared by all four cards.
@@ -1411,35 +1350,53 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
         const kpiSupport: React.CSSProperties = {
           fontFamily: fm,
           fontSize: 12,
-          color: '#9a9da5',
+          color: '#a0a3ab',
           marginTop: 4,
           lineHeight: 1.4,
         };
 
-        const expColor = exp.expectancy > 0 ? teal : exp.expectancy < 0 ? red : '#aab0bd';
-        const pfColor  = pf.ratio >= 1 ? teal : red;
+        // Expectancy hero is the R-multiple; teal when the system pays out.
+        const expColor = expR.expectancyR > 0 ? teal : expR.expectancyR < 0 ? red : '#aab0bd';
+        const noLosses = pf.grossLoss === 0;
+        const pfColor  = noLosses ? '#aab0bd' : pf.ratio >= 1 ? teal : red;
+        // Loss-growth: red only when losses are climbing; teal otherwise.
+        const lgColor  = lg.direction === 'up' ? red : teal;
+        const lgWord   = lg.direction === 'up' ? 'Trending up'
+                       : lg.direction === 'down' ? 'Shrinking'
+                       : 'Controlled';
 
         return (
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
 
-            {/* ── 1. Expectancy (the headline metric) ──────────────── */}
+            {/* ── 1. Expectancy (R) — the headline edge metric ─────────
+                  R-multiple per decisive risk-logged trade. NOT win rate:
+                  a low win rate can still be a positive edge. */}
             <div style={kpiCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={kpiLabel}>Expectancy</div>
-                <InfoTip text="Expected dollar value per decisive trade: (winRate × avgWin) − (lossRate × avgLoss). Breakeven trades excluded from every input. Positive means the system pays out on average; negative means it bleeds." />
+                <div style={kpiLabel}>Expectancy (R)</div>
+                <InfoTip text="Average R you keep per decisive trade: (winRate × avgWinR) − (lossRate × avgLossR), each R = profit ÷ risk. This is your EDGE, not your win rate — a low win rate can still be a positive edge if winners outrun losers. Only trades with a logged risk amount count; breakeven trades are excluded." />
               </div>
-              <div style={{ ...kpiHero, color: expColor }}>{fmtMoney2(exp.expectancy)}</div>
-              <div style={kpiSupport}>per trade · {exp.decisive} decisive trade{exp.decisive === 1 ? '' : 's'}</div>
+              {expR.sufficient ? (
+                <>
+                  <div style={{ ...kpiHero, color: expColor }}>{fmtExpR(expR.expectancyR)}</div>
+                  <div style={kpiSupport}>{fmtMoney2(exp.expectancy)} per trade · {expR.decisive} risk-logged</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ ...kpiHero, color: '#5a5f6b', fontSize: 26 }}>—</div>
+                  <div style={kpiSupport}>Log more trades with risk to unlock</div>
+                </>
+              )}
             </div>
 
             {/* ── 2. Profit Factor ─────────────────────────────────── */}
             <div style={kpiCard}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={kpiLabel}>Profit Factor</div>
-                <InfoTip text="Gross winnings divided by gross losses. ≥ 1 means you take more in than you give back; under 1 means the system is net-negative regardless of win rate. ∞ when there are no losses yet." />
+                <InfoTip text="Gross winnings divided by gross losses. ≥ 1 means you take more in than you give back; under 1 means the system is net-negative regardless of win rate. Shows a dash until there is at least one logged loss to divide by." />
               </div>
-              <div style={{ ...kpiHero, color: pfColor }}>{fmtPF(pf.ratio)}</div>
-              <div style={kpiSupport}>{fmtMoneyInt(pf.grossProfit)} won / {fmtMoneyInt(-pf.grossLoss)} lost</div>
+              <div style={{ ...kpiHero, color: pfColor, fontSize: noLosses ? 26 : 44 }}>{noLosses ? '—' : fmtPF(pf.ratio)}</div>
+              <div style={kpiSupport}>{noLosses ? 'no losses logged' : `${fmtMoneyInt(pf.grossProfit)} won / ${fmtMoneyInt(-pf.grossLoss)} lost`}</div>
             </div>
 
             {/* ── 3. Win Rate (reuses computeExpectancy's denominator
@@ -1453,558 +1410,26 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
               <div style={kpiSupport}>{exp.wins}W / {exp.losses}L · {exp.breakeven}BE</div>
             </div>
 
-            {/* ── 4. Avg Win (R) — graded against Target R:R ───────────
-                  Loss side intentionally dropped: stopped-out losses are
-                  ~−1R by definition, so avg-loss-R carries no signal. The
-                  win side vs the trader's target is the actionable read. */}
-            {(() => {
-              const hitTarget = rrTarget !== null && r.avgWinR >= rrTarget;
-              const heroColor = rrTarget !== null
-                ? (hitTarget ? teal : '#9a9da5')
-                : (r.avgWinR > 0 ? teal : '#fff');
-              return (
-                <div style={kpiCard}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={kpiLabel}>Avg Win (R)</div>
-                    <InfoTip text="Average R-multiple of your winning trades. With a Target Risk:Reward set, this turns teal once your average winner meets or beats it and dims when it falls short. Trades without an R:R logged are excluded. The loss side is intentionally omitted — stopped-out losses sit at ~−1R by definition and carry no signal." />
-                  </div>
-                  <div style={{ ...kpiHero, color: heroColor }}>{fmtRSigned(r.avgWinR)}</div>
-                  <div style={kpiSupport}>
-                    {rrTarget !== null
-                      ? `avg winner · target ${rrTarget.toFixed(1)}R`
-                      : 'avg winner · set a target R:R'}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        );
-      })()}
-
-      {/* ═══ BEHAVIORAL RADAR — 5 deterministic axes, pure JS ═══
-          Replaces the old outcome-candles space. Each axis is a 0-100
-          score computed in shared.ts (test harness:
-          scripts/test-behavioral-radar.mjs). A dented shape on any
-          axis is a visible leak the trader can fix. */}
-      {(() => {
-        // Filter trades to the active timeframe selection. All 5 axes
-        // recompute from the windowed set, and the citation panel
-        // (built next step) sees the same set so a Weekly view doesn't
-        // cite an All-time trade.
-        const tradesInWindow = filterTradesForTimeframe(trades, radarTimeframe);
-        // Pass goals + account size + cached classifications so the
-        // Risk Control axis can blend all three subscores (goal
-        // adherence + data sizing + Haiku risk-language verdict).
-        // Discipline is computed off the SAME week + goals + psychScores
-        // the Psych-vs-Goals section renders below, so the two can never
-        // disagree (it can't read 100 while that section is red). Returns
-        // null on cold-start — no entry/process psych goals or no scored
-        // trades yet — in which case the radar falls back to the keyword
-        // process-vs-impulse proxy.
-        const radar = computeBehavioralRadar(tradesInWindow, {
-          goals: realGoals,
-          accountSize: readAccountSize(),
-          classifications,
-          disciplineOverride: computeDisciplineAdherence(
-            selectedWeekBucket?.trades || [],
-            weekGoals,
-            classifications,
-          ),
-        });
-
-        // Geometry — wider than tall so the five labels fan out without
-        // clipping. Bumped 20% over the original sizing so the radar
-        // dominates the card visually and the per-section tooltips
-        // have room to be readable without crowding the polygon.
-        const SVG_W = 920;
-        const SVG_H = 600;
-        const CX = SVG_W / 2;
-        const CY = SVG_H / 2 - 6;
-        const RADIUS = 220;                      // axis-tip distance
-        const LABEL_R = RADIUS + 52;             // axis-label distance
-        const N = 5;
-        const ANGLE_STEP = (2 * Math.PI) / N;
-        // Start at -90° so axis 0 points straight up.
-        const angleFor = (i: number) => -Math.PI / 2 + i * ANGLE_STEP;
-        const point = (i: number, frac: number) => {
-          const a = angleFor(i);
-          return { x: CX + Math.cos(a) * RADIUS * frac, y: CY + Math.sin(a) * RADIUS * frac };
-        };
-        const labelPos = (i: number) => {
-          const a = angleFor(i);
-          return { x: CX + Math.cos(a) * LABEL_R, y: CY + Math.sin(a) * LABEL_R };
-        };
-        const guideRings = [0.25, 0.50, 0.75, 1.0];
-
-        // Polygon path covers all 5 axes — null axes are rendered at
-        // the 50% ring as a neutral placeholder so the shape stays
-        // intact (no crater toward center) and the muted grey label +
-        // hint explicitly reads "not scored yet". The placeholder
-        // vertex carries no implied score; it's a visual stand-in.
-        const NULL_PLACEHOLDER_FRAC = 0.5;
-        const polyPath = radar.axes
-          .map((a, i) => {
-            const frac = a.score !== null ? a.score / 100 : NULL_PLACEHOLDER_FRAC;
-            const p = point(i, frac);
-            return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-          })
-          .join(' ') + ' Z';
-
-        // Strongest / weakest only consider scored axes so a null
-        // Risk Control doesn't pollute the summary.
-        const scoredAxes = radar.axes.filter(a => a.score !== null) as { key: typeof radar.axes[number]['key']; label: string; score: number; hint?: string }[];
-        const hasSignal = scoredAxes.some(a => a.score > 0);
-        const strongest = hasSignal ? scoredAxes.reduce((b, x) => x.score > b.score ? x : b) : null;
-        const weakest   = hasSignal ? scoredAxes.reduce((b, x) => x.score < b.score ? x : b) : null;
-        const weakestHint = (() => {
-          if (!weakest) return '';
-          switch (weakest.key) {
-            case 'discipline':     return 'your journal shows more impulse than process trades';
-            case 'patience':       return 'too many trades flagged as rushed, FOMO, or revenge';
-            case 'riskControl': {
-              // Speak to the actual rule that won the strictest pick.
-              const d = radar.riskControlDetail;
-              if (d.reason === 'scored' && typeof d.within === 'number' && typeof d.applicable === 'number') {
-                return `${d.applicable - d.within} of ${d.applicable} trades broke your stated risk rule`;
-              }
-              return 'too many trades exceeded your stated risk rule';
-            }
-            case 'edge':           return 'expectancy is below break-even in R terms';
-            case 'exitDiscipline': return 'losers are outsizing winners on the R chart';
-          }
-        })();
-        const summary = hasSignal && strongest && weakest && strongest.key !== weakest.key
-          ? `Strongest: ${strongest.label} (${Math.round(strongest.score)}). Weakest: ${weakest.label} (${Math.round(weakest.score)}) — ${weakestHint}.`
-          : '';
-
-        return (
-          <div style={{
-            background: '#141822',
-            border: '1px solid #2A3143',
-            borderRadius: 16,
-            padding: '32px 28px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 20,
-            marginBottom: 14,
-            position: 'relative',
-          }}>
-            <SectionNum n={2} />
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-              <div>
-                <div style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.5 }}>Behavioral Radar</div>
-                <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', marginTop: 4, maxWidth: 540, lineHeight: 1.5 }}>Five deterministic 0–100 scores from your trade record. Dents are your leaks.</div>
+            {/* ── 4. Loss Growth — are your losses escalating? ─────────
+                  OLS slope across losing trades in chronological order.
+                  Pure magnitude trend — no psychological inference. */}
+            <div style={kpiCard}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={kpiLabel}>Loss Growth</div>
+                <InfoTip text={`Fits a straight line through the dollar size of your losing trades in the order they happened. A rising line means each loss tends to be bigger than the last; flat or falling means they are steady or shrinking. Needs at least ${LOSS_GROWTH_MIN} losses to measure. Pure size trend — it draws no conclusion about why.`} />
               </div>
-              {/* Timeframe segmented control + trade count for the
-                  active window. Selection persists in localStorage. */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                <div style={{ display: 'inline-flex', background: '#0f1318', border: '1px solid #2A3143', borderRadius: 999, padding: 3 }}>
-                  {(['all', 'ytd', 'month', 'week'] as const).map(tf => {
-                    const active = radarTimeframe === tf;
-                    return (
-                      <button
-                        key={tf}
-                        onClick={() => setRadarTimeframePersisted(tf)}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 999,
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontFamily: fm,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          letterSpacing: 1,
-                          textTransform: 'uppercase' as const,
-                          background: active ? teal : 'transparent',
-                          color: active ? '#0A0D14' : '#aab0bd',
-                          transition: 'all 0.2s ease',
-                        }}
-                      >{RADAR_TIMEFRAME_LABEL[tf]}</button>
-                    );
-                  })}
-                </div>
-                <span style={{ fontFamily: fm, fontSize: 11, color: '#94A3B8', letterSpacing: 0.5 }}>
-                  {tradesInWindow.length} trade{tradesInWindow.length === 1 ? '' : 's'} {radarTimeframe === 'all' ? 'total' : radarTimeframe === 'ytd' ? 'YTD' : radarTimeframe === 'month' ? 'this month' : 'this week'}
-                </span>
-              </div>
+              {lg.sufficient ? (
+                <>
+                  <div style={{ ...kpiHero, color: lgColor, fontSize: 26 }}>{lgWord}</div>
+                  <div style={kpiSupport}>{fmtSlope(lg.slope ?? 0)} · {lg.lossCount} losses</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ ...kpiHero, color: '#5a5f6b', fontSize: 26 }}>—</div>
+                  <div style={kpiSupport}>Need more losing trades to measure</div>
+                </>
+              )}
             </div>
-
-            <div style={{ width: '100%', maxWidth: SVG_W, margin: '0 auto', position: 'relative', aspectRatio: `${SVG_W} / ${SVG_H}` }}>
-            <svg width="100%" height="100%" viewBox={`0 0 ${SVG_W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
-              {/* Guide rings — concentric pentagons at 25/50/75/100 */}
-              {guideRings.map((g, gi) => (
-                <polygon
-                  key={gi}
-                  points={Array.from({ length: N }, (_, i) => point(i, g)).map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
-                  fill="none"
-                  stroke={gi === guideRings.length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)'}
-                  strokeWidth={1}
-                />
-              ))}
-
-              {/* Axis spokes — null axes get a dashed treatment so the
-                  "not scored yet" status reads at a glance. */}
-              {Array.from({ length: N }, (_, i) => {
-                const tip = point(i, 1);
-                const isNull = radar.axes[i].score === null;
-                return (
-                  <line
-                    key={i}
-                    x1={CX} y1={CY} x2={tip.x} y2={tip.y}
-                    stroke={isNull ? 'rgba(148,163,184,0.30)' : 'rgba(255,255,255,0.08)'}
-                    strokeWidth={1}
-                    strokeDasharray={isNull ? '4 4' : undefined}
-                  />
-                );
-              })}
-
-              {/* Filled trader shape — covers every axis. Null axes
-                  contribute a placeholder vertex at the 50% ring so the
-                  shape stays intact rather than collapsing to the
-                  center on the affected spoke. */}
-              <path d={polyPath} fill={teal} fillOpacity={0.22} stroke={teal} strokeWidth={2} strokeLinejoin="round" />
-
-              {/* Score points: filled colored dot for scored axes,
-                  outlined muted-grey dot at the placeholder ring for
-                  null axes (visually says "this is a stand-in"). */}
-              {radar.axes.map((a, i) => {
-                if (a.score === null) {
-                  const p = point(i, NULL_PLACEHOLDER_FRAC);
-                  return <circle key={i} cx={p.x} cy={p.y} r={4.5} fill="#0A0D14" stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="2 2" />;
-                }
-                const p = point(i, a.score / 100);
-                const color = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
-                return <circle key={i} cx={p.x} cy={p.y} r={4} fill={color} stroke="#0A0D14" strokeWidth={1.5} />;
-              })}
-
-              {/* Axis labels + score values. Null axes show the hint
-                  instead of a number, all in muted grey so the eye
-                  reads them as inactive. */}
-              {radar.axes.map((a, i) => {
-                const lp = labelPos(i);
-                const ax = angleFor(i);
-                const cos = Math.cos(ax);
-                const anchor = cos > 0.2 ? 'start' : cos < -0.2 ? 'end' : 'middle';
-                const dy = i === 0 ? -8 : 4;
-                if (a.score === null) {
-                  return (
-                    <g key={a.key}>
-                      <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={18} fontWeight={700} fill="#6b7280" letterSpacing={0.5}>{a.label}</text>
-                      <text x={lp.x} y={lp.y + dy + 22} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={13} fontWeight={500} fill="#6b7280" fontStyle="italic">{a.hint || 'no signal yet'}</text>
-                    </g>
-                  );
-                }
-                const scoreColor = a.score >= 67 ? teal : a.score >= 33 ? '#f5d27c' : red;
-                return (
-                  <g key={a.key}>
-                    <text x={lp.x} y={lp.y + dy} textAnchor={anchor} fontFamily="Chakra Petch, sans-serif" fontSize={18} fontWeight={700} fill="#e8e8f0" letterSpacing={0.5}>{a.label}</text>
-                    <text x={lp.x} y={lp.y + dy + 22} textAnchor={anchor} fontFamily="DM Mono, monospace" fontSize={20} fontWeight={700} fill={scoreColor}>{Math.round(a.score)}</text>
-                  </g>
-                );
-              })}
-
-              {/* Ring value labels (subtle, on the top axis only so they don't crowd) */}
-              {guideRings.map((g, gi) => {
-                const p = point(0, g);
-                return <text key={gi} x={p.x + 8} y={p.y + 4} fontFamily="DM Mono, monospace" fontSize={10} fill="rgba(255,255,255,0.30)">{Math.round(g * 100)}</text>;
-              })}
-
-              {/* ── Per-axis hover wedges — invisible hit targets that
-                  cover the pentagon section centered on each axis. A
-                  wedge spans the 72° slice from the midpoint angle to
-                  the previous axis to the midpoint to the next axis,
-                  out to the label ring so labels are also hoverable.
-                  Hovering one shows the floating definition tooltip
-                  below; the click target (STEP 3) will live on these
-                  same wedges. */}
-              {radar.axes.map((axis, i) => {
-                const halfStep = ANGLE_STEP / 2;
-                const aThis = angleFor(i);
-                const aPrev = aThis - halfStep;
-                const aNext = aThis + halfStep;
-                const wedgeR = LABEL_R + 60; // generous reach to cover labels too
-                const p1 = { x: CX + Math.cos(aPrev) * wedgeR, y: CY + Math.sin(aPrev) * wedgeR };
-                const p2 = { x: CX + Math.cos(aNext) * wedgeR, y: CY + Math.sin(aNext) * wedgeR };
-                return (
-                  <polygon
-                    key={`hit-${axis.key}`}
-                    points={`${CX},${CY} ${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`}
-                    fill="transparent"
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={() => { cancelRadarClose(); setHoveredRadarAxis(axis.key); }}
-                    onMouseLeave={() => scheduleRadarClose()}
-                    onClick={() => toggleExpandedRadarAxis(axis.key)}
-                  />
-                );
-              })}
-            </svg>
-
-              {/* Floating definition tooltip — positioned near the
-                  hovered axis's actual section, in the dead corner
-                  outside the pentagon so it doesn't sit on top of
-                  the chart. Each axis has its own anchor so the
-                  tooltip follows the cursor to that area. */}
-              {hoveredRadarAxis && (() => {
-                const axis = radar.axes.find(a => a.key === hoveredRadarAxis);
-                if (!axis) return null;
-                const score = axis.score;
-                const color = score === null ? '#6b7280' : score >= 67 ? teal : score >= 33 ? '#f5d27c' : red;
-                const explanation = AXIS_EXPLANATIONS[axis.key];
-                const smallSample = axis.applicable > 0 && axis.applicable < 5;
-                // Per-axis tooltip positioning. The container's
-                // aspect-ratio is locked to the viewBox, so converting
-                // each axis-label's viewBox coord to percentages gives
-                // a 1:1 anchor onto the label itself. Then transform
-                // places the tooltip on the natural outward side of
-                // that label:
-                //   Discipline (top)        → just above the label
-                //   Patience (top-right)    → just to the right
-                //   Risk Control (bot-right)→ just below
-                //   Edge (bottom-left)      → just below
-                //   Exit Discipline (top-l) → just to the left
-                const i = radar.axes.findIndex(a => a.key === axis.key);
-                const lp = labelPos(i);
-                const leftPct = `${(lp.x / SVG_W) * 100}%`;
-                const topPct  = `${(lp.y / SVG_H) * 100}%`;
-                const transformByKey: Record<typeof axis.key, string> = {
-                  discipline:     'translate(-50%, calc(-100% - 14px))',
-                  patience:       'translate(14px, -50%)',
-                  riskControl:    'translate(-50%, 14px)',
-                  edge:           'translate(-50%, 14px)',
-                  exitDiscipline: 'translate(calc(-100% - 14px), -50%)',
-                };
-                const pos: Record<typeof axis.key, React.CSSProperties> = {
-                  discipline:     { top: topPct, left: leftPct, transform: transformByKey.discipline },
-                  patience:       { top: topPct, left: leftPct, transform: transformByKey.patience },
-                  riskControl:    { top: topPct, left: leftPct, transform: transformByKey.riskControl },
-                  edge:           { top: topPct, left: leftPct, transform: transformByKey.edge },
-                  exitDiscipline: { top: topPct, left: leftPct, transform: transformByKey.exitDiscipline },
-                };
-                return (
-                  <div
-                    onMouseEnter={() => { cancelRadarClose(); setHoveredRadarAxis(axis.key); }}
-                    onMouseLeave={() => scheduleRadarClose()}
-                    onClick={() => toggleExpandedRadarAxis(axis.key)}
-                    style={{
-                    position: 'absolute',
-                    ...pos[axis.key],
-                    background: '#0e0f14',
-                    border: '1px solid rgba(0,212,160,0.55)',
-                    borderRadius: 12,
-                    padding: '18px 22px',
-                    width: 360,
-                    boxShadow: '0 16px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,160,0.12) inset',
-                    cursor: 'pointer',
-                    zIndex: 5,
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, marginBottom: 4 }}>
-                      <span style={{ fontFamily: fd, fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: 0.4 }}>{axis.label}</span>
-                      <span style={{ fontFamily: fd, fontSize: 32, fontWeight: 700, color, lineHeight: 1 }}>
-                        {score === null ? '—' : Math.round(score)}
-                      </span>
-                    </div>
-                    {/* Plain-language verdict band right under the score
-                        so "Edge 64" reads as "Edge 64 · Developing"
-                        rather than a context-free number. */}
-                    {(() => {
-                      const verdict = getRadarVerdict(score);
-                      return (
-                        <div style={{ fontFamily: fm, fontSize: 13, color: verdict.color, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' as const, marginBottom: 10 }}>
-                          {verdict.label}
-                        </div>
-                      );
-                    })()}
-                    <div style={{ fontFamily: fm, fontSize: 15, color: '#d0d4dc', lineHeight: 1.5 }}>
-                      {explanation}
-                    </div>
-                    {smallSample && (
-                      <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', marginTop: 10, fontStyle: 'italic' }}>
-                        small sample ({axis.applicable} trade{axis.applicable === 1 ? '' : 's'})
-                      </div>
-                    )}
-                    <div style={{ fontFamily: fm, fontSize: 13, color: teal, marginTop: 12, letterSpacing: 0.8, fontWeight: 700 }}>
-                      click for cited trades ›
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {summary && (
-              <div style={{ fontFamily: fm, fontSize: 13.5, color: '#d0d4dc', textAlign: 'center', maxWidth: 640, lineHeight: 1.55 }}>
-                {summary}
-              </div>
-            )}
-            {!summary && (
-              <div style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8', textAlign: 'center' }}>
-                Not enough trade data yet to surface a strongest / weakest axis.
-              </div>
-            )}
-
-            {/* ── Citation panel — opens beneath the radar when an
-                axis section is clicked. Reads from the contributors[]
-                already computed in shared.ts; never recomputes. Shows
-                the worst-offending trades for a low score and the
-                best-supporting trades for a high score, capped at 5.
-                Each cited trade row routes to Past Trades via
-                onShowTrade and highlights there. */}
-            {expandedRadarAxis && (() => {
-              const axis = radar.axes.find(a => a.key === expandedRadarAxis);
-              if (!axis) return null;
-              const score = axis.score;
-              const color = score === null ? '#6b7280' : score >= 67 ? teal : score >= 33 ? '#f5d27c' : red;
-              const negatives = axis.contributors.filter(c => c.kind === 'negative');
-              const positives = axis.contributors.filter(c => c.kind === 'positive');
-              const negCount = negatives.length;
-              const posCount = positives.length;
-              const hurting   = negatives.slice(0, 5);
-              const lifting   = positives.slice(0, 5);
-              // Index over ALL trades, not just the radar window: the
-              // Discipline axis cites selected-week trades that may sit
-              // outside the radar's timeframe, and every contributor is
-              // already window-scoped at source, so a broader index only
-              // lets those rows resolve — it can't introduce off-window
-              // citations.
-              const tradeIndex = new Map(trades.map(t => [t.id, t]));
-              const verdict = getRadarVerdict(score);
-              // Plain-English breakdown line per axis. Counts come from
-              // the contributor split (never recomputed from scratch).
-              let breakdown = '';
-              if (axis.key === 'discipline') {
-                breakdown = `${posCount} of ${axis.applicable} rule-checks followed plan. ${negCount} flagged off-plan.`;
-              } else if (axis.key === 'patience') {
-                breakdown = `${posCount} of ${axis.applicable} journaled trades showed patience. ${negCount} flagged for rushing / FOMO / revenge.`;
-              } else if (axis.key === 'riskControl') {
-                breakdown = `${negCount} sizing infractions across ${axis.applicable} trades with risk logged.`;
-              } else if (axis.key === 'edge') {
-                breakdown = `${posCount} winning vs ${negCount} losing trades. Biggest losses drag the score the most.`;
-              } else if (axis.key === 'exitDiscipline') {
-                breakdown = `${axis.applicable} trades with R logged. Below-average winners and oversized losers pull the ratio toward 50.`;
-              }
-              return (
-                <div style={{
-                  width: '100%',
-                  marginTop: 18,
-                  background: '#0e0f14',
-                  border: '1px solid rgba(0,212,160,0.30)',
-                  borderRadius: 12,
-                  padding: '18px 22px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                }}>
-                  {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
-                      <span style={{ fontFamily: fd, fontSize: 24, fontWeight: 700, color: '#fff', letterSpacing: 0.4 }}>{axis.label}</span>
-                      <span style={{ fontFamily: fd, fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>{score === null ? '—' : Math.round(score)}</span>
-                      <span style={{ fontFamily: fm, fontSize: 13, color: verdict.color, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' as const }}>
-                        · {verdict.label}
-                      </span>
-                    </div>
-                    <span
-                      onClick={() => setExpandedRadarAxis(null)}
-                      title="Close"
-                      style={{ cursor: 'pointer', fontFamily: fm, fontSize: 20, color: '#6b7280', padding: '0 8px', userSelect: 'none' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.color = '#fff'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.color = '#6b7280'; }}
-                    >✕</span>
-                  </div>
-
-                  {/* Plain-English explanation of the axis (always
-                      reads, regardless of score), then the breakdown
-                      counts pulled straight from the contributor split. */}
-                  <div style={{ fontFamily: fm, fontSize: 14, color: '#d0d4dc', lineHeight: 1.5 }}>
-                    {AXIS_EXPLANATIONS[axis.key]}
-                  </div>
-                  {breakdown && (
-                    <div style={{ fontFamily: fm, fontSize: 13.5, color: '#94A3B8', lineHeight: 1.5 }}>{breakdown}</div>
-                  )}
-
-                  {/* Two-column split — every score below 100 has
-                      trades dragging it down AND trades lifting it.
-                      Showing only one side hides half the story. */}
-                  {(() => {
-                    // Reusable row renderer keyed on contributor kind
-                    // so both columns get identical chrome.
-                    const renderCitedRow = (c: AxisContributor, idx: number) => {
-                      const tr = tradeIndex.get(c.tradeId);
-                      if (!tr) return null;
-                      const plColor = tr.pl > 0 ? teal : tr.pl < 0 ? red : '#aab0bd';
-                      const dateLabel = (() => {
-                        const d = parseLocalDate(tr.date);
-                        return Number.isFinite(d.getTime()) ? `${d.getMonth() + 1}/${d.getDate()}` : tr.date;
-                      })();
-                      const tickColor = c.kind === 'negative' ? red : teal;
-                      const tickChar = c.kind === 'negative' ? '✗' : '✓';
-                      return (
-                        <div
-                          key={`${c.tradeId}-${idx}`}
-                          onClick={() => onShowTrade && onShowTrade(c.tradeId)}
-                          style={{
-                            padding: '12px 14px',
-                            background: c.kind === 'negative' ? 'rgba(255,68,68,0.05)' : 'rgba(0,212,160,0.05)',
-                            border: '1px solid #2A3143',
-                            borderLeft: `3px solid ${tickColor}`,
-                            borderRadius: 6,
-                            cursor: onShowTrade ? 'pointer' : 'default',
-                            transition: 'background 0.15s ease, transform 0.15s ease',
-                          }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = c.kind === 'negative' ? 'translateX(-2px)' : 'translateX(2px)'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)'; }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                            <span style={{ fontFamily: fm, fontSize: 16, fontWeight: 700, color: tickColor }}>{tickChar}</span>
-                            <span style={{ fontFamily: fm, fontSize: 15, fontWeight: 700, color: '#fff' }}>{tr.ticker}</span>
-                            <span style={{ fontFamily: fm, fontSize: 13, color: '#94A3B8' }}>{dateLabel}</span>
-                            <span style={{ fontFamily: fm, fontSize: 14, fontWeight: 700, color: plColor, marginLeft: 'auto' }}>
-                              {formatNumber(tr.pl, { currency: true, explicitSign: true, decimals: 0 })}
-                            </span>
-                          </div>
-                          <div style={{ fontFamily: fm, fontSize: 13, color: '#d0d4dc', lineHeight: 1.4 }}>
-                            {c.reason}{c.value ? ` · ${c.value}` : ''}
-                          </div>
-                        </div>
-                      );
-                    };
-                    return (
-                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
-                        {/* LEFT — Hurting */}
-                        <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ width: 10, height: 10, background: red, borderRadius: 2 }} />
-                            <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: red, letterSpacing: 0.5 }}>What's hurting this score</span>
-                            <span style={{ fontFamily: fm, fontSize: 12, color: '#94A3B8' }}>{negCount} total</span>
-                          </div>
-                          {hurting.length === 0 ? (
-                            <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic', padding: '14px 0' }}>
-                              Nothing hurting this axis in the active window.
-                            </div>
-                          ) : hurting.map((c, idx) => renderCitedRow(c, idx))}
-                        </div>
-                        {/* RIGHT — Supporting */}
-                        <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ width: 10, height: 10, background: teal, borderRadius: 2 }} />
-                            <span style={{ fontFamily: fd, fontSize: 15, fontWeight: 700, color: teal, letterSpacing: 0.5 }}>What's supporting this score</span>
-                            <span style={{ fontFamily: fm, fontSize: 12, color: '#94A3B8' }}>{posCount} total</span>
-                          </div>
-                          {lifting.length === 0 ? (
-                            <div style={{ fontFamily: fm, fontSize: 13, color: '#6b7280', fontStyle: 'italic', padding: '14px 0' }}>
-                              Nothing lifting this axis in the active window.
-                            </div>
-                          ) : lifting.map((c, idx) => renderCitedRow(c, idx))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  <div style={{ fontFamily: fm, fontSize: 11, color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase' as const, marginTop: 4 }}>
-                    click any trade to open in Past Trades
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         );
       })()}
@@ -2015,9 +1440,9 @@ export default function AnalysisContent({ trades = [], onShowTrade }: { trades?:
           trade-data view (three hero candles + Trades-vs-Goals bars).
           Psychology = journal-language view (Psych-vs-Goals bars +
           weekly-summary placeholder). The week selector is shared
-          across both views via selectedWeekIdx. Behavioral Radar stays
-          above, outside this block. All scoring/bot logic unchanged —
-          this is layout only.
+          across both views via selectedWeekIdx. The four deterministic
+          KPI cards sit above, outside this block. All scoring/bot logic
+          unchanged — this is layout only.
           ═══════════════════════════════════════════════════════════ */}
       <div style={{
         background: '#0d1017',
