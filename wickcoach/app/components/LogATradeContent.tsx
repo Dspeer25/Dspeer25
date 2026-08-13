@@ -1,7 +1,22 @@
 'use client'
 import React, { useState, useRef } from "react"
-import { Trade, toLocalYMD, parseLocalDate, getGoalsForWeek, getCurrentWeekStart, readClassifications, writeClassifications, formatNumber, formatRR, PositionType, fm, fd } from "./shared"
+import { Trade, toLocalYMD, parseLocalDate, readClassifications, writeClassifications, formatNumber, formatRR, PositionType, fm, fd } from "./shared"
 import StrategyPicker from "./StrategyPicker"
+
+// Persisted default position type for NEW trades. The trader sets their usual
+// instrument once ("Set as default") and every fresh Log a Trade form
+// pre-selects it. This only affects the initial value of a blank form —
+// editing an existing trade always uses that trade's own position type.
+const DEFAULT_PT_KEY = 'wickcoach_default_position_type';
+
+function readDefaultPositionType(): PositionType | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem(DEFAULT_PT_KEY);
+    if (saved === 'SHARES' || saved === 'OPTIONS' || saved === 'FUTURES') return saved;
+  } catch { /* ignore */ }
+  return null;
+}
 
 // Returns the current local time as "HH:MM" — the native format
 // <input type="time"> expects for its value attribute. Used to
@@ -39,8 +54,12 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
     // stored value is never empty for fresh trades).
     const [entryTime, setEntryTime] = useState(currentLocalHHMM);
     const [exitTime, setExitTime]   = useState('');
-    const [positionType, setPositionType] = useState<PositionType>('OPTIONS');
+    const [positionType, setPositionType] = useState<PositionType>(() => readDefaultPositionType() ?? 'OPTIONS');
+    // Mirror of the persisted default so the "Set as default" pill can show
+    // its active state and re-render when the trader changes it.
+    const [defaultPositionType, setDefaultPositionType] = useState<PositionType | null>(() => readDefaultPositionType());
     const [strategyType, setStrategyType] = useState('0DTE Call');
+    const [instrument, setInstrument] = useState('Calls');
     // Legacy free-text strategy-input toggle is gone — the StrategyPicker
     // handles both pick and add inline. Removing strategyInputMode and
     // customStrategy state since they're no longer wired to any UI.
@@ -118,11 +137,6 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       setValidationErrors({});
     }, [editingTrade]);
 
-    // Current weekly goals — passive reminder shown beneath the journal
-    // textarea. Recomputed each render so edits to the goals list are
-    // reflected without needing a separate subscription.
-    const currentGoals = getGoalsForWeek(getCurrentWeekStart());
-
     React.useEffect(() => {
       intervalRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
@@ -199,6 +213,13 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
       setMarkBreakeven(false);
       setJournal(''); setScreenshot(null); setSubmitted(false);
       setRisk(''); setRiskReward('\u2014');
+    };
+
+    // Persist the currently-selected position type as the default for new
+    // trades. Updates the mirror state so the pill flips to "Default \u2713".
+    const handleSetDefaultPositionType = () => {
+      try { localStorage.setItem(DEFAULT_PT_KEY, positionType); } catch { /* ignore */ }
+      setDefaultPositionType(positionType);
     };
 
     const inputStyle = {
@@ -339,7 +360,27 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
         </div>
         <div style={{ height: 16 }} />
 
-        <label style={labelStyle}>Position Type</label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <label style={{ ...labelStyle, marginBottom: 0 }}>Position Type</label>
+          <span
+            onClick={handleSetDefaultPositionType}
+            title={defaultPositionType === positionType ? 'This position type loads by default on new trades' : 'Make this the default position type for new trades'}
+            style={{
+              fontFamily: fm,
+              fontSize: 11,
+              letterSpacing: 0.5,
+              cursor: 'pointer',
+              userSelect: 'none',
+              padding: '3px 10px',
+              borderRadius: 999,
+              color: '#00d4a0',
+              background: defaultPositionType === positionType ? 'rgba(0,212,160,0.15)' : 'transparent',
+              border: defaultPositionType === positionType ? '1px solid #00d4a0' : '1px solid rgba(0,212,160,0.35)',
+            }}
+          >
+            {defaultPositionType === positionType ? 'Default ✓' : 'Set as default'}
+          </span>
+        </div>
         <div style={{ display: 'flex', gap: 10 }}>
           {(['SHARES', 'OPTIONS', 'FUTURES'] as const).map(pt => (
             <button key={pt} onClick={() => setPositionType(pt)} style={{ flex: 1, background: positionType === pt ? 'rgba(0,212,160,0.15)' : '#0e0f14', border: positionType === pt ? '1px solid #00d4a0' : '1px solid #2A3143', color: positionType === pt ? '#00d4a0' : '#6b7280', borderRadius: 8, padding: '10px 0', fontFamily: fm, fontSize: 13, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>{pt}</button>
@@ -358,6 +399,13 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           positionType={positionType}
           placeholder="Pick or add a strategy…"
         />
+        <div style={{ height: 16 }} />
+
+        <label style={labelStyle}>Instrument</label>
+        <select style={{ ...inputStyle, cursor: 'pointer' }} value={instrument} onChange={(e) => setInstrument(e.target.value)}>
+          <option value="Puts">Puts</option>
+          <option value="Calls">Calls</option>
+        </select>
         <div style={{ height: 16 }} />
 
         <label style={labelStyle}>Direction</label>
@@ -453,24 +501,6 @@ export default function LogATradeContent({ setActiveTab: setTab, trades, setTrad
           <div style={{ flex: 1 }}>
             <div style={sectionLabelStyle}>JOURNAL ENTRY</div>
             <textarea style={{ ...inputStyle, minHeight: 200, resize: 'vertical', lineHeight: '1.7' }} placeholder="Share your brief approach on this trade for the WickCoach AI to analyze..." value={journal} onChange={(e) => setJournal(e.target.value)} />
-            {currentGoals.length > 0 && (
-              <div style={{
-                marginTop: 6,
-                padding: '6px 10px',
-                background: '#13141a',
-                borderLeft: '2px solid #00d4a0',
-                borderRadius: '0 4px 4px 0',
-                fontFamily: fm,
-                fontSize: 11,
-                color: '#7a7d85',
-                lineHeight: 1.4,
-              }}>
-                <span style={{ color: '#00d4a0', marginRight: 6 }}>Current weekly goals:</span>
-                {currentGoals.map((g, i) => (
-                  <span key={g.id}>{g.title}{i < currentGoals.length - 1 ? ' \u00b7 ' : ''}</span>
-                ))}
-              </div>
-            )}
           </div>
           <div style={{ flex: 1 }}>
             <div style={sectionLabelStyle}>SCREENSHOT</div>
