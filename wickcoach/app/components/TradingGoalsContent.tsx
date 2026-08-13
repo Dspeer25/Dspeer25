@@ -1209,7 +1209,7 @@ export default function TradingGoalsContent({ trades, onMessageSent, weeklyTabRe
                   {g.contextComplete && g.actionItems.length > 0 && !isExpanded && (
                     <div style={{ marginTop: 10 }}>
                       {g.actionItems.map((item, i) => (
-                        <div key={i} style={{ fontFamily: fm, fontSize: 14, color: teal, lineHeight: 1.7, marginBottom: 2 }}>
+                        <div key={i} style={{ fontFamily: fm, fontSize: 17, color: teal, lineHeight: 1.7, marginBottom: 4 }}>
                           ↳ {item}
                         </div>
                       ))}
