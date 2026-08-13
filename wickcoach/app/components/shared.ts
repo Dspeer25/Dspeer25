@@ -621,6 +621,268 @@ export function removeCustomStrategyEverywhere(name: string): void {
   }
 }
 
+// ─── Futures contract specifications ──────────────────────────
+// Exchange specs for the Position Size Calculator's futures mode.
+// tickSize is the minimum price increment in points; tickValue is what
+// one tick is worth in dollars per contract; pointValue is one full
+// point in dollars and ALWAYS equals tickValue / tickSize.
+//
+// These are contract facts, not estimates — a wrong tickValue silently
+// mis-sizes every futures position the trader takes. Do not "round" or
+// "tidy" any figure here.
+
+export type TradeDirection = 'LONG' | 'SHORT';
+
+export type FuturesGroup =
+  | 'Equity Index'
+  | 'Energy'
+  | 'Metals'
+  | 'Treasuries'
+  | 'Ags'
+  | 'FX'
+  | 'Crypto'
+  | 'Custom';
+
+export interface FuturesContract {
+  symbol: string;
+  name: string;
+  group: FuturesGroup;
+  /** Minimum price increment, in points. */
+  tickSize: number;
+  /** Dollar value of one tick, per contract. */
+  tickValue: number;
+  /** Dollar value of one full point, per contract. */
+  pointValue: number;
+}
+
+/** Optgroup order for the contract dropdown. Micros sit directly under
+ *  their parent contract inside each group. */
+export const FUTURES_GROUP_ORDER: FuturesGroup[] = [
+  'Equity Index', 'Energy', 'Metals', 'Treasuries', 'Ags', 'FX', 'Crypto',
+];
+
+export const FUTURES_CONTRACTS: FuturesContract[] = [
+  // ── Equity Index ──
+  { symbol: 'ES',  name: 'E-mini S&P 500',      group: 'Equity Index', tickSize: 0.25,  tickValue: 12.5,  pointValue: 50 },
+  { symbol: 'MES', name: 'Micro S&P 500',       group: 'Equity Index', tickSize: 0.25,  tickValue: 1.25,  pointValue: 5 },
+  { symbol: 'NQ',  name: 'E-mini Nasdaq-100',   group: 'Equity Index', tickSize: 0.25,  tickValue: 5,     pointValue: 20 },
+  { symbol: 'MNQ', name: 'Micro Nasdaq-100',    group: 'Equity Index', tickSize: 0.25,  tickValue: 0.5,   pointValue: 2 },
+  { symbol: 'YM',  name: 'E-mini Dow',          group: 'Equity Index', tickSize: 1,     tickValue: 5,     pointValue: 5 },
+  { symbol: 'MYM', name: 'Micro Dow',           group: 'Equity Index', tickSize: 1,     tickValue: 0.5,   pointValue: 0.5 },
+  { symbol: 'RTY', name: 'E-mini Russell 2000', group: 'Equity Index', tickSize: 0.1,   tickValue: 5,     pointValue: 50 },
+  { symbol: 'M2K', name: 'Micro Russell 2000',  group: 'Equity Index', tickSize: 0.1,   tickValue: 0.5,   pointValue: 5 },
+
+  // ── Energy ──
+  { symbol: 'CL',  name: 'Crude Oil',           group: 'Energy', tickSize: 0.01,   tickValue: 10,   pointValue: 1000 },
+  { symbol: 'MCL', name: 'Micro Crude',         group: 'Energy', tickSize: 0.01,   tickValue: 1,    pointValue: 100 },
+  { symbol: 'NG',  name: 'Natural Gas',         group: 'Energy', tickSize: 0.001,  tickValue: 10,   pointValue: 10000 },
+  { symbol: 'MNG', name: 'Micro Natural Gas',   group: 'Energy', tickSize: 0.001,  tickValue: 1,    pointValue: 1000 },
+  { symbol: 'RB',  name: 'RBOB Gasoline',       group: 'Energy', tickSize: 0.0001, tickValue: 4.2,  pointValue: 42000 },
+  { symbol: 'HO',  name: 'Heating Oil',         group: 'Energy', tickSize: 0.0001, tickValue: 4.2,  pointValue: 42000 },
+
+  // ── Metals ──
+  { symbol: 'GC',  name: 'Gold',                group: 'Metals', tickSize: 0.1,    tickValue: 10,   pointValue: 100 },
+  { symbol: 'MGC', name: 'Micro Gold',          group: 'Metals', tickSize: 0.1,    tickValue: 1,    pointValue: 10 },
+  { symbol: 'SI',  name: 'Silver',              group: 'Metals', tickSize: 0.005,  tickValue: 25,   pointValue: 5000 },
+  { symbol: 'SIL', name: 'Micro Silver',        group: 'Metals', tickSize: 0.005,  tickValue: 5,    pointValue: 1000 },
+  { symbol: 'HG',  name: 'Copper',              group: 'Metals', tickSize: 0.0005, tickValue: 12.5, pointValue: 25000 },
+  { symbol: 'MHG', name: 'Micro Copper',        group: 'Metals', tickSize: 0.0005, tickValue: 1.25, pointValue: 2500 },
+  { symbol: 'PL',  name: 'Platinum',            group: 'Metals', tickSize: 0.1,    tickValue: 5,    pointValue: 50 },
+
+  // ── Treasuries (decimal points) ──
+  { symbol: 'ZB',  name: '30-Yr T-Bond',        group: 'Treasuries', tickSize: 0.03125,   tickValue: 31.25,  pointValue: 1000 },
+  { symbol: 'ZN',  name: '10-Yr T-Note',        group: 'Treasuries', tickSize: 0.015625,  tickValue: 15.625, pointValue: 1000 },
+  { symbol: 'ZF',  name: '5-Yr T-Note',         group: 'Treasuries', tickSize: 0.0078125, tickValue: 7.8125, pointValue: 1000 },
+  { symbol: 'ZT',  name: '2-Yr T-Note',         group: 'Treasuries', tickSize: 0.0078125, tickValue: 15.625, pointValue: 2000 },
+
+  // ── Ags ──
+  { symbol: 'ZC',  name: 'Corn',                group: 'Ags', tickSize: 0.25,  tickValue: 12.5, pointValue: 50 },
+  { symbol: 'ZS',  name: 'Soybeans',            group: 'Ags', tickSize: 0.25,  tickValue: 12.5, pointValue: 50 },
+  { symbol: 'ZW',  name: 'Wheat',               group: 'Ags', tickSize: 0.25,  tickValue: 12.5, pointValue: 50 },
+  { symbol: 'ZL',  name: 'Soybean Oil',         group: 'Ags', tickSize: 0.01,  tickValue: 6,    pointValue: 600 },
+  { symbol: 'ZM',  name: 'Soybean Meal',        group: 'Ags', tickSize: 0.1,   tickValue: 10,   pointValue: 100 },
+  { symbol: 'LE',  name: 'Live Cattle',         group: 'Ags', tickSize: 0.025, tickValue: 10,   pointValue: 400 },
+  { symbol: 'HE',  name: 'Lean Hogs',           group: 'Ags', tickSize: 0.025, tickValue: 10,   pointValue: 400 },
+
+  // ── FX ──
+  { symbol: '6E',  name: 'Euro FX',             group: 'FX', tickSize: 0.00005,   tickValue: 6.25, pointValue: 125000 },
+  { symbol: 'M6E', name: 'Micro Euro',          group: 'FX', tickSize: 0.0001,    tickValue: 1.25, pointValue: 12500 },
+  { symbol: '6B',  name: 'British Pound',       group: 'FX', tickSize: 0.0001,    tickValue: 6.25, pointValue: 62500 },
+  { symbol: '6J',  name: 'Japanese Yen',        group: 'FX', tickSize: 0.0000005, tickValue: 6.25, pointValue: 12500000 },
+  { symbol: '6A',  name: 'Australian Dollar',   group: 'FX', tickSize: 0.0001,    tickValue: 10,   pointValue: 100000 },
+  { symbol: '6C',  name: 'Canadian Dollar',     group: 'FX', tickSize: 0.0001,    tickValue: 10,   pointValue: 100000 },
+
+  // ── Crypto ──
+  { symbol: 'BTC', name: 'Bitcoin',             group: 'Crypto', tickSize: 5,    tickValue: 25,    pointValue: 5 },
+  { symbol: 'MBT', name: 'Micro Bitcoin',       group: 'Crypto', tickSize: 5,    tickValue: 0.5,   pointValue: 0.1 },
+  { symbol: 'ETH', name: 'Ether',               group: 'Crypto', tickSize: 0.25, tickValue: 12.5,  pointValue: 50 },
+  { symbol: 'MET', name: 'Micro Ether',         group: 'Crypto', tickSize: 0.25, tickValue: 0.025, pointValue: 0.1 },
+];
+
+// ─── Custom futures contracts ─────────────────────────────────
+// The trader supplies name + tick size + tick value; pointValue is
+// always derived (tickValue / tickSize) rather than entered, so a custom
+// contract can never carry an internally inconsistent spec.
+
+export const CUSTOM_FUTURES_KEY = 'wickcoach_custom_futures';
+
+/** Derive a short unique ticker for a custom contract from its name. */
+function customFuturesSymbol(name: string, taken: Set<string>): string {
+  const base = name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || 'CUSTOM';
+  if (!taken.has(base)) return base;
+  for (let i = 2; i < 1000; i++) {
+    if (!taken.has(`${base}${i}`)) return `${base}${i}`;
+  }
+  return `${base}${Date.now()}`;
+}
+
+function isValidContract(c: unknown): c is FuturesContract {
+  if (!c || typeof c !== 'object') return false;
+  const r = c as Record<string, unknown>;
+  return typeof r.symbol === 'string'
+    && typeof r.name === 'string'
+    && typeof r.tickSize === 'number' && isFinite(r.tickSize) && r.tickSize > 0
+    && typeof r.tickValue === 'number' && isFinite(r.tickValue) && r.tickValue > 0;
+}
+
+export function readCustomFutures(): FuturesContract[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CUSTOM_FUTURES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Re-derive pointValue on read so a hand-edited or legacy entry can
+    // never disagree with its own tick spec.
+    return parsed.filter(isValidContract).map(c => ({
+      ...c,
+      group: 'Custom' as FuturesGroup,
+      pointValue: c.tickValue / c.tickSize,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function writeCustomFutures(list: FuturesContract[]): void {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(CUSTOM_FUTURES_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+}
+
+/** Add a custom contract. Returns the resulting list so callers can
+ *  refresh state without a re-read. Invalid specs are a no-op. */
+export function addCustomFuture(name: string, tickSize: number, tickValue: number): FuturesContract[] {
+  const trimmed = name.trim();
+  const current = readCustomFutures();
+  if (!trimmed || !isFinite(tickSize) || tickSize <= 0 || !isFinite(tickValue) || tickValue <= 0) {
+    return current;
+  }
+  const taken = new Set<string>([
+    ...FUTURES_CONTRACTS.map(c => c.symbol),
+    ...current.map(c => c.symbol),
+  ]);
+  const next: FuturesContract[] = [...current, {
+    symbol: customFuturesSymbol(trimmed, taken),
+    name: trimmed,
+    group: 'Custom',
+    tickSize,
+    tickValue,
+    pointValue: tickValue / tickSize,
+  }];
+  writeCustomFutures(next);
+  return next;
+}
+
+export function removeCustomFuture(symbol: string): FuturesContract[] {
+  const next = readCustomFutures().filter(c => c.symbol !== symbol);
+  writeCustomFutures(next);
+  return next;
+}
+
+/** Built-in contracts followed by the trader's custom ones. */
+export function allFuturesContracts(): FuturesContract[] {
+  return [...FUTURES_CONTRACTS, ...readCustomFutures()];
+}
+
+export function findFuturesContract(symbol: string): FuturesContract | null {
+  return allFuturesContracts().find(c => c.symbol === symbol) ?? null;
+}
+
+// ─── Futures math ─────────────────────────────────────────────
+// All deterministic. Tick sizes run from 5 (BTC) down to 0.0000005 (6J),
+// so every result that reaches the UI is re-rounded to the tick's own
+// precision — otherwise float noise surfaces as 4900.750000000001.
+
+/** Decimal places implied by a tick size. 0.25 -> 2, 0.0000005 -> 7. */
+export function tickDecimals(tickSize: number): number {
+  if (!isFinite(tickSize) || tickSize <= 0) return 2;
+  // Exponential form avoids the float noise that plain toString() shows
+  // for very small ticks.
+  const [mantissa, expPart] = tickSize.toExponential().split('e');
+  const exp = parseInt(expPart, 10);
+  const mantissaDecimals = (mantissa.split('.')[1] || '').length;
+  return Math.max(0, mantissaDecimals - exp);
+}
+
+/** Snap a price to the nearest valid tick. */
+export function roundToTick(price: number, tickSize: number): number {
+  if (!isFinite(price) || !isFinite(tickSize) || tickSize <= 0) return price;
+  const snapped = Math.round(price / tickSize) * tickSize;
+  return parseFloat(snapped.toFixed(tickDecimals(tickSize)));
+}
+
+/** True when a price already lands exactly on a tick boundary. */
+export function isOnTick(price: number, tickSize: number): boolean {
+  if (!isFinite(price) || !isFinite(tickSize) || tickSize <= 0) return true;
+  return Math.abs(price - roundToTick(price, tickSize)) < tickSize * 1e-6;
+}
+
+/** Price formatted at its contract's own tick precision, comma-grouped. */
+export function formatTickPrice(price: number, tickSize: number): string {
+  const dec = tickDecimals(tickSize);
+  return roundToTick(price, tickSize).toLocaleString('en-US', {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
+  });
+}
+
+/** Dollar risk of ONE contract: |entry - stop| / tickSize * tickValue. */
+export function futuresRiskPerContract(
+  entry: number, stop: number, tickSize: number, tickValue: number,
+): number {
+  const distance = Math.abs(entry - stop);
+  if (!isFinite(distance) || distance <= 0 || !isFinite(tickSize) || tickSize <= 0) return 0;
+  return (distance / tickSize) * tickValue;
+}
+
+/** Whole ticks between entry and stop. */
+export function futuresTickDistance(entry: number, stop: number, tickSize: number): number {
+  const distance = Math.abs(entry - stop);
+  if (!isFinite(distance) || distance <= 0 || !isFinite(tickSize) || tickSize <= 0) return 0;
+  return Math.round(distance / tickSize);
+}
+
+/** Largest contract count whose total risk still fits the budget. */
+export function futuresMaxContracts(maxRisk: number, riskPerContract: number): number {
+  if (!isFinite(maxRisk) || maxRisk <= 0 || !isFinite(riskPerContract) || riskPerContract <= 0) return 0;
+  return Math.floor(maxRisk / riskPerContract);
+}
+
+/** LONG needs the stop below entry; SHORT needs it above. */
+export function isStopSideValid(direction: TradeDirection, entry: number, stop: number): boolean {
+  return direction === 'LONG' ? stop < entry : stop > entry;
+}
+
+/** Direction-aware R target, snapped to a valid tick. LONG runs up from
+ *  entry, SHORT runs down, both by r x the stop distance. */
+export function futuresRTarget(
+  entry: number, stop: number, direction: TradeDirection, r: number, tickSize: number,
+): number {
+  const distance = Math.abs(entry - stop);
+  const raw = direction === 'LONG' ? entry + r * distance : entry - r * distance;
+  return roundToTick(raw, tickSize);
+}
+
 export interface Trade {
   id: string;
   ticker: string;

@@ -1,7 +1,14 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle, Plus } from 'lucide-react';
-import { fd, fm, teal, toLocalYMD } from './shared';
+import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import {
+  fd, fm, teal, toLocalYMD,
+  FUTURES_CONTRACTS, FUTURES_GROUP_ORDER,
+  readCustomFutures, addCustomFuture, removeCustomFuture,
+  futuresRiskPerContract, futuresTickDistance, futuresMaxContracts, futuresRTarget,
+  isStopSideValid, isOnTick, roundToTick, tickDecimals, formatTickPrice,
+  type FuturesContract, type TradeDirection,
+} from './shared';
 import { ToolPageShell } from './ToolsContent';
 
 const RED         = '#ff4444';
@@ -17,22 +24,28 @@ const BORDER      = 'rgba(255,255,255,0.10)';
 const SURFACE_TOP = '#1f232d';
 const SURFACE_BOT = '#181c26';
 
-type Instrument = 'shares' | 'options';
+type Instrument = 'shares' | 'options' | 'futures';
 
 const RTARGETS = [0.5, 1, 1.5, 2, 2.5, 3] as const;
 
-// Persisted default mode (Shares/Options) for the calculator. Mirrors the
-// Log a Trade default-position-type pattern: read once via a lazy useState
+// Sentinel <option> value that opens the custom-contract form instead of
+// selecting a contract. Not a symbol, so it can never collide with one.
+const ADD_CUSTOM_VALUE = '__add_custom__';
+
+// Persisted default mode (Shares/Options/Futures) for the calculator. Mirrors
+// the Log a Trade default-position-type pattern: read once via a lazy useState
 // initializer on mount, written when the trader clicks "Set as default".
 const PSC_DEFAULT_MODE_KEY = 'wickcoach_psc_default_mode';
 // Persisted "Today's P/L so far" for Day Context. Stored as {value, date}
 // so a stale (yesterday's) figure is discarded on mount — see hydration.
 const PSC_DAY_PL_KEY = 'wickcoach_psc_day_pl';
+// Last-selected futures contract, so a returning MES trader lands on MES.
+const PSC_FUTURES_SYMBOL_KEY = 'wickcoach_psc_futures_symbol';
 function readDefaultMode(): Instrument | null {
   if (typeof window === 'undefined') return null;
   try {
     const saved = localStorage.getItem(PSC_DEFAULT_MODE_KEY);
-    if (saved === 'shares' || saved === 'options') return saved;
+    if (saved === 'shares' || saved === 'options' || saved === 'futures') return saved;
   } catch { /* ignore */ }
   return null;
 }
@@ -331,11 +344,18 @@ function FieldGroup({ label, children }: { label: string; children: React.ReactN
   );
 }
 
-// ─── Shares | Options toggle ─────────────────────────────────────────
+// ─── Shares | Options | Futures toggle ───────────────────────────────
+
+const INSTRUMENTS: { key: Instrument; label: string }[] = [
+  { key: 'shares',  label: 'Shares' },
+  { key: 'options', label: 'Options' },
+  { key: 'futures', label: 'Futures' },
+];
 
 function InstrumentToggle({ value, onChange }: {
   value: Instrument; onChange: (v: Instrument) => void;
 }) {
+  const idx = Math.max(0, INSTRUMENTS.findIndex(o => o.key === value));
   return (
     <div style={{
       position: 'relative',
@@ -345,11 +365,13 @@ function InstrumentToggle({ value, onChange }: {
       borderRadius: 8,
       padding: 4,
     }}>
+      {/* Sliding pill. The track is the container minus its 4px padding on
+          each side, so each of the three segments is (100% - 8px) / 3. */}
       <div style={{
         position: 'absolute',
         top: 4,
-        left: value === 'shares' ? 4 : 'calc(50% + 0px)',
-        width: 'calc(50% - 4px)',
+        left: `calc(${idx} * (100% - 8px) / 3 + 4px)`,
+        width: 'calc((100% - 8px) / 3)',
         bottom: 4,
         background: SURFACE_TOP,
         border: '1px solid rgba(255,255,255,0.1)',
@@ -357,10 +379,10 @@ function InstrumentToggle({ value, onChange }: {
         boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
         transition: 'left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15)',
       }} />
-      {(['shares', 'options'] as Instrument[]).map(opt => (
+      {INSTRUMENTS.map(opt => (
         <button
-          key={opt}
-          onClick={() => onChange(opt)}
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
           style={{
             position: 'relative',
             zIndex: 1,
@@ -371,17 +393,113 @@ function InstrumentToggle({ value, onChange }: {
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: 1.2,
-            color: value === opt ? TEXT_BASE : LABEL,
+            color: value === opt.key ? TEXT_BASE : LABEL,
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
             transition: 'color 0.2s ease',
           }}
         >
-          {opt === 'shares' ? 'Shares' : 'Options'}
+          {opt.label}
         </button>
       ))}
     </div>
+  );
+}
+
+// ─── Futures: direction + contract controls ──────────────────────────
+
+// LONG / SHORT as first-class buttons — futures traders short as often as
+// they go long, so this is a primary input, not a secondary setting. Both
+// states use teal when active; red stays reserved for losses and errors.
+function DirectionToggle({ value, onChange }: {
+  value: TradeDirection; onChange: (v: TradeDirection) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 10 }}>
+      {(['LONG', 'SHORT'] as TradeDirection[]).map(dir => {
+        const active = value === dir;
+        return (
+          <button
+            key={dir}
+            onClick={() => onChange(dir)}
+            style={{
+              flex: 1,
+              background: active ? 'rgba(0,212,160,0.15)' : 'rgba(6,8,12,0.6)',
+              border: active ? `1px solid ${teal}` : '1px solid rgba(255,255,255,0.04)',
+              color: active ? teal : LABEL,
+              borderRadius: 8,
+              padding: '14px 0',
+              fontFamily: fd,
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: 1.2,
+              cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
+            }}
+          >
+            {dir}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Small inline "spec" chip shown beside the instrument toggle — the
+// options 100x note and the live futures contract spec share it.
+const specChipStyle: React.CSSProperties = {
+  fontFamily: fm,
+  fontSize: 13,
+  color: LABEL,
+  fontWeight: 500,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  border: '1px solid rgba(255,255,255,0.08)',
+  background: 'rgba(255,255,255,0.04)',
+  padding: '8px 12px',
+  borderRadius: 6,
+};
+
+const selectStyle: React.CSSProperties = {
+  background: 'rgba(6,8,12,0.6)',
+  border: '1px solid rgba(255,255,255,0.04)',
+  borderRadius: 8,
+  color: TEXT_BASE,
+  fontFamily: fm,
+  fontSize: 18,
+  fontWeight: 500,
+  padding: '14px 18px',
+  width: '100%',
+  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
+  outline: 'none',
+  cursor: 'pointer',
+};
+
+// Contract dropdown, grouped by asset class with micros sitting directly
+// under their parent. The trader's own contracts get a "Custom" group, and
+// the last entry always opens the custom-contract form.
+function ContractPicker({ contracts, value, onChange }: {
+  contracts: FuturesContract[];
+  value: string;
+  onChange: (symbol: string) => void;
+}) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={selectStyle}>
+      {[...FUTURES_GROUP_ORDER, 'Custom' as const].map(group => {
+        const inGroup = contracts.filter(c => c.group === group);
+        if (inGroup.length === 0) return null;
+        return (
+          <optgroup key={group} label={group}>
+            {inGroup.map(c => (
+              <option key={c.symbol} value={c.symbol}>{c.symbol} — {c.name}</option>
+            ))}
+          </optgroup>
+        );
+      })}
+      <option value={ADD_CUSTOM_VALUE}>+ Add custom contract...</option>
+    </select>
   );
 }
 
@@ -402,6 +520,20 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   const [hydrated, setHydrated]       = useState(false);
   // "Today's P/L so far" for Day Context. null = empty = feature dormant.
   const [dayPL, setDayPL]             = useState<number | null>(null);
+
+  // ─── Futures state ───────────────────────────────────────────────
+  // Contract and direction are futures-only. The contract symbol persists
+  // (a returning MES trader lands on MES); direction is per-trade scratch
+  // and always starts LONG.
+  const [futSymbol, setFutSymbol]           = useState('ES');
+  const [direction, setDirection]           = useState<TradeDirection>('LONG');
+  const [customFutures, setCustomFutures]   = useState<FuturesContract[]>([]);
+  // Custom-contract form, opened from the last entry in the dropdown. Held
+  // as strings so tick sizes like 0.0000005 survive typing intact.
+  const [showCustomForm, setShowCustomForm]   = useState(false);
+  const [customName, setCustomName]           = useState('');
+  const [customTickSize, setCustomTickSize]   = useState('');
+  const [customTickValue, setCustomTickValue] = useState('');
 
   // ─── Averaging-in ("Add") state ──────────────────────────────────
   // Each add is a leg { contracts, price }. The running position is just
@@ -463,6 +595,18 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
       }
     } catch { try { localStorage.removeItem(PSC_DAY_PL_KEY); } catch { /* ignore */ } }
 
+    // Futures: the trader's own contracts, then the last one they used.
+    // The symbol is only restored if it still resolves against the merged
+    // list, so deleting a custom contract can't strand the picker.
+    const saved = readCustomFutures();
+    setCustomFutures(saved);
+    try {
+      const savedSymbol = localStorage.getItem(PSC_FUTURES_SYMBOL_KEY);
+      if (savedSymbol && [...FUTURES_CONTRACTS, ...saved].some(c => c.symbol === savedSymbol)) {
+        setFutSymbol(savedSymbol);
+      }
+    } catch { /* ignore */ }
+
     setHydrated(true);
 
     // Focus after hydration so the input has rendered with the saved
@@ -497,6 +641,12 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
       }
     } catch { /* ignore */ }
   }, [dayPL, hydrated]);
+
+  // Remember the last-used contract so it's pre-selected next visit.
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(PSC_FUTURES_SYMBOL_KEY, futSymbol); } catch { /* ignore */ }
+  }, [futSymbol, hydrated]);
 
   // Enter in any input commits the value (via blur in NumInput) then
   // calls this — smooth-scrolls the Exit Target Parameters card so
@@ -533,8 +683,56 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   // Clear all adds — back to a plain single-entry calculator.
   const resetPosition = () => { setAdds([]); setShowAddRow(false); };
 
+  // Picking the sentinel row opens the custom-contract form rather than
+  // changing contract; any real symbol just selects it.
+  const handleContractChange = (symbol: string) => {
+    if (symbol === ADD_CUSTOM_VALUE) {
+      setCustomName(''); setCustomTickSize(''); setCustomTickValue('');
+      setShowCustomForm(true);
+      return;
+    }
+    setFutSymbol(symbol);
+  };
+
+  const customTickSizeNum  = parseFloat(customTickSize);
+  const customTickValueNum = parseFloat(customTickValue);
+  const customValid = customName.trim().length > 0
+    && isFinite(customTickSizeNum)  && customTickSizeNum  > 0
+    && isFinite(customTickValueNum) && customTickValueNum > 0;
+  // Always derived, never entered — a custom contract can't be saved with
+  // a point value that disagrees with its own tick spec.
+  const customPointValue = customValid ? customTickValueNum / customTickSizeNum : 0;
+
+  const saveCustomContract = () => {
+    if (!customValid) return;
+    const next = addCustomFuture(customName, customTickSizeNum, customTickValueNum);
+    setCustomFutures(next);
+    const added = next[next.length - 1];
+    if (added) setFutSymbol(added.symbol);
+    setShowCustomForm(false);
+  };
+
+  const deleteCustomContract = (symbol: string) => {
+    const next = removeCustomFuture(symbol);
+    setCustomFutures(next);
+    if (futSymbol === symbol) setFutSymbol(FUTURES_CONTRACTS[0].symbol);
+  };
+
+  const isFutures       = instrument === 'futures';
   const multiplier      = instrument === 'options' ? 100 : 1;
-  const unitsWordPlural = instrument === 'options' ? 'contracts' : 'shares';
+  const unitsWordPlural = instrument === 'shares' ? 'shares' : 'contracts';
+
+  // Resolve the selected contract against built-ins + the trader's customs.
+  // Falls back to the first built-in so futures mode always has a contract —
+  // deleting a custom one can never blank out the calculator.
+  const contractList = React.useMemo(
+    () => [...FUTURES_CONTRACTS, ...customFutures],
+    [customFutures],
+  );
+  const contract = React.useMemo(
+    () => contractList.find(c => c.symbol === futSymbol) ?? FUTURES_CONTRACTS[0],
+    [contractList, futSymbol],
+  );
 
   // Position averaging — fold the original leg (size @ entry) and every
   // add into one averaged leg. effEntry/effSize then feed ALL downstream
@@ -550,12 +748,40 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
 
   // Math — pure functions of inputs. Uses the effective (averaged) entry
   // and size; the stop stays live, so moving it recalcs everything.
-  const maxRisk      = accountSize * (riskPct / 100);
-  const priceRisk    = effEntry - stop;
-  const perUnitLoss  = priceRisk * multiplier;
+  const maxRisk = accountSize * (riskPct / 100);
+
+  // Signed distance from the effective entry to the stop, in points. A
+  // SHORT profits as price falls, so its stop sits ABOVE entry — flipping
+  // the sign here keeps one definition of "stop on the wrong side" across
+  // all three modes.
+  const priceRisk = isFutures && direction === 'SHORT' ? stop - effEntry : effEntry - stop;
+
+  // Per-unit loss. Shares/options scale the raw point move by the contract
+  // multiplier; futures convert it through the contract's tick spec, which
+  // is why there is no x100 anywhere on the futures path.
+  const riskPerContract = isFutures
+    ? futuresRiskPerContract(effEntry, stop, contract.tickSize, contract.tickValue)
+    : 0;
+  const perUnitLoss  = isFutures ? riskPerContract : priceRisk * multiplier;
   const riskPerTrade = effSize * perUnitLoss;
   const pctOfAccount = accountSize > 0 ? (riskPerTrade / accountSize) * 100 : 0;
-  const positionCost = effSize * effEntry * multiplier;
+  // Futures put up margin, not cost — show notional exposure instead.
+  const positionCost = isFutures
+    ? effSize * effEntry * contract.pointValue
+    : effSize * effEntry * multiplier;
+
+  // Futures-only readouts: whole ticks to the stop, and the largest
+  // position that still fits inside the risk budget.
+  const stopPoints      = Math.abs(effEntry - stop);
+  const tickDistance    = isFutures ? futuresTickDistance(effEntry, stop, contract.tickSize) : 0;
+  const maxContracts    = isFutures ? futuresMaxContracts(maxRisk, riskPerContract) : 0;
+  const maxContractRisk = maxContracts * riskPerContract;
+  // Off-tick prices are snapped for DISPLAY only, with a quiet note. Never
+  // an error — a trader pasting a fill shouldn't be blocked over an
+  // increment they can't control.
+  const entryOffTick = isFutures && !isOnTick(entry, contract.tickSize);
+  const stopOffTick  = isFutures && !isOnTick(stop, contract.tickSize);
+  const anyOffTick   = entryOffTick || stopOffTick;
 
   // Day Context — fold an existing intraday P/L into this trade's outcomes.
   // Always uses the live riskPerTrade above (so it reflects any Add legs),
@@ -580,7 +806,9 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   //   overBudget: size puts more $ at risk than the account allows — warn
   //               but keep everything visible so the trader can see how
   //               much they'd need to drop size to fit.
-  const badStop    = priceRisk <= 0;
+  const badStop = isFutures
+    ? !isStopSideValid(direction, effEntry, stop)
+    : priceRisk <= 0;
   const overBudget = !badStop && riskPerTrade > maxRisk;
 
   return (
@@ -689,21 +917,18 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             </span>
 
             {instrument === 'options' && (
-              <div style={{
-                fontFamily: fm,
-                fontSize: 13,
-                color: LABEL,
-                fontWeight: 500,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                border: '1px solid rgba(255,255,255,0.08)',
-                background: 'rgba(255,255,255,0.04)',
-                padding: '8px 12px',
-                borderRadius: 6,
-              }}>
+              <div style={specChipStyle}>
                 <Info size={14} color={LABEL} />
                 1 contract = 100 shares
+              </div>
+            )}
+
+            {/* Futures: the live spec of the selected contract, so the
+                numbers below are always traceable to a tick value. */}
+            {isFutures && (
+              <div style={specChipStyle}>
+                <Info size={14} color={LABEL} />
+                {contract.symbol} · tick {contract.tickSize} = {fmtD2(contract.tickValue)} · {fmtD2(contract.pointValue)}/pt
               </div>
             )}
 
@@ -738,6 +963,133 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             )}
           </div>
 
+          {/* Futures: contract + direction. Both are primary inputs, so they
+              sit above the size/entry/stop grid rather than beside it. */}
+          {isFutures && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 24,
+              marginBottom: 24,
+              alignItems: 'end',
+            }}>
+              <FieldGroup label="Contract">
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <ContractPicker
+                      contracts={contractList}
+                      value={futSymbol}
+                      onChange={handleContractChange}
+                    />
+                  </div>
+                  {contract.group === 'Custom' && (
+                    <button
+                      onClick={() => deleteCustomContract(contract.symbol)}
+                      title={`Delete the custom contract "${contract.name}"`}
+                      aria-label={`Delete the custom contract ${contract.name}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 46,
+                        height: 53,
+                        flexShrink: 0,
+                        background: 'transparent',
+                        border: `1px solid ${BORDER}`,
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Trash2 size={16} color={RED} strokeWidth={1.8} />
+                    </button>
+                  )}
+                </div>
+              </FieldGroup>
+              <FieldGroup label="Direction">
+                <DirectionToggle value={direction} onChange={setDirection} />
+              </FieldGroup>
+            </div>
+          )}
+
+          {/* Custom contract form — name + tick size + tick value. Point
+              value is shown live but always derived, never entered. */}
+          {isFutures && showCustomForm && (
+            <div style={{
+              marginBottom: 24,
+              padding: 20,
+              background: 'rgba(6,8,12,0.45)',
+              border: `1px solid ${BORDER}`,
+              borderRadius: 12,
+            }}>
+              <div style={{ ...labelStyle, marginBottom: 16 }}>Add custom contract</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 16 }}>
+                <FieldGroup label="Name">
+                  <input
+                    value={customName}
+                    onChange={e => setCustomName(e.target.value)}
+                    placeholder="e.g. Micro Palladium"
+                    style={{ ...selectStyle, cursor: 'text' }}
+                  />
+                </FieldGroup>
+                <FieldGroup label="Tick size">
+                  <input
+                    value={customTickSize}
+                    onChange={e => setCustomTickSize(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="0.25"
+                    style={{ ...selectStyle, cursor: 'text' }}
+                  />
+                </FieldGroup>
+                <FieldGroup label="Tick value">
+                  <input
+                    value={customTickValue}
+                    onChange={e => setCustomTickValue(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="12.50"
+                    style={{ ...selectStyle, cursor: 'text' }}
+                  />
+                </FieldGroup>
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: fm, fontSize: 14, color: LABEL }}>
+                  Point value{' '}
+                  <span style={{ color: customValid ? teal : TEXT_MUTED, fontWeight: 700 }}>
+                    {customValid ? fmtD2(customPointValue) : '—'}
+                  </span>
+                  {' '}· derived from tick value / tick size
+                </span>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={saveCustomContract}
+                    disabled={!customValid}
+                    style={{
+                      fontFamily: fd, fontSize: 13, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: 1,
+                      color: customValid ? '#06120e' : TEXT_MUTED,
+                      background: customValid ? teal : 'transparent',
+                      border: `1px solid ${customValid ? teal : BORDER}`,
+                      borderRadius: 8, padding: '13px 20px',
+                      cursor: customValid ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Save contract
+                  </button>
+                  <button
+                    onClick={() => setShowCustomForm(false)}
+                    style={{
+                      fontFamily: fd, fontSize: 13, fontWeight: 700, textTransform: 'uppercase',
+                      letterSpacing: 1, color: LABEL, background: 'transparent',
+                      border: `1px solid ${BORDER}`, borderRadius: 8, padding: '13px 20px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             <FieldGroup label={hasPosition ? `Original ${unitsWordPlural}` : `Number of ${unitsWordPlural}`}>
               <NumInput
@@ -752,7 +1104,8 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
               <NumInput
                 value={entry}
                 onChange={setEntry}
-                prefix="$"
+                prefix={isFutures ? undefined : '$'}
+                decimals={isFutures ? tickDecimals(contract.tickSize) : 2}
                 onEnter={scrollToExit}
               />
             </FieldGroup>
@@ -760,11 +1113,48 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
               <NumInput
                 value={stop}
                 onChange={setStop}
-                prefix="$"
+                prefix={isFutures ? undefined : '$'}
+                decimals={isFutures ? tickDecimals(contract.tickSize) : 2}
                 onEnter={scrollToExit}
               />
             </FieldGroup>
           </div>
+
+          {/* Live stop-distance line — points, whole ticks, and the dollar
+              risk of a single contract. This is the number a futures trader
+              sanity-checks before sizing, so it sits directly under the
+              inputs that drive it. */}
+          {isFutures && (
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontFamily: fm, fontSize: 15, color: LABEL }}>
+                Stop distance{' '}
+                {badStop ? (
+                  <span style={{ color: RED, fontWeight: 600 }}>
+                    stop is on the wrong side for {direction}
+                  </span>
+                ) : (
+                  <>
+                    <span style={{ color: teal, fontWeight: 700 }}>
+                      {formatTickPrice(stopPoints, contract.tickSize)} pts
+                    </span>
+                    {' '}({tickDistance.toLocaleString()} tick{tickDistance === 1 ? '' : 's'})
+                    {' · '}
+                    <span style={{ color: teal, fontWeight: 700 }}>{fmtD2(riskPerContract)}</span>
+                    {' per contract'}
+                  </>
+                )}
+              </div>
+              {anyOffTick && (
+                <div style={{ fontFamily: fm, fontSize: 13, color: TEXT_MUTED }}>
+                  Not on a {contract.tickSize} tick — shown snapped to
+                  {entryOffTick && ` entry ${formatTickPrice(roundToTick(entry, contract.tickSize), contract.tickSize)}`}
+                  {entryOffTick && stopOffTick && ','}
+                  {stopOffTick && ` stop ${formatTickPrice(roundToTick(stop, contract.tickSize), contract.tickSize)}`}
+                  . Your entered values are used as-is in the math.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Inline "add a leg" row — quantity + price, confirm/cancel.
               Enter on quantity advances to price; Enter on price confirms.
@@ -928,7 +1318,9 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                   color: RED,
                   letterSpacing: 0.5,
                 }}>
-                  Stop price must be below entry
+                  {isFutures
+                    ? `Stop is on the wrong side for ${direction}`
+                    : 'Stop price must be below entry'}
                 </div>
                 <div style={{
                   fontFamily: fm,
@@ -937,11 +1329,16 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                   lineHeight: 1.5,
                   maxWidth: 580,
                 }}>
-                  For a long position, the stop must be lower than the entry. Adjust your inputs.
+                  {isFutures
+                    ? (direction === 'LONG'
+                        ? 'A LONG stops out below entry — set a stop lower than your entry price.'
+                        : 'A SHORT stops out above entry — set a stop higher than your entry price.')
+                    : 'For a long position, the stop must be lower than the entry. Adjust your inputs.'}
                 </div>
               </div>
             </div>
           ) : (
+            <>
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1.5fr 2fr',
@@ -999,7 +1396,9 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <span style={labelStyle}>Position cost</span>
+                  {/* Futures put up margin rather than paying a cost, so the
+                      same slot reports notional exposure instead. */}
+                  <span style={labelStyle}>{isFutures ? 'Notional value' : 'Position cost'}</span>
                   <span style={{ fontFamily: fm, fontSize: 24, color: TEXT_BASE, fontWeight: 500 }}>
                     {fmtD2(positionCost)}
                   </span>
@@ -1007,11 +1406,51 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span style={labelStyle}>Stop distance</span>
                   <span style={{ fontFamily: fm, fontSize: 22, color: TEXT_BASE, fontWeight: 500 }}>
-                    {fmtD2(priceRisk)}
+                    {isFutures
+                      ? `${formatTickPrice(stopPoints, contract.tickSize)} pts`
+                      : fmtD2(priceRisk)}
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* Max contracts — the single most actionable number in futures
+                mode, so it gets its own full-width band under the readout. */}
+            {isFutures && (
+              <div style={{
+                marginTop: 28,
+                paddingTop: 24,
+                borderTop: `1px solid ${BORDER}`,
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 14,
+                flexWrap: 'wrap',
+              }}>
+                <span style={{ ...labelStyle, fontSize: 14 }}>Max contracts at this stop</span>
+                {maxContracts > 0 ? (
+                  <>
+                    <span style={{
+                      fontFamily: fd,
+                      fontSize: 40,
+                      fontWeight: 700,
+                      color: teal,
+                      letterSpacing: -0.5,
+                      lineHeight: 1,
+                    }}>
+                      {maxContracts.toLocaleString()}
+                    </span>
+                    <span style={{ fontFamily: fm, fontSize: 16, color: LABEL }}>
+                      ({fmtD2(maxContractRisk)} risk of your {fmtD2(maxRisk)} budget)
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ fontFamily: fm, fontSize: 17, fontWeight: 600, color: RED }}>
+                    None — a single contract risks {fmtD2(riskPerContract)}, more than your {fmtD2(maxRisk)} budget.
+                  </span>
+                )}
+              </div>
+            )}
+            </>
           )}
         </section>
 
@@ -1096,13 +1535,19 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             borderBottom: '1px solid rgba(255,255,255,0.05)',
           }}>
             <div style={{ ...labelStyle, textAlign: 'left' }}>R level</div>
-            <div style={{ ...labelStyle, textAlign: 'right' }}>Sell price</div>
+            <div style={{ ...labelStyle, textAlign: 'right' }}>{isFutures ? 'Target price' : 'Sell price'}</div>
             <div style={{ ...labelStyle, textAlign: 'right' }}>Gross profit</div>
           </div>
 
           <div>
             {RTARGETS.map((r, i) => {
-              const sellPrice  = badStop ? null : effEntry + r * priceRisk;
+              // Futures targets run up from entry on a LONG and down on a
+              // SHORT, and always land on a valid tick.
+              const sellPrice = badStop
+                ? null
+                : isFutures
+                  ? futuresRTarget(effEntry, stop, direction, r, contract.tickSize)
+                  : effEntry + r * priceRisk;
               const grossProfit = badStop ? null : r * riskPerTrade;
               const isLast = i === RTARGETS.length - 1;
               const isOneR = r === 1;
@@ -1145,7 +1590,9 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                     color: TEXT_BASE,
                     textAlign: 'right',
                   }}>
-                    {sellPrice !== null ? fmtD2(sellPrice) : '—'}
+                    {sellPrice !== null
+                      ? (isFutures ? formatTickPrice(sellPrice, contract.tickSize) : fmtD2(sellPrice))
+                      : '—'}
                   </div>
                   <div style={{
                     fontFamily: fm,
