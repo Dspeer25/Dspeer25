@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import {
   fd, fm, teal, toLocalYMD,
   FUTURES_CONTRACTS, FUTURES_GROUP_ORDER,
@@ -1236,15 +1236,27 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
                     Avg cost {avgCost.toFixed(2)} · {totalContracts.toLocaleString()} {unitsWordPlural}
                   </span>
                 </div>
+                {/* Icon-only reset — the circular arrow carries the meaning,
+                    so the label lives in the tooltip / aria-label instead. */}
                 <button
                   onClick={resetPosition}
+                  title="Reset to initial position"
+                  aria-label="Reset to initial position"
                   style={{
-                    fontFamily: fm, fontSize: 12, letterSpacing: 0.5, color: LABEL,
-                    background: 'transparent', border: `1px solid ${BORDER}`,
-                    borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 34,
+                    height: 34,
+                    flexShrink: 0,
+                    background: 'transparent',
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    padding: 0,
                   }}
                 >
-                  Reset position
+                  <RotateCcw size={16} color={teal} strokeWidth={2} />
                 </button>
               </div>
 
