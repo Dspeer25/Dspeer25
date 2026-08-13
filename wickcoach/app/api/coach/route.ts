@@ -457,6 +457,14 @@ Write a TIGHT bulleted list of 4 to 6 observations about THIS WEEK. Hard rules:
     });
 
     const data = await response.json();
+    if (!response.ok) {
+      // Anthropic returned an error-shaped body (no `content`). Don't mask it
+      // as "Unable to process." — log the full error server-side and return
+      // the real message so the failure (401, model_not_found, rate_limit,
+      // credit balance) is visible in the chat instead of a dead-end string.
+      console.error('Anthropic API error:', response.status, JSON.stringify(data));
+      return NextResponse.json({ reply: `API error ${response.status}: ${data?.error?.message || 'unknown'}`, metadata: null });
+    }
     const raw: string = data.content?.[0]?.text || 'Unable to process.';
 
     let reply = raw;
