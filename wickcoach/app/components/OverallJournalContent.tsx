@@ -535,24 +535,24 @@ function FolderTile({
         </div>
       )}
 
-      {/* Hover-only icon overlay — centered over the tile. Pencil for
-          rename (teal), trash for delete (red). Each button has its
-          own hover state and stopPropagation so the parent tile's
-          open handler doesn't fire when clicking an icon. */}
+      {/* Hover-only icon overlay — pinned bottom-RIGHT so it doesn't
+          collide with the bottom-left sublabel (e.g. "2 weeks").
+          Pencil for rename (teal), trash for delete (red). Each button
+          has its own hover state and stopPropagation so the parent
+          tile's open handler doesn't fire when clicking an icon. */}
       {!editing && hover && (onRename || onDelete) && (
         <div style={{
           position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          bottom: 12,
+          right: 12,
           display: 'flex',
-          gap: 12,
+          gap: 6,
           zIndex: 5,
           background: 'rgba(10,13,20,0.82)',
-          padding: '12px 16px',
-          borderRadius: 12,
+          padding: '5px 6px',
+          borderRadius: 8,
           border: `1px solid ${BORDER}`,
-          boxShadow: '0 12px 28px rgba(0,0,0,0.55)',
+          boxShadow: '0 8px 18px rgba(0,0,0,0.5)',
         }}>
           {onRename && (
             <IconAffordance
@@ -595,9 +595,9 @@ function IconAffordance({ icon: Icon, label, hoverColor, onClick }: {
       aria-label={label}
       title={label}
       style={{
-        width: 46,
-        height: 46,
-        borderRadius: 10,
+        width: 30,
+        height: 30,
+        borderRadius: 7,
         background: hover ? `${hoverColor}26` : 'rgba(255,255,255,0.04)',
         border: `1px solid ${hover ? hoverColor : 'rgba(255,255,255,0.10)'}`,
         cursor: 'pointer',
@@ -608,7 +608,7 @@ function IconAffordance({ icon: Icon, label, hoverColor, onClick }: {
         padding: 0,
       }}
     >
-      <Icon size={22} color={hover ? hoverColor : '#c4c7cf'} strokeWidth={1.75} />
+      <Icon size={15} color={hover ? hoverColor : '#c4c7cf'} strokeWidth={1.75} />
     </button>
   );
 }
