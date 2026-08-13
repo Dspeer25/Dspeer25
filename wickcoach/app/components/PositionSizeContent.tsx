@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { Wallet, Crosshair, Activity, Layers, Info, AlertCircle, Plus } from 'lucide-react';
-import { fd, fm, teal } from './shared';
+import { fd, fm, teal, toLocalYMD } from './shared';
 import { ToolPageShell } from './ToolsContent';
 
 const RED         = '#ff4444';
@@ -25,6 +25,9 @@ const RTARGETS = [0.5, 1, 1.5, 2, 2.5, 3] as const;
 // Log a Trade default-position-type pattern: read once via a lazy useState
 // initializer on mount, written when the trader clicks "Set as default".
 const PSC_DEFAULT_MODE_KEY = 'wickcoach_psc_default_mode';
+// Persisted "Today's P/L so far" for Day Context. Stored as {value, date}
+// so a stale (yesterday's) figure is discarded on mount — see hydration.
+const PSC_DAY_PL_KEY = 'wickcoach_psc_day_pl';
 function readDefaultMode(): Instrument | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -217,6 +220,86 @@ function ReadOnlyField({ value, prefix, color = teal }: {
   );
 }
 
+// Signed dollar input for "Today's P/L so far". Unlike NumInput this is
+// nullable (empty string commits back to null = feature dormant) and
+// accepts negatives. Styled to match NumInput exactly.
+function DayPLInput({ value, onChange, inputRef, onEnter }: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
+  onEnter?: () => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const formatted = value === null
+    ? ''
+    : value.toFixed(2).replace(/\B(?=(\d{3})+(?=\.))/g, ',');
+  const display = focused ? draft : formatted;
+
+  const commit = () => {
+    setFocused(false);
+    const stripped = draft.replace(/[^0-9.\-]/g, '');
+    // Bare sign / dot / empty → clear to dormant.
+    if (stripped === '' || stripped === '-' || stripped === '.' || stripped === '-.') {
+      onChange(null);
+      return;
+    }
+    const n = parseFloat(stripped);
+    onChange(isNaN(n) ? null : n);
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <span style={{
+        position: 'absolute', left: 18, top: '50%', transform: 'translateY(-50%)',
+        color: LABEL, fontFamily: fm, fontSize: 16, pointerEvents: 'none',
+      }}>$</span>
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="text"
+        placeholder="—"
+        value={display}
+        onFocus={() => { setFocused(true); setDraft(value === null ? '' : String(value)); }}
+        onBlur={commit}
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            (e.currentTarget as HTMLInputElement).blur();
+            onEnter?.();
+          }
+        }}
+        style={{
+          background: 'rgba(6,8,12,0.6)',
+          border: `1px solid ${focused ? teal : 'rgba(255,255,255,0.04)'}`,
+          borderRadius: 8,
+          color: TEXT_BASE,
+          fontFamily: fm,
+          fontSize: 18,
+          fontWeight: 500,
+          padding: '14px 18px',
+          paddingLeft: 36,
+          width: '100%',
+          boxShadow: focused
+            ? 'inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,212,160,0.2)'
+            : 'inset 0 2px 4px rgba(0,0,0,0.2)',
+          outline: 'none',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+        }}
+      />
+    </div>
+  );
+}
+
+// Format a signed day total like "−$3,992" / "$2,742" — rounded to whole
+// dollars, U+2212 minus ahead of the $, comma-grouped. Positive shows no
+// sign; color (teal/red) carries the direction.
+function fmtDayMoney(v: number): string {
+  const abs = Math.abs(Math.round(v)).toLocaleString();
+  return (v < 0 ? '−$' : '$') + abs;
+}
+
 // ─── Card / field primitives ─────────────────────────────────────────
 
 function CardHeader({ icon: Icon, title }: {
@@ -317,6 +400,8 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   const [stop, setStop]               = useState(48);
   const [size, setSize]               = useState(250);
   const [hydrated, setHydrated]       = useState(false);
+  // "Today's P/L so far" for Day Context. null = empty = feature dormant.
+  const [dayPL, setDayPL]             = useState<number | null>(null);
 
   // ─── Averaging-in ("Add") state ──────────────────────────────────
   // Each add is a leg { contracts, price }. The running position is just
@@ -362,6 +447,22 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
         if (!isNaN(n)) { setRiskPct(n); hadSaved = true; }
       }
     } catch { /* ignore */ }
+
+    // Day P/L: restore only if it was stored TODAY. A stored date != today
+    // means it's yesterday's figure — discard it so a prior day's loss can
+    // never silently carry into today's math.
+    try {
+      const rawDay = localStorage.getItem(PSC_DAY_PL_KEY);
+      if (rawDay) {
+        const parsed = JSON.parse(rawDay) as { value: number; date: string };
+        if (parsed && typeof parsed.value === 'number' && parsed.date === toLocalYMD()) {
+          setDayPL(parsed.value);
+        } else {
+          localStorage.removeItem(PSC_DAY_PL_KEY);
+        }
+      }
+    } catch { try { localStorage.removeItem(PSC_DAY_PL_KEY); } catch { /* ignore */ } }
+
     setHydrated(true);
 
     // Focus after hydration so the input has rendered with the saved
@@ -383,6 +484,19 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
     if (!hydrated) return;
     try { localStorage.setItem('wickcoach_position_size_risk_pct', String(riskPct)); } catch { /* ignore */ }
   }, [riskPct, hydrated]);
+
+  // Persist Day P/L stamped with today's date. Empty clears the key so it
+  // doesn't linger; a value re-stamps today so mid-day tab switches keep it.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (dayPL === null) {
+        localStorage.removeItem(PSC_DAY_PL_KEY);
+      } else {
+        localStorage.setItem(PSC_DAY_PL_KEY, JSON.stringify({ value: dayPL, date: toLocalYMD() }));
+      }
+    } catch { /* ignore */ }
+  }, [dayPL, hydrated]);
 
   // Enter in any input commits the value (via blur in NumInput) then
   // calls this — smooth-scrolls the Exit Target Parameters card so
@@ -442,6 +556,15 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
   const riskPerTrade = effSize * perUnitLoss;
   const pctOfAccount = accountSize > 0 ? (riskPerTrade / accountSize) * 100 : 0;
   const positionCost = effSize * effEntry * multiplier;
+
+  // Day Context — fold an existing intraday P/L into this trade's outcomes.
+  // Always uses the live riskPerTrade above (so it reflects any Add legs),
+  // never a stale copy. dayPL === null keeps the whole feature dormant.
+  const dayActive       = dayPL !== null;
+  const dayIfStopped    = dayActive ? (dayPL as number) - riskPerTrade : 0;
+  const dayAt1_5R       = dayActive ? (dayPL as number) + 1.5 * riskPerTrade : 0;
+  const dayAt2R         = dayActive ? (dayPL as number) + 2 * riskPerTrade : 0;
+  const dayStoppedPct   = accountSize > 0 ? Math.abs(dayIfStopped / accountSize) * 100 : 0;
 
   // Live projection for the open add row — the average the position WOULD
   // have if the currently-typed quantity/price were confirmed on top of
@@ -508,6 +631,28 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             <FieldGroup label="Max risk">
               <ReadOnlyField value={fmtD2(maxRisk).slice(1)} prefix="$" />
             </FieldGroup>
+          </div>
+
+          {/* Day Context input — signed intraday P/L. Empty = dormant. */}
+          <div style={{
+            marginTop: 24,
+            paddingTop: 24,
+            borderTop: `1px solid ${BORDER}`,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 24,
+            alignItems: 'end',
+          }}>
+            <FieldGroup label="Today's P/L so far">
+              <DayPLInput value={dayPL} onChange={setDayPL} onEnter={scrollToExit} />
+            </FieldGroup>
+            <div style={{ gridColumn: 'span 2', paddingBottom: 15 }}>
+              <span style={{ fontFamily: fm, fontSize: 13, color: LABEL, lineHeight: 1.5 }}>
+                Optional. Enter your realized P/L so far today (negative for a loss) to
+                see how this trade&rsquo;s outcomes move your daily total. Leave blank to
+                ignore. Clears automatically at the start of a new day.
+              </span>
+            </div>
           </div>
         </section>
 
@@ -869,6 +1014,63 @@ export function PositionSizeContent({ onBack }: { onBack: () => void }) {
             </div>
           )}
         </section>
+
+        {/* ─── Day Context ────────────────────────────────────────────
+            Only when a P/L is entered and the risk math is valid. Each row
+            folds this trade's outcome into the running day total; sign
+            drives the color so "what turns the day green" reads instantly. */}
+        {dayActive && !badStop && (
+          <section style={{ ...cardSurface, padding: 32 }}>
+            <div style={{
+              ...labelStyle,
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderBottom: `1px solid ${BORDER}`,
+              paddingBottom: 12,
+            }}>
+              <span>Day Context</span>
+              <span style={{ fontFamily: fm, fontSize: 13, color: LABEL, textTransform: 'none', letterSpacing: 0.3 }}>
+                Starting today at{' '}
+                <span style={{ color: (dayPL as number) < 0 ? RED : teal, fontWeight: 600 }}>
+                  {fmtDayMoney(dayPL as number)}
+                </span>
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* a. If this trade stops out */}
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16 }}>
+                <span style={{ fontFamily: fm, fontSize: 15, color: LABEL }}>Day total if stopped</span>
+                <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <span style={{ fontFamily: fm, fontSize: 24, fontWeight: 700, color: dayIfStopped < 0 ? RED : teal }}>
+                    {fmtDayMoney(dayIfStopped)}
+                  </span>
+                  <span style={{ fontFamily: fm, fontSize: 14, color: LABEL }}>
+                    · {dayStoppedPct.toFixed(1)}% of account
+                  </span>
+                </span>
+              </div>
+
+              {/* b. If 1.5R hits */}
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16 }}>
+                <span style={{ fontFamily: fm, fontSize: 15, color: LABEL }}>Day at 1.5R</span>
+                <span style={{ fontFamily: fm, fontSize: 24, fontWeight: 700, color: dayAt1_5R < 0 ? RED : teal }}>
+                  {fmtDayMoney(dayAt1_5R)}
+                </span>
+              </div>
+
+              {/* c. If 2R hits */}
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16 }}>
+                <span style={{ fontFamily: fm, fontSize: 15, color: LABEL }}>Day at 2R</span>
+                <span style={{ fontFamily: fm, fontSize: 24, fontWeight: 700, color: dayAt2R < 0 ? RED : teal }}>
+                  {fmtDayMoney(dayAt2R)}
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ─── Card 4: Exit Target Ladder ─────────────────────────── */}
         <section ref={exitTargetsRef} style={cardSurface}>
