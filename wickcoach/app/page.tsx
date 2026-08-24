@@ -26,6 +26,23 @@ import ToolsContent from "./components/ToolsContent";
 import SplashScreen from "./components/SplashScreen";
 import LicenseLockScreen from "./components/LicenseLockScreen";
 
+// ─── License gate kill-switch (TEMPORARY) ─────────────────────
+// TODO: set back to true before shipping. Position Calc Pro must NOT
+// ship with its license gate bypassed.
+//
+// Off while GUMROAD_PRODUCT_ID in shared.ts is still the placeholder:
+// with no real product id Gumroad answers every key with success:false,
+// which /api/license/verify normalizes to 'invalid'. So the lock screen
+// rejects every key, and the background re-verify wipes any stored
+// license on the next load — the gate is unusable for local testing.
+//
+// false → lite boots straight into the app: no lock screen, and the
+// /api/license/verify round-trip is skipped entirely. LicenseLockScreen,
+// the API route, and the verify logic below are all left intact and
+// reachable; flipping this one boolean back to true restores the gate
+// exactly as it was.
+const LICENSE_GATE_ENABLED = false;
+
 export default function WickCoachFull() {
   const [tabGlow, setTabGlow] = useState(false);
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
@@ -35,8 +52,10 @@ export default function WickCoachFull() {
   const [view, setView] = useState<'home' | 'app'>(isLite() ? 'app' : 'home');
   // License gate (lite/"Position Calc Pro" only). null = still checking
   // localStorage; true = unlocked; false = show lock screen. Full always
-  // starts true so the gate is a no-op and the app is unaffected.
-  const [licensed, setLicensed] = useState<boolean | null>(isLite() ? null : true);
+  // starts true so the gate is a no-op and the app is unaffected — and so
+  // does lite while LICENSE_GATE_ENABLED is false, which skips the null
+  // phase so there is no neutral-screen flash on boot.
+  const [licensed, setLicensed] = useState<boolean | null>(isLite() && LICENSE_GATE_ENABLED ? null : true);
   const [activeCategory, setActiveCategory] = useState(0);
   const [textVisible, setTextVisible] = useState(false);
   const [showClickHint, setShowClickHint] = useState(false);
@@ -70,6 +89,8 @@ export default function WickCoachFull() {
   // refunded / disabled) revokes it; a network failure leaves it working.
   useEffect(() => {
     if (!isLite()) return;
+    // Kill-switch: unlock outright and never touch /api/license/verify.
+    if (!LICENSE_GATE_ENABLED) { setLicensed(true); return; }
     let stored: { key?: string } | null = null;
     try {
       const raw = localStorage.getItem('pcp_license');
@@ -221,7 +242,9 @@ export default function WickCoachFull() {
   // Lite license gate: block the app until a license is verified. Placed
   // after all hooks so hook order stays stable. Full skips this entirely
   // (licensed is initialized true when !isLite()), so it is unaffected.
-  if (isLite() && licensed !== true) {
+  // LICENSE_GATE_ENABLED === false bypasses the block for lite too; the
+  // branch below is left untouched and returns the moment it flips true.
+  if (LICENSE_GATE_ENABLED && isLite() && licensed !== true) {
     if (licensed === null) {
       // Still reading localStorage — neutral dark screen, avoids a flash.
       return <div style={{ minHeight: '100vh', background: '#0A0D14' }} />;
