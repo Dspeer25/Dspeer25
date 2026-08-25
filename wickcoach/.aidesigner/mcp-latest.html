@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased selection:bg-[#00d4a0]/30 selection:text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WickCoach - Position Size Calculator</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Chakra Petch"', 'sans-serif'],
+                        mono: ['"DM Mono"', 'monospace'],
+                    },
+                    colors: {
+                        app: {
+                            bg: '#0A0D14',
+                            surface: '#11141A',
+                            surfaceTop: '#171A21',
+                            teal: '#00d4a0',
+                            red: '#ff4444',
+                            textBase: '#e0e0e0',
+                            textMuted: '#7a7d85',
+                            border: 'rgba(255, 255, 255, 0.06)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root { color-scheme: dark; }
+
+        body {
+            background-color: theme('colors.app.bg');
+            color: theme('colors.app.textBase');
+            background-image: radial-gradient(circle at 50% 0%, rgba(20, 24, 32, 0.5) 0%, rgba(10, 13, 20, 1) 60%);
+            min-height: 100dvh;
+        }
+
+        .instrument-card {
+            background: linear-gradient(180deg, theme('colors.app.surfaceTop') 0%, theme('colors.app.surface') 100%);
+            border: 1px solid theme('colors.app.border');
+            border-radius: 16px;
+            box-shadow:
+                0 16px 40px -8px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instrument-input {
+            background-color: rgba(6, 8, 12, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            color: theme('colors.app.textBase');
+            font-family: '"DM Mono"', monospace;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .instrument-input:focus {
+            outline: none;
+            border-color: theme('colors.app.teal');
+            background-color: rgba(10, 13, 20, 0.8);
+            box-shadow:
+                inset 0 2px 4px rgba(0,0,0,0.2),
+                0 0 0 1px rgba(0, 212, 160, 0.2);
+        }
+
+        .instrument-input::-webkit-outer-spin-button,
+        .instrument-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .instrument-label {
+            font-family: '"Chakra Petch"', sans-serif;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: theme('colors.app.textMuted');
+            font-weight: 600;
+        }
+
+        .toggle-slider { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15); }
+        .options-active .toggle-slider { transform: translateX(100%); }
+
+        .ladder-row { border-bottom: 1px solid theme('colors.app.border'); }
+        .ladder-row:last-child { border-bottom: none; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: theme('colors.app.bg'); }
+        ::-webkit-scrollbar-thumb { background: #2a2d35; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a3d45; }
+    </style>
+</head>
+<body class="py-12 px-4 sm:px-6">
+
+    <header class="max-w-[920px] mx-auto mb-8">
+        <a href="#" class="inline-flex items-center gap-2 text-app-teal font-sans uppercase text-[12px] tracking-wide font-semibold hover:-translate-x-1 transition-transform mb-4">
+            <i class="ph ph-arrow-left text-sm"></i>
+            Back to Tools
+        </a>
+        <h1 class="text-[24px] font-semibold text-app-textBase tracking-wide">
+            POSITION SIZE CALCULATOR
+        </h1>
+    </header>
+
+    <main class="max-w-[920px] mx-auto space-y-6">
+
+        <section class="instrument-card p-6 sm:p-8">
+            <h2 class="instrument-label mb-5 flex items-center justify-between border-b border-app-border pb-3">
+                <span>Account Setup</span>
+                <i class="ph ph-wallet opacity-50"></i>
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="flex flex-col gap-2">
+                    <label class="instrument-label">Account size</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-app-textMuted font-mono">$</span>
+                        <input type="number" class="instrument-input pl-8" value="50000.00" step="100">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="instrument-label">Risk %</label>
+                    <div class="relative">
+                        <input type="number" class="instrument-input pr-8" value="1.00" step="0.1">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-app-textMuted font-mono">%</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="instrument-label">Max risk</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-app-textMuted font-mono">$</span>
+                        <input type="text" class="instrument-input pl-8 bg-transparent border-transparent shadow-none text-app-teal font-medium focus:ring-0" value="500.00" readonly tabindex="-1">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="instrument-card p-6 sm:p-8">
+            <h2 class="instrument-label mb-5 flex items-center justify-between border-b border-app-border pb-3">
+                <span>Trade Setup</span>
+                <i class="ph ph-crosshair opacity-50"></i>
+            </h2>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+                <div class="relative inline-flex bg-[#06080c]/60 border border-white/5 rounded-lg p-1 w-fit" id="instrument-toggle">
+                    <div class="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-[#171A21] border border-white/10 rounded-md shadow-sm toggle-slider"></div>
+
+                    <button class="relative z-10 w-24 py-1.5 text-[11px] font-sans font-bold uppercase tracking-wider text-app-textBase transition-colors focus:outline-none" data-type="shares" id="btn-shares">Shares</button>
+                    <button class="relative z-10 w-24 py-1.5 text-[11px] font-sans font-bold uppercase tracking-wider text-app-textMuted transition-colors focus:outline-none" data-type="options" id="btn-options">Options</button>
+                </div>
+
+                <div id="options-multiplier-readout" class="hidden text-[12px] font-mono text-app-textMuted flex items-center gap-1.5 border border-white/5 bg-white/5 px-2.5 py-1.5 rounded">
+                    <i class="ph-fill ph-info text-app-textMuted/50"></i>
+                    1 contract = 100 shares
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="flex flex-col gap-2">
+                    <label class="instrument-label">Entry price</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-app-textMuted font-mono">$</span>
+                        <input type="number" class="instrument-input pl-8" value="50.00" step="0.01">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="instrument-label">Stop price</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-app-textMuted font-mono">$</span>
+                        <input type="number" class="instrument-input pl-8" value="48.00" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div id="options-caveat" class="hidden mt-6 pt-5 border-t border-app-border">
+                <p class="text-[12px] font-mono text-app-textMuted flex items-start gap-2 leading-relaxed">
+                    <span class="mt-[2px] bg-white/5 rounded border border-white/10 p-0.5 shadow-sm text-app-textMuted/70"><i class="ph ph-warning-circle"></i></span>
+                    Stop is usually defined on the underlying — premium math here is an estimate.
+                </p>
+            </div>
+        </section>
+
+        <section class="instrument-card p-6 sm:p-8">
+            <div class="grid grid-cols-1 md:grid-cols-[1.5fr_2fr] gap-8 md:gap-12 items-center">
+
+                <div class="flex flex-col justify-center border-b md:border-b-0 md:border-r border-app-border pb-6 md:pb-0 md:pr-12 h-full">
+                    <div class="instrument-label text-app-textMuted mb-2 flex items-center gap-1.5" id="focal-label">
+                        <i class="ph-fill ph-target opacity-40"></i> Number of shares
+                    </div>
+                    <div class="flex items-baseline gap-3">
+                        <span class="font-sans font-bold text-6xl tracking-tighter text-app-textBase" style="line-height: 0.9;">250</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-y-8 gap-x-8">
+                    <div class="flex flex-col gap-1">
+                        <span class="instrument-label">Risk per trade</span>
+                        <span class="font-mono text-[22px] md:text-[24px] text-app-textBase font-medium">$500.00</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <span class="instrument-label">% of account</span>
+                        <span class="font-mono text-[22px] md:text-[24px] text-app-textMuted">1.00%</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <span class="instrument-label">Position cost</span>
+                        <span class="font-mono text-[20px] text-app-textMuted">$12,500.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="instrument-card overflow-x-auto">
+            <h2 class="instrument-label m-6 sm:m-8 mb-4 flex items-center justify-between">
+                <span>Exit Target Parameters</span>
+                <i class="ph ph-ladder text-app-textMuted"></i>
+            </h2>
+
+            <div class="w-full min-w-[500px]">
+                <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-3 bg-white/[0.02] border-y border-white/5">
+                    <div class="instrument-label text-left">R level</div>
+                    <div class="instrument-label text-right">Sell price</div>
+                    <div class="instrument-label text-right">Gross profit</div>
+                </div>
+
+                <div class="flex flex-col text-sm font-mono text-app-textBase">
+                    <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-4 ladder-row items-center hover:bg-white/[0.01] transition-colors">
+                        <div class="font-sans font-semibold text-app-teal text-[15px] tracking-wider bg-app-teal/10 w-fit px-2 py-0.5 rounded">0.5R</div>
+                        <div class="text-[15px] sm:text-[16px] text-right">$51.00</div>
+                        <div class="text-right text-[15px] sm:text-[16px] font-medium text-app-teal">+$250.00</div>
+                    </div>
+
+                    <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-4 ladder-row items-center hover:bg-white/[0.01] transition-colors relative">
+                        <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-app-teal/20"></div>
+                        <div class="font-sans font-semibold text-app-teal text-[15px] tracking-wider bg-app-teal/10 w-fit px-2 py-0.5 rounded">1R</div>
+                        <div class="text-[15px] sm:text-[16px] text-right">$52.00</div>
+                        <div class="text-right text-[15px] sm:text-[16px] font-medium text-app-teal">+$500.00</div>
+                    </div>
+
+                    <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-4 ladder-row items-center hover:bg-white/[0.01] transition-colors">
+                        <div class="font-sans font-semibold text-app-teal text-[15px] tracking-wider bg-app-teal/10 w-fit px-2 py-0.5 rounded">1.5R</div>
+                        <div class="text-[15px] sm:text-[16px] text-right">$53.00</div>
+                        <div class="text-right text-[15px] sm:text-[16px] font-medium text-app-teal">+$750.00</div>
+                    </div>
+
+                    <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-4 ladder-row items-center hover:bg-white/[0.01] transition-colors">
+                        <div class="font-sans font-semibold text-app-teal text-[15px] tracking-wider bg-app-teal/10 w-fit px-2 py-0.5 rounded">2R</div>
+                        <div class="text-[15px] sm:text-[16px] text-right">$54.00</div>
+                        <div class="text-right text-[15px] sm:text-[16px] font-medium text-app-teal">+$1,000.00</div>
+                    </div>
+
+                    <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-4 ladder-row items-center hover:bg-white/[0.01] transition-colors">
+                        <div class="font-sans font-semibold text-app-teal text-[15px] tracking-wider bg-app-teal/10 w-fit px-2 py-0.5 rounded">2.5R</div>
+                        <div class="text-[15px] sm:text-[16px] text-right">$55.00</div>
+                        <div class="text-right text-[15px] sm:text-[16px] font-medium text-app-teal">+$1,250.00</div>
+                    </div>
+
+                    <div class="grid grid-cols-[100px_1fr_1fr] gap-4 px-6 sm:px-8 py-4 items-center hover:bg-white/[0.01] transition-colors">
+                        <div class="font-sans font-semibold text-app-teal text-[15px] tracking-wider bg-app-teal/10 w-fit px-2 py-0.5 rounded">3R</div>
+                        <div class="text-[15px] sm:text-[16px] text-right">$56.00</div>
+                        <div class="text-right text-[15px] sm:text-[16px] font-medium text-app-teal">+$1,500.00</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleContainer = document.getElementById('instrument-toggle');
+            const btnShares = document.getElementById('btn-shares');
+            const btnOptions = document.getElementById('btn-options');
+
+            const focalLabel = document.getElementById('focal-label');
+
+            const multiplierReadout = document.getElementById('options-multiplier-readout');
+            const optionsCaveat = document.getElementById('options-caveat');
+
+            const setInstrumentState = (state) => {
+                if (state === 'options') {
+                    toggleContainer.classList.add('options-active');
+                    btnOptions.classList.replace('text-app-textMuted', 'text-app-textBase');
+                    btnShares.classList.replace('text-app-textBase', 'text-app-textMuted');
+
+                    focalLabel.innerHTML = '<i class="ph-fill ph-intersect opacity-40"></i> Number of contracts';
+
+                    multiplierReadout.classList.remove('hidden');
+                    optionsCaveat.classList.remove('hidden');
+                } else {
+                    toggleContainer.classList.remove('options-active');
+                    btnShares.classList.replace('text-app-textMuted', 'text-app-textBase');
+                    btnOptions.classList.replace('text-app-textBase', 'text-app-textMuted');
+
+                    focalLabel.innerHTML = '<i class="ph-fill ph-target opacity-40"></i> Number of shares';
+
+                    multiplierReadout.classList.add('hidden');
+                    optionsCaveat.classList.add('hidden');
+                }
+            };
+
+            btnShares.addEventListener('click', () => setInstrumentState('shares'));
+            btnOptions.addEventListener('click', () => setInstrumentState('options'));
+
+            document.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('wheel', (e) => { e.preventDefault(); }, { passive: false });
+            });
+        });
+    </script>
+</body>
+</html>

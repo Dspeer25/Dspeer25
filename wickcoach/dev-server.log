@@ -1,0 +1,14 @@
+
+> trading-tracker@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.152:3000
+- Environments: .env.local
+✓ Ready in 4.3s
+
+○ Compiling / ...
+ GET / 200 in 7.0s (next.js: 6.7s, application-code: 317ms)
+ GET / 200 in 171ms (next.js: 19ms, application-code: 153ms)
+[?25h
